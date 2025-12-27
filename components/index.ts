@@ -1,0 +1,6 @@
+export { Button } from "./ui/button";
+
+// Home Page Components
+export { AboutSection } from "./home-page/about-section";
+export { HeroSection } from "./home-page/hero-section";
+// export { RecentPosts } from "./home-page/recent-posts";
