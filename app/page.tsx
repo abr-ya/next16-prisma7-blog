@@ -1,6 +1,11 @@
 import { AboutSection, HeroSection } from "@/components/index";
+import { getLatestPosts } from "./_data";
 
-const HomePage = () => {
+const HomePage = async () => {
+  const posts = await getLatestPosts();
+
+  console.log(posts);
+
   return (
     <main className="min-h-screen">
       {/* Hero Section */}
