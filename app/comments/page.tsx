@@ -1,5 +1,7 @@
+import { PageLayout } from "@/components/layout/page-layout";
+
 const CommentsPage = () => {
-  return <div>CommentsPage</div>;
+  return <PageLayout title="Comments">CommentsPage</PageLayout>;
 };
 
 export default CommentsPage;
