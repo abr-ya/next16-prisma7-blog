@@ -5,28 +5,30 @@ async function main() {
     {
       slug: "what-is-tailwindcss",
       title: "What Is Tailwind CSS?",
+      description: "An introduction to Tailwind CSS and its benefits.",
       content: `# What Is Tailwind CSS?
-        Tailwind CSS is a utility-first CSS framework that makes styling fast and consistent.
+Tailwind CSS is a utility-first CSS framework that makes styling fast and consistent.
 
-        ## Benefits
-        - No more custom CSS files
-        - Responsive utilities
-        - Easy to customize
+## Benefits
+- No more custom CSS files
+- Responsive utilities
+- Easy to customize
 
-        **Tip:** Combine Tailwind with Next.js for a smooth workflow.`,
+**Tip:** Combine Tailwind with Next.js for a smooth workflow.`,
     },
     {
       slug: "getting-started-with-prisma",
       title: "Getting Started with Prisma",
+      description: "A beginner's guide to using Prisma with your Node.js applications.",
       content: `# Getting Started with Prisma
-        Prisma is a modern ORM for Node.js and TypeScript that makes database work easier.
+Prisma is a modern ORM for Node.js and TypeScript that makes database work easier.
 
-        ## What You Can Do
-        - Define your database schema
-        - Run migrations
-        - Query data with type safety
+## What You Can Do
+- Define your database schema
+- Run migrations
+- Query data with type safety
 
-        **Reminder:** Always run \`npx prisma generate\` after updating the schema.`,
+**Reminder:** Always run \`npx prisma generate\` after updating the schema.`,
     },
   ];
 
