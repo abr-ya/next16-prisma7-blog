@@ -24,6 +24,8 @@ model User {
   sessions      Session[]
   accounts      Account[]
   comments      Comment[]
+  categories    Category[]
+  posts         Post[]
 
   @@unique([email])
   @@map("user")
@@ -94,3 +96,37 @@ model Comment {
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
+
+// Updated Posts model - start
+model Post {
+  id         String     @id @default(uuid())
+  title      String
+  slug       String     @unique
+  content    String
+  imageUrl   String
+  views      Int        @default(0)
+  tags       String[]
+  status     PostStatus @default(published)
+  userId     String
+  user       User       @relation(references: [id], fields: [userId], onDelete: Cascade)
+  categoryId String?
+  category   Category?  @relation(references: [id], fields: [categoryId], onDelete: Cascade)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @default(now()) @updatedAt
+}
+
+model Category {
+  id        String   @id @default(uuid())
+  name      String
+  userId    String
+  user      User     @relation(references: [id], fields: [userId], onDelete: Cascade)
+  posts     Post[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+}
+
+enum PostStatus {
+  published
+  draft
+}
+// Updated Posts model - finish
