@@ -5,13 +5,15 @@ import { PostCard } from "./post-card";
 import Link from "next/link";
 
 interface PostsSectionProps {
+  className?: string;
   posts: BlogPost[];
   showAllLink?: boolean;
+  title?: string;
 }
 
-export const PostsSection = ({ posts, showAllLink }: PostsSectionProps) => (
-  <section className="py-10 px-4 max-w-3xl mx-auto">
-    <h2 className="text-2xl font-bold mb-4">Recent Posts</h2>
+export const PostsSection = ({ className, posts, showAllLink, title }: PostsSectionProps) => (
+  <section className={`max-w-3xl mx-auto ${className}`}>
+    {title && <h2 className="text-2xl font-bold mb-4">{title}</h2>}
     {posts.length > 0 ? (
       <div className="flex flex-col gap-4">
         {posts.map((post) => (

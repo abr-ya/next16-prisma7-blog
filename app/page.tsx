@@ -13,7 +13,7 @@ const HomePage = async () => {
       <AboutSection />
 
       {/* Recent Posts */}
-      <PostsSection posts={posts} showAllLink />
+      <PostsSection posts={posts} showAllLink title="Recent Posts" className="py-10 px-4" />
     </main>
   );
 };
