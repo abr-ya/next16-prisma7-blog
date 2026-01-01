@@ -16,3 +16,7 @@ export { CommentForm } from "./comments-page/comment-form";
 
 // Layout Components
 export { PageLayout } from "./layout/page-layout";
+
+// Auth Forms
+export { SignInForm } from "./auth-forms/sign-in-form";
+export { SignUpForm } from "./auth-forms/sign-up-form";
