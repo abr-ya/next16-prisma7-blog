@@ -13,7 +13,7 @@ const HomePage = async () => {
       <AboutSection />
 
       {/* Recent Posts */}
-      <PostsSection posts={posts} />
+      <PostsSection posts={posts} showAllLink />
     </main>
   );
 };
