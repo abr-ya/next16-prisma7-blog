@@ -8,3 +8,11 @@ export const getLatestPosts = async (count = 3) => {
 
   return posts;
 };
+
+export const getPostBySlug = async (slug: string) => {
+  const post = await prisma.blogPost.findUnique({
+    where: { slug },
+  });
+
+  return post;
+};

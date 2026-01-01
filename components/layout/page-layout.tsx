@@ -16,7 +16,7 @@ export const PageLayout = ({ title, children }: PageLayoutProps) => (
           Back to Home
         </Link>
       </Button>
-      <h1 className="text-3xl font-bold mb-8">{title}</h1>
+      <h1 className="text-3xl font-bold mb-4">{title}</h1>
       {children}
     </div>
   </main>

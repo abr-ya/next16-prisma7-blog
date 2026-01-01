@@ -7,6 +7,7 @@ export { HeroSection } from "./home-page/hero-section";
 
 // Posts Components
 export { PostsSection } from "./posts/posts-section";
+export { PostArticle } from "./posts/post-article";
 
 // Layout Components
 export { PageLayout } from "./layout/page-layout";
