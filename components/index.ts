@@ -1,6 +1,7 @@
 export { Button } from "./ui/button";
 export { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 export { Separator } from "./ui/separator";
+export { Sidebar, SidebarProvider } from "./ui/sidebar";
 export { Spinner } from "./ui/spinner";
 
 // Home Page Components
@@ -22,3 +23,6 @@ export { PageLayout } from "./layout/page-layout";
 // Auth Forms
 export { SignInForm } from "./auth-forms/sign-in-form";
 export { SignUpForm } from "./auth-forms/sign-up-form";
+
+// Admin Pages Components
+export { AppSidebar } from "./admin-pages/app-sidebar";
