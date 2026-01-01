@@ -1,9 +1,9 @@
 import { PageLayout } from "@/components/layout/page-layout";
-import { getLatestPosts } from "../_data";
+import { getLatestBlogPosts } from "../_data";
 import { PostsSection } from "@/components/index";
 
 const BlogPage = async () => {
-  const posts = await getLatestPosts(10);
+  const posts = await getLatestBlogPosts(10);
 
   return (
     <PageLayout title="BlogPage">

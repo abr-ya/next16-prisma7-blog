@@ -1,6 +1,6 @@
 import prisma from "@/lib/prisma";
 
-export const getLatestPosts = async (count = 3) => {
+export const getLatestBlogPosts = async (count = 3) => {
   const posts = await prisma.blogPost.findMany({
     orderBy: { createdAt: "desc" },
     take: count,
@@ -9,7 +9,7 @@ export const getLatestPosts = async (count = 3) => {
   return posts;
 };
 
-export const getPostBySlug = async (slug: string) => {
+export const getBlogPostBySlug = async (slug: string) => {
   const post = await prisma.blogPost.findUnique({
     where: { slug },
   });

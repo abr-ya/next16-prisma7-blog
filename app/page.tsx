@@ -1,8 +1,8 @@
 import { AboutSection, HeroSection, PostsSection } from "@/components/index";
-import { getLatestPosts } from "./_data";
+import { getLatestBlogPosts } from "./_data";
 
 const HomePage = async () => {
-  const posts = await getLatestPosts();
+  const posts = await getLatestBlogPosts();
 
   return (
     <main className="min-h-screen">

@@ -1,1 +1,1 @@
-export { getLatestPosts, getPostBySlug } from "./getPosts";
+export { getLatestBlogPosts, getBlogPostBySlug } from "./getBlogPosts";

@@ -1,11 +1,11 @@
-import { getPostBySlug } from "@/app/_data";
+import { getBlogPostBySlug } from "@/app/_data";
 import { PageLayout, PostArticle } from "@/components/index";
 import { notFound } from "next/navigation";
 
 const BlogPostPage = async ({ params }: { params: Promise<{ slug: string }> }) => {
   const { slug } = await params;
 
-  const post = await getPostBySlug(slug);
+  const post = await getBlogPostBySlug(slug);
 
   if (!post) notFound();
 
