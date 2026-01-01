@@ -1,3 +1,3 @@
-export const SignInForm = () => {
-  return <div>sign-in-form</div>;
-};
+import { AuthCard } from "./auth-card";
+
+export const SignInForm = () => <AuthCard>sign-in-form</AuthCard>;

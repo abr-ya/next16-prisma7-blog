@@ -1,5 +1,7 @@
 export { Button } from "./ui/button";
 export { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+export { Separator } from "./ui/separator";
+export { Spinner } from "./ui/spinner";
 
 // Home Page Components
 export { AboutSection } from "./home-page/about-section";
