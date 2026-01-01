@@ -9,5 +9,10 @@ export { HeroSection } from "./home-page/hero-section";
 export { PostsSection } from "./posts/posts-section";
 export { PostArticle } from "./posts/post-article";
 
+// Comments Components
+// export { CommentsSection } from "./comments-page/comments-section";
+// export { Comment } from "./comments-page/comment";
+export { CommentForm } from "./comments-page/comment-form";
+
 // Layout Components
 export { PageLayout } from "./layout/page-layout";
