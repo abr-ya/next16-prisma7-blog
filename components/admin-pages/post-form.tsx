@@ -155,8 +155,10 @@ export const PostForm = ({
               <FormItem>
                 <FormLabel>Content</FormLabel>
                 <FormControl>
-                  <Input {...field} />
-                  todo: RichTextEditor
+                  <div className="flex flex-col gap-2">
+                    <Input {...field} />
+                    <p className="text-sm text-muted-foreground">todo: RichTextEditor</p>
+                  </div>
                 </FormControl>
                 <FormMessage />
               </FormItem>
