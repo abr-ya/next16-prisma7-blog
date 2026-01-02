@@ -1,5 +1,8 @@
+// UI Components
 export { Button } from "./ui/button";
 export { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+export { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "./ui/form";
+export { Input } from "./ui/input";
 export { Separator } from "./ui/separator";
 export { Sidebar, SidebarProvider } from "./ui/sidebar";
 export { Spinner } from "./ui/spinner";
@@ -8,9 +11,9 @@ export { Spinner } from "./ui/spinner";
 export { AboutSection } from "./home-page/about-section";
 export { HeroSection } from "./home-page/hero-section";
 
-// Posts Components
-export { PostsSection } from "./posts/posts-section";
-export { PostArticle } from "./posts/post-article";
+// BlogPosts Components
+export { PostsSection } from "./blog-posts/posts-section";
+export { PostArticle } from "./blog-posts/post-article";
 
 // Comments Components
 // export { CommentsSection } from "./comments-page/comments-section";
@@ -27,3 +30,4 @@ export { SignUpForm } from "./auth-forms/sign-up-form";
 
 // Admin Pages Components
 export { AppSidebar } from "./admin-pages/app-sidebar";
+export { PostForm } from "./admin-pages/post-form";
