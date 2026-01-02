@@ -10,6 +10,7 @@ import { object, z } from "zod";
 import { Button, Card, CardContent, CardHeader, CardTitle, ImageUploader, Input, Spinner } from "../index";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "../ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import { createPost } from "@/app/_data";
 
 const CreatableSelect = dynamic(() => import("react-select/creatable"), {
   ssr: false,
@@ -46,9 +47,6 @@ export const PostForm = ({
       .trim()
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/^-+|-+$/g, "");
-  };
-  const createPost = async (data: PostFormValues) => {
-    console.log(data);
   };
   const updatePost = async (data: PostFormValues) => {
     console.log(data);
