@@ -18,6 +18,7 @@ export { PostArticle } from "./posts/post-article";
 export { CommentForm } from "./comments-page/comment-form";
 
 // Layout Components
+export { Breadcrumbs } from "./layout/breadcrumbs";
 export { PageLayout } from "./layout/page-layout";
 
 // Auth Forms
