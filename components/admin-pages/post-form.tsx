@@ -7,7 +7,7 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { object, z } from "zod";
 
-import { Button, Card, CardContent, CardHeader, CardTitle, Input, Spinner } from "../index";
+import { Button, Card, CardContent, CardHeader, CardTitle, ImageUploader, Input, Spinner } from "../index";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "../ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 
@@ -131,10 +131,18 @@ export const PostForm = ({
           <FormField
             control={form.control}
             name="imageUrl"
-            render={() => (
+            render={({ field }) => (
               <FormItem>
                 <FormLabel>Image</FormLabel>
-                <FormControl>todo: ImageUploader</FormControl>
+                <FormControl>
+                  <ImageUploader
+                    endpoint="imageUploader"
+                    defaultUrl={field.value}
+                    onChange={(url) => {
+                      field.onChange(url);
+                    }}
+                  />
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )}
@@ -143,10 +151,13 @@ export const PostForm = ({
           <FormField
             control={form.control}
             name="content"
-            render={() => (
+            render={({ field }) => (
               <FormItem>
                 <FormLabel>Content</FormLabel>
-                <FormControl>todo: RichTextEditor</FormControl>
+                <FormControl>
+                  <Input {...field} />
+                  todo: RichTextEditor
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )}

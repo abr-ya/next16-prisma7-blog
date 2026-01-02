@@ -31,3 +31,4 @@ export { SignUpForm } from "./auth-forms/sign-up-form";
 // Admin Pages Components
 export { AppSidebar } from "./admin-pages/app-sidebar";
 export { PostForm } from "./admin-pages/post-form";
+export { ImageUploader } from "./admin-pages/image-uploader";
