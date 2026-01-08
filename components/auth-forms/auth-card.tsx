@@ -1,7 +1,9 @@
 "use client";
 
 import { authClient } from "@/lib/auth-client";
-import { Button, Card, CardContent, CardHeader, CardTitle, Separator } from "..";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import { ReactNode } from "react";
 import Link from "next/link";
 

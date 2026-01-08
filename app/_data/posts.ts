@@ -6,6 +6,7 @@ import type { Post, PostStatus } from "@/generated/prisma/client";
 
 export const getPostById = async (id: string) => {
   try {
+    const { authSession } = await import("@/lib/auth-utils");
     const session = await authSession();
 
     if (!session) throw new Error("Unauthorized: User Id not found");
@@ -22,6 +23,7 @@ export const getPostById = async (id: string) => {
 
 export const createPost = async (params: PostFormValues) => {
   try {
+    const { authSession } = await import("@/lib/auth-utils");
     const session = await authSession();
 
     if (!session) throw new Error("Unauthorized: User Id not found");
@@ -48,6 +50,7 @@ export const createPost = async (params: PostFormValues) => {
 
 export const updatePost = async (params: PostFormValues) => {
   try {
+    const { authSession } = await import("@/lib/auth-utils");
     const session = await authSession();
 
     if (!session) throw new Error("Unauthorized: User Id not found");
@@ -64,6 +67,7 @@ export const updatePost = async (params: PostFormValues) => {
 
 export const getAllPosts = async () => {
   try {
+    const { authSession } = await import("@/lib/auth-utils");
     const session = await authSession();
 
     if (!session) throw new Error("Unauthorized: User Id not found");

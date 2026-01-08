@@ -1,4 +1,4 @@
-import { BlogPost } from "@/generated/prisma/client";
+import type { BlogPost } from "@/generated/prisma/client";
 import { MdRenderer } from "./md-renderer";
 
 interface IPostArticleProps {

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Card, CardContent } from "..";
-import { BlogPost } from "@/generated/prisma/client";
+import type { BlogPost } from "@/generated/prisma/client";
 
 export const PostCard = ({ post }: { post: BlogPost }) => {
   return (

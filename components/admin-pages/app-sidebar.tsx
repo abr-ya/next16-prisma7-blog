@@ -11,6 +11,8 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 
+import { authSession } from "@/lib/auth-utils";
+
 // Menu items.
 const items = [
   {
@@ -35,26 +37,42 @@ const items = [
   },
 ];
 
-export const AppSidebar = () => (
-  <Sidebar>
-    <SidebarContent>
-      <SidebarGroup>
-        <SidebarGroupLabel>NextBlog</SidebarGroupLabel>
-        <SidebarGroupContent>
-          <SidebarMenu>
-            {items.map((item) => (
-              <SidebarMenuItem key={item.title}>
-                <SidebarMenuButton asChild>
-                  <a href={item.url}>
-                    <item.icon />
-                    <span>{item.title}</span>
-                  </a>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            ))}
-          </SidebarMenu>
-        </SidebarGroupContent>
-      </SidebarGroup>
-    </SidebarContent>
-  </Sidebar>
-);
+export const AppSidebar = async () => {
+  let userId: string | null = null;
+
+  try {
+    const session = await authSession();
+    userId = session?.user?.id ?? null;
+  } catch (err: unknown) {
+    // no session
+    userId = null;
+    console.log(err);
+  }
+
+  return (
+    <Sidebar>
+      <SidebarContent>
+        <SidebarGroup>
+          <SidebarGroupLabel>NextBlog</SidebarGroupLabel>
+          <SidebarGroupContent>
+            {/* Show signed-in user id (server-only) */}
+            <div className="mb-3 text-sm text-muted-foreground">{userId ? `User: ${userId}` : "Not signed in"}</div>
+
+            <SidebarMenu>
+              {items.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild>
+                    <a href={item.url}>
+                      <item.icon />
+                      <span>{item.title}</span>
+                    </a>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
+    </Sidebar>
+  );
+};
