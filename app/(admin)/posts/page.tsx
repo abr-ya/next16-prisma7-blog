@@ -1,10 +1,12 @@
-import { getLatestBlogPosts } from "@/app/_data";
+import { getAllPosts } from "@/app/_data/posts";
 import { Breadcrumbs } from "@/components/index";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
+export const dynamic = "force-dynamic";
+
 const PostsPage = async () => {
-  const data = await getLatestBlogPosts(); // todo: update it!
+  const data = await getAllPosts(); // todo: update it!
   console.log(data);
 
   const breadItems = [

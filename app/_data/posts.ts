@@ -1,7 +1,6 @@
 "use server";
 
 import type { PostFormValues } from "@/components/index";
-import { authSession } from "@/lib/auth-utils";
 import type { Post, PostStatus } from "@/generated/prisma/client";
 
 export const getPostById = async (id: string) => {

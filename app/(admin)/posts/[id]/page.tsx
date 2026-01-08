@@ -2,7 +2,7 @@ import { Breadcrumbs, PostForm } from "@/components/index";
 
 const PostPage = async ({ params }: { params: Promise<{ id: string }> }) => {
   const { id } = await params;
-  console.log(id);
+  console.log("PostPage, id: ", id);
 
   const breadcrumbItems = [
     { label: "Dashboard", to: "/dashboard" },
@@ -11,7 +11,7 @@ const PostPage = async ({ params }: { params: Promise<{ id: string }> }) => {
   ];
 
   const categories = [
-    { id: "1", name: "Technology" },
+    { id: "1", name: "FirstTestCategory" },
     { id: "2", name: "Health" },
     { id: "3", name: "Lifestyle" },
   ];
