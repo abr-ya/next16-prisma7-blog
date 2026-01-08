@@ -1,9 +1,8 @@
 "use server";
 
-import { PostFormValues } from "@/components/index";
+import type { PostFormValues } from "@/components/index";
 import { authSession } from "@/lib/auth-utils";
-import prisma from "@/lib/prisma";
-import { Post, PostStatus } from "@/generated/prisma/client";
+import type { Post, PostStatus } from "@/generated/prisma/client";
 
 export const getPostById = async (id: string) => {
   try {
@@ -11,6 +10,7 @@ export const getPostById = async (id: string) => {
 
     if (!session) throw new Error("Unauthorized: User Id not found");
 
+    const { default: prisma } = await import("@/lib/prisma");
     const res = (await prisma.post.findUnique({ where: { id } })) as Post;
 
     return res;
@@ -30,6 +30,7 @@ export const createPost = async (params: PostFormValues) => {
     const { categories, tags, id, ...rest } = params;
     const data = { ...rest, tags: tags.map((tag) => tag.value) };
 
+    const { default: prisma } = await import("@/lib/prisma");
     const res = await prisma.post.create({
       data: {
         ...data,
@@ -67,6 +68,7 @@ export const getAllPosts = async () => {
 
     if (!session) throw new Error("Unauthorized: User Id not found");
 
+    const { default: prisma } = await import("@/lib/prisma");
     const res = await prisma.post.findMany({
       where: { userId: session.user.id },
       orderBy: { updatedAt: "desc" },

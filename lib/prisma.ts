@@ -1,11 +1,17 @@
-import { PrismaPg } from "@prisma/adapter-pg";
-import { PrismaClient } from "../generated/prisma/client";
-
-const adapter = new PrismaPg({
-  connectionString: process.env.DATABASE_URL,
-});
-
 const prismaClientSingleton = () => {
+  if (typeof window !== "undefined") {
+    throw new Error("PrismaClient cannot be used in the browser");
+  }
+
+  // Lazily require the Prisma client and Postgres adapter so bundlers (like
+  // Turbopack) don't attempt to resolve Node-only dependencies (e.g. `dns`)
+  // for client bundles.
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { PrismaClient } = require("../generated/prisma/client");
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { PrismaPg } = require("@prisma/adapter-pg");
+  const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
+
   return new PrismaClient({ adapter });
 };
 

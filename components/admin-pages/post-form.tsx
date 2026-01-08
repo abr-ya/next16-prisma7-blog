@@ -10,7 +10,7 @@ import { object, z } from "zod";
 import { Button, Card, CardContent, CardHeader, CardTitle, ImageUploader, Input, Spinner } from "../index";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "../ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
-import { createPost } from "@/app/_data";
+import { createPost } from "@/app/_data/posts";
 
 const CreatableSelect = dynamic(() => import("react-select/creatable"), {
   ssr: false,
