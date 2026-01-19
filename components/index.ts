@@ -1,8 +1,10 @@
 // UI Components
+export { Avatar, AvatarImage, AvatarFallback } from "./ui/avatar";
 export { Button } from "./ui/button";
 export { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 export { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "./ui/form";
 export { Input } from "./ui/input";
+export * from "./ui/navigation-menu";
 export { Separator } from "./ui/separator";
 export { Sidebar, SidebarProvider } from "./ui/sidebar";
 export { Spinner } from "./ui/spinner";

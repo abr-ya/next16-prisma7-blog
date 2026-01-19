@@ -11,8 +11,6 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 
-import { authSession } from "@/lib/auth-utils";
-
 // Menu items.
 const items = [
   {
@@ -37,18 +35,11 @@ const items = [
   },
 ];
 
-export const AppSidebar = async () => {
-  let userId: string | null = null;
+interface AppSidebarProps {
+  userId: string | null;
+}
 
-  try {
-    const session = await authSession();
-    userId = session?.user?.id ?? null;
-  } catch (err: unknown) {
-    // no session
-    userId = null;
-    console.log(err);
-  }
-
+export const AppSidebar = ({ userId }: AppSidebarProps) => {
   return (
     <Sidebar>
       <SidebarContent>
