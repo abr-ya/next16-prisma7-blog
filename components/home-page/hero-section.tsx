@@ -10,12 +10,12 @@ export const HeroSection = () => (
     </p>
     <div className="flex gap-4">
       <Button asChild>
-        <Link href="/blog">Read Blog</Link>
+        <Link href="/blog-md">Read Markdown Posts</Link>
       </Button>
       <Button variant="outline" asChild>
         <Link href="/comments">
           <MessageCircle className="w-4 h-4 mr-2" />
-          Contact Me
+          Comments Page
         </Link>
       </Button>
     </div>

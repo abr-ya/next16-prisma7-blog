@@ -25,7 +25,7 @@ export const PostsSection = ({ className, posts, showAllLink, title }: PostsSect
     )}
     {showAllLink && (
       <Button variant="link" asChild className="mt-4 px-0">
-        <Link href="/blog">
+        <Link href="/blog-md">
           View all posts <ArrowRight className="w-4 h-4 ml-1" />
         </Link>
       </Button>

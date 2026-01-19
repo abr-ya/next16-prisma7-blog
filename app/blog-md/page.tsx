@@ -6,7 +6,7 @@ const BlogPage = async () => {
   const posts = await getLatestBlogPosts(10);
 
   return (
-    <PageLayout title="BlogPage">
+    <PageLayout title="Markdown Blog Page">
       <PostsSection posts={posts} />
     </PageLayout>
   );
