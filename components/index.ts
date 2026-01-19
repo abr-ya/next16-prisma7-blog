@@ -11,6 +11,9 @@ export { Spinner } from "./ui/spinner";
 export { AboutSection } from "./home-page/about-section";
 export { HeroSection } from "./home-page/hero-section";
 
+// Blog Components
+export { Navbar } from "./blog-pages/navbar";
+
 // BlogPosts Components
 export { PostsSection } from "./blog-posts/posts-section";
 export { PostArticle } from "./blog-posts/post-article";

@@ -2,7 +2,7 @@ import { PageLayout } from "@/components/layout/page-layout";
 import { getLatestBlogPosts } from "../_data";
 import { PostsSection } from "@/components/index";
 
-const BlogPage = async () => {
+const MarkdownBlogPage = async () => {
   const posts = await getLatestBlogPosts(10);
 
   return (
@@ -12,4 +12,4 @@ const BlogPage = async () => {
   );
 };
 
-export default BlogPage;
+export default MarkdownBlogPage;
