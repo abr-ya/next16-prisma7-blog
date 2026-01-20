@@ -2,7 +2,7 @@ import { AboutSection, HeroSection, PostsSection } from "@/components/index";
 import { getLatestBlogPosts } from "./_data";
 
 const HomePage = async () => {
-  const posts = await getLatestBlogPosts();
+  const blogPosts = await getLatestBlogPosts();
 
   return (
     <main className="min-h-screen">
@@ -12,8 +12,8 @@ const HomePage = async () => {
       {/* About Section */}
       <AboutSection />
 
-      {/* Recent Posts */}
-      <PostsSection posts={posts} showAllLink title="Recent Posts" className="py-10 px-4" />
+      {/* Recent Markdown Posts */}
+      <PostsSection posts={blogPosts} showAllLink title="Recent Markdown Posts" className="py-10 px-4" />
     </main>
   );
 };

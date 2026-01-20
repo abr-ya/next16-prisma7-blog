@@ -1,5 +1,5 @@
 import { getAllPosts } from "@/app/_data/posts";
-import { Breadcrumbs } from "@/components/index";
+import { Breadcrumbs, PostsTable } from "@/components/index";
 import { Button } from "@/components/ui/button";
 import { requireAuth } from "@/lib/auth-utils";
 import Link from "next/link";
@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 const PostsPage = async () => {
   await requireAuth();
 
-  const data = await getAllPosts(); // todo: update it!
+  const data = await getAllPosts();
   console.log(data);
 
   const breadItems = [
@@ -28,7 +28,7 @@ const PostsPage = async () => {
         </div>
       </div>
       {/* DataTable */}
-      todo: DataTable
+      <PostsTable data={data} />
     </>
   );
 };

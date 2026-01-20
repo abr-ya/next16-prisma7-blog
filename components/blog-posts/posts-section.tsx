@@ -1,7 +1,7 @@
 import { ArrowRight } from "lucide-react";
 import type { BlogPost } from "../../generated/prisma/client";
 import { Button } from "../ui/button";
-import { PostCard } from "./post-card";
+import { MdPostCard } from "./md-post-card";
 import Link from "next/link";
 
 interface PostsSectionProps {
@@ -17,7 +17,7 @@ export const PostsSection = ({ className, posts, showAllLink, title }: PostsSect
     {posts.length > 0 ? (
       <div className="flex flex-col gap-4">
         {posts.map((post) => (
-          <PostCard post={post} key={post.id} />
+          <MdPostCard post={post} key={post.id} />
         ))}
       </div>
     ) : (

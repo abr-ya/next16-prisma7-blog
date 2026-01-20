@@ -1,13 +1,29 @@
 import { Breadcrumbs, PostForm } from "@/components/index";
+import { Post as IPost } from "@/generated/prisma/client";
 
 const PostPage = async ({ params }: { params: Promise<{ id: string }> }) => {
   const { id } = await params;
   console.log("PostPage, id: ", id);
+  let post: Omit<IPost, "userId" | "views" | "createdAt" | "updatedAt"> = {
+    id: "",
+    title: "",
+    content: "",
+    imageUrl: "",
+    categoryId: "",
+    tags: [],
+    status: "draft",
+    slug: "",
+  };
+
+  if (id !== "new") {
+    const { getPostById } = await import("@/app/_data/posts");
+    post = await getPostById(id);
+  }
 
   const breadcrumbItems = [
     { label: "Dashboard", to: "/dashboard" },
     { label: "Posts", to: "/posts" },
-    { label: "New", to: null }, // or post title if editing
+    { label: post.title || "New", to: null },
   ];
 
   const categories = [
@@ -25,17 +41,11 @@ const PostPage = async ({ params }: { params: Promise<{ id: string }> }) => {
       </div>
 
       <div className="p-8 flex flex-col">
-        {/* todo: Add variant for editing! */}
         <PostForm
-          id=""
-          title=""
-          content=""
-          imageUrl=""
-          categoryId=""
-          tags={[]}
-          status=""
+          {...post}
+          categoryId={post.categoryId || ""}
+          tags={post.tags.map((tag) => ({ label: tag, value: tag }))}
           categories={categories}
-          slug=""
         />
       </div>
     </>
