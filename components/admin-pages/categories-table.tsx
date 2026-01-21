@@ -29,7 +29,7 @@ interface ICategoriesTableProps {
 }
 
 export const CategoriesTable = ({ categories }: ICategoriesTableProps) => (
-  <div className="p-8 flex flex-col">
+  <div className="p-4 flex flex-col">
     <DataTable data={categories} columns={columns} />
   </div>
 );

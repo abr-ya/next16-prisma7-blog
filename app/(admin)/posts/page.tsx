@@ -1,5 +1,5 @@
 import { getAllPosts } from "@/app/_data/posts";
-import { Breadcrumbs, PostsTable } from "@/components/index";
+import { AdminPageLayout, PostsTable } from "@/components/index";
 import { Button } from "@/components/ui/button";
 import { requireAuth } from "@/lib/auth-utils";
 import Link from "next/link";
@@ -17,18 +17,17 @@ const PostsPage = async () => {
   ];
 
   return (
-    <>
-      <div className="flex flex-col p-8">
-        <div className="flex w-full justify-between">
-          <Breadcrumbs data={breadItems} />
-          <Link href="/posts/new">
-            <Button className="cursor-pointer">Create new post</Button>
-          </Link>
-        </div>
-      </div>
+    <AdminPageLayout
+      breadcrumbs={breadItems}
+      headerRight={
+        <Link href="/posts/new">
+          <Button className="cursor-pointer">Create new post</Button>
+        </Link>
+      }
+    >
       {/* DataTable */}
       <PostsTable data={data} />
-    </>
+    </AdminPageLayout>
   );
 };
 

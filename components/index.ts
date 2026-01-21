@@ -30,6 +30,7 @@ export { PostArticle } from "./blog-posts/post-article";
 export { CommentForm } from "./comments-page/comment-form";
 
 // Layout Components
+export { AdminPageLayout } from "./layout/admin-page-layout";
 export { Breadcrumbs } from "./layout/breadcrumbs";
 export { PageLayout } from "./layout/page-layout";
 

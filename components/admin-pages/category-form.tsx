@@ -63,7 +63,7 @@ export const CategoryForm = () => {
   };
 
   return (
-    <>
+    <div>
       <Button onClick={() => setOpen(true)}>New Category</Button>
       <Dialog open={open} onOpenChange={setOpen}>
         <Form {...form}>
@@ -97,6 +97,6 @@ export const CategoryForm = () => {
           </form>
         </Form>
       </Dialog>
-    </>
+    </div>
   );
 };
