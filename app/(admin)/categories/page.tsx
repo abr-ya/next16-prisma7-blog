@@ -1,5 +1,5 @@
 import { getCategories } from "@/app/_data/categories";
-import { CategoryForm } from "@/components/admin-pages/category-form";
+import { CategoriesTable, CategoryForm } from "@/components/index";
 import { requireAuth } from "@/lib/auth-utils";
 
 export const dynamic = "force-dynamic";
@@ -11,10 +11,10 @@ const CategoriesPage = async () => {
   console.log(categories.map((cat: { name: string }) => cat.name));
 
   return (
-    <div>
-      CategoriesPage
+    <>
+      <CategoriesTable categories={categories} />
       <CategoryForm />
-    </div>
+    </>
   );
 };
 

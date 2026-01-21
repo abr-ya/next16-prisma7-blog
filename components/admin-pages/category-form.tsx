@@ -54,7 +54,7 @@ export const CategoryForm = () => {
           <form onSubmit={form.handleSubmit(onSubmit)} id="category-form">
             <DialogContent className="sm:max-w-100" aria-describedby="category" aria-description="create category">
               <DialogHeader>
-                <DialogTitle>Edit Category</DialogTitle>
+                <DialogTitle>{category ? "Edit Category" : "Create Category"}</DialogTitle>
               </DialogHeader>
               <FormField
                 control={form.control}

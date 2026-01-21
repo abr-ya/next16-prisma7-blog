@@ -39,6 +39,7 @@ export { SignUpForm } from "./auth-forms/sign-up-form";
 
 // Admin Pages Components
 export { AppSidebar } from "./admin-pages/app-sidebar";
+export { CategoriesTable } from "./admin-pages/categories-table";
 export { CategoryForm } from "./admin-pages/category-form";
 export { PostForm } from "./admin-pages/post-form";
 export { PostsTable } from "./admin-pages/posts-table";
