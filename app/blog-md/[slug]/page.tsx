@@ -1,4 +1,4 @@
-import { getBlogPostBySlug } from "@/app/_data";
+import { getBlogPostBySlug } from "@/app/_data/getBlogPosts";
 import { PageLayout, PostArticle } from "@/components/index";
 import { notFound } from "next/navigation";
 

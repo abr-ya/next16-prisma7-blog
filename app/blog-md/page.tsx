@@ -1,5 +1,5 @@
 import { PageLayout } from "@/components/layout/page-layout";
-import { getLatestBlogPosts } from "../_data";
+import { getLatestBlogPosts } from "../_data/getBlogPosts";
 import { PostsSection } from "@/components/index";
 
 const MarkdownBlogPage = async () => {

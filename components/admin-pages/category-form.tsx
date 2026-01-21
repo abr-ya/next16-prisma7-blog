@@ -1,6 +1,11 @@
 "use client";
 
-import { useCategoryDialog } from "@/hooks";
+import { useEffect } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
+import { useCategoryDialog } from "@/hooks/index";
+import z from "zod";
 import {
   Button,
   Dialog,
@@ -15,10 +20,8 @@ import {
   Input,
   Spinner,
 } from "..";
-import z from "zod";
-import { useEffect } from "react";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { createCategory } from "@/app/_data/categories";
+import { useRouter } from "next/navigation";
 
 const formSchema = z.object({
   name: z.string().min(3, { message: "Name is required" }),
@@ -27,7 +30,8 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 export const CategoryForm = () => {
-  const { category, open, setOpen } = useCategoryDialog();
+  const router = useRouter();
+  const { category, open, setOpen, setCategory } = useCategoryDialog();
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -42,13 +46,25 @@ export const CategoryForm = () => {
     }
   }, [category, form]);
 
-  const onSubmit = async (data: FormValues) => {
-    console.log("Category Data:", data);
+  const onSubmit = async ({ name }: FormValues) => {
+    console.log("Category name:", { name });
+    if (category?.id) {
+      console.log("updateCategory({ id: category.id, name })");
+      toast.success("Category updated successfully");
+    } else {
+      await createCategory(name);
+      toast.success("New category created successfully");
+    }
+
+    router.refresh();
+    form.reset();
+    setCategory({ id: "", name: "" });
+    setOpen(false);
   };
 
   return (
     <>
-      <Button onClick={() => setOpen(true)}>Open Category Dialog</Button>
+      <Button onClick={() => setOpen(true)}>New Category</Button>
       <Dialog open={open} onOpenChange={setOpen}>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} id="category-form">
