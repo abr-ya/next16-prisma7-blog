@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "../ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
-import { createPost } from "@/app/_data/posts";
+import { createPost, updatePost } from "@/app/_data/posts";
 
 const CreatableSelect = dynamic(() => import("react-select/creatable"), {
   ssr: false,
@@ -51,9 +51,6 @@ export const PostForm = ({
       .trim()
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/^-+|-+$/g, "");
-  };
-  const updatePost = async (data: PostFormValues) => {
-    console.log(data);
   };
 
   const router = useRouter();

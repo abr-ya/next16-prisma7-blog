@@ -54,13 +54,26 @@ export const updatePost = async (params: PostFormValues) => {
 
     if (!session) throw new Error("Unauthorized: User Id not found");
 
-    console.log("UpdatePost", params);
-    const res = null;
+    console.log("updated", params.id, params.title);
 
-    return res; // todo: implement update logic
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { categories, tags, id, ...rest } = params;
+    const data = { ...rest, tags: tags.map((tag) => tag.value) };
+
+    const { default: prisma } = await import("@/lib/prisma");
+    const res = await prisma.post.update({
+      where: { id },
+      data: {
+        ...data,
+        userId: session.user.id,
+        status: data.status as PostStatus,
+      },
+    });
+
+    return res;
   } catch (err) {
     console.error({ err });
-    throw new Error("Something went wrong");
+    throw new Error("Something went wrong (updatePost action)");
   }
 };
 

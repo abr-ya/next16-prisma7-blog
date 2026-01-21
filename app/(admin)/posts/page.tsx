@@ -10,7 +10,6 @@ const PostsPage = async () => {
   await requireAuth();
 
   const data = await getAllPosts();
-  console.log(data);
 
   const breadItems = [
     { label: "Dashboard", to: "/dashboard" },
