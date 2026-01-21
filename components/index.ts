@@ -2,6 +2,7 @@
 export { Avatar, AvatarImage, AvatarFallback } from "./ui/avatar";
 export { Button } from "./ui/button";
 export { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+export { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
 export { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "./ui/form";
 export { Input } from "./ui/input";
 export * from "./ui/navigation-menu";
@@ -35,6 +36,7 @@ export { SignUpForm } from "./auth-forms/sign-up-form";
 
 // Admin Pages Components
 export { AppSidebar } from "./admin-pages/app-sidebar";
+export { CategoryForm } from "./admin-pages/category-form";
 export { PostForm } from "./admin-pages/post-form";
 export { PostsTable } from "./admin-pages/posts-table";
 export type { PostFormValues } from "./admin-pages/post-form";
