@@ -10,6 +10,9 @@ export { Separator } from "./ui/separator";
 export { Sidebar, SidebarProvider } from "./ui/sidebar";
 export { Spinner } from "./ui/spinner";
 
+// Common Components
+export { DataTable } from "./common/data-table";
+
 // Home Page Components
 export { AboutSection } from "./home-page/about-section";
 export { HeroSection } from "./home-page/hero-section";
