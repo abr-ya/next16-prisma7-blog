@@ -1,9 +1,13 @@
 import { Breadcrumbs, PostForm } from "@/components/index";
 import { Post as IPost } from "@/generated/prisma/client";
+import { getCategories } from "@/app/_data/categories";
 
 const PostPage = async ({ params }: { params: Promise<{ id: string }> }) => {
   const { id } = await params;
   console.log("PostPage, id: ", id);
+
+  const categories = await getCategories();
+
   let post: Omit<IPost, "userId" | "views" | "createdAt" | "updatedAt"> = {
     id: "",
     title: "",
@@ -24,12 +28,6 @@ const PostPage = async ({ params }: { params: Promise<{ id: string }> }) => {
     { label: "Dashboard", to: "/dashboard" },
     { label: "Posts", to: "/posts" },
     { label: post.title || "New", to: null },
-  ];
-
-  const categories = [
-    { id: "1", name: "FirstTestCategory" },
-    { id: "2", name: "Health" },
-    { id: "3", name: "Lifestyle" },
   ];
 
   return (

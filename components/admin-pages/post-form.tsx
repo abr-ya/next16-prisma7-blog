@@ -15,6 +15,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "../ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { createPost, updatePost } from "@/app/_data/posts";
+import { createSlug } from "@/lib/slug-generator";
 
 const CreatableSelect = dynamic(() => import("react-select/creatable"), {
   ssr: false,
@@ -45,14 +46,6 @@ export const PostForm = ({
   categories,
   slug,
 }: PostFormValues) => {
-  const generateSlug = (title: string) => {
-    return title
-      .toLowerCase()
-      .trim()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "");
-  };
-
   const router = useRouter();
   const form = useForm({
     resolver: zodResolver(formSchema),
@@ -100,7 +93,7 @@ export const PostForm = ({
                       field.onBlur();
 
                       if (!form.getValues("slug")) {
-                        form.setValue("slug", generateSlug(e.target.value), {
+                        form.setValue("slug", createSlug(e.target.value), {
                           shouldValidate: true,
                           shouldDirty: true,
                         });
