@@ -18,7 +18,10 @@ export { AboutSection } from "./home-page/about-section";
 export { HeroSection } from "./home-page/hero-section";
 
 // Blog Components
+export { About } from "./blog-pages/about";
 export { Navbar } from "./blog-pages/navbar";
+export { Pagination } from "./blog-pages/pagination";
+export { PostCard } from "./blog-pages/post-card";
 
 // BlogPosts Components
 export { PostsSection } from "./blog-posts/posts-section";

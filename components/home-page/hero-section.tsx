@@ -18,6 +18,9 @@ export const HeroSection = () => (
           Comments Page
         </Link>
       </Button>
+      <Button variant="outline" asChild>
+        <Link href="/blog">New Blog Page</Link>
+      </Button>
     </div>
   </section>
 );
