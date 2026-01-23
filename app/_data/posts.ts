@@ -2,6 +2,7 @@
 
 import type { PostFormValues } from "@/components/index";
 import type { Post, PostStatus } from "@/generated/prisma/client";
+import prisma from "@/lib/prisma";
 
 export const getPostById = async (id: string) => {
   try {
@@ -77,6 +78,7 @@ export const updatePost = async (params: PostFormValues) => {
   }
 };
 
+// todo: implement pagination == this is only user's posts - for admin dashboard
 export const getAllPosts = async () => {
   try {
     const { authSession } = await import("@/lib/auth-utils");
@@ -92,6 +94,37 @@ export const getAllPosts = async () => {
     });
 
     return res;
+  } catch (err) {
+    console.error({ err });
+    throw new Error("Something went wrong");
+  }
+};
+
+export const getPostBySlug = async (slug: string) => {
+  try {
+    const post = await prisma.post.findUnique({
+      where: { slug },
+      include: {
+        user: { select: { name: true, image: true, id: true } },
+        category: true,
+      },
+    });
+
+    return post;
+  } catch (err) {
+    console.error({ err });
+    throw new Error("Something went wrong");
+  }
+};
+
+export const updatePostViews = async (id: string) => {
+  try {
+    const post = await prisma.post.update({
+      where: { id },
+      data: { views: { increment: 1 } },
+    });
+
+    return post;
   } catch (err) {
     console.error({ err });
     throw new Error("Something went wrong");
