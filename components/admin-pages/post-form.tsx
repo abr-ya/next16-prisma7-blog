@@ -7,15 +7,11 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { object, z } from "zod";
 
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ImageUploader } from "@/components/admin-pages/image-uploader";
-import { Input } from "@/components/ui/input";
-import { Spinner } from "@/components/ui/spinner";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "../ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { createPost, updatePost } from "@/app/_data/posts";
 import { createSlug } from "@/lib/slug-generator";
+import { Button, Card, CardContent, CardHeader, CardTitle, ImageUploader, Input, RichTextEditor, Spinner } from "..";
 
 const CreatableSelect = dynamic(() => import("react-select/creatable"), {
   ssr: false,
@@ -147,10 +143,7 @@ export const PostForm = ({
               <FormItem>
                 <FormLabel>Content</FormLabel>
                 <FormControl>
-                  <div className="flex flex-col gap-2">
-                    <Input {...field} />
-                    <p className="text-sm text-muted-foreground">todo: RichTextEditor</p>
-                  </div>
+                  <RichTextEditor content={field.value} onChange={field.onChange} />
                 </FormControl>
                 <FormMessage />
               </FormItem>

@@ -12,6 +12,7 @@ export { Spinner } from "./ui/spinner";
 
 // Common Components
 export { DataTable } from "./common/data-table";
+export { RichTextEditor } from "./common/editor";
 
 // Home Page Components
 export { AboutSection } from "./home-page/about-section";
