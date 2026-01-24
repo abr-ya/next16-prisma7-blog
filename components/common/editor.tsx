@@ -71,9 +71,8 @@ export const RichTextEditor = ({ content, onChange }: { content: string; onChang
     immediatelyRender: false,
   });
 
-  if (!editor) {
-    return null;
-  }
+  if (!editor) return null;
+
   return (
     <div className="border w-full relative rounded-md overflow-hidden pb-3">
       <div className="flex w-full items-center py-2 px-2 justify-between border-b  sticky top-0 left-0 bg-background z-20">
