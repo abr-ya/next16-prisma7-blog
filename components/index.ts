@@ -14,6 +14,18 @@ export { Spinner } from "./ui/spinner";
 export { DataTable } from "./common/data-table";
 export { RichTextEditor } from "./common/editor";
 
+// Admin Pages Components
+export { AppSidebar } from "./admin-pages/app-sidebar";
+export { CategoriesTable } from "./admin-pages/categories-table";
+export { CategoryForm } from "./admin-pages/category-form";
+export { DashboardCard } from "./admin-pages/dashboard-card";
+export { DashboardCategories } from "./admin-pages/dashboard-categories";
+export { DashboardChart } from "./admin-pages/dashboard-chart";
+export { PostForm } from "./admin-pages/post-form";
+export { PostsTable } from "./admin-pages/posts-table";
+export type { PostFormValues } from "./admin-pages/post-form";
+export { ImageUploader } from "./admin-pages/image-uploader";
+
 // Home Page Components
 export { AboutSection } from "./home-page/about-section";
 export { HeroSection } from "./home-page/hero-section";
@@ -41,12 +53,3 @@ export { PageLayout } from "./layout/page-layout";
 // Auth Forms
 export { SignInForm } from "./auth-forms/sign-in-form";
 export { SignUpForm } from "./auth-forms/sign-up-form";
-
-// Admin Pages Components
-export { AppSidebar } from "./admin-pages/app-sidebar";
-export { CategoriesTable } from "./admin-pages/categories-table";
-export { CategoryForm } from "./admin-pages/category-form";
-export { PostForm } from "./admin-pages/post-form";
-export { PostsTable } from "./admin-pages/posts-table";
-export type { PostFormValues } from "./admin-pages/post-form";
-export { ImageUploader } from "./admin-pages/image-uploader";
