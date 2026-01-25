@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Button } from "..";
-import { MessageCircle } from "lucide-react";
+import { MessageCircle, PieChart } from "lucide-react";
 
 export const HeroSection = () => (
   <section className="flex flex-col items-center justify-center py-10 px-4 text-center">
@@ -20,6 +20,12 @@ export const HeroSection = () => (
       </Button>
       <Button variant="outline" asChild>
         <Link href="/blog">New Blog Page</Link>
+      </Button>
+      <Button variant="outline" asChild>
+        <Link href="/dashboard">
+          <PieChart className="w-4 h-4 mr-2" />
+          Dashboard
+        </Link>
       </Button>
     </div>
   </section>
