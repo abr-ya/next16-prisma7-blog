@@ -1,4 +1,4 @@
-import { getAllPosts } from "@/app/_data/posts";
+import { getAllUserPosts } from "@/app/_data/posts";
 import { AdminPageLayout, PostsTable } from "@/components/index";
 import { Button } from "@/components/ui/button";
 import { requireAuth } from "@/lib/auth-utils";
@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 const PostsPage = async () => {
   await requireAuth();
 
-  const data = await getAllPosts();
+  const data = await getAllUserPosts();
 
   const breadItems = [
     { label: "Dashboard", to: "/dashboard" },

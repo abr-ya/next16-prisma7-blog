@@ -78,8 +78,26 @@ export const updatePost = async (params: PostFormValues) => {
   }
 };
 
-// todo: implement pagination == this is only user's posts - for admin dashboard
+// todo: implement pagination
 export const getAllPosts = async () => {
+  try {
+    const { authSession } = await import("@/lib/auth-utils");
+
+    const { default: prisma } = await import("@/lib/prisma");
+    const res = await prisma.post.findMany({
+      orderBy: { updatedAt: "desc" },
+      include: { category: true },
+    });
+
+    return res;
+  } catch (err) {
+    console.error({ err });
+    throw new Error("Something went wrong");
+  }
+};
+
+// todo: this is only user's posts - for admin dashboard
+export const getAllUserPosts = async () => {
   try {
     const { authSession } = await import("@/lib/auth-utils");
     const session = await authSession();
