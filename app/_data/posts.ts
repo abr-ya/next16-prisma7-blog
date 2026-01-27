@@ -83,7 +83,7 @@ export const getAllPosts = async () => {
   try {
     const { default: prisma } = await import("@/lib/prisma");
     const res = await prisma.post.findMany({
-      orderBy: { updatedAt: "desc" },
+      orderBy: { createdAt: "desc" },
       include: { category: true, user: { select: { name: true, image: true, id: true } } },
     });
 
