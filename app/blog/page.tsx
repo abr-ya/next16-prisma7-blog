@@ -1,11 +1,11 @@
-import { Post } from "@/generated/prisma/client";
 import { getAllPosts } from "../_data/posts";
 import { About, Pagination, PostCard } from "@/components/index";
+import { IPostWithUserAndCategory } from "../_interfaces/post.interface";
 
 export const dynamic = "force-dynamic";
 
 const BlogPage = async () => {
-  const posts: Post[] = await getAllPosts();
+  const posts: IPostWithUserAndCategory[] = await getAllPosts();
 
   return (
     <>

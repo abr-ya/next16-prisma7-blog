@@ -81,12 +81,10 @@ export const updatePost = async (params: PostFormValues) => {
 // todo: implement pagination
 export const getAllPosts = async () => {
   try {
-    const { authSession } = await import("@/lib/auth-utils");
-
     const { default: prisma } = await import("@/lib/prisma");
     const res = await prisma.post.findMany({
       orderBy: { updatedAt: "desc" },
-      include: { category: true },
+      include: { category: true, user: { select: { name: true, image: true, id: true } } },
     });
 
     return res;
