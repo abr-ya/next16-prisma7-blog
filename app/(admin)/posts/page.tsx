@@ -1,3 +1,4 @@
+import { getAllLinks } from "@/app/_data/links";
 import { getAllUserPosts } from "@/app/_data/posts";
 import { AdminPageLayout, LinkToPostDialog, PostsTable } from "@/components/index";
 import { Button } from "@/components/ui/button";
@@ -10,6 +11,7 @@ const PostsPage = async () => {
   await requireAuth();
 
   const posts = await getAllUserPosts();
+  const links = await getAllLinks();
 
   const breadItems = [
     { label: "Dashboard", to: "/dashboard" },
@@ -21,7 +23,7 @@ const PostsPage = async () => {
       breadcrumbs={breadItems}
       headerRight={
         <div className="flex gap-2">
-          <LinkToPostDialog posts={posts} />
+          <LinkToPostDialog posts={posts} links={links} />
           <Link href="/posts/new">
             <Button className="cursor-pointer">Create new post</Button>
           </Link>

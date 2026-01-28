@@ -27,7 +27,7 @@ export const createLink = async (name: string, description: string, url: string)
   }
 };
 
-export const getLinks = async () => {
+export const getAllLinks = async () => {
   try {
     const { default: prisma } = await import("@/lib/prisma");
     const res = await prisma.link.findMany({

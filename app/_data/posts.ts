@@ -121,8 +121,8 @@ export const getPostBySlug = async (slug: string) => {
     const post = await prisma.post.findUnique({
       where: { slug },
       include: {
-        user: { select: { name: true, image: true, id: true } },
         category: true,
+        user: { select: { name: true, image: true, id: true } },
       },
     });
 
@@ -153,7 +153,10 @@ export const connectLinkToPost = async (postId: string, linkId: string) => {
       where: { id: postId },
       data: {
         links: {
-          connect: { id: linkId }, // Connect to an existing link by its ID
+          connectOrCreate: {
+            where: { postId_linkId: { postId, linkId } },
+            create: { link: { connect: { id: linkId } } },
+          },
         },
       },
     });
