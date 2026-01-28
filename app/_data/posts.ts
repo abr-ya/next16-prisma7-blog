@@ -121,8 +121,9 @@ export const getPostBySlug = async (slug: string) => {
     const post = await prisma.post.findUnique({
       where: { slug },
       include: {
-        user: { select: { name: true, image: true, id: true } },
         category: true,
+        links: { include: { link: true } },
+        user: { select: { name: true, image: true, id: true } },
       },
     });
 
@@ -138,6 +139,27 @@ export const updatePostViews = async (id: string) => {
     const post = await prisma.post.update({
       where: { id },
       data: { views: { increment: 1 } },
+    });
+
+    return post;
+  } catch (err) {
+    console.error({ err });
+    throw new Error("Something went wrong");
+  }
+};
+
+export const connectLinkToPost = async (postId: string, linkId: string) => {
+  try {
+    const post = await prisma.post.update({
+      where: { id: postId },
+      data: {
+        links: {
+          connectOrCreate: {
+            where: { postId_linkId: { postId, linkId } },
+            create: { link: { connect: { id: linkId } } },
+          },
+        },
+      },
     });
 
     return post;

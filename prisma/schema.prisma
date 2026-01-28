@@ -114,6 +114,8 @@ model Post {
   category   Category?  @relation(references: [id], fields: [categoryId], onDelete: Cascade)
   createdAt  DateTime   @default(now())
   updatedAt  DateTime   @default(now()) @updatedAt
+
+  links      LinksToPosts[]
 }
 
 model Category {
@@ -143,5 +145,17 @@ model Link {
   shortCode String   @unique
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
+
+  posts     LinksToPosts[]
+}
+
+model LinksToPosts {
+  post       Post     @relation(fields: [postId], references: [id])
+  postId     String // relation scalar field (used in the `@relation` attribute above)
+  link       Link     @relation(fields: [linkId], references: [id])
+  linkId     String // relation scalar field (used in the `@relation` attribute above)
+  assignedAt DateTime @default(now())
+
+  @@id([postId, linkId])
 }
 // Shortened model - finish
