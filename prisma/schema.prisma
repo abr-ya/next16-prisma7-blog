@@ -26,6 +26,7 @@ model User {
   comments      Comment[]
   categories    Category[]
   posts         Post[]
+  links         Link[]
 
   @@unique([email])
   @@map("user")
@@ -130,3 +131,17 @@ enum PostStatus {
   draft
 }
 // Updated Posts model - finish
+
+// Shortened model - start
+model Link {
+  id        String   @id @default(uuid())
+  name      String
+  description String?
+  userId    String
+  user      User     @relation(references: [id], fields: [userId], onDelete: Cascade)
+  url       String
+  shortCode String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+}
+// Shortened model - finish

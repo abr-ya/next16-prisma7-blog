@@ -21,6 +21,7 @@ export { CategoryForm } from "./admin-pages/category-form";
 export { DashboardCard } from "./admin-pages/dashboard-card";
 export { DashboardCategories } from "./admin-pages/dashboard-categories";
 export { DashboardChart } from "./admin-pages/dashboard-chart";
+export { LinkForm } from "./admin-pages/link-form";
 export { PostForm } from "./admin-pages/post-form";
 export { PostsTable } from "./admin-pages/posts-table";
 export type { PostFormValues } from "./admin-pages/post-form";
