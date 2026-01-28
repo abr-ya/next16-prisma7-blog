@@ -122,6 +122,7 @@ export const getPostBySlug = async (slug: string) => {
       where: { slug },
       include: {
         category: true,
+        links: { include: { link: true } },
         user: { select: { name: true, image: true, id: true } },
       },
     });
