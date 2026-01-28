@@ -146,3 +146,21 @@ export const updatePostViews = async (id: string) => {
     throw new Error("Something went wrong");
   }
 };
+
+export const connectLinkToPost = async (postId: string, linkId: string) => {
+  try {
+    const post = await prisma.post.update({
+      where: { id: postId },
+      data: {
+        links: {
+          connect: { id: linkId }, // Connect to an existing link by its ID
+        },
+      },
+    });
+
+    return post;
+  } catch (err) {
+    console.error({ err });
+    throw new Error("Something went wrong");
+  }
+};
