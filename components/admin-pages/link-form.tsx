@@ -20,9 +20,8 @@ import {
   Input,
   Spinner,
 } from "..";
-// import { createlink } from "@/app/_data/categories";
 import { useRouter } from "next/navigation";
-
+import { createLink } from "@/app/_data/links";
 const formSchema = z.object({
   name: z.string().min(3, { message: "Name is required" }),
   description: z.string(),
@@ -57,8 +56,8 @@ export const LinkForm = () => {
       toast.success("link updated successfully");
     } else {
       console.log("createlink", { name, description, url });
-      // await createlink(name);
-      // toast.success("New link created successfully");
+      await createLink(name, description, url);
+      toast.success("New link created successfully");
     }
 
     router.refresh();
