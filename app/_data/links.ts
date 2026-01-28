@@ -26,3 +26,17 @@ export const createLink = async (name: string, description: string, url: string)
     throw new Error("Something went wrong");
   }
 };
+
+export const getLinks = async () => {
+  try {
+    const { default: prisma } = await import("@/lib/prisma");
+    const res = await prisma.link.findMany({
+      orderBy: { createdAt: "desc" },
+    });
+
+    return res;
+  } catch (err) {
+    console.error({ err });
+    throw new Error("Something went wrong");
+  }
+};

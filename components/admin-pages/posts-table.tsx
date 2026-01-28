@@ -1,8 +1,8 @@
-import { Post as IPost } from "@/generated/prisma/client";
+import { Post } from "@/generated/prisma/client";
 import Link from "next/link";
 
 interface IPostsTableProps {
-  data: IPost[];
+  data: Post[];
 }
 
 export const PostsTable = ({ data }: IPostsTableProps) => {
