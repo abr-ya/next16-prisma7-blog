@@ -13,7 +13,8 @@ export { Spinner } from "./ui/spinner";
 
 // Common Components
 export { DataTable } from "./common/data-table";
-export { RichTextEditor } from "./common/editor";
+export { RichTextEditor } from "./common/rich-text-editor";
+export { RichTextViewer } from "./common/rich-text-viewer";
 export { SimpleSelect } from "./common/simple-select";
 
 // Admin Pages Components

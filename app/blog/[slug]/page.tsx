@@ -1,6 +1,6 @@
-import { getPostBySlug } from "@/app/_data/posts";
+import { getPostBySlug, updatePostViews } from "@/app/_data/posts";
 import { IPostDetails } from "@/app/_interfaces/post.interface";
-import { LinkBlock } from "@/components/index";
+import { LinkBlock, RichTextViewer } from "@/components/index";
 import { authSession } from "@/lib/auth-utils";
 
 const BlogPostPage = async ({ params }: { params: Promise<{ slug: string }> }) => {
@@ -15,7 +15,7 @@ const BlogPostPage = async ({ params }: { params: Promise<{ slug: string }> }) =
     post.links.map((pl) => pl.link),
   );
 
-  // updatePostViews(post?.id as string);
+  updatePostViews(post?.id as string);
 
   if (!post) return null;
 
@@ -24,7 +24,8 @@ const BlogPostPage = async ({ params }: { params: Promise<{ slug: string }> }) =
       <div className="flex max-w-6xl flex-col gap-6 justify-center">
         <h1 className="text-2xl md:text-5xl font-semibold">{post?.title}</h1>
 
-        {/* todo: RichTextViewer */}
+        {/* RichTextViewer */}
+        <RichTextViewer content={post?.content} />
 
         <div className="flex gap-2 py-6 flex-wrap">todo: tags</div>
         {/* Links */}
