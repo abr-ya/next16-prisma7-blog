@@ -8,6 +8,7 @@ import { CodeBlockToolbar } from "@/components/toolbars/code-block";
 import { HardBreakToolbar } from "@/components/toolbars/hard-break";
 import { HorizontalRuleToolbar } from "@/components/toolbars/horizontal-rule";
 import { ItalicToolbar } from "@/components/toolbars/italic";
+import { LinkToolbar } from "@/components/toolbars/link";
 import { OrderedListToolbar } from "@/components/toolbars/ordered-list";
 import { RedoToolbar } from "@/components/toolbars/redo";
 import { StrikeThroughToolbar } from "@/components/toolbars/strikethrough";
@@ -16,6 +17,7 @@ import { ToolbarProvider } from "@/components/toolbars/toolbar-provider";
 import { Separator } from "@/components/ui/separator";
 import { EditorContent, type Extension, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
+import Link from "@tiptap/extension-link";
 import { ImageExtension } from "../extensions/image";
 import { ImagePlaceholder } from "../extensions/image-placeholder";
 import { ImagePlaceholderToolbar } from "../toolbars/image-placeholder-toolbar";
@@ -54,6 +56,15 @@ const extensions = [
       },
     },
   }),
+  Link.configure({
+    openOnClick: true,
+    linkOnPaste: true,
+    HTMLAttributes: {
+      class: "text-blue-500 underline underline-offset-2 hover:text-blue-700",
+      target: "_blank",
+      rel: "noreferrer",
+    },
+  }),
   ImageExtension,
   ImagePlaceholder,
 ];
@@ -88,6 +99,7 @@ export const RichTextEditor = ({ content, onChange }: { content: string; onChang
             <OrderedListToolbar />
             <CodeToolbar />
             <CodeBlockToolbar />
+            <LinkToolbar />
             <HorizontalRuleToolbar />
             <BlockquoteToolbar />
             <HardBreakToolbar />
