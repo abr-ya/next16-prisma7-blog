@@ -27,6 +27,7 @@ model User {
   categories    Category[]
   posts         Post[]
   links         Link[]
+  logs Log[]
 
   @@unique([email])
   @@map("user")
@@ -134,7 +135,7 @@ enum PostStatus {
 }
 // Updated Posts model - finish
 
-// Shortened model - start
+// Link - start
 model Link {
   id        String   @id @default(uuid())
   name      String
@@ -158,4 +159,22 @@ model LinksToPosts {
 
   @@id([postId, linkId])
 }
-// Shortened model - finish
+// Link - finish
+
+// Logging model - start
+enum LogAction {
+  createPost
+  updatePost
+  deletePost
+  goToLink
+}
+
+model Log {
+  id        String   @id @default(uuid())
+  action    String
+  userId    String
+  user      User     @relation(references: [id], fields: [userId], onDelete: Cascade)
+  details   String?
+  createdAt DateTime @default(now())
+}
+// Logging model - finish
