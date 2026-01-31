@@ -10,6 +10,7 @@ import { object, z } from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "../ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { createPost, updatePost } from "@/app/_data/posts";
+import { createLogEvent } from "@/app/_data/log";
 import { createSlug } from "@/lib/slug-generator";
 import { Button, Card, CardContent, CardHeader, CardTitle, ImageUploader, Input, RichTextEditor, Spinner } from "..";
 
@@ -62,9 +63,11 @@ export const PostForm = ({
   const onSubmit = async (data: PostFormValues) => {
     if (id) {
       await updatePost(data);
+      await createLogEvent("updatePost", `Post updated: ${data.title}`);
       toast.success("Post updated successfully");
     } else {
       await createPost(data);
+      await createLogEvent("createPost", `Post created: ${data.title}`);
       toast.success("Post created successfully");
     }
 
