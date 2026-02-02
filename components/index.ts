@@ -41,6 +41,7 @@ export { LinkBlock } from "./blog-pages/link-block";
 export { Navbar } from "./blog-pages/navbar";
 export { Pagination } from "./blog-pages/pagination";
 export { PostCard } from "./blog-pages/post-card";
+export { PostUserAndCategory } from "./blog-pages/post-user-and-category";
 
 // BlogPosts Components
 export { PostsSection } from "./blog-posts/posts-section";
