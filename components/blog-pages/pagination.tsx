@@ -26,7 +26,8 @@ export const Pagination = ({ currentPage, totalPages, page, pageUrl }: IPaginati
           )}
           disabled={currentPage === 1}
           onClick={() => {
-            router.push(`${pageUrl ? `pageUrl?page=${currentPage - 1}` : `?page=${currentPage - 1}`}`);
+            const url = pageUrl ? `${pageUrl}?page=${currentPage - 1}` : `?page=${currentPage - 1}`;
+            router.push(url);
           }}
         >
           <MoveLeft />
@@ -43,7 +44,8 @@ export const Pagination = ({ currentPage, totalPages, page, pageUrl }: IPaginati
           )}
           disabled={currentPage === totalPages}
           onClick={() => {
-            router.push(`${pageUrl ? `pageUrl?page=${currentPage + 1}` : `?page=${currentPage + 1}`}`);
+            const url = pageUrl ? `${pageUrl}?page=${currentPage + 1}` : `?page=${currentPage + 1}`;
+            router.push(url);
           }}
         >
           <MoveRight />

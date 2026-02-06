@@ -18,7 +18,7 @@ const PostDetailPage = async ({ params }: { params: Promise<{ slug: string }> })
   if (!post) return null;
 
   return (
-    <div className="w-full flex flex-col items-center p-6 md:p-0">
+    <div className="w-full flex flex-col items-center p-6 md:p-2">
       <div className="flex max-w-6xl flex-col gap-6 justify-center">
         <h1 className="text-2xl md:text-5xl font-semibold">{post?.title}</h1>
 
@@ -48,7 +48,8 @@ const PostDetailPage = async ({ params }: { params: Promise<{ slug: string }> })
         <div className="flex gap-2 py-6 flex-wrap">todo: tags</div>
         {/* Links */}
         {session?.user.id ? (
-          <div className="flex gap-2 py-6 flex-wrap">
+          <div className="flex flex-col gap-2 py-6">
+            <h3 className="text-xl font-semibold">Connected links:</h3>
             {post.links.map((pl) => (
               <LinkBlock key={pl.linkId} pl={pl} userID={session?.user.id} />
             ))}

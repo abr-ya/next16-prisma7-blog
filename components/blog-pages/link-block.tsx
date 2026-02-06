@@ -13,14 +13,20 @@ export const LinkBlock = ({ pl, userID }: { pl: IPostLink; userID: string }) => 
   };
 
   return (
-    <>
+    <div className="flex gap-2 mx-2">
       <div className="flex self-center">{pl.link.name}</div>
-      <Button onClick={goToHandler} className="bg-green-300 text-green-900 hover:bg-green-200">
+      <Button
+        onClick={goToHandler}
+        size="sm"
+        className="h-7 px-3 bg-green-300 text-green-900 hover:bg-green-200 font-medium rounded-full"
+      >
         open link in new tab
       </Button>
       <Link href={`/blog/links/${pl.link.shortCode}`} rel="noreferrer">
-        <Button variant="outline">show link details</Button>
+        <Button variant="outline" size="sm" className="h-7 px-3 font-medium rounded-full">
+          show link details
+        </Button>
       </Link>
-    </>
+    </div>
   );
 };
