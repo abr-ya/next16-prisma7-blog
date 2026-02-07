@@ -3,6 +3,7 @@
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Link from "@tiptap/extension-link";
+import Image from "@tiptap/extension-image";
 import { useEffect, useRef } from "react";
 import { toast } from "sonner";
 
@@ -45,6 +46,11 @@ export const RichTextViewer = ({ content }: RichTextViewerProps) => {
           class: "text-blue-500 underline underline-offset-2 hover:text-blue-700",
           target: "_blank",
           rel: "noreferrer",
+        },
+      }),
+      Image.configure({
+        HTMLAttributes: {
+          class: "rounded-md max-w-full h-auto",
         },
       }),
     ],
