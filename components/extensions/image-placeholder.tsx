@@ -139,20 +139,18 @@ function ImagePlaceholderComponent(props: NodeViewProps) {
   };
 
   const handleAcceptedFiles = (acceptedFiles: File[]) => {
+    if (extension.options.onDrop) {
+      extension.options.onDrop(acceptedFiles, editor);
+      return;
+    }
     acceptedFiles.map((file) => {
       const reader = new FileReader();
-
       reader.onload = () => {
         const src = reader.result as string;
         editor.chain().focus().setImage({ src }).run();
       };
-
       reader.readAsDataURL(file);
     });
-
-    if (extension.options.onDrop) {
-      extension.options.onDrop(acceptedFiles, editor);
-    }
   };
 
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {

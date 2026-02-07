@@ -1,5 +1,7 @@
 "use client";
 
+import { useRef, useEffect, useMemo } from "react";
+import { toast } from "sonner";
 import { BlockquoteToolbar } from "@/components/toolbars/blockquote";
 import { BoldToolbar } from "@/components/toolbars/bold";
 import { BulletListToolbar } from "@/components/toolbars/bullet-list";
@@ -15,14 +17,16 @@ import { StrikeThroughToolbar } from "@/components/toolbars/strikethrough";
 import { ToolbarProvider } from "@/components/toolbars/toolbar-provider";
 // import { UndoToolbar } from "@/components/toolbars/undo";
 import { Separator } from "@/components/ui/separator";
+import type { Editor } from "@tiptap/core";
 import { EditorContent, type Extension, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Link from "@tiptap/extension-link";
+import { useUploadThing } from "@/lib/uploadthing";
 import { ImageExtension } from "../extensions/image";
 import { ImagePlaceholder } from "../extensions/image-placeholder";
 import { ImagePlaceholderToolbar } from "../toolbars/image-placeholder-toolbar";
 
-const extensions = [
+const baseExtensions = [
   StarterKit.configure({
     orderedList: {
       HTMLAttributes: {
@@ -66,21 +70,53 @@ const extensions = [
     },
   }),
   ImageExtension,
-  ImagePlaceholder,
 ];
 
 export const RichTextEditor = ({ content, onChange }: { content: string; onChange: (richText: string) => void }) => {
+  const editorRef = useRef<Editor | null>(null);
+
+  const { startUpload } = useUploadThing("imageUploader", {
+    onClientUploadComplete: (res) => {
+      const urls = res?.map((r) => r.url) ?? [];
+      urls.forEach((url) => {
+        editorRef.current?.chain().focus().setImage({ src: url }).run();
+      });
+    },
+    onUploadError: () => {
+      toast.error("Image upload failed");
+    },
+  });
+
+  const extensions = useMemo(
+    () =>
+      [
+        ...baseExtensions,
+        ImagePlaceholder.configure({
+          allowedMimeTypes: { "image/*": [".png", ".jpg", ".jpeg", ".gif", ".webp"] },
+          maxSize: 4 * 1024 * 1024,
+          onDrop: (files: File[]) => {
+            startUpload(files);
+          },
+          onEmbed: () => {},
+        }),
+      ] as Extension[],
+    [startUpload],
+  );
+
   const editor = useEditor({
-    extensions: extensions as Extension[],
+    extensions,
     content,
     editable: true,
     onUpdate: () => {
       const htmlContent = editor?.getHTML() as string;
-
       onChange(htmlContent);
     },
     immediatelyRender: false,
   });
+
+  useEffect(() => {
+    editorRef.current = editor;
+  }, [editor]);
 
   if (!editor) return null;
 
