@@ -93,7 +93,7 @@ export const RichTextEditor = ({ content, onChange }: { content: string; onChang
         ...baseExtensions,
         ImagePlaceholder.configure({
           allowedMimeTypes: { "image/*": [".png", ".jpg", ".jpeg", ".gif", ".webp"] },
-          maxSize: 4 * 1024 * 1024,
+          maxSize: 1 * 1024 * 1024,
           onDrop: (files: File[]) => {
             startUpload(files);
           },

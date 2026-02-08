@@ -7,6 +7,8 @@ import Image from "@tiptap/extension-image";
 import { useEffect, useRef } from "react";
 import { toast } from "sonner";
 
+import { logImageViewed } from "@/app/_data/log";
+
 interface RichTextViewerProps {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   content: string | Record<string, any>;
@@ -115,6 +117,18 @@ export const RichTextViewer = ({ content }: RichTextViewerProps) => {
       });
 
       code.appendChild(button);
+    });
+
+    // Log image loads (who and when) for authenticated viewers.
+    const imgs = containerRef.current.querySelectorAll("img");
+    imgs.forEach((img) => {
+      if (img.dataset.viewLogged === "true") return;
+      const onLoad = () => {
+        img.dataset.viewLogged = "true";
+        logImageViewed(img.src);
+      };
+      if (img.complete) onLoad();
+      else img.addEventListener("load", onLoad);
     });
   }, [content, editor]);
 

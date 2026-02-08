@@ -27,7 +27,8 @@ model User {
   categories    Category[]
   posts         Post[]
   links         Link[]
-  logs Log[]
+  logs          Log[]
+  postImages    PostImage[]
 
   @@unique([email])
   @@map("user")
@@ -117,6 +118,21 @@ model Post {
   updatedAt  DateTime   @default(now()) @updatedAt
 
   links      LinksToPosts[]
+  images     PostImage[]
+}
+
+model PostImage {
+  id        String   @id @default(uuid())
+  url       String
+  fileKey   String?  // UploadThing file key, for deleting from storage
+  userId    String?  // User who uploaded the image
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  postId    String?
+  post      Post?    @relation(fields: [postId], references: [id], onDelete: SetNull)
+  createdAt DateTime @default(now())
+
+  @@index([postId])
+  @@index([userId])
 }
 
 model Category {

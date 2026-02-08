@@ -24,3 +24,21 @@ export const createLogEvent = async (action: LogAction | string, details?: strin
     throw new Error("Something went wrong");
   }
 };
+
+/** Log when a user loads/views an image in the rich text viewer. Only logs when user is authenticated. */
+export const logImageViewed = async (imageUrl: string) => {
+  try {
+    const session = await authSession();
+    if (!session) return;
+
+    await prisma.log.create({
+      data: {
+        action: "viewImage",
+        userId: session.user.id,
+        details: JSON.stringify({ imageUrl, viewedAt: new Date().toISOString() }),
+      },
+    });
+  } catch (err) {
+    console.error("Failed to log image view:", err);
+  }
+};

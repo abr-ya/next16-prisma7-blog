@@ -4,6 +4,29 @@ import type { PostFormValues } from "@/components/index";
 import type { Post, PostStatus } from "@/generated/prisma/client";
 import prisma from "@/lib/prisma";
 
+/** Extract unique image URLs from post HTML content (img src attributes). */
+function extractImageUrlsFromContent(html: string): string[] {
+  const urls: string[] = [];
+  const srcRegex = /<img[^>]+src=["']([^"']+)["']/gi;
+  let match: RegExpExecArray | null;
+  while ((match = srcRegex.exec(html)) !== null) {
+    const url = match[1]?.trim();
+    if (url && !urls.includes(url)) urls.push(url);
+  }
+  return urls;
+}
+
+/** Sync PostImage records for a post from its HTML content. */
+async function syncPostImages(postId: string, content: string) {
+  const urls = extractImageUrlsFromContent(content);
+  await prisma.postImage.deleteMany({ where: { postId } });
+  if (urls.length > 0) {
+    await prisma.postImage.createMany({
+      data: urls.map((url) => ({ postId, url })),
+    });
+  }
+}
+
 export const getPostById = async (id: string) => {
   try {
     const { authSession } = await import("@/lib/auth-utils");
@@ -41,6 +64,7 @@ export const createPost = async (params: PostFormValues) => {
       },
     });
 
+    await syncPostImages(res.id, data.content);
     return res;
   } catch (err) {
     console.error({ err });
@@ -71,6 +95,7 @@ export const updatePost = async (params: PostFormValues) => {
       },
     });
 
+    await syncPostImages(res.id, data.content);
     return res;
   } catch (err) {
     console.error({ err });
