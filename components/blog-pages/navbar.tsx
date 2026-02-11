@@ -6,6 +6,7 @@ import {
   Avatar,
   AvatarFallback,
   AvatarImage,
+  Button,
   NavigationMenu,
   NavigationMenuContent,
   NavigationMenuItem,
@@ -14,6 +15,7 @@ import {
   NavigationMenuTrigger,
 } from "@/components/index";
 import { authClient } from "@/lib/auth-client";
+import { useRouter } from "next/navigation";
 
 interface INavbarProps {
   userName?: string;
@@ -21,14 +23,27 @@ interface INavbarProps {
 }
 
 export const Navbar = ({ userName, userImage }: INavbarProps) => {
+  const router = useRouter();
   console.log("navbar userName:", userName, "userImage:", userImage);
 
+  const goBack = () => {
+    router.back();
+  };
+
   return (
-    <NavigationMenu viewport={false} className="mx-auto max-w-full my-5">
+    <NavigationMenu viewport={false} className="sticky top-0 z-50 mx-auto max-w-full my-5 bg-white py-2">
       <div className="flex justify-between w-full container">
         <NavigationMenuList className="flex-wrap">
+          Navigation:
           <NavigationMenuItem>
-            <NavigationMenuLink href="/">Home</NavigationMenuLink>
+            <NavigationMenuLink href="/" className="hover:bg-blue-100 px-3 py-2 rounded-md">
+              Home
+            </NavigationMenuLink>
+          </NavigationMenuItem>
+          <NavigationMenuItem>
+            <Button variant="ghost" onClick={goBack} className="cursor-pointer hover:bg-blue-100">
+              Back
+            </Button>
           </NavigationMenuItem>
         </NavigationMenuList>
 
