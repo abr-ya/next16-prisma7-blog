@@ -1,5 +1,5 @@
 import { getCategories } from "@/app/_data/categories";
-import { DashboardCard, DashboardCategories, DashboardChart, DashbordLayout } from "@/components/index";
+import { DashboardStats, DashboardCategories, DashboardChart, DashbordLayout } from "@/components/index";
 import { authSession, requireAuth } from "@/lib/auth-utils";
 import { Rocket } from "lucide-react";
 import Link from "next/link";
@@ -14,7 +14,7 @@ const DashboardPage = async () => {
   return (
     // todo: counts / chart + categories
     <DashbordLayout
-      bottomSlot1={<DashboardCard totalPosts={0} totalCategories={0} totalViews={0} />}
+      bottomSlot1={<DashboardStats totalPosts={0} totalCategories={0} totalViews={0} />}
       bottomSlot2={
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 w-full">
           <DashboardChart />

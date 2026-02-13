@@ -1,7 +1,7 @@
 // UI Components
 export { Avatar, AvatarImage, AvatarFallback } from "./ui/avatar";
 export { Button } from "./ui/button";
-export { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+export { Card, CardContent, CardHeader, CardTitle, CardDescription } from "./ui/card";
 export { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
 export { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "./ui/form";
 export { Input } from "./ui/input";
@@ -21,7 +21,7 @@ export { SimpleSelect } from "./common/simple-select";
 export { AppSidebar } from "./admin-pages/app-sidebar";
 export { CategoriesTable } from "./admin-pages/categories-table";
 export { CategoryForm } from "./admin-pages/category-form";
-export { DashboardCard } from "./admin-pages/dashboard-card";
+export { DashboardStats } from "./admin-pages/dashboard-stats";
 export { DashboardCategories } from "./admin-pages/dashboard-categories";
 export { DashboardChart } from "./admin-pages/dashboard-chart";
 export { LinkForm } from "./admin-pages/link-form";
