@@ -37,6 +37,11 @@ export const ImageExtension = Image.extend({
       align: {
         default: "center",
       },
+      fileKey: {
+        default: null,
+        parseHTML: (element) => element.getAttribute("data-filekey"),
+        renderHTML: (attrs) => (attrs.fileKey ? { "data-filekey": attrs.fileKey } : {}),
+      },
     };
   },
 
@@ -170,7 +175,13 @@ function TiptapImage(props: NodeViewProps) {
       style={{ width: node.attrs.width }}
     >
       <div className={cn("group relative flex flex-col rounded-md", resizing && "")}>
-        <img ref={imageRef} src={node.attrs.src} alt={node.attrs.alt} title={node.attrs.title} />
+        <img
+          ref={imageRef}
+          src={node.attrs.src}
+          alt={node.attrs.alt}
+          title={node.attrs.title}
+          {...(node.attrs.fileKey && { "data-filekey": node.attrs.fileKey })}
+        />
         <NodeViewContent as="div" className="text-center">
           {node.attrs.title}
         </NodeViewContent>

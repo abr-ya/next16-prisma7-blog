@@ -77,9 +77,13 @@ export const RichTextEditor = ({ content, onChange }: { content: string; onChang
 
   const { startUpload } = useUploadThing("imageUploader", {
     onClientUploadComplete: (res) => {
-      const urls = res?.map((r) => r.url) ?? [];
-      urls.forEach((url) => {
-        editorRef.current?.chain().focus().setImage({ src: url }).run();
+      const files = res ?? [];
+      files.forEach((r) => {
+        editorRef.current
+          ?.chain()
+          .focus()
+          .setImage({ src: r.url, fileKey: r.key ?? undefined } as { src: string; fileKey?: string })
+          .run();
       });
     },
     onUploadError: () => {

@@ -4,25 +4,33 @@ import type { PostFormValues } from "@/components/index";
 import type { Post, PostStatus } from "@/generated/prisma/client";
 import prisma from "@/lib/prisma";
 
-/** Extract unique image URLs from post HTML content (img src attributes). */
-function extractImageUrlsFromContent(html: string): string[] {
-  const urls: string[] = [];
-  const srcRegex = /<img[^>]+src=["']([^"']+)["']/gi;
-  let match: RegExpExecArray | null;
-  while ((match = srcRegex.exec(html)) !== null) {
-    const url = match[1]?.trim();
-    if (url && !urls.includes(url)) urls.push(url);
+/** Image info extracted from post HTML (img src + optional data-filekey). */
+function extractImagesFromContent(html: string): { url: string; fileKey: string | null }[] {
+  const seen = new Set<string>();
+  const result: { url: string; fileKey: string | null }[] = [];
+  const tagRegex = /<img[^>]+\/?>/gi;
+  let tagMatch: RegExpExecArray | null;
+  while ((tagMatch = tagRegex.exec(html)) !== null) {
+    const tag = tagMatch[0];
+    const srcMatch = /src=["']([^"']+)["']/i.exec(tag);
+    const fileKeyMatch = /data-filekey=["']([^"']*)["']/i.exec(tag);
+    const url = srcMatch?.[1]?.trim();
+    const fileKey = fileKeyMatch?.[1]?.trim() || null;
+    if (url && !seen.has(url)) {
+      seen.add(url);
+      result.push({ url, fileKey });
+    }
   }
-  return urls;
+  return result;
 }
 
 /** Sync PostImage records for a post from its HTML content. */
-async function syncPostImages(postId: string, content: string) {
-  const urls = extractImageUrlsFromContent(content);
+async function syncPostImages(postId: string, content: string, userId: string | null) {
+  const images = extractImagesFromContent(content);
   await prisma.postImage.deleteMany({ where: { postId } });
-  if (urls.length > 0) {
+  if (images.length > 0) {
     await prisma.postImage.createMany({
-      data: urls.map((url) => ({ postId, url })),
+      data: images.map(({ url, fileKey }) => ({ postId, url, userId, fileKey })),
     });
   }
 }
@@ -64,7 +72,7 @@ export const createPost = async (params: PostFormValues) => {
       },
     });
 
-    await syncPostImages(res.id, data.content);
+    await syncPostImages(res.id, data.content, session.user.id);
     return res;
   } catch (err) {
     console.error({ err });
@@ -95,7 +103,7 @@ export const updatePost = async (params: PostFormValues) => {
       },
     });
 
-    await syncPostImages(res.id, data.content);
+    await syncPostImages(res.id, data.content, session.user.id);
     return res;
   } catch (err) {
     console.error({ err });
