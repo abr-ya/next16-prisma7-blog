@@ -20,7 +20,7 @@ import {
   Input,
   Spinner,
 } from "..";
-import { createCategory } from "@/app/_data/categories";
+import { createCategory, updateCategory } from "@/app/_data/categories";
 import { useRouter } from "next/navigation";
 
 const formSchema = z.object({
@@ -49,7 +49,7 @@ export const CategoryForm = () => {
   const onSubmit = async ({ name }: FormValues) => {
     console.log("Category name:", { name });
     if (category?.id) {
-      console.log("updateCategory({ id: category.id, name })");
+      await updateCategory({ id: category.id, name });
       toast.success("Category updated successfully");
     } else {
       await createCategory(name);
