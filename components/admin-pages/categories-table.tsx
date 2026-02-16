@@ -4,6 +4,7 @@ import { Category } from "@/generated/prisma/client";
 import { ColumnDef } from "@tanstack/react-table";
 import { Button, DataTable } from "..";
 import { ArrowUpDown } from "lucide-react";
+import { CategoryControl } from "./category-control";
 
 const columns: ColumnDef<Category>[] = [
   {
@@ -18,9 +19,11 @@ const columns: ColumnDef<Category>[] = [
   },
 
   {
-    id: "actions",
+    id: "control",
     enableHiding: false,
-    cell: ({ row }) => <div>{row.original.id}</div>,
+    cell: ({ row }) => {
+      return <CategoryControl name={row.original.name} id={row.original.id} />;
+    },
   },
 ];
 
