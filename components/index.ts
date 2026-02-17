@@ -18,7 +18,7 @@ export { RichTextViewer } from "./common/rich-text-viewer";
 export { SimpleSelect } from "./common/simple-select";
 
 // Admin Pages Components
-export { AppSidebar } from "./admin-pages/app-sidebar";
+export { AdminSidebar } from "./admin-pages/admin-sidebar";
 export { CategoriesTable } from "./admin-pages/categories-table";
 export { CategoryForm } from "./admin-pages/category-form";
 export { DashboardStats } from "./admin-pages/dashboard-stats";

@@ -1,5 +1,5 @@
 import { ReactNode } from "react";
-import { AppSidebar, SidebarProvider } from "@/components/index";
+import { AdminSidebar, SidebarProvider } from "@/components/index";
 import { authSession } from "@/lib/auth-utils";
 
 const AdminLayout = async ({ children }: { children: ReactNode }) => {
@@ -16,7 +16,7 @@ const AdminLayout = async ({ children }: { children: ReactNode }) => {
 
   return (
     <SidebarProvider>
-      <AppSidebar userId={userId} />
+      <AdminSidebar userId={userId} />
       <main className="p-6 w-full">{children}</main>
     </SidebarProvider>
   );

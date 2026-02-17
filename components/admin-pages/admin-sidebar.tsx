@@ -1,4 +1,4 @@
-import { Calendar, ChartPie, Inbox, Search, House } from "lucide-react";
+import { Calendar, ChartPie, ExternalLink, Inbox, Search, House } from "lucide-react";
 
 import {
   Sidebar,
@@ -11,7 +11,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 
-// Menu items.
+// Menu items
 const items = [
   {
     title: "Home",
@@ -34,17 +34,22 @@ const items = [
     icon: Calendar,
   },
   {
+    title: "Links",
+    url: "/links",
+    icon: ExternalLink,
+  },
+  {
     title: "Saved Posts",
     url: "saved-posts",
     icon: Search,
   },
 ];
 
-interface AppSidebarProps {
+interface AdminSidebarProps {
   userId: string | null;
 }
 
-export const AppSidebar = ({ userId }: AppSidebarProps) => {
+export const AdminSidebar = ({ userId }: AdminSidebarProps) => {
   return (
     <Sidebar>
       <SidebarContent>
