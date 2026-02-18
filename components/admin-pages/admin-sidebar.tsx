@@ -10,6 +10,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import { IUser } from "@/app/_interfaces/user.interface";
 
 // Menu items
 const items = [
@@ -46,10 +47,10 @@ const items = [
 ];
 
 interface AdminSidebarProps {
-  userId: string | null;
+  user: IUser | null;
 }
 
-export const AdminSidebar = ({ userId }: AdminSidebarProps) => {
+export const AdminSidebar = ({ user }: AdminSidebarProps) => {
   return (
     <Sidebar>
       <SidebarContent>
@@ -57,7 +58,7 @@ export const AdminSidebar = ({ userId }: AdminSidebarProps) => {
           <SidebarGroupLabel>NextBlog</SidebarGroupLabel>
           <SidebarGroupContent>
             {/* Show signed-in user id (server-only) */}
-            <div className="mb-3 text-sm text-muted-foreground">{userId ? `User: ${userId}` : "Not signed in"}</div>
+            <div className="mb-3 text-sm text-muted-foreground">{user ? `Hello, ${user.name}!` : "Not signed in"}</div>
 
             <SidebarMenu>
               {items.map((item) => (
