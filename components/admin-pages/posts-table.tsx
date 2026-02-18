@@ -13,19 +13,34 @@ interface IPostsTableProps {
 const columns: ColumnDef<Post>[] = [
   {
     accessorKey: "title",
-    header: ({ column }) => {
-      return (
-        <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
-          Title
-          <ArrowUpDown />
-        </Button>
-      );
-    },
+    header: ({ column }) => (
+      <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
+        Title
+        <ArrowUpDown />
+      </Button>
+    ),
     cell: ({ row }) => (
       <Link href={`/posts/${row.original.id}`} key={row.original.id}>
         <h3 className="font-semibold">{row.original.title}</h3>
       </Link>
     ),
+  },
+  {
+    accessorKey: "createdAt",
+    header: ({ column }) => (
+      <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
+        Created At
+        <ArrowUpDown />
+      </Button>
+    ),
+    cell: ({ row }) =>
+      (row.getValue("createdAt") as Date).toLocaleDateString("ru-RU", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
   },
   {
     accessorKey: "status",
