@@ -1,6 +1,8 @@
-import { Card, CardContent, CardHeader, CardTitle } from "../index";
+import { stripHtml } from "@/lib/utils";
+import { Badge, Card, CardContent, CardHeader, CardTitle } from "../index";
 import { PostUserAndLink } from "./post-user-and-link";
 import { IPostWithUserAndCategory } from "@/app/_interfaces/post.interface";
+import Link from "next/link";
 
 interface IPostCardProps {
   post: IPostWithUserAndCategory;
@@ -22,9 +24,15 @@ export const PostCard = ({ post }: IPostCardProps) => (
     </CardHeader>
     <CardContent>
       {/* Text Preview */}
-      <p className="text-sm line-clamp-3">todo: preview text</p>
+      <p className="text-sm line-clamp-3">{stripHtml(post.content)}</p>
       {/* Tags */}
-      <div className="flex gap-2 py-2 flex-wrap">todo: tags</div>
+      <div className="flex gap-2 py-2 flex-wrap">
+        {post.tags.map((tag) => (
+          <Link href={`/blog/tag/${tag}`} key={tag}>
+            <Badge variant="secondary">#{tag}</Badge>
+          </Link>
+        ))}
+      </div>
       {/* Author and Links */}
       <PostUserAndLink
         name={post.user.name ?? ""}

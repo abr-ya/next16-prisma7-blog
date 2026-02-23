@@ -10,3 +10,12 @@ export const NODE_HANDLES_SELECTED_STYLE_CLASSNAME = "node-handles-selected-styl
 export function isValidUrl(url: string) {
   return /^https?:\/\/\S+$/.test(url);
 }
+
+export function stripHtml(html: string) {
+  if (!html) return "";
+
+  return html
+    .replace(/<[^>]*>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}

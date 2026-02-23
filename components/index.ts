@@ -1,5 +1,6 @@
 // UI Components
 export { Avatar, AvatarImage, AvatarFallback } from "./ui/avatar";
+export { Badge } from "./ui/badge";
 export { Button } from "./ui/button";
 export { Card, CardContent, CardHeader, CardTitle, CardDescription } from "./ui/card";
 export { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
