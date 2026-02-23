@@ -1,3 +1,5 @@
+import { getAllLinks } from "@/app/_data/links";
+import { LinksTable } from "@/components/admin-pages/links-table";
 import { AdminPageLayout, LinkForm } from "@/components/index";
 import { requireAuth } from "@/lib/auth-utils";
 
@@ -5,6 +7,7 @@ export const dynamic = "force-dynamic";
 
 const LinksPage = async () => {
   await requireAuth();
+  const links = await getAllLinks();
 
   const breadItems = [
     { label: "Dashboard", to: "/dashboard" },
@@ -13,7 +16,7 @@ const LinksPage = async () => {
 
   return (
     <AdminPageLayout breadcrumbs={breadItems} headerRight={<LinkForm />}>
-      todo: (My) Links Table
+      <LinksTable data={links} />
     </AdminPageLayout>
   );
 };
