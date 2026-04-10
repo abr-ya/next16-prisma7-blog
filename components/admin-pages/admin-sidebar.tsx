@@ -1,4 +1,4 @@
-import { Calendar, ChartPie, ExternalLink, Inbox, Search, House } from "lucide-react";
+import { Calendar, ChartPie, ExternalLink, Inbox, Search, House, FileText } from "lucide-react";
 
 import {
   Sidebar,
@@ -38,6 +38,11 @@ const items = [
     title: "Links",
     url: "/links",
     icon: ExternalLink,
+  },
+  {
+    title: "MD Posts",
+    url: "/md-posts",
+    icon: FileText,
   },
   {
     title: "Saved Posts",
