@@ -10,7 +10,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { createBlogPost, updateBlogPost } from "@/app/_data/blogPosts";
 import { createLogEvent } from "@/app/_data/log";
 import { createSlug } from "@/lib/slug-generator";
-import { Button, Card, CardContent, CardHeader, CardTitle, Input, RichTextViewer } from "..";
+import { MdRenderer } from "../blog-posts/md-renderer";
+import { Button, Card, CardContent, CardHeader, CardTitle, Input } from "..";
 
 const formSchema = z.object({
   id: z.string().optional(),
@@ -22,13 +23,7 @@ const formSchema = z.object({
 
 export type BlogPostFormValues = z.infer<typeof formSchema>;
 
-export const BlogPostForm = ({
-  id,
-  title,
-  description,
-  content,
-  slug,
-}: BlogPostFormValues) => {
+export const BlogPostForm = ({ id, title, description, content, slug }: BlogPostFormValues) => {
   const router = useRouter();
   const form = useForm({
     resolver: zodResolver(formSchema),
@@ -121,7 +116,7 @@ export const BlogPostForm = ({
               <CardTitle>Content Preview</CardTitle>
             </CardHeader>
             <CardContent>
-              <RichTextViewer content={form.watch("content") || ""} />
+              <MdRenderer content={form.watch("content") || ""} />
             </CardContent>
           </Card>
         </div>

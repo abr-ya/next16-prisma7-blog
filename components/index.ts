@@ -30,6 +30,9 @@ export { LinkToPostDialog } from "./admin-pages/link-to-post-dialog";
 export { PostForm } from "./admin-pages/post-form";
 export { PostsTable } from "./admin-pages/posts-table";
 export type { PostFormValues } from "./admin-pages/post-form";
+export { BlogPostsTable } from "./admin-pages/blog-posts-table";
+export { BlogPostForm } from "./admin-pages/blog-post-form";
+export type { BlogPostFormValues } from "./admin-pages/blog-post-form";
 export { ImageUploader } from "./admin-pages/image-uploader";
 
 // Home Page Components

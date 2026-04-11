@@ -48,7 +48,6 @@ export const updateBlogPost = async (params: BlogPostFormValues) => {
 
     if (!session) throw new Error("Unauthorized: User Id not found");
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { id, ...rest } = params;
 
     const res = await prisma.blogPost.update({
