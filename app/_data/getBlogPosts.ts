@@ -1,3 +1,12 @@
+export const getAllBlogPosts = async () => {
+  const { default: prisma } = await import("@/lib/prisma");
+  const posts = await prisma.blogPost.findMany({
+    orderBy: { createdAt: "desc" },
+  });
+
+  return posts;
+};
+
 export const getLatestBlogPosts = async (count = 3) => {
   const { default: prisma } = await import("@/lib/prisma");
   const posts = await prisma.blogPost.findMany({
