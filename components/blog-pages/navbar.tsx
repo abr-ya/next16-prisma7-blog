@@ -35,10 +35,14 @@ function avatarFallbackText(name?: string | null): string {
 
 export const Navbar = ({ userName, userImage }: INavbarProps) => {
   const router = useRouter();
-  console.log("Navbar", userName, userImage);
 
   const goBack = () => {
     router.back();
+  };
+
+  const handleSignOut = async () => {
+    await authClient.signOut();
+    router.refresh();
   };
 
   const fallbackLabel = avatarFallbackText(userName);
@@ -86,7 +90,7 @@ export const Navbar = ({ userName, userImage }: INavbarProps) => {
                     </Link>
                   </NavigationMenuLink>
                   <NavigationMenuLink asChild>
-                    <div className="flex-row items-center gap-2 cursor-pointer" onClick={() => authClient.signOut()}>
+                    <div className="flex-row items-center gap-2 cursor-pointer" onClick={() => void handleSignOut()}>
                       <LogOut />
                       Signout
                     </div>

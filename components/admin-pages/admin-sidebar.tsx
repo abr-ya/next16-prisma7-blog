@@ -55,8 +55,7 @@ interface AdminSidebarProps {
   user: IUser | null;
 }
 
-export const AdminSidebar = ({ user }: AdminSidebarProps) => {
-  return (
+export const AdminSidebar = ({ user }: AdminSidebarProps) => (
     <Sidebar>
       <SidebarContent>
         <SidebarGroup>
@@ -82,4 +81,3 @@ export const AdminSidebar = ({ user }: AdminSidebarProps) => {
       </SidebarContent>
     </Sidebar>
   );
-};

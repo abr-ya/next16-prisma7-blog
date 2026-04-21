@@ -2,15 +2,17 @@ import { getCategories } from "@/app/_data/categories";
 import { getAllUserPosts } from "@/app/_data/posts";
 import { DashboardStats, DashboardCategories, DashboardChart, DashbordLayout } from "@/components/index";
 import { Post } from "@/generated/prisma/client";
-import { authSession, requireAuth } from "@/lib/auth-utils";
+import { authSession } from "@/lib/auth-utils";
 import { Rocket } from "lucide-react";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
 const DashboardPage = async () => {
-  await requireAuth();
   const session = await authSession();
+
+  if (!session) return;
+
   const categories = await getCategories(); // todo: to user's categories?
   const posts = await getAllUserPosts();
   const totalViews = posts.reduce((acc: number, item: Post) => acc + item.views!, 0);

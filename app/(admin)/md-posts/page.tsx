@@ -1,14 +1,11 @@
 import { getAllBlogPosts } from "@/app/_data/getBlogPosts";
 import { AdminPageLayout, BlogPostsTable } from "@/components/index";
 import { Button } from "@/components/ui/button";
-import { requireAuth } from "@/lib/auth-utils";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
 const MdPostsPage = async () => {
-  await requireAuth();
-
   const posts = await getAllBlogPosts();
 
   const breadItems = [
