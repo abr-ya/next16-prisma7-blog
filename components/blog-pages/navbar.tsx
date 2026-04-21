@@ -22,13 +22,26 @@ interface INavbarProps {
   userImage?: string | null;
 }
 
+function avatarFallbackText(name?: string | null): string {
+  const n = name?.trim();
+  if (!n) return "?";
+  const parts = n.split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[1][0]).toUpperCase();
+  }
+  const w = parts[0];
+  return w.length >= 2 ? w.slice(0, 2).toUpperCase() : w[0].toUpperCase();
+}
+
 export const Navbar = ({ userName, userImage }: INavbarProps) => {
   const router = useRouter();
-  console.log("navbar userName:", userName, "userImage:", userImage);
+  console.log("Navbar", userName, userImage);
 
   const goBack = () => {
     router.back();
   };
+
+  const fallbackLabel = avatarFallbackText(userName);
 
   return (
     <NavigationMenu viewport={false} className="sticky top-0 z-50 mx-auto max-w-full my-5 bg-white py-2">
@@ -56,10 +69,11 @@ export const Navbar = ({ userName, userImage }: INavbarProps) => {
           </NavigationMenuItem>
           <NavigationMenuItem className="hidden md:block">
             <NavigationMenuTrigger>
-              {/* todo: real avatar and Fallback! */}
               <Avatar className="w-8 h-8 rounded-full">
-                <AvatarImage src="https://github.com/shadcn.png" />
-                <AvatarFallback>CN</AvatarFallback>
+                {userImage ? (
+                  <AvatarImage src={userImage} alt={userName ? `${userName}'s avatar` : "User avatar"} />
+                ) : null}
+                <AvatarFallback delayMs={userImage ? 600 : 0}>{fallbackLabel}</AvatarFallback>
               </Avatar>
             </NavigationMenuTrigger>
             <NavigationMenuContent>
