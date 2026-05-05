@@ -1,21 +1,18 @@
-import { AboutSection, HeroSection, PostsSection } from "@/components/index";
-import { getLatestBlogPosts } from "./_data/getBlogPosts";
+import { Suspense } from "react";
+import { AboutSection, HeroSection } from "@/components/index";
+// Do not barrel-export RecentDocuments / DB-backed home segments: any client
+// import from this file would pull Prisma/pg into the browser bundle.
+import { RecentDocuments } from "@/components/home-page/recent-docs";
+import { RecentDocumentsFallback } from "@/components/home-page/recent-docs-fallback";
 
-const HomePage = async () => {
-  const mdBlogPosts = await getLatestBlogPosts();
-
+export default function HomePage() {
   return (
     <main className="min-h-screen">
-      {/* Hero Section */}
       <HeroSection />
-
-      {/* About Section */}
       <AboutSection />
-
-      {/* Recent Markdown Posts */}
-      <PostsSection posts={mdBlogPosts} showAllLink title="Recent Markdown Posts" className="py-10 px-4" />
+      <Suspense fallback={<RecentDocumentsFallback />}>
+        <RecentDocuments />
+      </Suspense>
     </main>
   );
-};
-
-export default HomePage;
+}

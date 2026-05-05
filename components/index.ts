@@ -38,6 +38,8 @@ export { ImageUploader } from "./admin-pages/image-uploader";
 // Home Page Components
 export { AboutSection } from "./home-page/about-section";
 export { HeroSection } from "./home-page/hero-section";
+// Do not barrel-export RecentDocuments / DB-backed home segments: any client
+// import from this file would pull Prisma/pg into the browser bundle.
 
 // Blog Components
 export { About } from "./blog-pages/about";

@@ -9,12 +9,21 @@ interface PostsSectionProps {
   posts: BlogPost[];
   showAllLink?: boolean;
   title?: string;
+  /** When set, shows this error instead of the post list (e.g. DB unreachable). */
+  loadError?: string | null;
 }
 
-export const PostsSection = ({ className, posts, showAllLink, title }: PostsSectionProps) => (
+export const PostsSection = ({ className, posts, showAllLink, title, loadError }: PostsSectionProps) => (
   <section className={`max-w-3xl mx-auto ${className}`}>
     {title && <h2 className="text-2xl font-bold mb-4">{title}</h2>}
-    {posts.length > 0 ? (
+    {loadError ? (
+      <div
+        className="rounded-md border border-destructive/50 bg-destructive/5 px-4 py-3 text-sm text-destructive"
+        role="alert"
+      >
+        {loadError}
+      </div>
+    ) : posts.length > 0 ? (
       <div className="flex flex-col gap-4">
         {posts.map((post) => (
           <MdPostCard post={post} key={post.id} />
@@ -23,7 +32,7 @@ export const PostsSection = ({ className, posts, showAllLink, title }: PostsSect
     ) : (
       <p className="text-muted-foreground">No posts yet.</p>
     )}
-    {showAllLink && (
+    {showAllLink && !loadError && (
       <Button variant="link" asChild className="mt-4 px-0">
         <Link href="/blog-md">
           View all posts <ArrowRight className="w-4 h-4 ml-1" />
