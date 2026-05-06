@@ -30,9 +30,9 @@ export { LinkToPostDialog } from "./admin-pages/link-to-post-dialog";
 export { PostForm } from "./admin-pages/post-form";
 export { PostsTable } from "./admin-pages/posts-table";
 export type { PostFormValues } from "./admin-pages/post-form";
-export { BlogPostsTable } from "./admin-pages/blog-posts-table";
-export { BlogPostForm } from "./admin-pages/blog-post-form";
-export type { BlogPostFormValues } from "./admin-pages/blog-post-form";
+export { MdDocsTable } from "./admin-pages/md-docs-table";
+export { MdDocForm } from "./admin-pages/md-doc-form";
+export type { MdDocFormValues } from "./admin-pages/md-doc-form";
 export { ImageUploader } from "./admin-pages/image-uploader";
 
 // Home Page Components
@@ -49,9 +49,9 @@ export { Pagination } from "./blog-pages/pagination";
 export { PostCard } from "./blog-pages/post-card";
 export { PostUserAndCategory } from "./blog-pages/post-user-and-category";
 
-// BlogPosts Components
-export { PostsSection } from "./blog-posts/posts-section";
-export { PostArticle } from "./blog-posts/post-article";
+// Docs Components
+export { PostsSection } from "./docs/posts-section";
+export { PostArticle } from "./docs/post-article";
 
 // Comments Components
 // export { CommentsSection } from "./comments-page/comments-section";

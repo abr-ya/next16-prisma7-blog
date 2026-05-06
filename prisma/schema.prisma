@@ -82,7 +82,7 @@ model Verification {
   @@map("verification")
 }
 
-model BlogPost {
+model MdDoc {
   id          String   @id @default(cuid())
   slug        String   @unique
   title       String
@@ -90,6 +90,8 @@ model BlogPost {
   content     String
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  @@map("BlogPost")
 }
 
 model Comment {

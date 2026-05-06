@@ -1,12 +1,12 @@
 import { ArrowRight } from "lucide-react";
-import type { BlogPost } from "../../generated/prisma/client";
+import type { MdDoc } from "@/generated/prisma/client";
 import { Button } from "../ui/button";
 import { MdPostCard } from "./md-post-card";
 import Link from "next/link";
 
 interface PostsSectionProps {
   className?: string;
-  posts: BlogPost[];
+  posts: MdDoc[];
   showAllLink?: boolean;
   title?: string;
   /** When set, shows this error instead of the post list (e.g. DB unreachable). */
@@ -34,7 +34,7 @@ export const PostsSection = ({ className, posts, showAllLink, title, loadError }
     )}
     {showAllLink && !loadError && (
       <Button variant="link" asChild className="mt-4 px-0">
-        <Link href="/blog-md">
+        <Link href="/docs">
           View all posts <ArrowRight className="w-4 h-4 ml-1" />
         </Link>
       </Button>

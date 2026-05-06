@@ -1,11 +1,11 @@
-import { getBlogPostBySlug } from "@/app/_data/getBlogPosts";
+import { getMdDocBySlug } from "@/app/_data/getMdDocs";
 import { PageLayout, PostArticle } from "@/components/index";
 import { notFound } from "next/navigation";
 
-const BlogPostPage = async ({ params }: { params: Promise<{ slug: string }> }) => {
+const MdDocPage = async ({ params }: { params: Promise<{ slug: string }> }) => {
   const { slug } = await params;
 
-  const post = await getBlogPostBySlug(slug);
+  const post = await getMdDocBySlug(slug);
 
   if (!post) notFound();
 
@@ -16,4 +16,4 @@ const BlogPostPage = async ({ params }: { params: Promise<{ slug: string }> }) =
   );
 };
 
-export default BlogPostPage;
+export default MdDocPage;

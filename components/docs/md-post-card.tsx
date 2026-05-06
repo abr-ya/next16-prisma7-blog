@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { Card, CardContent } from "..";
-import type { BlogPost } from "@/generated/prisma/client";
+import type { MdDoc } from "@/generated/prisma/client";
 
-export const MdPostCard = ({ post }: { post: BlogPost }) => (
+export const MdPostCard = ({ post }: { post: MdDoc }) => (
   <Card key={post.id} className="hover:bg-accent transition-colors p-2">
-    <Link href={`/blog-md/${post.slug}`}>
+    <Link href={`/docs/${post.slug}`}>
       <CardContent>
         <h3 className="font-semibold">{post.title}</h3>
         <p className="text-sm text-muted-foreground">{new Date(post.createdAt).toLocaleDateString()}</p>

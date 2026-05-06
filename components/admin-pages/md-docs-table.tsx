@@ -1,16 +1,16 @@
 "use client";
 
-import { BlogPost } from "@/generated/prisma/client";
+import type { MdDoc } from "@/generated/prisma/client";
 import { ColumnDef } from "@tanstack/react-table";
 import Link from "next/link";
 import { Button, DataTable } from "..";
 import { ArrowUpDown } from "lucide-react";
 
-interface IBlogPostsTableProps {
-  data: BlogPost[];
+interface IMdDocsTableProps {
+  data: MdDoc[];
 }
 
-const columns: ColumnDef<BlogPost>[] = [
+const columns: ColumnDef<MdDoc>[] = [
   {
     accessorKey: "title",
     header: ({ column }) => (
@@ -20,7 +20,7 @@ const columns: ColumnDef<BlogPost>[] = [
       </Button>
     ),
     cell: ({ row }) => (
-      <Link href={`/md-posts/${row.original.id}`} key={row.original.id}>
+      <Link href={`/md-docs/${row.original.id}`} key={row.original.id}>
         <h3 className="font-semibold">{row.original.title}</h3>
       </Link>
     ),
@@ -66,10 +66,10 @@ const columns: ColumnDef<BlogPost>[] = [
   },
 ];
 
-export const BlogPostsTable = ({ data }: IBlogPostsTableProps) => {
+export const MdDocsTable = ({ data }: IMdDocsTableProps) => {
   return (
     <div>
-      MD posts count: {data.length}
+      MD docs count: {data.length}
       <DataTable data={data} columns={columns} />
     </div>
   );

@@ -1,9 +1,9 @@
 import { PageLayout } from "@/components/layout/page-layout";
-import { getLatestBlogPosts } from "../_data/getBlogPosts";
+import { getLatestMdDocs } from "../_data/getMdDocs";
 import { PostsSection } from "@/components/index";
 
-const MarkdownBlogPage = async () => {
-  const posts = await getLatestBlogPosts(10);
+const DocsPage = async () => {
+  const posts = await getLatestMdDocs(10);
 
   return (
     <PageLayout title="Markdown Blog Page">
@@ -12,4 +12,4 @@ const MarkdownBlogPage = async () => {
   );
 };
 
-export default MarkdownBlogPage;
+export default DocsPage;

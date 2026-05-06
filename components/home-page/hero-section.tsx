@@ -20,10 +20,10 @@ export const HeroSection = () => (
         </Link>
       </Button>
     </div>
-    <h2 className="text-2xl font-bold mb-2">Previos blog, version 1.0 (use Markdown):</h2>
+    <h2 className="text-2xl font-bold mb-2">Markdown Documentation and old (v1.0) Comments:</h2>
     <div className="flex gap-4">
       <Button asChild>
-        <Link href="/blog-md">Read Markdown Posts</Link>
+        <Link href="/docs">Documentation Page</Link>
       </Button>
       <Button variant="outline" asChild>
         <Link href="/comments">

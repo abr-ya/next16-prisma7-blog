@@ -1,7 +1,7 @@
 import prisma from "@/lib/prisma";
 
 async function main() {
-  const blogPosts = [
+  const mdDocs = [
     {
       slug: "what-is-tailwindcss",
       title: "What Is Tailwind CSS?",
@@ -32,8 +32,8 @@ Prisma is a modern ORM for Node.js and TypeScript that makes database work easie
     },
   ];
 
-  for (const post of blogPosts) {
-    await prisma.blogPost.create({
+  for (const post of mdDocs) {
+    await prisma.mdDoc.create({
       data: post,
     });
   }

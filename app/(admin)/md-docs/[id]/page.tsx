@@ -1,11 +1,11 @@
-import { Breadcrumbs, BlogPostForm } from "@/components/index";
-import { BlogPost as IBlogPost } from "@/generated/prisma/client";
+import { Breadcrumbs, MdDocForm } from "@/components/index";
+import type { MdDoc as IMdDoc } from "@/generated/prisma/client";
 
-const BlogPostPage = async ({ params }: { params: Promise<{ id: string }> }) => {
+const MdDocAdminPage = async ({ params }: { params: Promise<{ id: string }> }) => {
   const { id } = await params;
-  console.log("BlogPostPage, id: ", id);
+  console.log("MdDocAdminPage, id: ", id);
 
-  let post: Omit<IBlogPost, "createdAt" | "updatedAt"> = {
+  let post: Omit<IMdDoc, "createdAt" | "updatedAt"> = {
     id: "",
     title: "",
     description: null,
@@ -14,8 +14,8 @@ const BlogPostPage = async ({ params }: { params: Promise<{ id: string }> }) => 
   };
 
   if (id !== "new") {
-    const { getBlogPostById } = await import("@/app/_data/blogPosts");
-    const fetchedPost = await getBlogPostById(id);
+    const { getMdDocById } = await import("@/app/_data/mdDocs");
+    const fetchedPost = await getMdDocById(id);
     if (fetchedPost) {
       post = fetchedPost;
     }
@@ -23,7 +23,7 @@ const BlogPostPage = async ({ params }: { params: Promise<{ id: string }> }) => 
 
   const breadcrumbItems = [
     { label: "Dashboard", to: "/dashboard" },
-    { label: "MD Posts", to: "/md-posts" },
+    { label: "MD Docs", to: "/md-docs" },
     { label: post.title || "New", to: null },
   ];
 
@@ -36,7 +36,7 @@ const BlogPostPage = async ({ params }: { params: Promise<{ id: string }> }) => 
       </div>
 
       <div className="p-8 flex flex-col">
-        <BlogPostForm
+        <MdDocForm
           id={post.id}
           title={post.title}
           description={post.description || ""}
@@ -48,4 +48,4 @@ const BlogPostPage = async ({ params }: { params: Promise<{ id: string }> }) => 
   );
 };
 
-export default BlogPostPage;
+export default MdDocAdminPage;

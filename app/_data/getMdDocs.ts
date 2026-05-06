@@ -1,15 +1,15 @@
-export const getAllBlogPosts = async () => {
+export const getAllMdDocs = async () => {
   const { default: prisma } = await import("@/lib/prisma");
-  const posts = await prisma.blogPost.findMany({
+  const posts = await prisma.mdDoc.findMany({
     orderBy: { createdAt: "desc" },
   });
 
   return posts;
 };
 
-export const getLatestBlogPosts = async (count = 3) => {
+export const getLatestMdDocs = async (count = 3) => {
   const { default: prisma } = await import("@/lib/prisma");
-  const posts = await prisma.blogPost.findMany({
+  const posts = await prisma.mdDoc.findMany({
     orderBy: { createdAt: "desc" },
     take: count,
   });
@@ -17,9 +17,9 @@ export const getLatestBlogPosts = async (count = 3) => {
   return posts;
 };
 
-export const getBlogPostBySlug = async (slug: string) => {
+export const getMdDocBySlug = async (slug: string) => {
   const { default: prisma } = await import("@/lib/prisma");
-  const post = await prisma.blogPost.findUnique({
+  const post = await prisma.mdDoc.findUnique({
     where: { slug },
   });
 

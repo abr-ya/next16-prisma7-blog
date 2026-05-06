@@ -40,8 +40,8 @@ const items = [
     icon: ExternalLink,
   },
   {
-    title: "MD Posts",
-    url: "/md-posts",
+    title: "MD Docs",
+    url: "/md-docs",
     icon: FileText,
   },
   {

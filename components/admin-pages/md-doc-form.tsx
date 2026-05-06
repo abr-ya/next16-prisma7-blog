@@ -7,10 +7,10 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "../ui/form";
-import { createBlogPost, updateBlogPost } from "@/app/_data/blogPosts";
+import { createMdDoc, updateMdDoc } from "@/app/_data/mdDocs";
 import { createLogEvent } from "@/app/_data/log";
 import { createSlug } from "@/lib/slug-generator";
-import { MdRenderer } from "../blog-posts/md-renderer";
+import { MdRenderer } from "../docs/md-renderer";
 import { Button, Card, CardContent, CardHeader, CardTitle, Input } from "..";
 
 const formSchema = z.object({
@@ -21,9 +21,9 @@ const formSchema = z.object({
   slug: z.string().min(3, { message: "Slug is required" }),
 });
 
-export type BlogPostFormValues = z.infer<typeof formSchema>;
+export type MdDocFormValues = z.infer<typeof formSchema>;
 
-export const BlogPostForm = ({ id, title, description, content, slug }: BlogPostFormValues) => {
+export const MdDocForm = ({ id, title, description, content, slug }: MdDocFormValues) => {
   const router = useRouter();
   const form = useForm({
     resolver: zodResolver(formSchema),
@@ -37,19 +37,19 @@ export const BlogPostForm = ({ id, title, description, content, slug }: BlogPost
     mode: "onBlur",
   });
 
-  const onSubmit = async (data: BlogPostFormValues) => {
+  const onSubmit = async (data: MdDocFormValues) => {
     if (id) {
-      await updateBlogPost(data);
-      await createLogEvent("updatePost", `MD Post updated: ${data.title}`);
+      await updateMdDoc(data);
+      await createLogEvent("updatePost", `MD doc updated: ${data.title}`);
       toast.success("Post updated successfully");
     } else {
-      await createBlogPost(data);
-      await createLogEvent("createPost", `MD Post created: ${data.title}`);
+      await createMdDoc(data);
+      await createLogEvent("createPost", `MD doc created: ${data.title}`);
       toast.success("Post created successfully");
     }
 
     router.refresh();
-    router.push("/md-posts");
+    router.push("/md-docs");
   };
 
   return (

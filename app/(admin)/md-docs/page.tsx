@@ -1,16 +1,16 @@
-import { getAllBlogPosts } from "@/app/_data/getBlogPosts";
-import { AdminPageLayout, BlogPostsTable } from "@/components/index";
+import { getAllMdDocs } from "@/app/_data/getMdDocs";
+import { AdminPageLayout, MdDocsTable } from "@/components/index";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
-const MdPostsPage = async () => {
-  const posts = await getAllBlogPosts();
+const MdDocsAdminPage = async () => {
+  const posts = await getAllMdDocs();
 
   const breadItems = [
     { label: "Dashboard", to: "/dashboard" },
-    { label: "MD Posts", to: null },
+    { label: "MD Docs", to: null },
   ];
 
   return (
@@ -18,16 +18,15 @@ const MdPostsPage = async () => {
       breadcrumbs={breadItems}
       headerRight={
         <div className="flex gap-2">
-          <Link href="/md-posts/new">
+          <Link href="/md-docs/new">
             <Button className="cursor-pointer">Add Doc</Button>
           </Link>
         </div>
       }
     >
-      {/* DataTable */}
-      <BlogPostsTable data={posts} />
+      <MdDocsTable data={posts} />
     </AdminPageLayout>
   );
 };
 
-export default MdPostsPage;
+export default MdDocsAdminPage;

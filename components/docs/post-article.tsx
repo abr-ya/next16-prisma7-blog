@@ -1,8 +1,8 @@
-import type { BlogPost } from "@/generated/prisma/client";
+import type { MdDoc } from "@/generated/prisma/client";
 import { MdRenderer } from "./md-renderer";
 
 interface IPostArticleProps {
-  data: BlogPost;
+  data: MdDoc;
 }
 
 export const PostArticle = ({ data: { createdAt, content } }: IPostArticleProps) => (

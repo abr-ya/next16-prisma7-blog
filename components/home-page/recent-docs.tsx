@@ -1,25 +1,25 @@
-import { PostsSection } from "@/components/blog-posts/posts-section";
-import type { BlogPost } from "@/generated/prisma/client";
-import { getBlogPostsLoadErrorMessage } from "@/lib/prisma-blog-load-error-message";
-import { getLatestBlogPosts } from "@/app/_data/getBlogPosts";
+import { PostsSection } from "@/components/docs/posts-section";
+import type { MdDoc } from "@/generated/prisma/client";
+import { getMdDocsLoadErrorMessage } from "@/lib/prisma-md-docs-load-error-message";
+import { getLatestMdDocs } from "@/app/_data/getMdDocs";
 
 export async function RecentDocuments() {
-  let mdBlogPosts: BlogPost[] = [];
+  let mdDocs: MdDoc[] = [];
   let loadError: string | null = null;
 
   try {
-    mdBlogPosts = await getLatestBlogPosts();
+    mdDocs = await getLatestMdDocs();
   } catch (error) {
-    console.error("[HomePage] Failed to load latest blog posts:", error);
-    loadError = getBlogPostsLoadErrorMessage(error);
+    console.error("[HomePage] Failed to load latest md docs:", error);
+    loadError = getMdDocsLoadErrorMessage(error);
   }
 
   return (
     <PostsSection
-      posts={mdBlogPosts}
+      posts={mdDocs}
       loadError={loadError}
       showAllLink
-      title="Recent Markdown Documents"
+      title="Recent Documents (Markdown)"
       className="py-10 px-4"
     />
   );
