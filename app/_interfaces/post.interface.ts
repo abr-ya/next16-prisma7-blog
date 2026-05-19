@@ -1,4 +1,4 @@
-import { Category, Link, Post, User } from "@/generated/prisma/client";
+import type { Category, Link, Post, User } from "@/generated/prisma/client";
 
 export interface IPostWithUserAndCategory extends Post {
   user: User;

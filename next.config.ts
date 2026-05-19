@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Prisma uses Node/WASM at runtime; do not bundle it into Server Components / Route Handlers.
+  serverExternalPackages: ["@prisma/client", "@prisma/adapter-pg"],
   async redirects() {
     return [
       { source: "/blog-md", destination: "/docs", permanent: true },
