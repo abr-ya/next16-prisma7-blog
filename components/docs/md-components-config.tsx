@@ -1,5 +1,6 @@
 import { Children, isValidElement, ReactNode } from "react";
 
+import { CodeBlock } from "./code-block";
 import { MermaidDiagram } from "./mermaid-diagram";
 
 function getCodeString(children: ReactNode): string {
@@ -30,10 +31,19 @@ export const components = {
     }
 
     const isInline = !className;
-    return isInline ? (
-      <code className="bg-muted px-1.5 py-0.5 rounded text-sm">{children}</code>
-    ) : (
-      <code className="block bg-muted p-4 rounded-lg overflow-x-auto text-sm mb-4">{children}</code>
+    if (isInline) {
+      return <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-sm">{children}</code>;
+    }
+
+    const code = getCodeString(children).replace(/\n$/, "");
+    if (language) {
+      return <CodeBlock code={code} language={language} />;
+    }
+
+    return (
+      <pre className="mb-4 overflow-x-auto rounded-lg bg-muted p-4 font-mono text-sm">
+        <code className="whitespace-pre">{code}</code>
+      </pre>
     );
   },
   pre: ({ children }: { children: ReactNode }) => <>{children}</>,
