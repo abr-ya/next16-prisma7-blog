@@ -178,6 +178,13 @@ h3.tiptap-heading + h2.tiptap-heading {
 }
 
 /* Copy code buttons for code blocks and inline code */
+.rich-text-viewer img {
+	display: block;
+	max-width: 100%;
+	height: auto;
+	margin-inline: auto;
+}
+
 .rich-text-viewer pre {
 	overflow-x: auto;
 	padding: 0.75rem;

@@ -119,17 +119,45 @@ export const RichTextViewer = ({ content }: RichTextViewerProps) => {
       code.appendChild(button);
     });
 
-    // Log image loads (who and when) for authenticated viewers.
-    const imgs = containerRef.current.querySelectorAll("img");
-    imgs.forEach((img) => {
-      if (img.dataset.viewLogged === "true") return;
+    // CSS can cap images to the text column, but it cannot know each file's intrinsic width.
+    // After load, use naturalWidth so small images are not upscaled by saved TipTap widths.
+    const capImageToNaturalWidth = (img: HTMLImageElement) => {
+      if (img.naturalWidth <= 0) return;
+
+      img.style.maxWidth = `min(100%, ${img.naturalWidth}px)`;
+      img.style.height = "auto";
+    };
+
+    const handleImage = (img: HTMLImageElement) => {
       const onLoad = () => {
+        capImageToNaturalWidth(img);
+        if (img.dataset.viewLogged === "true") return;
+
         img.dataset.viewLogged = "true";
         logImageViewed(img.src);
       };
-      if (img.complete) onLoad();
-      else img.addEventListener("load", onLoad);
-    });
+
+      if (img.complete) {
+        onLoad();
+      } else if (img.dataset.loadListenerAttached !== "true") {
+        img.dataset.loadListenerAttached = "true";
+        img.addEventListener("load", onLoad, { once: true });
+      }
+    };
+
+    const handleImages = () => {
+      containerRef.current?.querySelectorAll("img").forEach(handleImage);
+    };
+
+    handleImages();
+    requestAnimationFrame(handleImages);
+
+    const observer = new MutationObserver(handleImages);
+    observer.observe(containerRef.current, { childList: true, subtree: true });
+
+    return () => {
+      observer.disconnect();
+    };
   }, [content, editor]);
 
   return editor ? (
