@@ -7,11 +7,7 @@ const BlogLayout = async ({ children }: { children: ReactNode }) => {
 
   return (
     <div className="relative w-full">
-      <Navbar
-        userId={session?.user.id}
-        userName={session?.user.name}
-        userImage={session?.user.image}
-      />
+      <Navbar userId={session?.user.id} userName={session?.user.name} userImage={session?.user.image} />
       {children}
     </div>
   );

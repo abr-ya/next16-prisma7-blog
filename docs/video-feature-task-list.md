@@ -11,8 +11,8 @@ Status markers:
 ## Current Status
 
 - Phase: 1
-- Next task: V1-06
-- Notes: Base Prisma model, migration, Prisma client generation, and schema validation are done.
+- Next task: V1-15
+- Notes: Base Prisma model, migration, Prisma client generation, schema validation, and video server actions are done.
 
 ## Phase 0: Planning
 
@@ -38,14 +38,14 @@ Goal: authenticated admin users can create, edit, list, and optionally delete sa
 
 ### Server Actions
 
-- [ ] V1-06 Create `app/_data/videos.ts`.
-- [ ] V1-07 Add `getAllVideos`.
-- [ ] V1-08 Add `getVideoById`.
-- [ ] V1-09 Add `createVideo`.
-- [ ] V1-10 Add `updateVideo`.
-- [ ] V1-11 Add `deleteVideo` if delete is included in MVP.
-- [ ] V1-12 Scope authenticated video queries by `session.user.id`.
-- [ ] V1-13 Add path revalidation for admin video routes where needed.
+- [x] V1-06 Create `app/_data/videos.ts`.
+- [x] V1-07 Add `getAllVideos`.
+- [x] V1-08 Add `getVideoById`.
+- [x] V1-09 Add `createVideo`.
+- [x] V1-10 Add `updateVideo`.
+- [x] V1-11 Add `deleteVideo` if delete is included in MVP.
+- [x] V1-12 Scope authenticated video queries by `session.user.id`.
+- [x] V1-13 Add path revalidation for admin video routes where needed.
 - [ ] V1-14 Add log events if useful with the existing logging flow.
 
 ### Admin UI
