@@ -29,6 +29,7 @@ model User {
   links         Link[]
   logs          Log[]
   postImages    PostImage[]
+  videos        Video[]
 
   @@unique([email])
   @@map("user")
@@ -178,6 +179,22 @@ model LinksToPosts {
   @@id([postId, linkId])
 }
 // Link - finish
+
+// Video - start
+model Video {
+  id        String   @id @default(uuid())
+  title     String
+  url       String
+  videoDate DateTime
+  userId    String
+  user      User     @relation(references: [id], fields: [userId], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@index([userId])
+  @@index([videoDate])
+}
+// Video - finish
 
 // Logging model - start
 enum LogAction {

@@ -10,9 +10,9 @@ Status markers:
 
 ## Current Status
 
-- Phase: 0
-- Next task: V0-01
-- Notes: Planning documents are prepared. Implementation has not started yet.
+- Phase: 1
+- Next task: V1-06
+- Notes: Base Prisma model, migration, Prisma client generation, and schema validation are done.
 
 ## Phase 0: Planning
 
@@ -30,11 +30,11 @@ Goal: authenticated admin users can create, edit, list, and optionally delete sa
 
 ### Database
 
-- [ ] V1-01 Add `Video` model to `prisma/schema.prisma`.
-- [ ] V1-02 Add `videos Video[]` relation to `User`.
-- [ ] V1-03 Add useful indexes for `userId` and `videoDate`.
-- [ ] V1-04 Create Prisma migration named `add-videos`.
-- [ ] V1-05 Regenerate Prisma client.
+- [x] V1-01 Add `Video` model to `prisma/schema.prisma`.
+- [x] V1-02 Add `videos Video[]` relation to `User`.
+- [x] V1-03 Add useful indexes for `userId` and `videoDate`.
+- [x] V1-04 Create Prisma migration named `add-videos`.
+- [x] V1-05 Regenerate Prisma client.
 
 ### Server Actions
 
