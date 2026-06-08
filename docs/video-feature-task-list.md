@@ -11,8 +11,8 @@ Status markers:
 ## Current Status
 
 - Phase: 1
-- Next task: V1-15
-- Notes: Base Prisma model, migration, Prisma client generation, schema validation, and video server actions are done.
+- Next task: V1-19
+- Notes: Base Prisma model, migration, Prisma client generation, schema validation, video server actions, and video form create/edit UI are done.
 
 ## Phase 0: Planning
 
@@ -50,10 +50,10 @@ Goal: authenticated admin users can create, edit, list, and optionally delete sa
 
 ### Admin UI
 
-- [ ] V1-15 Add `components/admin-pages/video-form.tsx`.
-- [ ] V1-16 Add Zod validation for title, URL, and video date.
-- [ ] V1-17 Add create mode to `VideoForm`.
-- [ ] V1-18 Add edit mode to `VideoForm`.
+- [x] V1-15 Add `components/admin-pages/video-form.tsx`.
+- [x] V1-16 Add Zod validation for title, URL, and video date.
+- [x] V1-17 Add create mode to `VideoForm`.
+- [x] V1-18 Add edit mode to `VideoForm`.
 - [ ] V1-19 Add `components/admin-pages/videos-table.tsx`.
 - [ ] V1-20 Add table columns for title, URL, video date, and added date.
 - [ ] V1-21 Add table action to open edit page.
