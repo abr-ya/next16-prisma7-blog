@@ -24,6 +24,10 @@ const formSchema = z.object({
 
 export type VideoFormValues = z.infer<typeof formSchema>;
 
+type VideoFormProps = Omit<Partial<VideoFormValues>, "videoDate"> & {
+  videoDate?: Date | string;
+};
+
 const formatDateInputValue = (date?: Date | string) => {
   if (!date) return new Date().toISOString().slice(0, 10);
 
@@ -34,7 +38,7 @@ const formatDateInputValue = (date?: Date | string) => {
   return parsedDate.toISOString().slice(0, 10);
 };
 
-export const VideoForm = ({ id, title = "", url = "", videoDate }: Partial<VideoFormValues>) => {
+export const VideoForm = ({ id, title = "", url = "", videoDate }: VideoFormProps) => {
   const router = useRouter();
   const form = useForm<VideoFormValues>({
     resolver: zodResolver(formSchema),

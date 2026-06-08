@@ -12,7 +12,7 @@ Status markers:
 
 - Phase: 1
 - Next task: V1-19
-- Notes: Base Prisma model, migration, Prisma client generation, schema validation, video server actions, and video form create/edit UI are done.
+- Notes: Base Prisma model, migration, Prisma client generation, schema validation, video server actions, video form create/edit UI, and placeholder admin video routes are done.
 
 ## Phase 0: Planning
 
@@ -58,13 +58,13 @@ Goal: authenticated admin users can create, edit, list, and optionally delete sa
 - [ ] V1-20 Add table columns for title, URL, video date, and added date.
 - [ ] V1-21 Add table action to open edit page.
 - [ ] V1-22 Add delete control if delete is included in MVP.
-- [ ] V1-23 Export video components from `components/index.ts`.
+- [x] V1-23 Export video components from `components/index.ts`.
 
 ### Admin Routes
 
-- [ ] V1-24 Add `app/(admin)/videos/page.tsx`.
-- [ ] V1-25 Add `app/(admin)/videos/[id]/page.tsx`.
-- [ ] V1-26 Decide and implement a create route pattern, such as `/videos/new` or dialog-based creation.
+- [x] V1-24 Add `app/(admin)/videos/page.tsx`.
+- [x] V1-25 Add `app/(admin)/videos/[id]/page.tsx`.
+- [x] V1-26 Decide and implement a create route pattern, such as `/videos/new` or dialog-based creation.
 - [ ] V1-27 Add "Videos" item to `components/admin-pages/admin-sidebar.tsx`.
 - [ ] V1-28 Confirm breadcrumbs match existing admin pages.
 

@@ -30,6 +30,8 @@ export { LinkToPostDialog } from "./admin-pages/link-to-post-dialog";
 export { PostForm } from "./admin-pages/post-form";
 export { PostsTable } from "./admin-pages/posts-table";
 export type { PostFormValues } from "./admin-pages/post-form";
+export { VideoForm } from "./admin-pages/video-form";
+export type { VideoFormValues } from "./admin-pages/video-form";
 export { MdDocsTable } from "./admin-pages/md-docs-table";
 export { MdDocForm } from "./admin-pages/md-doc-form";
 export type { MdDocFormValues } from "./admin-pages/md-doc-form";
