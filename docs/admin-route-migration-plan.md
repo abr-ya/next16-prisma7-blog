@@ -97,15 +97,15 @@ Status markers:
 Current status:
 
 - Phase: Admin route migration
-- Next task: ARM-03
-- Notes: Admin route files have been moved to `app/admin`, and the dashboard is now the admin index route.
+- Next task: ARM-05
+- Notes: Admin route files have been moved to `app/admin`, the dashboard is now the admin index route, sidebar URLs use the `/admin` prefix, and admin entry links point to `/admin`.
 
 Tasks:
 
 - [x] ARM-01 Move admin routes from `app/(admin)` to `app/admin`.
 - [x] ARM-02 Move dashboard from `app/admin/dashboard/page.tsx` to `app/admin/page.tsx`.
-- [ ] ARM-03 Update admin sidebar URLs to use the `/admin` prefix.
-- [ ] ARM-04 Update home page and navbar admin entry links to `/admin`.
+- [x] ARM-03 Update admin sidebar URLs to use the `/admin` prefix.
+- [x] ARM-04 Update home page and navbar admin entry links to `/admin`.
 - [ ] ARM-05 Update admin breadcrumbs and create/edit links.
 - [ ] ARM-06 Update form redirects after successful create/update.
 - [ ] ARM-07 Update server-side `revalidatePath` calls for moved admin pages.

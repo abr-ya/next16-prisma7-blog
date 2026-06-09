@@ -52,7 +52,7 @@ export { PostCard } from "./blog-pages/post-card";
 export { PostUserAndCategory } from "./blog-pages/post-user-and-category";
 
 // Docs Components
-export { PostsSection } from "./docs/posts-section";
+export { DocsList } from "./docs/docs-list";
 export { PostArticle } from "./docs/post-article";
 
 // Comments Components

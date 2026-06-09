@@ -4,16 +4,16 @@ import { Button } from "../ui/button";
 import { MdPostCard } from "./md-post-card";
 import Link from "next/link";
 
-interface PostsSectionProps {
+interface DocsListProps {
   className?: string;
-  posts: MdDoc[];
-  showAllLink?: boolean;
+  docs: MdDoc[];
+  showAllDocsLink?: boolean;
   title?: string;
-  /** When set, shows this error instead of the post list (e.g. DB unreachable). */
+  /** When set, shows this error instead of the docs list (e.g. DB unreachable). */
   loadError?: string | null;
 }
 
-export const PostsSection = ({ className, posts, showAllLink, title, loadError }: PostsSectionProps) => (
+export const DocsList = ({ className, docs, showAllDocsLink, title, loadError }: DocsListProps) => (
   <section className={`max-w-3xl mx-auto ${className}`}>
     {title && <h2 className="text-2xl font-bold mb-4">{title}</h2>}
     {loadError ? (
@@ -23,19 +23,19 @@ export const PostsSection = ({ className, posts, showAllLink, title, loadError }
       >
         {loadError}
       </div>
-    ) : posts.length > 0 ? (
+    ) : docs.length > 0 ? (
       <div className="flex flex-col gap-4">
-        {posts.map((post) => (
-          <MdPostCard post={post} key={post.id} />
+        {docs.map((doc) => (
+          <MdPostCard post={doc} key={doc.id} />
         ))}
       </div>
     ) : (
-      <p className="text-muted-foreground">No posts yet.</p>
+      <p className="text-muted-foreground">No docs yet.</p>
     )}
-    {showAllLink && !loadError && (
+    {showAllDocsLink && !loadError && (
       <Button variant="link" asChild className="mt-4 px-0">
         <Link href="/docs">
-          View all posts <ArrowRight className="w-4 h-4 ml-1" />
+          View all docs <ArrowRight className="w-4 h-4 ml-1" />
         </Link>
       </Button>
     )}

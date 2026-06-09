@@ -14,7 +14,7 @@ export const HeroSection = () => (
         <Link href="/blog">Main Page</Link>
       </Button>
       <Button variant="outline" asChild>
-        <Link href="/dashboard">
+        <Link href="/admin">
           <PieChart className="w-4 h-4 mr-2" />
           Dashboard
         </Link>

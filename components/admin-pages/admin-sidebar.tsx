@@ -21,32 +21,32 @@ const items = [
   },
   {
     title: "Dashboard",
-    url: "/dashboard",
+    url: "/admin",
     icon: ChartPie,
   },
   {
     title: "Posts",
-    url: "/posts",
+    url: "/admin/posts",
     icon: Inbox,
   },
   {
     title: "Categories",
-    url: "/categories",
+    url: "/admin/categories",
     icon: Calendar,
   },
   {
     title: "Links",
-    url: "/links",
+    url: "/admin/links",
     icon: ExternalLink,
   },
   {
     title: "MD Docs",
-    url: "/md-docs",
+    url: "/admin/md-docs",
     icon: FileText,
   },
   {
     title: "Saved Posts",
-    url: "saved-posts",
+    url: "/admin/saved-posts",
     icon: Search,
   },
 ];

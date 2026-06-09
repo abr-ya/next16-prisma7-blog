@@ -53,7 +53,7 @@ export const NavbarUserMenu = ({ userName, userImage }: NavbarUserMenuProps) => 
         <ul className="grid gap-4">
           <li>
             <NavigationMenuLink asChild>
-              <Link href="/dashboard" className="flex-row items-center gap-2">
+              <Link href="/admin" className="flex-row items-center gap-2">
                 <LayoutDashboard />
                 Dashboard
               </Link>

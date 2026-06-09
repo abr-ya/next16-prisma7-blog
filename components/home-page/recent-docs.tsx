@@ -1,4 +1,4 @@
-import { PostsSection } from "@/components/docs/posts-section";
+import { DocsList } from "@/components/docs/docs-list";
 import type { MdDoc } from "@/generated/prisma/client";
 import { getMdDocsLoadErrorMessage } from "@/lib/prisma-md-docs-load-error-message";
 import { getLatestMdDocs } from "@/app/_data/getMdDocs";
@@ -15,10 +15,10 @@ export async function RecentDocuments() {
   }
 
   return (
-    <PostsSection
-      posts={mdDocs}
+    <DocsList
+      docs={mdDocs}
       loadError={loadError}
-      showAllLink
+      showAllDocsLink
       title="Recent Documents (Markdown)"
       className="py-10 px-4"
     />
