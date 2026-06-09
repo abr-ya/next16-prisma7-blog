@@ -86,6 +86,33 @@ Update server-side revalidation paths:
 9. Search for stale root-level admin links.
 10. Run typecheck and lint if the local toolchain is available.
 
+## Task Checklist
+
+Status markers:
+
+- `[ ]` not started
+- `[x]` done
+- `[~]` in progress, replace with `[ ]` or `[x]` when updating
+
+Current status:
+
+- Phase: Admin route migration
+- Next task: ARM-03
+- Notes: Admin route files have been moved to `app/admin`, and the dashboard is now the admin index route.
+
+Tasks:
+
+- [x] ARM-01 Move admin routes from `app/(admin)` to `app/admin`.
+- [x] ARM-02 Move dashboard from `app/admin/dashboard/page.tsx` to `app/admin/page.tsx`.
+- [ ] ARM-03 Update admin sidebar URLs to use the `/admin` prefix.
+- [ ] ARM-04 Update home page and navbar admin entry links to `/admin`.
+- [ ] ARM-05 Update admin breadcrumbs and create/edit links.
+- [ ] ARM-06 Update form redirects after successful create/update.
+- [ ] ARM-07 Update server-side `revalidatePath` calls for moved admin pages.
+- [ ] ARM-08 Search for stale root-level admin links and fix any remaining references.
+- [ ] ARM-09 Run typecheck and lint if the local toolchain is available.
+- [ ] ARM-10 Manually verify the migrated admin routes.
+
 ## Verification
 
 Search commands:
