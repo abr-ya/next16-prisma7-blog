@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import { getAllVideos } from "@/app/_data/videos";
-import { AdminPageLayout, Button } from "@/components/index";
+import { AdminPageLayout, Button, VideosTable } from "@/components/index";
 
 export const dynamic = "force-dynamic";
 
@@ -22,11 +22,7 @@ const VideosPage = async () => {
         </Link>
       }
     >
-      <div className="p-4">
-        <div className="rounded-md border p-6 text-sm text-muted-foreground">
-          Videos table placeholder. Saved videos: {videos.length}
-        </div>
-      </div>
+      <VideosTable data={videos} />
     </AdminPageLayout>
   );
 };

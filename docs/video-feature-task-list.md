@@ -11,15 +11,15 @@ Status markers:
 ## Current Status
 
 - Phase: 1
-- Next task: V1-19
-- Notes: Base Prisma model, migration, Prisma client generation, schema validation, video server actions, video form create/edit UI, placeholder admin video routes, and admin sidebar entry are done.
+- Next task: V1-28
+- Notes: Base Prisma model, migration, Prisma client generation, schema validation, video server actions, video form create/edit UI, admin video table with edit/delete controls, admin video routes, and admin sidebar entry are done.
 
 ## Phase 0: Planning
 
 - [x] V0-01 Create high-level video feature plan.
 - [x] V0-02 Save the plan in `docs/video-feature-plan.md`.
 - [x] V0-03 Create this task checklist.
-- [ ] V0-04 Decide whether the MVP includes delete controls.
+- [x] V0-04 Decide whether the MVP includes delete controls.
 - [ ] V0-05 Decide whether videos are private only or will also have public pages.
 - [ ] V0-06 Decide whether public detail URLs should use `id` or `slug`.
 - [ ] V0-07 Decide whether URL validation should be generic or provider-specific.
@@ -54,10 +54,10 @@ Goal: authenticated admin users can create, edit, list, and optionally delete sa
 - [x] V1-16 Add Zod validation for title, URL, and video date.
 - [x] V1-17 Add create mode to `VideoForm`.
 - [x] V1-18 Add edit mode to `VideoForm`.
-- [ ] V1-19 Add `components/admin-pages/videos-table.tsx`.
-- [ ] V1-20 Add table columns for title, URL, video date, and added date.
-- [ ] V1-21 Add table action to open edit page.
-- [ ] V1-22 Add delete control if delete is included in MVP.
+- [x] V1-19 Add `components/admin-pages/videos-table.tsx`.
+- [x] V1-20 Add table columns for title, URL, video date, and added date.
+- [x] V1-21 Add table action to open edit page.
+- [x] V1-22 Add delete control if delete is included in MVP.
 - [x] V1-23 Export video components from `components/index.ts`.
 
 ### Admin Routes
