@@ -9,7 +9,7 @@ const VideosPage = async () => {
   const videos = await getAllVideos();
 
   const breadItems = [
-    { label: "Dashboard", to: "/dashboard" },
+    { label: "Dashboard", to: "/admin" },
     { label: "Videos", to: null },
   ];
 
@@ -17,7 +17,7 @@ const VideosPage = async () => {
     <AdminPageLayout
       breadcrumbs={breadItems}
       headerRight={
-        <Link href="/videos/new">
+        <Link href="/admin/videos/new">
           <Button className="cursor-pointer">Add video</Button>
         </Link>
       }

@@ -8,7 +8,7 @@ const LinksPage = async () => {
   const links = await getAllLinks();
 
   const breadItems = [
-    { label: "Dashboard", to: "/dashboard" },
+    { label: "Dashboard", to: "/admin" },
     { label: "Links", to: null },
   ];
 

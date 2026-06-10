@@ -4,7 +4,7 @@ export const dynamic = "force-dynamic";
 
 const SavedPostsPage = async () => {
   const breadItems = [
-    { label: "Dashboard", to: "/dashboard" },
+    { label: "Dashboard", to: "/admin" },
     { label: "Saved Posts", to: null },
   ];
 

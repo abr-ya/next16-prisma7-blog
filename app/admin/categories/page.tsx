@@ -9,7 +9,7 @@ const CategoriesPage = async () => {
   console.log(categories.map((cat: { name: string }) => cat.name));
 
   const breadItems = [
-    { label: "Dashboard", to: "/dashboard" },
+    { label: "Dashboard", to: "/admin" },
     { label: "Categories", to: null },
   ];
 

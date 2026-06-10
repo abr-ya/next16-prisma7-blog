@@ -49,7 +49,7 @@ export const MdDocForm = ({ id, title, description, content, slug }: MdDocFormVa
     }
 
     router.refresh();
-    router.push("/md-docs");
+    router.push("/admin/md-docs");
   };
 
   return (

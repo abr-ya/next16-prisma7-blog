@@ -22,8 +22,8 @@ const MdDocAdminPage = async ({ params }: { params: Promise<{ id: string }> }) =
   }
 
   const breadcrumbItems = [
-    { label: "Dashboard", to: "/dashboard" },
-    { label: "MD Docs", to: "/md-docs" },
+    { label: "Dashboard", to: "/admin" },
+    { label: "MD Docs", to: "/admin/md-docs" },
     { label: post.title || "New", to: null },
   ];
 

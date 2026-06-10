@@ -11,7 +11,7 @@ const PostsPage = async () => {
   const links = await getAllLinks();
 
   const breadItems = [
-    { label: "Dashboard", to: "/dashboard" },
+    { label: "Dashboard", to: "/admin" },
     { label: "Posts", to: null },
   ];
 
@@ -21,7 +21,7 @@ const PostsPage = async () => {
       headerRight={
         <div className="flex gap-2">
           <LinkToPostDialog posts={posts} links={links} />
-          <Link href="/posts/new">
+          <Link href="/admin/posts/new">
             <Button className="cursor-pointer">Create new post</Button>
           </Link>
         </div>

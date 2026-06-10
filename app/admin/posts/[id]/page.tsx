@@ -25,8 +25,8 @@ const PostPage = async ({ params }: { params: Promise<{ id: string }> }) => {
   }
 
   const breadcrumbItems = [
-    { label: "Dashboard", to: "/dashboard" },
-    { label: "Posts", to: "/posts" },
+    { label: "Dashboard", to: "/admin" },
+    { label: "Posts", to: "/admin/posts" },
     { label: post.title || "New", to: null },
   ];
 

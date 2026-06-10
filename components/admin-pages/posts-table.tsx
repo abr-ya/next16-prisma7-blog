@@ -20,7 +20,7 @@ const columns: ColumnDef<Post>[] = [
       </Button>
     ),
     cell: ({ row }) => (
-      <Link href={`/posts/${row.original.id}`} key={row.original.id}>
+      <Link href={`/admin/posts/${row.original.id}`} key={row.original.id}>
         <h3 className="font-semibold">{row.original.title}</h3>
       </Link>
     ),

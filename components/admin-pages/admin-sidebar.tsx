@@ -1,4 +1,4 @@
-import { Calendar, ChartPie, ExternalLink, Inbox, Search, House, FileText } from "lucide-react";
+import { Calendar, ChartPie, ExternalLink, FileText, House, Inbox, Search, Video } from "lucide-react";
 
 import {
   Sidebar,
@@ -45,6 +45,11 @@ const items = [
     icon: FileText,
   },
   {
+    title: "Videos",
+    url: "/admin/videos",
+    icon: Video,
+  },
+  {
     title: "Saved Posts",
     url: "/admin/saved-posts",
     icon: Search,
@@ -56,28 +61,28 @@ interface AdminSidebarProps {
 }
 
 export const AdminSidebar = ({ user }: AdminSidebarProps) => (
-    <Sidebar>
-      <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>NextBlog</SidebarGroupLabel>
-          <SidebarGroupContent>
-            {/* Show signed-in user id (server-only) */}
-            <div className="mb-3 text-sm text-muted-foreground">{user ? `Hello, ${user.name}!` : "Not signed in"}</div>
+  <Sidebar>
+    <SidebarContent>
+      <SidebarGroup>
+        <SidebarGroupLabel>NextBlog</SidebarGroupLabel>
+        <SidebarGroupContent>
+          {/* Show signed-in user id (server-only) */}
+          <div className="mb-3 text-sm text-muted-foreground">{user ? `Hello, ${user.name}!` : "Not signed in"}</div>
 
-            <SidebarMenu>
-              {items.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <a href={item.url}>
-                      <item.icon />
-                      <span>{item.title}</span>
-                    </a>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      </SidebarContent>
-    </Sidebar>
-  );
+          <SidebarMenu>
+            {items.map((item) => (
+              <SidebarMenuItem key={item.title}>
+                <SidebarMenuButton asChild>
+                  <a href={item.url}>
+                    <item.icon />
+                    <span>{item.title}</span>
+                  </a>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            ))}
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
+    </SidebarContent>
+  </Sidebar>
+);

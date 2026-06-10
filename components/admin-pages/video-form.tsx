@@ -63,7 +63,7 @@ export const VideoForm = ({ id, title = "", url = "", videoDate }: VideoFormProp
     }
 
     router.refresh();
-    router.push("/videos");
+    router.push("/admin/videos");
   };
 
   return (

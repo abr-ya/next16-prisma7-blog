@@ -30,10 +30,10 @@ const normalizeVideoDate = (videoDate: Date | string) => {
 };
 
 const revalidateVideoAdminPaths = (id?: string) => {
-  revalidatePath("/videos");
+  revalidatePath("/admin/videos");
 
   if (id) {
-    revalidatePath(`/videos/${id}`);
+    revalidatePath(`/admin/videos/${id}`);
   }
 };
 

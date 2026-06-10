@@ -19,8 +19,8 @@ const VideoPage = async ({ params }: { params: Promise<{ id: string }> }) => {
   if (!video) notFound();
 
   const breadcrumbItems = [
-    { label: "Dashboard", to: "/dashboard" },
-    { label: "Videos", to: "/videos" },
+    { label: "Dashboard", to: "/admin" },
+    { label: "Videos", to: "/admin/videos" },
     { label: video.title || "New", to: null },
   ];
 

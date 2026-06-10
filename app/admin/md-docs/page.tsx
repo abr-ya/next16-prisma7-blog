@@ -9,7 +9,7 @@ const MdDocsAdminPage = async () => {
   const posts = await getAllMdDocs();
 
   const breadItems = [
-    { label: "Dashboard", to: "/dashboard" },
+    { label: "Dashboard", to: "/admin" },
     { label: "MD Docs", to: null },
   ];
 
@@ -18,7 +18,7 @@ const MdDocsAdminPage = async () => {
       breadcrumbs={breadItems}
       headerRight={
         <div className="flex gap-2">
-          <Link href="/md-docs/new">
+          <Link href="/admin/md-docs/new">
             <Button className="cursor-pointer">Add Doc</Button>
           </Link>
         </div>

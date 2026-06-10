@@ -72,7 +72,7 @@ export const PostForm = ({
     }
 
     router.refresh();
-    router.push("/posts");
+    router.push("/admin/posts");
   };
 
   return (
