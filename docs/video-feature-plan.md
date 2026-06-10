@@ -73,6 +73,41 @@ Comments and timestamp notes:
 - Store optional timestamp in seconds, for example `timestampSeconds Int?`.
 - Keep general comments as notes with `timestampSeconds = null`.
 
+### Priority visibility model
+
+Before public video pages are added, extend `Video` with an explicit visibility field:
+
+```prisma
+enum VideoVisibility {
+  PRIVATE
+  PUBLIC
+}
+
+model Video {
+  id         String          @id @default(uuid())
+  title      String
+  url        String
+  videoDate  DateTime
+  visibility VideoVisibility @default(PRIVATE)
+  userId     String
+  user       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @default(now()) @updatedAt
+
+  @@index([userId])
+  @@index([videoDate])
+  @@index([visibility])
+}
+```
+
+Notes:
+
+- New videos should default to `PRIVATE`.
+- Admin pages should show both `PRIVATE` and `PUBLIC` videos for the signed-in owner.
+- Public pages should only query videos with `visibility: PUBLIC`.
+- A private video must not be reachable through public routes, even by direct URL.
+- Keep this as a two-value enum for now; add `UNLISTED` later only if the product needs shareable-but-hidden links.
+
 ## Phase 1: MVP Admin Video Library
 
 Deliver a private admin-only video list and create form.
@@ -107,15 +142,44 @@ Acceptance criteria:
 - Signed-in user can delete an existing video if we include delete controls in this phase.
 - Unauthenticated access follows the app's existing admin/auth behavior.
 
-## Phase 2: Public Video Pages
+## Phase 2: Video Visibility
 
-Add read-only video browsing outside the admin area.
+First-priority follow-up after the admin CRUD MVP: add explicit private/public visibility before building public pages.
+
+Tasks:
+
+- Add `VideoVisibility` enum to `prisma/schema.prisma`.
+- Add `visibility VideoVisibility @default(PRIVATE)` to `Video`.
+- Add an index for `visibility`.
+- Create a Prisma migration for video visibility.
+- Regenerate Prisma client.
+- Update video server action types to accept and persist visibility.
+- Keep admin queries owner-scoped and return both private and public videos.
+- Add visibility control to `VideoForm`, defaulting new videos to private.
+- Add visibility display/filtering to `VideosTable` if useful for scanning.
+- Update validation so only known visibility values are accepted.
+- Run `npm run tsc`.
+- Run `npm run lint`.
+- Manually verify create/edit keeps the selected visibility.
+
+Acceptance criteria:
+
+- New videos are private by default.
+- Signed-in users can switch a video between private and public.
+- Admin list clearly shows the visibility state.
+- Existing videos remain private after migration.
+- No public route exposes private videos.
+
+## Phase 3: Public Video Pages
+
+Add read-only video browsing outside the admin area after explicit visibility exists.
 
 Tasks:
 
 - Add public route `app/videos/page.tsx`.
 - Add detail route `app/videos/[id]/page.tsx` or `app/videos/[slug]/page.tsx`.
 - Decide whether videos need slugs. For a clean public URL, add `slug String @unique` before building public details.
+- Query only videos with `visibility: PUBLIC`.
 - Render title, video date, added date, and outbound link.
 - Optionally embed supported providers later; first version can open the URL.
 - Add navbar/link entry only if public videos are meant to be discoverable.
@@ -124,10 +188,11 @@ Acceptance criteria:
 
 - Public list loads without admin UI.
 - Public detail page shows one video.
+- Private videos return `notFound()` from public detail routes.
 - Dates are formatted consistently.
 - Missing videos render a `notFound()` state.
 
-## Phase 3: Folders
+## Phase 4: Folders
 
 Add organization by folder after the core video CRUD is stable.
 
@@ -146,7 +211,7 @@ Recommended behavior:
 
 - Use `onDelete: SetNull` for `Video.folderId` so deleting a folder does not delete saved videos.
 
-## Phase 4: Tags
+## Phase 5: Tags
 
 Add metadata after folders, because tags introduce many-to-many filtering and management UX.
 
@@ -164,7 +229,7 @@ Acceptance criteria:
 - A tag can be reused across many videos.
 - Video list can filter by tag.
 
-## Phase 5: Detail Notes and Timestamp Comments
+## Phase 6: Detail Notes and Timestamp Comments
 
 Add the deeper annotation workflow.
 
@@ -196,10 +261,11 @@ Acceptance criteria:
 3. Build admin table and form.
 4. Wire admin routes and sidebar navigation.
 5. Run typecheck/lint and fix issues.
-6. Add public pages only after admin CRUD is working.
-7. Add folders.
-8. Add tags.
-9. Add notes/timestamp comments.
+6. Add explicit private/public video visibility.
+7. Add public pages only after visibility exists.
+8. Add folders.
+9. Add tags.
+10. Add notes/timestamp comments.
 
 ## Suggested First PR Scope
 
@@ -238,8 +304,8 @@ npx prisma generate
 
 ## Open Decisions
 
-- Should videos be private per user only, or should there also be a public video catalog?
+- Videos should support both private and public visibility, with new videos private by default.
 - Should public video details use `id` or a generated `slug`?
-- Should the first version include delete, or only create/edit/list?
+- The first admin CRUD version includes delete.
 - Should video URL support be generic, or should YouTube/Vimeo validation and embeds be added early?
 - Should video date store date only semantically, even though Prisma stores it as `DateTime`?

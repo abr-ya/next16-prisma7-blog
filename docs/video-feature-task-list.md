@@ -10,9 +10,9 @@ Status markers:
 
 ## Current Status
 
-- Phase: 1
-- Next task: V1-28
-- Notes: Base Prisma model, migration, Prisma client generation, schema validation, video server actions, video form create/edit UI, admin video table with edit/delete controls, admin video routes, and admin sidebar entry are done.
+- Phase: 2
+- Next task: V2-01
+- Notes: Base admin CRUD is mostly in place. The next implementation priority is explicit private/public video visibility before public pages are built.
 
 ## Phase 0: Planning
 
@@ -20,7 +20,7 @@ Status markers:
 - [x] V0-02 Save the plan in `docs/video-feature-plan.md`.
 - [x] V0-03 Create this task checklist.
 - [x] V0-04 Decide whether the MVP includes delete controls.
-- [ ] V0-05 Decide whether videos are private only or will also have public pages.
+- [x] V0-05 Decide whether videos are private only or will also have public pages.
 - [ ] V0-06 Decide whether public detail URLs should use `id` or `slug`.
 - [ ] V0-07 Decide whether URL validation should be generic or provider-specific.
 
@@ -78,76 +78,97 @@ Goal: authenticated admin users can create, edit, list, and optionally delete sa
 - [ ] V1-34 Manually verify delete flow if included.
 - [ ] V1-35 Update this checklist and note any follow-up tasks.
 
-## Phase 2: Public Video Pages
+## Phase 2: Video Visibility
+
+Goal: add explicit private/public visibility before public video pages are built.
+
+- [ ] V2-01 Add `VideoVisibility` enum to `prisma/schema.prisma`.
+- [ ] V2-02 Add `visibility VideoVisibility @default(PRIVATE)` to `Video`.
+- [ ] V2-03 Add a useful `visibility` index.
+- [ ] V2-04 Create Prisma migration for video visibility.
+- [ ] V2-05 Regenerate Prisma client.
+- [ ] V2-06 Update video server action types to accept visibility.
+- [ ] V2-07 Persist visibility in `createVideo` and `updateVideo`.
+- [ ] V2-08 Keep admin video queries owner-scoped and include both private and public videos.
+- [ ] V2-09 Add visibility control to `VideoForm`, defaulting new videos to private.
+- [ ] V2-10 Add visibility display to `VideosTable`.
+- [ ] V2-11 Update Zod validation for visibility.
+- [ ] V2-12 Run `npm run tsc`.
+- [ ] V2-13 Run `npm run lint`.
+- [ ] V2-14 Manually verify create/edit visibility behavior.
+- [ ] V2-15 Update this checklist and note any follow-up tasks.
+
+## Phase 3: Public Video Pages
 
 Goal: users can browse and open read-only video pages outside the admin area.
 
-- [ ] V2-01 Decide whether public video pages are needed.
-- [ ] V2-02 Decide whether to add `slug` to `Video`.
-- [ ] V2-03 Add slug generation if public details use slugs.
-- [ ] V2-04 Add public list route `app/videos/page.tsx`.
-- [ ] V2-05 Add public detail route, either `app/videos/[id]/page.tsx` or `app/videos/[slug]/page.tsx`.
-- [ ] V2-06 Render title, video date, added date, and outbound URL.
-- [ ] V2-07 Add `notFound()` handling for missing videos.
-- [ ] V2-08 Add navigation entry only if public videos should be discoverable.
-- [ ] V2-09 Run `npm run tsc`.
-- [ ] V2-10 Run `npm run lint`.
-- [ ] V2-11 Manually verify public list and detail pages.
+- [ ] V3-01 Decide whether to add `slug` to `Video`.
+- [ ] V3-02 Add slug generation if public details use slugs.
+- [ ] V3-03 Add public list route `app/videos/page.tsx`.
+- [ ] V3-04 Add public detail route, either `app/videos/[id]/page.tsx` or `app/videos/[slug]/page.tsx`.
+- [ ] V3-05 Query only videos with `visibility: PUBLIC`.
+- [ ] V3-06 Render title, video date, added date, and outbound URL.
+- [ ] V3-07 Add `notFound()` handling for missing, private, or unauthorized videos.
+- [ ] V3-08 Add navigation entry only if public videos should be discoverable.
+- [ ] V3-09 Run `npm run tsc`.
+- [ ] V3-10 Run `npm run lint`.
+- [ ] V3-11 Manually verify public list and detail pages.
+- [ ] V3-12 Manually verify private videos are not exposed publicly.
 
-## Phase 3: Folders
+## Phase 4: Folders
 
 Goal: allow videos to be grouped without deleting videos when a folder is removed.
 
-- [ ] V3-01 Add `VideoFolder` model.
-- [ ] V3-02 Add optional `folderId` to `Video`.
-- [ ] V3-03 Use `onDelete: SetNull` for the video-folder relation.
-- [ ] V3-04 Create Prisma migration.
-- [ ] V3-05 Regenerate Prisma client.
-- [ ] V3-06 Add folder server actions.
-- [ ] V3-07 Add folder admin list.
-- [ ] V3-08 Add folder create/edit UI.
-- [ ] V3-09 Add folder selector to `VideoForm`.
-- [ ] V3-10 Add folder display to video table/detail views.
-- [ ] V3-11 Add folder filtering to video list.
-- [ ] V3-12 Run `npm run tsc`.
-- [ ] V3-13 Run `npm run lint`.
-- [ ] V3-14 Manually verify folder create/edit/filter flows.
+- [ ] V4-01 Add `VideoFolder` model.
+- [ ] V4-02 Add optional `folderId` to `Video`.
+- [ ] V4-03 Use `onDelete: SetNull` for the video-folder relation.
+- [ ] V4-04 Create Prisma migration.
+- [ ] V4-05 Regenerate Prisma client.
+- [ ] V4-06 Add folder server actions.
+- [ ] V4-07 Add folder admin list.
+- [ ] V4-08 Add folder create/edit UI.
+- [ ] V4-09 Add folder selector to `VideoForm`.
+- [ ] V4-10 Add folder display to video table/detail views.
+- [ ] V4-11 Add folder filtering to video list.
+- [ ] V4-12 Run `npm run tsc`.
+- [ ] V4-13 Run `npm run lint`.
+- [ ] V4-14 Manually verify folder create/edit/filter flows.
 
-## Phase 4: Tags
+## Phase 5: Tags
 
 Goal: add reusable tags and filtering for videos.
 
-- [ ] V4-01 Add `VideoTag` model.
-- [ ] V4-02 Add video/tag join model, such as `TagsToVideos`.
-- [ ] V4-03 Create Prisma migration.
-- [ ] V4-04 Regenerate Prisma client.
-- [ ] V4-05 Add tag server actions.
-- [ ] V4-06 Add tag create/select UI.
-- [ ] V4-07 Add tag selector to `VideoForm`.
-- [ ] V4-08 Add tag badges to video table/detail views.
-- [ ] V4-09 Add tag filtering to video list.
-- [ ] V4-10 Run `npm run tsc`.
-- [ ] V4-11 Run `npm run lint`.
-- [ ] V4-12 Manually verify multi-tag assignment and filtering.
+- [ ] V5-01 Add `VideoTag` model.
+- [ ] V5-02 Add video/tag join model, such as `TagsToVideos`.
+- [ ] V5-03 Create Prisma migration.
+- [ ] V5-04 Regenerate Prisma client.
+- [ ] V5-05 Add tag server actions.
+- [ ] V5-06 Add tag create/select UI.
+- [ ] V5-07 Add tag selector to `VideoForm`.
+- [ ] V5-08 Add tag badges to video table/detail views.
+- [ ] V5-09 Add tag filtering to video list.
+- [ ] V5-10 Run `npm run tsc`.
+- [ ] V5-11 Run `npm run lint`.
+- [ ] V5-12 Manually verify multi-tag assignment and filtering.
 
-## Phase 5: Detail Notes and Timestamp Comments
+## Phase 6: Detail Notes and Timestamp Comments
 
 Goal: add comments and timestamped notes on video detail pages.
 
-- [ ] V5-01 Add `VideoNote` model.
-- [ ] V5-02 Add optional `timestampSeconds Int?`.
-- [ ] V5-03 Create Prisma migration.
-- [ ] V5-04 Regenerate Prisma client.
-- [ ] V5-05 Add note server actions.
-- [ ] V5-06 Add notes section to video detail page.
-- [ ] V5-07 Add regular comment form.
-- [ ] V5-08 Add timestamp note form.
-- [ ] V5-09 Add timestamp parsing and formatting helper.
-- [ ] V5-10 Sort timestamp notes in a useful order.
-- [ ] V5-11 Run `npm run tsc`.
-- [ ] V5-12 Run `npm run lint`.
-- [ ] V5-13 Manually verify regular notes.
-- [ ] V5-14 Manually verify timestamp notes.
+- [ ] V6-01 Add `VideoNote` model.
+- [ ] V6-02 Add optional `timestampSeconds Int?`.
+- [ ] V6-03 Create Prisma migration.
+- [ ] V6-04 Regenerate Prisma client.
+- [ ] V6-05 Add note server actions.
+- [ ] V6-06 Add notes section to video detail page.
+- [ ] V6-07 Add regular comment form.
+- [ ] V6-08 Add timestamp note form.
+- [ ] V6-09 Add timestamp parsing and formatting helper.
+- [ ] V6-10 Sort timestamp notes in a useful order.
+- [ ] V6-11 Run `npm run tsc`.
+- [ ] V6-12 Run `npm run lint`.
+- [ ] V6-13 Manually verify regular notes.
+- [ ] V6-14 Manually verify timestamp notes.
 
 ## Backlog
 
