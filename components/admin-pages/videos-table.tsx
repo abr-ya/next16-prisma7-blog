@@ -10,7 +10,7 @@ import { toast } from "sonner";
 
 import { deleteVideo } from "@/app/_data/videos";
 
-import { Button, DataTable } from "..";
+import { Badge, Button, DataTable } from "..";
 
 interface IVideosTableProps {
   data: Video[];
@@ -31,6 +31,8 @@ const formatDateTime = (date: Date) =>
     hour: "2-digit",
     minute: "2-digit",
   });
+
+const formatVisibility = (visibility: Video["visibility"]) => (visibility === "PUBLIC" ? "Public" : "Private");
 
 const VideoActions = ({ video }: { video: Video }) => {
   const router = useRouter();
@@ -113,6 +115,15 @@ const columns: ColumnDef<Video>[] = [
       >
         {row.original.url}
       </a>
+    ),
+  },
+  {
+    accessorKey: "visibility",
+    header: "Visibility",
+    cell: ({ row }) => (
+      <Badge variant={row.original.visibility === "PUBLIC" ? "default" : "secondary"}>
+        {formatVisibility(row.original.visibility)}
+      </Badge>
     ),
   },
   {

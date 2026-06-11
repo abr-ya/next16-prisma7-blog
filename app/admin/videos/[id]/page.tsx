@@ -13,6 +13,7 @@ const VideoPage = async ({ params }: { params: Promise<{ id: string }> }) => {
           title: "",
           url: "",
           videoDate: new Date(),
+          visibility: "PRIVATE" as const,
         }
       : await getVideoById(id);
 
@@ -27,7 +28,13 @@ const VideoPage = async ({ params }: { params: Promise<{ id: string }> }) => {
   return (
     <AdminPageLayout breadcrumbs={breadcrumbItems}>
       <div className="p-8 flex flex-col">
-        <VideoForm id={video.id || undefined} title={video.title} url={video.url} videoDate={video.videoDate} />
+        <VideoForm
+          id={video.id || undefined}
+          title={video.title}
+          url={video.url}
+          visibility={video.visibility}
+          videoDate={video.videoDate}
+        />
       </div>
     </AdminPageLayout>
   );

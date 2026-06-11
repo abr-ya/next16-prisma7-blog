@@ -8,12 +8,38 @@ import { z } from "zod";
 
 import { createLogEvent } from "@/app/_data/log";
 import { createVideo, updateVideo } from "@/app/_data/videos";
-import { Button, Card, CardContent, CardHeader, CardTitle, Form, FormControl, FormField, FormItem, FormLabel, FormMessage, Input, Spinner } from "..";
+import type { VideoVisibility } from "@/generated/prisma/enums";
+import {
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+  Input,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Spinner,
+} from "..";
+
+const videoVisibilityOptions = [
+  { value: "PRIVATE", label: "Private" },
+  { value: "PUBLIC", label: "Public" },
+] as const satisfies { value: VideoVisibility; label: string }[];
 
 const formSchema = z.object({
   id: z.string().optional(),
   title: z.string().trim().min(3, { message: "Title is required" }),
   url: z.string().trim().url({ message: "Enter a valid URL" }),
+  visibility: z.enum(["PRIVATE", "PUBLIC"]),
   videoDate: z
     .string()
     .min(1, { message: "Video date is required" })
@@ -38,7 +64,7 @@ const formatDateInputValue = (date?: Date | string) => {
   return parsedDate.toISOString().slice(0, 10);
 };
 
-export const VideoForm = ({ id, title = "", url = "", videoDate }: VideoFormProps) => {
+export const VideoForm = ({ id, title = "", url = "", videoDate, visibility = "PRIVATE" }: VideoFormProps) => {
   const router = useRouter();
   const form = useForm<VideoFormValues>({
     resolver: zodResolver(formSchema),
@@ -46,6 +72,7 @@ export const VideoForm = ({ id, title = "", url = "", videoDate }: VideoFormProp
       id,
       title,
       url,
+      visibility,
       videoDate: formatDateInputValue(videoDate),
     },
     mode: "onBlur",
@@ -103,7 +130,32 @@ export const VideoForm = ({ id, title = "", url = "", videoDate }: VideoFormProp
           <CardHeader>
             <CardTitle>Video Details</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="flex flex-col gap-6">
+            <FormField
+              control={form.control}
+              name="visibility"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Visibility</FormLabel>
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <FormControl>
+                      <SelectTrigger className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {videoVisibilityOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             <FormField
               control={form.control}
               name="videoDate"

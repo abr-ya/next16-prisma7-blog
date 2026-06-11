@@ -11,8 +11,8 @@ Status markers:
 ## Current Status
 
 - Phase: 2
-- Next task: V2-09
-- Notes: Video visibility schema, migration, generated Prisma client, and server actions are in place. The next implementation priority is adding visibility controls to the admin UI.
+- Next task: V2-14
+- Notes: Video visibility schema, migration, generated Prisma client, server actions, form control, table display, and validation are in place. The next step is manual create/edit verification.
 
 ## Phase 0: Planning
 
@@ -90,11 +90,11 @@ Goal: add explicit private/public visibility before public video pages are built
 - [x] V2-06 Update video server action types to accept visibility.
 - [x] V2-07 Persist visibility in `createVideo` and `updateVideo`.
 - [x] V2-08 Keep admin video queries owner-scoped and include both private and public videos.
-- [ ] V2-09 Add visibility control to `VideoForm`, defaulting new videos to private.
-- [ ] V2-10 Add visibility display to `VideosTable`.
-- [ ] V2-11 Update Zod validation for visibility.
-- [ ] V2-12 Run `npm run tsc`.
-- [ ] V2-13 Run `npm run lint`.
+- [x] V2-09 Add visibility control to `VideoForm`, defaulting new videos to private.
+- [x] V2-10 Add visibility display to `VideosTable`.
+- [x] V2-11 Update Zod validation for visibility.
+- [x] V2-12 Run `npm run tsc`.
+- [x] V2-13 Run `npm run lint`.
 - [ ] V2-14 Manually verify create/edit visibility behavior.
 - [ ] V2-15 Update this checklist and note any follow-up tasks.
 
