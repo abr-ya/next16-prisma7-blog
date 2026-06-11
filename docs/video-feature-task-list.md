@@ -11,8 +11,8 @@ Status markers:
 ## Current Status
 
 - Phase: 2
-- Next task: V2-01
-- Notes: Base admin CRUD is mostly in place. The next implementation priority is explicit private/public video visibility before public pages are built.
+- Next task: V2-09
+- Notes: Video visibility schema, migration, generated Prisma client, and server actions are in place. The next implementation priority is adding visibility controls to the admin UI.
 
 ## Phase 0: Planning
 
@@ -82,14 +82,14 @@ Goal: authenticated admin users can create, edit, list, and optionally delete sa
 
 Goal: add explicit private/public visibility before public video pages are built.
 
-- [ ] V2-01 Add `VideoVisibility` enum to `prisma/schema.prisma`.
-- [ ] V2-02 Add `visibility VideoVisibility @default(PRIVATE)` to `Video`.
-- [ ] V2-03 Add a useful `visibility` index.
-- [ ] V2-04 Create Prisma migration for video visibility.
-- [ ] V2-05 Regenerate Prisma client.
-- [ ] V2-06 Update video server action types to accept visibility.
-- [ ] V2-07 Persist visibility in `createVideo` and `updateVideo`.
-- [ ] V2-08 Keep admin video queries owner-scoped and include both private and public videos.
+- [x] V2-01 Add `VideoVisibility` enum to `prisma/schema.prisma`.
+- [x] V2-02 Add `visibility VideoVisibility @default(PRIVATE)` to `Video`.
+- [x] V2-03 Add a useful `visibility` index.
+- [x] V2-04 Create Prisma migration for video visibility.
+- [x] V2-05 Regenerate Prisma client.
+- [x] V2-06 Update video server action types to accept visibility.
+- [x] V2-07 Persist visibility in `createVideo` and `updateVideo`.
+- [x] V2-08 Keep admin video queries owner-scoped and include both private and public videos.
 - [ ] V2-09 Add visibility control to `VideoForm`, defaulting new videos to private.
 - [ ] V2-10 Add visibility display to `VideosTable`.
 - [ ] V2-11 Update Zod validation for visibility.

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
+import type { VideoVisibility } from "@/generated/prisma/enums";
 import { authSession } from "@/lib/auth-utils";
 
 export type VideoActionValues = {
@@ -9,7 +10,10 @@ export type VideoActionValues = {
   title: string;
   url: string;
   videoDate: Date | string;
+  visibility?: VideoVisibility;
 };
+
+const DEFAULT_VIDEO_VISIBILITY: VideoVisibility = "PRIVATE";
 
 const getRequiredUserId = async () => {
   const session = await authSession();
@@ -66,7 +70,12 @@ export const getVideoById = async (id: string) => {
   }
 };
 
-export const createVideo = async ({ title, url, videoDate }: VideoActionValues) => {
+export const createVideo = async ({
+  title,
+  url,
+  videoDate,
+  visibility = DEFAULT_VIDEO_VISIBILITY,
+}: VideoActionValues) => {
   try {
     const userId = await getRequiredUserId();
     const { default: prisma } = await import("@/lib/prisma");
@@ -76,6 +85,7 @@ export const createVideo = async ({ title, url, videoDate }: VideoActionValues) 
         title,
         url,
         videoDate: normalizeVideoDate(videoDate),
+        visibility,
         userId,
       },
     });
@@ -89,7 +99,13 @@ export const createVideo = async ({ title, url, videoDate }: VideoActionValues) 
   }
 };
 
-export const updateVideo = async ({ id, title, url, videoDate }: VideoActionValues) => {
+export const updateVideo = async ({
+  id,
+  title,
+  url,
+  videoDate,
+  visibility = DEFAULT_VIDEO_VISIBILITY,
+}: VideoActionValues) => {
   try {
     if (!id) throw new Error("Video id is required");
 
@@ -109,6 +125,7 @@ export const updateVideo = async ({ id, title, url, videoDate }: VideoActionValu
         title,
         url,
         videoDate: normalizeVideoDate(videoDate),
+        visibility,
       },
     });
 

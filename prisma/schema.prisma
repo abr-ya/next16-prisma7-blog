@@ -181,18 +181,25 @@ model LinksToPosts {
 // Link - finish
 
 // Video - start
+enum VideoVisibility {
+  PRIVATE
+  PUBLIC
+}
+
 model Video {
-  id        String   @id @default(uuid())
-  title     String
-  url       String
-  videoDate DateTime
-  userId    String
-  user      User     @relation(references: [id], fields: [userId], onDelete: Cascade)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now()) @updatedAt
+  id         String          @id @default(uuid())
+  title      String
+  url        String
+  videoDate  DateTime
+  visibility VideoVisibility @default(PRIVATE)
+  userId     String
+  user       User            @relation(references: [id], fields: [userId], onDelete: Cascade)
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @default(now()) @updatedAt
 
   @@index([userId])
   @@index([videoDate])
+  @@index([visibility])
 }
 // Video - finish
 
