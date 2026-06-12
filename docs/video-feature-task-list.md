@@ -11,8 +11,8 @@ Status markers:
 ## Current Status
 
 - Phase: 3
-- Next task: V3-11
-- Notes: Public video list/detail routes now use `id`, query only `PUBLIC` videos, render public video metadata and outbound links, and return `notFound()` for missing or private videos. The next step is manual public-page verification.
+- Next task: VB-02
+- Notes: Public video pages are manually verified. URL validation stays generic, `videoDate` is date-only semantically, and new video backlog details live in `docs/video-feature-backlog.md`.
 
 ## Phase 0: Planning
 
@@ -22,7 +22,8 @@ Status markers:
 - [x] V0-04 Decide whether the MVP includes delete controls.
 - [x] V0-05 Decide whether videos are private only or will also have public pages.
 - [x] V0-06 Decide whether public detail URLs should use `id` or `slug`. Public video details will use `id`.
-- [ ] V0-07 Decide whether URL validation should be generic or provider-specific.
+- [x] V0-07 Decide whether URL validation should be generic or provider-specific. Keep generic URL validation for now.
+- [x] V0-08 Decide whether video date should be date-only semantically. Treat `videoDate` as date-only in UI and product logic.
 
 ## Phase 1: MVP Admin Video Library
 
@@ -112,27 +113,27 @@ Goal: users can browse and open read-only video pages outside the admin area.
 - [x] V3-08 Add navigation entry only if public videos should be discoverable.
 - [x] V3-09 Run `npm run tsc`.
 - [x] V3-10 Run `npm run lint`.
-- [ ] V3-11 Manually verify public list and detail pages.
-- [ ] V3-12 Manually verify private videos are not exposed publicly.
+- [x] V3-11 Manually verify public list and detail pages.
+- [x] V3-12 Manually verify private videos are not exposed publicly.
 
-## Phase 4: Folders
+## Phase 4: Channels
 
-Goal: allow videos to be grouped without deleting videos when a folder is removed.
+Goal: allow videos to be grouped by user-owned channels without deleting videos when a channel is removed.
 
-- [ ] V4-01 Add `VideoFolder` model.
-- [ ] V4-02 Add optional `folderId` to `Video`.
-- [ ] V4-03 Use `onDelete: SetNull` for the video-folder relation.
+- [ ] V4-01 Add `VideoChannel` model.
+- [ ] V4-02 Add optional `channelId` to `Video`.
+- [ ] V4-03 Use `onDelete: SetNull` for the video-channel relation.
 - [ ] V4-04 Create Prisma migration.
 - [ ] V4-05 Regenerate Prisma client.
-- [ ] V4-06 Add folder server actions.
-- [ ] V4-07 Add folder admin list.
-- [ ] V4-08 Add folder create/edit UI.
-- [ ] V4-09 Add folder selector to `VideoForm`.
-- [ ] V4-10 Add folder display to video table/detail views.
-- [ ] V4-11 Add folder filtering to video list.
+- [ ] V4-06 Add channel server actions.
+- [ ] V4-07 Add channel admin list.
+- [ ] V4-08 Add channel create/edit UI.
+- [ ] V4-09 Add channel selector to `VideoForm`.
+- [ ] V4-10 Add channel display to video table/detail views.
+- [ ] V4-11 Add channel filtering and sorting to video lists.
 - [ ] V4-12 Run `npm run tsc`.
 - [ ] V4-13 Run `npm run lint`.
-- [ ] V4-14 Manually verify folder create/edit/filter flows.
+- [ ] V4-14 Manually verify channel create/edit/filter flows.
 
 ## Phase 5: Tags
 
@@ -172,9 +173,10 @@ Goal: add comments and timestamped notes on video detail pages.
 
 ## Backlog
 
-- [ ] VB-01 Add provider-specific metadata extraction for YouTube/Vimeo.
-- [ ] VB-02 Add video embeds.
-- [ ] VB-03 Add thumbnails.
-- [ ] VB-04 Add search across title, URL, tags, folders, and notes.
-- [ ] VB-05 Add import/export for video links.
-- [ ] VB-06 Add bulk actions in the video table.
+- [x] VB-01 Add metadata extraction plan for thumbnails and duration.
+- [ ] VB-02 Add optional `thumbnailUrl` and `durationSeconds` fields to `Video`.
+- [ ] VB-03 Add provider detection/adapters where metadata is available.
+- [ ] VB-04 Add video embeds after provider detection exists.
+- [ ] VB-05 Add search across title, URL, tags, channels, notes, and metadata.
+- [ ] VB-06 Add import/export for video links.
+- [ ] VB-07 Add bulk actions in the video table.

@@ -2,7 +2,7 @@
 
 ## Context
 
-The project already has a Next.js App Router structure with Prisma models for posts, markdown docs, links, categories, users, and logs. Videos should be a separate entity rather than an extension of `Link`, because they need a video-specific date, future detail pages, folders, tags, comments, and timestamp notes.
+The project already has a Next.js App Router structure with Prisma models for posts, markdown docs, links, categories, users, and logs. Videos should be a separate entity rather than an extension of `Link`, because they need a video-specific date, future detail pages, channels, tags, comments, and timestamp notes.
 
 ## Goal
 
@@ -13,7 +13,7 @@ Add a video library where an authenticated user can save video links with:
 - video date
 - added date
 
-Later phases should support folders, tags, a public/admin detail page, comments, and timestamp notes.
+Later phases should support channels, tags, video metadata, a public/admin detail page, comments, and timestamp notes.
 
 ## Data Model Direction
 
@@ -42,16 +42,17 @@ Also add `videos Video[]` to `User`.
 Notes:
 
 - `createdAt` is the added date.
-- `videoDate` is the date of the video itself.
+- `videoDate` is the date of the video itself. Treat it as a date-only value in UI and product logic, even though Prisma stores it as `DateTime`.
 - Keep URL as plain `String` for the first version, validated in the form with Zod.
-- Do not add folders/tags/comments yet in the first migration.
+- URL validation stays generic for now: any valid URL is accepted. Provider-specific validation and metadata extraction should come from later backlog work.
+- Do not add channels/tags/comments yet in the first migration.
 
 ### Future models
 
-Folder support:
+Channel support:
 
 ```prisma
-model VideoFolder {
+model VideoChannel {
   id        String   @id @default(uuid())
   name      String
   userId    String
@@ -64,8 +65,14 @@ model VideoFolder {
 
 Tags:
 
-- Prefer normalized tags over `String[]` if tags will be reused, filtered, renamed, or colored.
+- Prefer normalized tags over `String[]` because video tags should behave closer to user-owned categories.
 - Use `VideoTag` plus a join model like `TagsToVideos`.
+
+Metadata:
+
+- Add thumbnail and duration only through provider-aware extraction when possible.
+- Store extracted data on `Video`, for example `thumbnailUrl String?`, `durationSeconds Int?`, `provider String?`, and `providerVideoId String?`.
+- Metadata extraction must be optional and failure-tolerant: saving a valid video URL should still work if metadata cannot be fetched.
 
 Comments and timestamp notes:
 
@@ -192,28 +199,28 @@ Acceptance criteria:
 - Dates are formatted consistently.
 - Missing videos render a `notFound()` state.
 
-## Phase 4: Folders
+## Phase 4: Channels
 
-Add organization by folder after the core video CRUD is stable.
+Add organization by channel after the core video CRUD is stable. A channel is a user-owned grouping axis for videos, similar to folders but named for video collections.
 
 Tasks:
 
-- Add `VideoFolder` model.
-- Add optional `folderId` relation on `Video`.
-- Add folder CRUD actions and admin page.
-- Add folder selector to `VideoForm`.
-- Add table/list filtering by folder.
-- Decide how to handle deleting a folder:
-  - set videos to no folder, or
-  - cascade delete folder contents.
+- Add `VideoChannel` model.
+- Add optional `channelId` relation on `Video`.
+- Add channel CRUD actions and admin page.
+- Add channel selector to `VideoForm`.
+- Add table/list filtering by channel.
+- Decide how to handle deleting a channel:
+  - set videos to no channel, or
+  - cascade delete channel contents.
 
 Recommended behavior:
 
-- Use `onDelete: SetNull` for `Video.folderId` so deleting a folder does not delete saved videos.
+- Use `onDelete: SetNull` for `Video.channelId` so deleting a channel does not delete saved videos.
 
 ## Phase 5: Tags
 
-Add metadata after folders, because tags introduce many-to-many filtering and management UX.
+Add tags after channels, because tags introduce many-to-many filtering and management UX.
 
 Tasks:
 
@@ -263,7 +270,7 @@ Acceptance criteria:
 5. Run typecheck/lint and fix issues.
 6. Add explicit private/public video visibility.
 7. Add public pages only after visibility exists.
-8. Add folders.
+8. Add channels.
 9. Add tags.
 10. Add notes/timestamp comments.
 
@@ -280,7 +287,7 @@ Keep the first implementation intentionally small:
 
 Avoid in the first PR:
 
-- folders
+- channels
 - tags
 - public embed logic
 - comments
@@ -307,5 +314,9 @@ npx prisma generate
 - Videos should support both private and public visibility, with new videos private by default.
 - Public video details should use `id`; a generated `slug` is not needed for this phase.
 - The first admin CRUD version includes delete.
-- Should video URL support be generic, or should YouTube/Vimeo validation and embeds be added early?
-- Should video date store date only semantically, even though Prisma stores it as `DateTime`?
+- Video URL validation stays generic for now; provider-specific validation, thumbnails, duration, and embeds belong to the video backlog.
+- `videoDate` is semantically date-only, even though Prisma stores it as `DateTime`.
+
+## Video Backlog
+
+See `docs/video-feature-backlog.md` for metadata, channel, tag, search, import/export, and bulk-action backlog items.
