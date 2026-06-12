@@ -31,6 +31,11 @@ export const Navbar = ({ userId, userName, userImage }: INavbarProps) => {
             </NavigationMenuLink>
           </NavigationMenuItem>
           <NavigationMenuItem>
+            <NavigationMenuLink href="/videos" className="hover:bg-blue-100 px-3 py-2 rounded-md">
+              Videos
+            </NavigationMenuLink>
+          </NavigationMenuItem>
+          <NavigationMenuItem>
             <Button variant="ghost" onClick={goBack} className="cursor-pointer hover:bg-blue-100">
               Back
             </Button>

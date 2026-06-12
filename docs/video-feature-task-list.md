@@ -10,9 +10,9 @@ Status markers:
 
 ## Current Status
 
-- Phase: 2
-- Next task: V2-14
-- Notes: Video visibility schema, migration, generated Prisma client, server actions, form control, table display, and validation are in place. The next step is manual create/edit verification.
+- Phase: 3
+- Next task: V3-11
+- Notes: Public video list/detail routes now use `id`, query only `PUBLIC` videos, render public video metadata and outbound links, and return `notFound()` for missing or private videos. The next step is manual public-page verification.
 
 ## Phase 0: Planning
 
@@ -21,7 +21,7 @@ Status markers:
 - [x] V0-03 Create this task checklist.
 - [x] V0-04 Decide whether the MVP includes delete controls.
 - [x] V0-05 Decide whether videos are private only or will also have public pages.
-- [ ] V0-06 Decide whether public detail URLs should use `id` or `slug`.
+- [x] V0-06 Decide whether public detail URLs should use `id` or `slug`. Public video details will use `id`.
 - [ ] V0-07 Decide whether URL validation should be generic or provider-specific.
 
 ## Phase 1: MVP Admin Video Library
@@ -95,23 +95,23 @@ Goal: add explicit private/public visibility before public video pages are built
 - [x] V2-11 Update Zod validation for visibility.
 - [x] V2-12 Run `npm run tsc`.
 - [x] V2-13 Run `npm run lint`.
-- [ ] V2-14 Manually verify create/edit visibility behavior.
-- [ ] V2-15 Update this checklist and note any follow-up tasks.
+- [x] V2-14 Manually verify create/edit visibility behavior.
+- [x] V2-15 Update this checklist and note any follow-up tasks.
 
 ## Phase 3: Public Video Pages
 
 Goal: users can browse and open read-only video pages outside the admin area.
 
-- [ ] V3-01 Decide whether to add `slug` to `Video`.
-- [ ] V3-02 Add slug generation if public details use slugs.
-- [ ] V3-03 Add public list route `app/videos/page.tsx`.
-- [ ] V3-04 Add public detail route, either `app/videos/[id]/page.tsx` or `app/videos/[slug]/page.tsx`.
-- [ ] V3-05 Query only videos with `visibility: PUBLIC`.
-- [ ] V3-06 Render title, video date, added date, and outbound URL.
-- [ ] V3-07 Add `notFound()` handling for missing, private, or unauthorized videos.
-- [ ] V3-08 Add navigation entry only if public videos should be discoverable.
-- [ ] V3-09 Run `npm run tsc`.
-- [ ] V3-10 Run `npm run lint`.
+- [x] V3-01 Decide whether to add `slug` to `Video`. Use `id`; no slug field is needed.
+- [x] V3-02 Add slug generation if public details use slugs. Not applicable because public details use `id`.
+- [x] V3-03 Add public list route `app/videos/page.tsx`.
+- [x] V3-04 Add public detail route, either `app/videos/[id]/page.tsx` or `app/videos/[slug]/page.tsx`.
+- [x] V3-05 Query only videos with `visibility: PUBLIC`.
+- [x] V3-06 Render title, video date, added date, and outbound URL.
+- [x] V3-07 Add `notFound()` handling for missing, private, or unauthorized videos.
+- [x] V3-08 Add navigation entry only if public videos should be discoverable.
+- [x] V3-09 Run `npm run tsc`.
+- [x] V3-10 Run `npm run lint`.
 - [ ] V3-11 Manually verify public list and detail pages.
 - [ ] V3-12 Manually verify private videos are not exposed publicly.
 

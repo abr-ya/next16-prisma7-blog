@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
+import type { Video } from "@/generated/prisma/client";
 import type { VideoVisibility } from "@/generated/prisma/enums";
 import { authSession } from "@/lib/auth-utils";
 
@@ -35,9 +36,11 @@ const normalizeVideoDate = (videoDate: Date | string) => {
 
 const revalidateVideoAdminPaths = (id?: string) => {
   revalidatePath("/admin/videos");
+  revalidatePath("/videos");
 
   if (id) {
     revalidatePath(`/admin/videos/${id}`);
+    revalidatePath(`/videos/${id}`);
   }
 };
 
@@ -67,6 +70,33 @@ export const getVideoById = async (id: string) => {
   } catch (err) {
     console.error({ err });
     throw new Error("Something went wrong (getVideoById)");
+  }
+};
+
+export const getPublicVideos = async (): Promise<Video[]> => {
+  try {
+    const { default: prisma } = await import("@/lib/prisma");
+
+    return prisma.video.findMany({
+      where: { visibility: "PUBLIC" },
+      orderBy: { videoDate: "desc" },
+    });
+  } catch (err) {
+    console.error({ err });
+    throw new Error("Something went wrong (getPublicVideos)");
+  }
+};
+
+export const getPublicVideoById = async (id: string): Promise<Video | null> => {
+  try {
+    const { default: prisma } = await import("@/lib/prisma");
+
+    return prisma.video.findFirst({
+      where: { id, visibility: "PUBLIC" },
+    });
+  } catch (err) {
+    console.error({ err });
+    throw new Error("Something went wrong (getPublicVideoById)");
   }
 };
 

@@ -177,8 +177,8 @@ Add read-only video browsing outside the admin area after explicit visibility ex
 Tasks:
 
 - Add public route `app/videos/page.tsx`.
-- Add detail route `app/videos/[id]/page.tsx` or `app/videos/[slug]/page.tsx`.
-- Decide whether videos need slugs. For a clean public URL, add `slug String @unique` before building public details.
+- Add detail route `app/videos/[id]/page.tsx`.
+- Public video details should use the existing `id`; do not add a video slug field for this phase.
 - Query only videos with `visibility: PUBLIC`.
 - Render title, video date, added date, and outbound link.
 - Optionally embed supported providers later; first version can open the URL.
@@ -187,7 +187,7 @@ Tasks:
 Acceptance criteria:
 
 - Public list loads without admin UI.
-- Public detail page shows one video.
+- Public detail page shows one video by `id`.
 - Private videos return `notFound()` from public detail routes.
 - Dates are formatted consistently.
 - Missing videos render a `notFound()` state.
@@ -305,7 +305,7 @@ npx prisma generate
 ## Open Decisions
 
 - Videos should support both private and public visibility, with new videos private by default.
-- Should public video details use `id` or a generated `slug`?
+- Public video details should use `id`; a generated `slug` is not needed for this phase.
 - The first admin CRUD version includes delete.
 - Should video URL support be generic, or should YouTube/Vimeo validation and embeds be added early?
 - Should video date store date only semantically, even though Prisma stores it as `DateTime`?
