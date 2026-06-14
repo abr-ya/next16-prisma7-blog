@@ -10,9 +10,9 @@ Status markers:
 
 ## Current Status
 
-- Phase: 0
-- Next task: VT-01
-- Notes: The selected MVP stores an external thumbnail URL, supports a manual UploadThing override, and does not make thumbnail resolution part of the video save transaction.
+- Phase: 2
+- Next task: VT-05
+- Notes: The nullable `thumbnailUrl` schema change, migration, and generated Prisma Client are ready. Applying the migration to the development database remains tracked by VT-29.
 
 ## Phase 0: Decisions and Planning
 
@@ -24,10 +24,10 @@ Status markers:
 
 ## Phase 1: Data Model
 
-- [ ] VT-01 Add optional `thumbnailUrl String?` to `Video` in `prisma/schema.prisma`.
-- [ ] VT-02 Create a Prisma migration for the thumbnail field.
-- [ ] VT-03 Regenerate the Prisma client.
-- [ ] VT-04 Confirm existing videos remain valid with `thumbnailUrl = null`.
+- [x] VT-01 Add optional `thumbnailUrl String?` to `Video` in `prisma/schema.prisma`.
+- [x] VT-02 Create a Prisma migration for the thumbnail field.
+- [x] VT-03 Regenerate the Prisma client.
+- [x] VT-04 Confirm existing videos remain valid with `thumbnailUrl = null`.
 
 ## Phase 2: YouTube Helper
 
