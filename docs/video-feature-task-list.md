@@ -11,8 +11,8 @@ Status markers:
 ## Current Status
 
 - Phase: 3
-- Next task: VB-02
-- Notes: Public video pages are manually verified. URL validation stays generic, `videoDate` is date-only semantically, and new video backlog details live in `docs/video-feature-backlog.md`.
+- Next task: VT-01 in `docs/video-thumbnail-feature-task-list.md`
+- Notes: Public video pages are manually verified. URL validation stays generic, `videoDate` is date-only semantically, and thumbnail implementation is tracked in the dedicated plan and task list.
 
 ## Phase 0: Planning
 
@@ -174,7 +174,7 @@ Goal: add comments and timestamped notes on video detail pages.
 ## Backlog
 
 - [x] VB-01 Add metadata extraction plan for thumbnails and duration.
-- [ ] VB-02 Add optional `thumbnailUrl` and `durationSeconds` fields to `Video`.
+- [ ] VB-02 Implement optional video thumbnails through `docs/video-thumbnail-feature-task-list.md`. Keep duration extraction as a later metadata task.
 - [ ] VB-03 Add provider detection/adapters where metadata is available.
 - [ ] VB-04 Add video embeds after provider detection exists.
 - [ ] VB-05 Add search across title, URL, tags, channels, notes, and metadata.

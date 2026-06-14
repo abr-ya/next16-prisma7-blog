@@ -6,6 +6,11 @@ Use this backlog for video ideas that are not part of the current public pages m
 
 ### Metadata Extraction
 
+Detailed thumbnail analysis and implementation tracking:
+
+- `docs/video-thumbnail-feature-plan.md`
+- `docs/video-thumbnail-feature-task-list.md`
+
 - Add optional `thumbnailUrl` to `Video`.
 - Add optional `durationSeconds` to `Video`.
 - Add optional provider fields, such as `provider` and `providerVideoId`, if provider adapters need normalized lookup.
