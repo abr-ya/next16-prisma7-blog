@@ -4,7 +4,7 @@ import type { MdDoc } from "@/generated/prisma/client";
 import { ColumnDef } from "@tanstack/react-table";
 import Link from "next/link";
 import { Button, DataTable } from "..";
-import { ArrowUpDown } from "lucide-react";
+import { ArrowUpDown, ExternalLink } from "lucide-react";
 
 interface IMdDocsTableProps {
   data: MdDoc[];
@@ -63,6 +63,19 @@ const columns: ColumnDef<MdDoc>[] = [
         hour: "2-digit",
         minute: "2-digit",
       }),
+  },
+  {
+    id: "actions",
+    enableHiding: false,
+    cell: ({ row }) => (
+      <div className="flex items-center justify-end">
+        <Button asChild variant="ghost" size="icon" title="Open document">
+          <Link href={`/docs/${row.original.slug}`} target="_blank" rel="noreferrer">
+            <ExternalLink className="size-4" />
+          </Link>
+        </Button>
+      </div>
+    ),
   },
 ];
 
