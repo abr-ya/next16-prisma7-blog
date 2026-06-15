@@ -63,7 +63,7 @@ const VideoActions = ({ video }: { video: Video }) => {
   };
 
   return (
-    <div className="flex items-center justify-end gap-2">
+    <div className="flex w-28 items-center justify-end gap-1">
       <Button asChild variant="ghost" size="icon" title="Open video">
         <a href={video.url} target="_blank" rel="noreferrer">
           <ExternalLink className="size-4" />
@@ -98,8 +98,12 @@ const columns: ColumnDef<Video>[] = [
       </Button>
     ),
     cell: ({ row }) => (
-      <Link href={`/admin/videos/${row.original.id}`} key={row.original.id}>
-        <h3 className="font-semibold">{row.original.title}</h3>
+      <Link
+        href={`/admin/videos/${row.original.id}`}
+        key={row.original.id}
+        className="block min-w-80 max-w-xl whitespace-normal wrap-anywhere"
+      >
+        <h3 className="font-semibold leading-snug">{row.original.title}</h3>
       </Link>
     ),
   },
@@ -111,7 +115,7 @@ const columns: ColumnDef<Video>[] = [
         href={row.original.url}
         target="_blank"
         rel="noreferrer"
-        className="block max-w-80 truncate text-blue-500 underline-offset-4 hover:underline"
+        className="block w-56 truncate text-blue-500 underline-offset-4 hover:underline"
       >
         {row.original.url}
       </a>
@@ -129,22 +133,38 @@ const columns: ColumnDef<Video>[] = [
   {
     accessorKey: "videoDate",
     header: ({ column }) => (
-      <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
+      <Button
+        variant="ghost"
+        className="w-28 justify-start"
+        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+      >
         Video Date
         <ArrowUpDown />
       </Button>
     ),
-    cell: ({ row }) => formatDate(row.getValue("videoDate") as Date),
+    cell: ({ row }) => (
+      <div className="w-28 truncate" title={formatDate(row.getValue("videoDate") as Date)}>
+        {formatDate(row.getValue("videoDate") as Date)}
+      </div>
+    ),
   },
   {
     accessorKey: "createdAt",
     header: ({ column }) => (
-      <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
+      <Button
+        variant="ghost"
+        className="w-36 justify-start"
+        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+      >
         Added Date
         <ArrowUpDown />
       </Button>
     ),
-    cell: ({ row }) => formatDateTime(row.getValue("createdAt") as Date),
+    cell: ({ row }) => (
+      <div className="w-36 truncate" title={formatDateTime(row.getValue("createdAt") as Date)}>
+        {formatDateTime(row.getValue("createdAt") as Date)}
+      </div>
+    ),
   },
   {
     id: "actions",
@@ -154,7 +174,7 @@ const columns: ColumnDef<Video>[] = [
 ];
 
 export const VideosTable = ({ data }: IVideosTableProps) => (
-  <div className="p-4 flex flex-col gap-2">
+  <div className="flex w-full min-w-0 max-w-full flex-col gap-2 p-4">
     <div className="text-sm text-muted-foreground">videos count: {data.length}</div>
     <DataTable data={data} columns={columns} />
   </div>
