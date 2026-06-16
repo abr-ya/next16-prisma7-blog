@@ -58,12 +58,12 @@ Status markers:
 
 ## Phase 5: Rendering
 
-- [ ] VT-23 Add the required YouTube image hostname to `next.config.ts`.
+- [x] VT-23 Add the required YouTube image hostname to `next.config.ts`.
 - [ ] VT-24 Add thumbnail rendering to `VideosTable`.
 - [ ] VT-25 Add thumbnail rendering to the public videos list.
-- [ ] VT-26 Decide whether the public detail page benefits from a larger thumbnail and implement it if useful.
-- [ ] VT-27 Add a stable fallback for videos without a thumbnail or with an image load error.
-- [ ] VT-28 Add title-based thumbnail `alt` text.
+- [x] VT-26 Decide whether the public detail page benefits from a larger thumbnail and implement it if useful.
+- [ ] VT-27 Add a stable fallback for videos without a thumbnail or with an image load error. Done for public detail page; still needed for list/table rendering.
+- [ ] VT-28 Add title-based thumbnail `alt` text. Done for public detail page; still needed for list/table rendering.
 
 ## Phase 6: Verification
 

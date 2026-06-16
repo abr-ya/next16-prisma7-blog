@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 
 import { getPublicVideoById } from "@/app/_data/videos";
 import { Badge, Button } from "@/components/index";
+import { VideoThumbnail } from "@/components/video-pages/video-thumbnail";
 
 const PublicVideoPage = async ({ params }: { params: Promise<{ id: string }> }) => {
   const { id } = await params;
@@ -25,6 +26,8 @@ const PublicVideoPage = async ({ params }: { params: Promise<{ id: string }> }) 
             <span>Added: {format(video.createdAt, "PPP")}</span>
           </div>
         </div>
+
+        <VideoThumbnail src={video.thumbnailUrl} title={video.title} videoUrl={video.url} />
 
         <div className="rounded-md border bg-muted/30 p-4">
           <div className="break-all text-sm text-muted-foreground">{video.url}</div>
