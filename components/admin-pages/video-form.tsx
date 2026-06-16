@@ -1,6 +1,8 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { ImageIcon, X } from "lucide-react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -9,6 +11,8 @@ import { z } from "zod";
 import { createLogEvent } from "@/app/_data/log";
 import { createVideo, updateVideo } from "@/app/_data/videos";
 import type { VideoVisibility } from "@/generated/prisma/enums";
+import { isSupportedVideoThumbnailUrl } from "@/lib/video-thumbnail-url";
+import { getYouTubeThumbnailUrl } from "@/lib/video-providers/youtube";
 import {
   Button,
   Card,
@@ -39,6 +43,16 @@ const formSchema = z.object({
   id: z.string().optional(),
   title: z.string().trim().min(3, { message: "Title is required" }),
   url: z.string().trim().url({ message: "Enter a valid URL" }),
+  thumbnailUrl: z
+    .string()
+    .trim()
+    .url({ message: "Enter a valid thumbnail URL" })
+    .refine((value) => isSupportedVideoThumbnailUrl(value), {
+      message: "Thumbnail URL must use a supported HTTPS image host",
+    })
+    .nullable()
+    .optional()
+    .or(z.literal("")),
   visibility: z.enum(["PRIVATE", "PUBLIC"]),
   videoDate: z
     .string()
@@ -64,7 +78,14 @@ const formatDateInputValue = (date?: Date | string) => {
   return parsedDate.toISOString().slice(0, 10);
 };
 
-export const VideoForm = ({ id, title = "", url = "", videoDate, visibility = "PRIVATE" }: VideoFormProps) => {
+export const VideoForm = ({
+  id,
+  title = "",
+  url = "",
+  thumbnailUrl: defaultThumbnailUrl = "",
+  videoDate,
+  visibility = "PRIVATE",
+}: VideoFormProps) => {
   const router = useRouter();
   const form = useForm<VideoFormValues>({
     resolver: zodResolver(formSchema),
@@ -72,19 +93,36 @@ export const VideoForm = ({ id, title = "", url = "", videoDate, visibility = "P
       id,
       title,
       url,
+      thumbnailUrl: defaultThumbnailUrl ?? "",
       visibility,
       videoDate: formatDateInputValue(videoDate),
     },
     mode: "onBlur",
   });
+  const thumbnailUrl = form.watch("thumbnailUrl");
+  const previewThumbnailUrl = isSupportedVideoThumbnailUrl(thumbnailUrl) ? thumbnailUrl : null;
+
+  const handleFetchThumbnail = () => {
+    const resolvedThumbnailUrl = getYouTubeThumbnailUrl(form.getValues("url"));
+
+    if (!resolvedThumbnailUrl) {
+      toast.error("Thumbnail fetch supports YouTube watch, youtu.be, shorts, and embed URLs");
+      return;
+    }
+
+    form.setValue("thumbnailUrl", resolvedThumbnailUrl, { shouldDirty: true, shouldTouch: true, shouldValidate: true });
+    toast.success("Thumbnail URL fetched");
+  };
 
   const onSubmit = async (data: VideoFormValues) => {
+    const values = { ...data, thumbnailUrl: data.thumbnailUrl || null };
+
     if (id) {
-      await updateVideo(data);
+      await updateVideo(values);
       await createLogEvent("updateVideo", `Video updated: ${data.title}`);
       toast.success("Video updated successfully");
     } else {
-      await createVideo(data);
+      await createVideo(values);
       await createLogEvent("createVideo", `Video created: ${data.title}`);
       toast.success("Video created successfully");
     }
@@ -120,6 +158,58 @@ export const VideoForm = ({ id, title = "", url = "", videoDate, visibility = "P
                 <FormControl>
                   <Input {...field} type="url" />
                 </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="thumbnailUrl"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Thumbnail URL</FormLabel>
+                {previewThumbnailUrl ? (
+                  <a
+                    href={previewThumbnailUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="relative block aspect-[4/3] w-full max-w-md overflow-hidden rounded-md border bg-muted"
+                  >
+                    <Image
+                      src={previewThumbnailUrl}
+                      alt={`${form.getValues("title") || "Video"} thumbnail`}
+                      fill
+                      sizes="(min-width: 768px) 28rem, calc(100vw - 2rem)"
+                      className="object-cover"
+                    />
+                  </a>
+                ) : null}
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <FormControl>
+                    <Input {...field} value={field.value ?? ""} type="url" />
+                  </FormControl>
+                  <Button type="button" variant="secondary" className="cursor-pointer" onClick={handleFetchThumbnail}>
+                    <ImageIcon className="size-4" />
+                    Fetch
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="cursor-pointer"
+                    disabled={!thumbnailUrl}
+                    onClick={() =>
+                      form.setValue("thumbnailUrl", "", {
+                        shouldDirty: true,
+                        shouldTouch: true,
+                        shouldValidate: true,
+                      })
+                    }
+                  >
+                    <X className="size-4" />
+                    Clear
+                  </Button>
+                </div>
                 <FormMessage />
               </FormItem>
             )}

@@ -5,12 +5,14 @@ import { revalidatePath } from "next/cache";
 import type { Video } from "@/generated/prisma/client";
 import type { VideoVisibility } from "@/generated/prisma/enums";
 import { authSession } from "@/lib/auth-utils";
+import { normalizeVideoThumbnailUrl } from "@/lib/video-thumbnail-url";
 import { getYouTubeThumbnailUrl } from "@/lib/video-providers/youtube";
 
 export type VideoActionValues = {
   id?: string;
   title: string;
   url: string;
+  thumbnailUrl?: string | null;
   videoDate: Date | string;
   visibility?: VideoVisibility;
 };
@@ -104,6 +106,7 @@ export const getPublicVideoById = async (id: string): Promise<Video | null> => {
 export const createVideo = async ({
   title,
   url,
+  thumbnailUrl,
   videoDate,
   visibility = DEFAULT_VIDEO_VISIBILITY,
 }: VideoActionValues) => {
@@ -115,6 +118,7 @@ export const createVideo = async ({
       data: {
         title,
         url,
+        thumbnailUrl: normalizeVideoThumbnailUrl(thumbnailUrl),
         videoDate: normalizeVideoDate(videoDate),
         visibility,
         userId,
@@ -134,6 +138,7 @@ export const updateVideo = async ({
   id,
   title,
   url,
+  thumbnailUrl,
   videoDate,
   visibility = DEFAULT_VIDEO_VISIBILITY,
 }: VideoActionValues) => {
@@ -155,6 +160,7 @@ export const updateVideo = async ({
       data: {
         title,
         url,
+        thumbnailUrl: normalizeVideoThumbnailUrl(thumbnailUrl),
         videoDate: normalizeVideoDate(videoDate),
         visibility,
       },

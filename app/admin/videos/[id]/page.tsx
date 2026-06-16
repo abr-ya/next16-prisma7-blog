@@ -12,6 +12,7 @@ const VideoPage = async ({ params }: { params: Promise<{ id: string }> }) => {
           id: "",
           title: "",
           url: "",
+          thumbnailUrl: null,
           videoDate: new Date(),
           visibility: "PRIVATE" as const,
         }
@@ -32,6 +33,7 @@ const VideoPage = async ({ params }: { params: Promise<{ id: string }> }) => {
           id={video.id || undefined}
           title={video.title}
           url={video.url}
+          thumbnailUrl={video.thumbnailUrl}
           visibility={video.visibility}
           videoDate={video.videoDate}
         />

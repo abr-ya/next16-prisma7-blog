@@ -10,9 +10,9 @@ Status markers:
 
 ## Current Status
 
-- Phase: 3
-- Next task: VT-10
-- Notes: The nullable `thumbnailUrl` schema change, migration, generated Prisma Client, YouTube URL helper, and admin table thumbnail fetch action are ready. Applying the migration to the development database remains tracked by VT-29.
+- Phase: 4
+- Next task: VT-19
+- Notes: The nullable `thumbnailUrl` schema change, migration, generated Prisma Client, YouTube URL helper, admin table thumbnail fetch action, and admin form thumbnail save flow are ready. Applying the migration to the development database remains tracked by VT-29.
 
 ## Phase 0: Decisions and Planning
 
@@ -39,22 +39,22 @@ Status markers:
 
 ## Phase 3: Server Actions and Validation
 
-- [ ] VT-10 Add `thumbnailUrl?: string | null` to `VideoActionValues`.
-- [ ] VT-11 Normalize and validate optional thumbnail URLs.
-- [ ] VT-12 Persist `thumbnailUrl` in `createVideo`.
-- [ ] VT-13 Persist and clear `thumbnailUrl` in `updateVideo`.
-- [ ] VT-14 Keep owner scoping and path revalidation unchanged.
+- [x] VT-10 Add `thumbnailUrl?: string | null` to `VideoActionValues`.
+- [x] VT-11 Normalize and validate optional thumbnail URLs.
+- [x] VT-12 Persist `thumbnailUrl` in `createVideo`.
+- [x] VT-13 Persist and clear `thumbnailUrl` in `updateVideo`.
+- [x] VT-14 Keep owner scoping and path revalidation unchanged.
 
 ## Phase 4: Admin Form
 
-- [ ] VT-15 Add `thumbnailUrl` to the `VideoForm` Zod schema and default values.
-- [ ] VT-16 Add a `Fetch thumbnail` button that uses the YouTube helper.
-- [ ] VT-17 Show success/error feedback without submitting the form.
-- [ ] VT-18 Show the resolved thumbnail preview.
+- [x] VT-15 Add `thumbnailUrl` to the `VideoForm` Zod schema and default values.
+- [x] VT-16 Add a `Fetch thumbnail` button that uses the YouTube helper.
+- [x] VT-17 Show success/error feedback without submitting the form.
+- [x] VT-18 Show the resolved thumbnail preview.
 - [ ] VT-19 Add manual thumbnail upload using the existing UploadThing flow.
-- [ ] VT-20 Allow the current thumbnail to be cleared or replaced.
-- [ ] VT-21 Ensure changing the video URL does not silently overwrite a custom thumbnail.
-- [ ] VT-22 Pass `thumbnailUrl` through the admin create/edit route.
+- [x] VT-20 Allow the current thumbnail to be cleared or replaced.
+- [x] VT-21 Ensure changing the video URL does not silently overwrite a custom thumbnail.
+- [x] VT-22 Pass `thumbnailUrl` through the admin create/edit route.
 
 ## Phase 5: Rendering
 
