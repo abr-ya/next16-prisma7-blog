@@ -2,13 +2,14 @@
 
 import type { Video } from "@/generated/prisma/client";
 import { ColumnDef } from "@tanstack/react-table";
-import { ArrowUpDown, Copy, ExternalLink, Pencil, Trash } from "lucide-react";
+import { ArrowUpDown, Copy, ExternalLink, ImageIcon, Pencil, Trash } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 
-import { deleteVideo } from "@/app/_data/videos";
+import { deleteVideo, resolveAndSaveVideoThumbnail } from "@/app/_data/videos";
+import { getYouTubeVideoId } from "@/lib/video-providers/youtube";
 
 import { Badge, Button, DataTable } from "..";
 
@@ -34,36 +35,13 @@ const formatDateTime = (date: Date) =>
 
 const formatVisibility = (visibility: Video["visibility"]) => (visibility === "PUBLIC" ? "Public" : "Private");
 
-const getVideoIdFromUrl = (value: string) => {
-  try {
-    const url = new URL(value);
-    const hostname = url.hostname.toLowerCase().replace(/^www\./, "");
-    const pathParts = url.pathname.split("/").filter(Boolean);
-
-    if (hostname === "youtu.be") return pathParts[0] ?? null;
-
-    if (hostname === "youtube.com" || hostname.endsWith(".youtube.com")) {
-      if (url.pathname === "/watch") return url.searchParams.get("v");
-      if (["shorts", "embed", "live"].includes(pathParts[0])) return pathParts[1] ?? null;
-    }
-
-    for (const parameter of ["video", "video_id", "id", "v"]) {
-      const videoId = url.searchParams.get(parameter);
-      if (videoId) return videoId;
-    }
-
-    return pathParts.at(-1) ?? null;
-  } catch {
-    return null;
-  }
-};
-
 const VideoActions = ({ video }: { video: Video }) => {
   const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isResolvingThumbnail, setIsResolvingThumbnail] = useState(false);
 
   const handleCopyId = async () => {
-    const videoId = getVideoIdFromUrl(video.url);
+    const videoId = getYouTubeVideoId(video.url);
 
     if (!videoId) {
       toast.error("Video ID was not found in the URL");
@@ -75,6 +53,26 @@ const VideoActions = ({ video }: { video: Video }) => {
       toast.success(`Video ID copied: ${videoId}`);
     } catch {
       toast.error("Video ID was not copied");
+    }
+  };
+
+  const handleResolveThumbnail = async () => {
+    setIsResolvingThumbnail(true);
+
+    try {
+      const result = await resolveAndSaveVideoThumbnail(video.id);
+
+      if (!result.success) {
+        toast.error(result.message);
+        return;
+      }
+
+      toast.success("Thumbnail URL saved");
+      router.refresh();
+    } catch {
+      toast.error("Something went wrong saving the thumbnail URL");
+    } finally {
+      setIsResolvingThumbnail(false);
     }
   };
 
@@ -103,7 +101,7 @@ const VideoActions = ({ video }: { video: Video }) => {
   };
 
   return (
-    <div className="flex w-36 items-center justify-end gap-1">
+    <div className="flex w-44 items-center justify-end gap-1">
       <Button asChild variant="ghost" size="icon" title="Open video">
         <a href={video.url} target="_blank" rel="noreferrer">
           <ExternalLink className="size-4" />
@@ -111,6 +109,15 @@ const VideoActions = ({ video }: { video: Video }) => {
       </Button>
       <Button variant="ghost" size="icon" title="Copy video ID" onClick={handleCopyId}>
         <Copy className="size-4" />
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon"
+        title={video.thumbnailUrl ? "Refresh thumbnail URL" : "Fetch thumbnail URL"}
+        disabled={isResolvingThumbnail}
+        onClick={handleResolveThumbnail}
+      >
+        <ImageIcon className="size-4" />
       </Button>
       <Button asChild variant="ghost" size="icon" title="Edit video">
         <Link href={`/admin/videos/${video.id}`}>

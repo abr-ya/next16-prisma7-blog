@@ -10,9 +10,9 @@ Status markers:
 
 ## Current Status
 
-- Phase: 2
-- Next task: VT-05
-- Notes: The nullable `thumbnailUrl` schema change, migration, and generated Prisma Client are ready. Applying the migration to the development database remains tracked by VT-29.
+- Phase: 3
+- Next task: VT-10
+- Notes: The nullable `thumbnailUrl` schema change, migration, generated Prisma Client, YouTube URL helper, and admin table thumbnail fetch action are ready. Applying the migration to the development database remains tracked by VT-29.
 
 ## Phase 0: Decisions and Planning
 
@@ -31,11 +31,11 @@ Status markers:
 
 ## Phase 2: YouTube Helper
 
-- [ ] VT-05 Add a small provider helper for parsing supported YouTube URLs.
-- [ ] VT-06 Support `watch`, `youtu.be`, `shorts`, and `embed` URL formats.
-- [ ] VT-07 Validate YouTube hostnames and video IDs.
-- [ ] VT-08 Add a helper that returns the conservative YouTube thumbnail URL.
-- [ ] VT-09 Add focused tests for valid, invalid, and unsupported URLs if a suitable test setup exists.
+- [x] VT-05 Add a small provider helper for parsing supported YouTube URLs.
+- [x] VT-06 Support `watch`, `youtu.be`, `shorts`, and `embed` URL formats.
+- [x] VT-07 Validate YouTube hostnames and video IDs.
+- [x] VT-08 Add a helper that returns the conservative YouTube thumbnail URL.
+- [x] VT-09 Add focused tests for valid, invalid, and unsupported URLs if a suitable test setup exists. No test runner is configured yet; covered by TypeScript and targeted ESLint for now.
 
 ## Phase 3: Server Actions and Validation
 

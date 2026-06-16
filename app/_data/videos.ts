@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import type { Video } from "@/generated/prisma/client";
 import type { VideoVisibility } from "@/generated/prisma/enums";
 import { authSession } from "@/lib/auth-utils";
+import { getYouTubeThumbnailUrl } from "@/lib/video-providers/youtube";
 
 export type VideoActionValues = {
   id?: string;
@@ -183,5 +184,39 @@ export const deleteVideo = async (id: string) => {
   } catch (err) {
     console.error({ err });
     throw new Error("Something went wrong (deleteVideo)");
+  }
+};
+
+export const resolveAndSaveVideoThumbnail = async (id: string) => {
+  try {
+    const userId = await getRequiredUserId();
+    const { default: prisma } = await import("@/lib/prisma");
+
+    const existingVideo = await prisma.video.findFirst({
+      where: { id, userId },
+      select: { id: true, url: true },
+    });
+
+    if (!existingVideo) {
+      return { success: false, message: "Video not found" };
+    }
+
+    const thumbnailUrl = getYouTubeThumbnailUrl(existingVideo.url);
+
+    if (!thumbnailUrl) {
+      return { success: false, message: "Thumbnail fetch supports YouTube watch, youtu.be, shorts, and embed URLs" };
+    }
+
+    await prisma.video.update({
+      where: { id: existingVideo.id },
+      data: { thumbnailUrl },
+    });
+
+    revalidateVideoAdminPaths(existingVideo.id);
+
+    return { success: true, thumbnailUrl };
+  } catch (err) {
+    console.error({ err });
+    throw new Error("Something went wrong (resolveAndSaveVideoThumbnail)");
   }
 };

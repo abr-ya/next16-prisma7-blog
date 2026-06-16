@@ -11,7 +11,7 @@ Status markers:
 ## Current Status
 
 - Phase: 3
-- Next task: VT-01 in `docs/video-thumbnail-feature-task-list.md`
+- Next task: VT-10 in `docs/video-thumbnail-feature-task-list.md`
 - Notes: Public video pages are manually verified. URL validation stays generic, `videoDate` is date-only semantically, and thumbnail implementation is tracked in the dedicated plan and task list.
 
 ## Phase 0: Planning
