@@ -122,11 +122,11 @@ Goal: allow videos to reference global external channels without deleting videos
 
 Detailed plan: `docs/video-channel-feature-plan.md`.
 
-- [ ] V4-01 Add global `VideoChannel` model with `name`, external `url`, optional `imageUrl`, and visibility.
-- [ ] V4-02 Add optional `channelId` to `Video`.
-- [ ] V4-03 Use `onDelete: SetNull` for the video-channel relation.
-- [ ] V4-04 Create Prisma migration.
-- [ ] V4-05 Regenerate Prisma client.
+- [x] V4-01 Add global `VideoChannel` model with `name`, external `url`, optional `imageUrl`, and visibility.
+- [x] V4-02 Add optional `channelId` to `Video`.
+- [x] V4-03 Use `onDelete: SetNull` for the video-channel relation.
+- [x] V4-04 Create Prisma migration.
+- [x] V4-05 Regenerate Prisma client.
 - [ ] V4-06 Add channel server actions.
 - [ ] V4-07 Add channel admin list.
 - [ ] V4-08 Add channel create/edit UI.

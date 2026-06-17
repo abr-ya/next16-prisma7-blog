@@ -90,12 +90,12 @@ The first implementation can use a confirmation prompt before deletion. A richer
 
 ## Implementation Checklist
 
-- [ ] VC-01 Add `VideoChannelVisibility` enum to `prisma/schema.prisma`.
-- [ ] VC-02 Add `VideoChannel` model with `name`, `url`, `imageUrl`, `visibility`, and timestamps.
-- [ ] VC-03 Add optional `channelId` and `channel` relation to `Video`.
-- [ ] VC-04 Use `onDelete: SetNull` for the `Video.channel` relation.
-- [ ] VC-05 Create Prisma migration for video channels.
-- [ ] VC-06 Regenerate Prisma Client.
+- [x] VC-01 Add `VideoChannelVisibility` enum to `prisma/schema.prisma`.
+- [x] VC-02 Add `VideoChannel` model with `name`, `url`, `imageUrl`, `visibility`, and timestamps.
+- [x] VC-03 Add optional `channelId` and `channel` relation to `Video`.
+- [x] VC-04 Use `onDelete: SetNull` for the `Video.channel` relation.
+- [x] VC-05 Create Prisma migration for video channels.
+- [x] VC-06 Regenerate Prisma Client.
 - [ ] VC-07 Add channel server actions.
 - [ ] VC-08 Add channel admin list page.
 - [ ] VC-09 Add channel create/edit UI.

@@ -186,6 +186,24 @@ enum VideoVisibility {
   PUBLIC
 }
 
+enum VideoChannelVisibility {
+  PUBLIC
+  HIDDEN
+}
+
+model VideoChannel {
+  id         String                 @id @default(uuid())
+  name       String
+  url        String
+  imageUrl   String?
+  visibility VideoChannelVisibility @default(PUBLIC)
+  videos     Video[]
+  createdAt  DateTime               @default(now())
+  updatedAt  DateTime               @default(now()) @updatedAt
+
+  @@index([visibility])
+}
+
 model Video {
   id           String          @id @default(uuid())
   title        String
@@ -193,6 +211,8 @@ model Video {
   thumbnailUrl String?
   videoDate    DateTime
   visibility   VideoVisibility @default(PRIVATE)
+  channelId    String?
+  channel      VideoChannel?   @relation(fields: [channelId], references: [id], onDelete: SetNull)
   userId       String
   user         User            @relation(references: [id], fields: [userId], onDelete: Cascade)
   createdAt    DateTime        @default(now())
@@ -201,6 +221,7 @@ model Video {
   @@index([userId])
   @@index([videoDate])
   @@index([visibility])
+  @@index([channelId])
 }
 // Video - finish
 
