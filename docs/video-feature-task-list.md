@@ -10,9 +10,9 @@ Status markers:
 
 ## Current Status
 
-- Phase: 3
-- Next task: VT-19 in `docs/video-thumbnail-feature-task-list.md`
-- Notes: Public video pages are manually verified. URL validation stays generic, `videoDate` is date-only semantically, and thumbnail implementation is tracked in the dedicated plan and task list.
+- Phase: 4
+- Next task: VC-01 in `docs/video-channel-feature-plan.md`
+- Notes: Public video pages are manually verified, and the current thumbnail behavior is accepted as-is. Channels are now planned as global external channel records with optional images and `PUBLIC` / `HIDDEN` visibility.
 
 ## Phase 0: Planning
 
@@ -118,9 +118,11 @@ Goal: users can browse and open read-only video pages outside the admin area.
 
 ## Phase 4: Channels
 
-Goal: allow videos to be grouped by user-owned channels without deleting videos when a channel is removed.
+Goal: allow videos to reference global external channels without deleting videos when a channel is removed.
 
-- [ ] V4-01 Add `VideoChannel` model.
+Detailed plan: `docs/video-channel-feature-plan.md`.
+
+- [ ] V4-01 Add global `VideoChannel` model with `name`, external `url`, optional `imageUrl`, and visibility.
 - [ ] V4-02 Add optional `channelId` to `Video`.
 - [ ] V4-03 Use `onDelete: SetNull` for the video-channel relation.
 - [ ] V4-04 Create Prisma migration.
@@ -129,7 +131,7 @@ Goal: allow videos to be grouped by user-owned channels without deleting videos 
 - [ ] V4-07 Add channel admin list.
 - [ ] V4-08 Add channel create/edit UI.
 - [ ] V4-09 Add channel selector to `VideoForm`.
-- [ ] V4-10 Add channel display to video table/detail views.
+- [ ] V4-10 Add channel display to video table/detail views as external links.
 - [ ] V4-11 Add channel filtering and sorting to video lists.
 - [ ] V4-12 Run `npm run tsc`.
 - [ ] V4-13 Run `npm run lint`.
@@ -174,7 +176,7 @@ Goal: add comments and timestamped notes on video detail pages.
 ## Backlog
 
 - [x] VB-01 Add metadata extraction plan for thumbnails and duration.
-- [ ] VB-02 Implement optional video thumbnails through `docs/video-thumbnail-feature-task-list.md`. Keep duration extraction as a later metadata task.
+- [x] VB-02 Implement optional video thumbnails through `docs/video-thumbnail-feature-task-list.md`. Current behavior is accepted as-is; paused thumbnail enhancements are "Could Do Later". Keep duration extraction as a later metadata task.
 - [ ] VB-03 Add provider detection/adapters where metadata is available.
 - [ ] VB-04 Add video embeds after provider detection exists.
 - [ ] VB-05 Add search across title, URL, tags, channels, notes, and metadata.

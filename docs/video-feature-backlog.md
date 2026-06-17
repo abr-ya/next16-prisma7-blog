@@ -20,12 +20,14 @@ Detailed thumbnail analysis and implementation tracking:
 
 ### Channels
 
-- Replace the earlier folder idea with user-owned video channels.
-- Add `VideoChannel` with `name`, `userId`, timestamps, and a relation to videos.
+- Detailed plan: `docs/video-channel-feature-plan.md`.
+- Replace the earlier folder idea with global external video channels.
+- Add `VideoChannel` with `name`, external `url`, optional `imageUrl`, `visibility`, timestamps, and a relation to videos.
 - Add optional `channelId` on `Video`.
 - Use `onDelete: SetNull` so deleting a channel does not delete saved videos.
 - Add channel CRUD in admin.
 - Add channel selector to `VideoForm`.
+- Show channels as external links in admin and public video views.
 - Add channel filtering and sorting to admin and public video lists.
 
 ### Tags

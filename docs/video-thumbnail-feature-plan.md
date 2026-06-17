@@ -197,12 +197,14 @@ Reference: <https://docs.uploadthing.com/api-reference/ut-api#uploadfilesfromurl
 
 - `Video` can store an optional thumbnail URL.
 - Admin can fetch a thumbnail from supported YouTube URL formats.
-- Admin can manually upload or replace a thumbnail.
+- Admin can replace or clear a thumbnail URL.
 - Thumbnail fetch failure never blocks saving the video.
 - Existing videos without thumbnails continue to work.
-- Admin and public video lists render saved thumbnails with a fallback.
+- The public detail page renders a saved thumbnail with a fallback.
 - Private video access rules remain unchanged.
 - TypeScript, app lint, and targeted component lint pass.
+
+The current implementation is accepted as the thumbnail MVP. Manual upload, list/table thumbnail rendering, and broader fallback polish are optional follow-ups.
 
 ## Out of Scope
 
@@ -213,6 +215,14 @@ Reference: <https://docs.uploadthing.com/api-reference/ut-api#uploadfilesfromurl
 - automatic deletion of old UploadThing files;
 - video embeds;
 - changing generic video URL validation to YouTube-only validation.
+
+## Could Do Later
+
+- Add manual thumbnail upload using the existing UploadThing flow.
+- Add thumbnail rendering to `VideosTable`.
+- Add thumbnail rendering to the public videos list.
+- Add stable list/table fallbacks for missing thumbnails and image load errors.
+- Add title-based thumbnail `alt` text to list and table thumbnail views.
 
 ## Implementation Checklist
 

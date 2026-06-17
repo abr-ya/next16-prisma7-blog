@@ -10,9 +10,9 @@ Status markers:
 
 ## Current Status
 
-- Phase: 4
-- Next task: VT-19
-- Notes: The nullable `thumbnailUrl` schema change, migration, generated Prisma Client, YouTube URL helper, admin table thumbnail fetch action, and admin form thumbnail save flow are ready. Applying the migration to the development database remains tracked by VT-29.
+- Phase: Paused after accepted MVP
+- Next task: None. The current thumbnail behavior is accepted as-is.
+- Notes: The nullable `thumbnailUrl` schema change, migration, generated Prisma Client, YouTube URL helper, admin table thumbnail fetch action, admin form thumbnail save flow, and public detail thumbnail are ready. Manual upload, list/table thumbnails, and broader fallback polish are paused under "Could Do Later".
 
 ## Phase 0: Decisions and Planning
 
@@ -51,7 +51,6 @@ Status markers:
 - [x] VT-16 Add a `Fetch thumbnail` button that uses the YouTube helper.
 - [x] VT-17 Show success/error feedback without submitting the form.
 - [x] VT-18 Show the resolved thumbnail preview.
-- [ ] VT-19 Add manual thumbnail upload using the existing UploadThing flow.
 - [x] VT-20 Allow the current thumbnail to be cleared or replaced.
 - [x] VT-21 Ensure changing the video URL does not silently overwrite a custom thumbnail.
 - [x] VT-22 Pass `thumbnailUrl` through the admin create/edit route.
@@ -59,11 +58,7 @@ Status markers:
 ## Phase 5: Rendering
 
 - [x] VT-23 Add the required YouTube image hostname to `next.config.ts`.
-- [ ] VT-24 Add thumbnail rendering to `VideosTable`.
-- [ ] VT-25 Add thumbnail rendering to the public videos list.
 - [x] VT-26 Decide whether the public detail page benefits from a larger thumbnail and implement it if useful.
-- [ ] VT-27 Add a stable fallback for videos without a thumbnail or with an image load error. Done for public detail page; still needed for list/table rendering.
-- [ ] VT-28 Add title-based thumbnail `alt` text. Done for public detail page; still needed for list/table rendering.
 
 ## Phase 6: Verification
 
@@ -73,11 +68,19 @@ Status markers:
 - [ ] VT-32 Run `npm run lint`.
 - [ ] VT-33 Run targeted ESLint for changed files under `components/` and shared helpers.
 - [ ] VT-34 Manually verify thumbnail fetch for each supported YouTube URL format.
-- [ ] VT-35 Manually verify manual upload, replacement, and clearing.
 - [ ] VT-36 Manually verify a generic non-YouTube video can still be saved without a thumbnail.
 - [ ] VT-37 Manually verify thumbnail failure does not block create/edit.
-- [ ] VT-38 Manually verify admin and public thumbnail fallbacks.
 - [ ] VT-39 Update this checklist and the main video task list after completion.
+
+## Could Do Later
+
+- [ ] VTC-01 Add manual thumbnail upload using the existing UploadThing flow.
+- [ ] VTC-02 Add thumbnail rendering to `VideosTable`.
+- [ ] VTC-03 Add thumbnail rendering to the public videos list.
+- [ ] VTC-04 Add a stable fallback for videos without a thumbnail or with an image load error in list and table views.
+- [ ] VTC-05 Add title-based thumbnail `alt` text to list and table views.
+- [ ] VTC-06 Manually verify manual upload, replacement, and clearing if manual upload is implemented.
+- [ ] VTC-07 Manually verify admin and public thumbnail fallbacks if list/table thumbnail rendering is implemented.
 
 ## Follow-up Backlog
 

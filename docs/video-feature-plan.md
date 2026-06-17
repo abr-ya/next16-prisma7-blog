@@ -53,13 +53,14 @@ Channel support:
 
 ```prisma
 model VideoChannel {
-  id        String   @id @default(uuid())
-  name      String
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  videos    Video[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id         String                 @id @default(uuid())
+  name       String
+  url        String
+  imageUrl   String?
+  visibility VideoChannelVisibility @default(PUBLIC)
+  videos     Video[]
+  createdAt  DateTime               @default(now())
+  updatedAt  DateTime               @updatedAt
 }
 ```
 
@@ -201,22 +202,24 @@ Acceptance criteria:
 
 ## Phase 4: Channels
 
-Add organization by channel after the core video CRUD is stable. A channel is a user-owned grouping axis for videos, similar to folders but named for video collections.
+Add organization by channel after the core video CRUD is stable. A channel is a global shared directory entry for an external video channel, not a user-owned folder.
+
+Detailed plan: `docs/video-channel-feature-plan.md`.
 
 Tasks:
 
-- Add `VideoChannel` model.
+- Add `VideoChannel` model with `name`, external `url`, optional `imageUrl`, and `visibility`.
 - Add optional `channelId` relation on `Video`.
 - Add channel CRUD actions and admin page.
 - Add channel selector to `VideoForm`.
+- Add channel external links to admin and public video views.
 - Add table/list filtering by channel.
-- Decide how to handle deleting a channel:
-  - set videos to no channel, or
-  - cascade delete channel contents.
 
 Recommended behavior:
 
 - Use `onDelete: SetNull` for `Video.channelId` so deleting a channel does not delete saved videos.
+- Keep channels global; videos remain user-owned through `Video.userId`.
+- Use `PUBLIC` / `HIDDEN` channel visibility, defaulting to `PUBLIC`.
 
 ## Phase 5: Tags
 
