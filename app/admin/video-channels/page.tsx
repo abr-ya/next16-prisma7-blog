@@ -1,5 +1,5 @@
 import { getAllVideoChannels } from "@/app/_data/video-channels";
-import { AdminPageLayout, VideoChannelsTable } from "@/components/index";
+import { AdminPageLayout, VideoChannelCreateDialog, VideoChannelsTable } from "@/components/index";
 
 export const dynamic = "force-dynamic";
 
@@ -12,7 +12,7 @@ const VideoChannelsPage = async () => {
   ];
 
   return (
-    <AdminPageLayout breadcrumbs={breadItems}>
+    <AdminPageLayout breadcrumbs={breadItems} headerRight={<VideoChannelCreateDialog />}>
       <VideoChannelsTable data={channels} />
     </AdminPageLayout>
   );
