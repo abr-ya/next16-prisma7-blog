@@ -130,11 +130,11 @@ Detailed plan: `docs/video-channel-feature-plan.md`.
 - [x] V4-06 Add channel server actions.
 - [x] V4-07 Add channel admin list.
 - [ ] V4-08 Add channel create/edit UI.
-- [ ] V4-09 Add channel selector to `VideoForm`.
+- [x] V4-09 Add channel selector to `VideoForm`.
 - [ ] V4-10 Add channel display to video table/detail views as external links.
 - [ ] V4-11 Add channel filtering and sorting to video lists.
-- [ ] V4-12 Run `npm run tsc`.
-- [ ] V4-13 Run `npm run lint`.
+- [x] V4-12 Run `npm run tsc`.
+- [x] V4-13 Run `npm run lint`.
 - [ ] V4-14 Manually verify channel create/edit/filter flows.
 
 ## Phase 5: Tags

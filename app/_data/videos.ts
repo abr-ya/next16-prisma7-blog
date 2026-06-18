@@ -13,6 +13,7 @@ export type VideoActionValues = {
   title: string;
   url: string;
   thumbnailUrl?: string | null;
+  channelId?: string | null;
   videoDate: Date | string;
   visibility?: VideoVisibility;
 };
@@ -107,6 +108,7 @@ export const createVideo = async ({
   title,
   url,
   thumbnailUrl,
+  channelId,
   videoDate,
   visibility = DEFAULT_VIDEO_VISIBILITY,
 }: VideoActionValues) => {
@@ -119,6 +121,7 @@ export const createVideo = async ({
         title,
         url,
         thumbnailUrl: normalizeVideoThumbnailUrl(thumbnailUrl),
+        channelId: channelId || null,
         videoDate: normalizeVideoDate(videoDate),
         visibility,
         userId,
@@ -139,6 +142,7 @@ export const updateVideo = async ({
   title,
   url,
   thumbnailUrl,
+  channelId,
   videoDate,
   visibility = DEFAULT_VIDEO_VISIBILITY,
 }: VideoActionValues) => {
@@ -161,6 +165,7 @@ export const updateVideo = async ({
         title,
         url,
         thumbnailUrl: normalizeVideoThumbnailUrl(thumbnailUrl),
+        channelId: channelId || null,
         videoDate: normalizeVideoDate(videoDate),
         visibility,
       },

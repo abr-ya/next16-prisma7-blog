@@ -10,6 +10,7 @@ import { z } from "zod";
 
 import { createLogEvent } from "@/app/_data/log";
 import { createVideo, updateVideo } from "@/app/_data/videos";
+import type { VideoChannel } from "@/generated/prisma/client";
 import type { VideoVisibility } from "@/generated/prisma/enums";
 import { isSupportedVideoThumbnailUrl } from "@/lib/video-thumbnail-url";
 import { getYouTubeThumbnailUrl } from "@/lib/video-providers/youtube";
@@ -39,6 +40,8 @@ const videoVisibilityOptions = [
   { value: "PUBLIC", label: "Public" },
 ] as const satisfies { value: VideoVisibility; label: string }[];
 
+const NO_CHANNEL_VALUE = "__no_channel__";
+
 const formSchema = z.object({
   id: z.string().optional(),
   title: z.string().trim().min(3, { message: "Title is required" }),
@@ -53,6 +56,7 @@ const formSchema = z.object({
     .nullable()
     .optional()
     .or(z.literal("")),
+  channelId: z.string().nullable().optional().or(z.literal("")),
   visibility: z.enum(["PRIVATE", "PUBLIC"]),
   videoDate: z
     .string()
@@ -65,6 +69,7 @@ const formSchema = z.object({
 export type VideoFormValues = z.infer<typeof formSchema>;
 
 type VideoFormProps = Omit<Partial<VideoFormValues>, "videoDate"> & {
+  channels?: VideoChannel[];
   videoDate?: Date | string;
 };
 
@@ -83,6 +88,8 @@ export const VideoForm = ({
   title = "",
   url = "",
   thumbnailUrl: defaultThumbnailUrl = "",
+  channelId = "",
+  channels = [],
   videoDate,
   visibility = "PRIVATE",
 }: VideoFormProps) => {
@@ -94,6 +101,7 @@ export const VideoForm = ({
       title,
       url,
       thumbnailUrl: defaultThumbnailUrl ?? "",
+      channelId: channelId ?? "",
       visibility,
       videoDate: formatDateInputValue(videoDate),
     },
@@ -115,7 +123,7 @@ export const VideoForm = ({
   };
 
   const onSubmit = async (data: VideoFormValues) => {
-    const values = { ...data, thumbnailUrl: data.thumbnailUrl || null };
+    const values = { ...data, thumbnailUrl: data.thumbnailUrl || null, channelId: data.channelId || null };
 
     if (id) {
       await updateVideo(values);
@@ -237,6 +245,35 @@ export const VideoForm = ({
                       {videoVisibilityOptions.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
                           {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="channelId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Channel</FormLabel>
+                  <Select
+                    value={field.value || NO_CHANNEL_VALUE}
+                    onValueChange={(value) => field.onChange(value === NO_CHANNEL_VALUE ? "" : value)}
+                  >
+                    <FormControl>
+                      <SelectTrigger className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value={NO_CHANNEL_VALUE}>No channel</SelectItem>
+                      {channels.map((channel) => (
+                        <SelectItem key={channel.id} value={channel.id}>
+                          {channel.name}
                         </SelectItem>
                       ))}
                     </SelectContent>

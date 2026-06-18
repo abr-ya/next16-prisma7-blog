@@ -1,22 +1,26 @@
 import { notFound } from "next/navigation";
 
+import { getAllVideoChannels } from "@/app/_data/video-channels";
 import { getVideoById } from "@/app/_data/videos";
 import { AdminPageLayout, VideoForm } from "@/components/index";
 
 const VideoPage = async ({ params }: { params: Promise<{ id: string }> }) => {
   const { id } = await params;
 
-  const video =
+  const [video, channels] = await Promise.all([
     id === "new"
-      ? {
+      ? Promise.resolve({
           id: "",
           title: "",
           url: "",
           thumbnailUrl: null,
+          channelId: null,
           videoDate: new Date(),
           visibility: "PRIVATE" as const,
-        }
-      : await getVideoById(id);
+        })
+      : getVideoById(id),
+    getAllVideoChannels(),
+  ]);
 
   if (!video) notFound();
 
@@ -34,6 +38,8 @@ const VideoPage = async ({ params }: { params: Promise<{ id: string }> }) => {
           title={video.title}
           url={video.url}
           thumbnailUrl={video.thumbnailUrl}
+          channelId={video.channelId}
+          channels={channels}
           visibility={video.visibility}
           videoDate={video.videoDate}
         />

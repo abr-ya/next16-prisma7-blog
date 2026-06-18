@@ -99,16 +99,16 @@ The first implementation can use a confirmation prompt before deletion. A richer
 - [x] VC-07 Add channel server actions.
 - [x] VC-08 Add channel admin list page.
 - [ ] VC-09 Add channel create/edit UI.
-- [ ] VC-10 Add channel selector to `VideoForm`.
-- [ ] VC-11 Persist `channelId` in `createVideo` and `updateVideo`.
+- [x] VC-10 Add channel selector to `VideoForm`.
+- [x] VC-11 Persist `channelId` in `createVideo` and `updateVideo`.
 - [ ] VC-12 Include channel data in admin video queries.
 - [ ] VC-13 Show channel links in `VideosTable`.
 - [ ] VC-14 Include public channel data in public video queries.
 - [ ] VC-15 Show public channel links on public video list/detail views.
 - [ ] VC-16 Run Prisma migration against the development database.
 - [ ] VC-17 Run `npm run postinstall`.
-- [ ] VC-18 Run `npm run tsc`.
-- [ ] VC-19 Run `npm run lint`.
+- [x] VC-18 Run `npm run tsc`.
+- [x] VC-19 Run `npm run lint`.
 - [ ] VC-20 Run targeted ESLint for changed component files.
 - [ ] VC-21 Manually verify channel create/edit/delete flows.
 - [ ] VC-22 Manually verify video channel assignment and clearing.
