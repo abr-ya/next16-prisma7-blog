@@ -96,7 +96,7 @@ The first implementation can use a confirmation prompt before deletion. A richer
 - [x] VC-04 Use `onDelete: SetNull` for the `Video.channel` relation.
 - [x] VC-05 Create Prisma migration for video channels.
 - [x] VC-06 Regenerate Prisma Client.
-- [ ] VC-07 Add channel server actions.
+- [x] VC-07 Add channel server actions.
 - [ ] VC-08 Add channel admin list page.
 - [ ] VC-09 Add channel create/edit UI.
 - [ ] VC-10 Add channel selector to `VideoForm`.
