@@ -32,6 +32,7 @@ export { PostsTable } from "./admin-pages/posts-table";
 export type { PostFormValues } from "./admin-pages/post-form";
 export { VideoForm } from "./admin-pages/video-form";
 export type { VideoFormValues } from "./admin-pages/video-form";
+export { VideoChannelsTable } from "./admin-pages/video-channels-table";
 export { VideosTable } from "./admin-pages/videos-table";
 export { MdDocsTable } from "./admin-pages/md-docs-table";
 export { MdDocForm } from "./admin-pages/md-doc-form";

@@ -97,7 +97,7 @@ The first implementation can use a confirmation prompt before deletion. A richer
 - [x] VC-05 Create Prisma migration for video channels.
 - [x] VC-06 Regenerate Prisma Client.
 - [x] VC-07 Add channel server actions.
-- [ ] VC-08 Add channel admin list page.
+- [x] VC-08 Add channel admin list page.
 - [ ] VC-09 Add channel create/edit UI.
 - [ ] VC-10 Add channel selector to `VideoForm`.
 - [ ] VC-11 Persist `channelId` in `createVideo` and `updateVideo`.

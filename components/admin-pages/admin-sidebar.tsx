@@ -1,4 +1,4 @@
-import { Calendar, ChartPie, ExternalLink, FileText, House, Inbox, Search, Video } from "lucide-react";
+import { Calendar, ChartPie, ExternalLink, FileText, House, Inbox, ListVideo, Search, Video } from "lucide-react";
 
 import {
   Sidebar,
@@ -48,6 +48,11 @@ const items = [
     title: "Videos",
     url: "/admin/videos",
     icon: Video,
+  },
+  {
+    title: "Video Channels",
+    url: "/admin/video-channels",
+    icon: ListVideo,
   },
   {
     title: "Saved Posts",
