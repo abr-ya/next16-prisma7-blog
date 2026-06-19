@@ -11,7 +11,7 @@ Status markers:
 ## Current Status
 
 - Phase: 4
-- Next task: VC-09 in `docs/video-channel-feature-plan.md`
+- Next task: VC-12 in `docs/video-channel-feature-plan.md`
 - Notes: Public video pages are manually verified, and the current thumbnail behavior is accepted as-is. Channels are now planned as global external channel records with optional images and `PUBLIC` / `HIDDEN` visibility.
 
 ## Phase 0: Planning
@@ -129,7 +129,7 @@ Detailed plan: `docs/video-channel-feature-plan.md`.
 - [x] V4-05 Regenerate Prisma client.
 - [x] V4-06 Add channel server actions.
 - [x] V4-07 Add channel admin list.
-- [ ] V4-08 Add channel create/edit UI.
+- [x] V4-08 Add channel create/edit UI.
 - [x] V4-09 Add channel selector to `VideoForm`.
 - [ ] V4-10 Add channel display to video table/detail views as external links.
 - [ ] V4-11 Add channel filtering and sorting to video lists.

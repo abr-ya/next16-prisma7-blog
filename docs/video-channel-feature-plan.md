@@ -98,7 +98,7 @@ The first implementation can use a confirmation prompt before deletion. A richer
 - [x] VC-06 Regenerate Prisma Client.
 - [x] VC-07 Add channel server actions.
 - [x] VC-08 Add channel admin list page.
-- [ ] VC-09 Add channel create/edit UI.
+- [x] VC-09 Add channel create/edit UI.
 - [x] VC-10 Add channel selector to `VideoForm`.
 - [x] VC-11 Persist `channelId` in `createVideo` and `updateVideo`.
 - [ ] VC-12 Include channel data in admin video queries.
@@ -109,7 +109,7 @@ The first implementation can use a confirmation prompt before deletion. A richer
 - [ ] VC-17 Run `npm run postinstall`.
 - [x] VC-18 Run `npm run tsc`.
 - [x] VC-19 Run `npm run lint`.
-- [ ] VC-20 Run targeted ESLint for changed component files.
+- [x] VC-20 Run targeted ESLint for changed component files.
 - [ ] VC-21 Manually verify channel create/edit/delete flows.
 - [ ] VC-22 Manually verify video channel assignment and clearing.
 - [ ] VC-23 Manually verify public videos with public, hidden, and missing channels.

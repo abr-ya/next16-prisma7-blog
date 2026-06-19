@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { deleteVideoChannel } from "@/app/_data/video-channels";
 
 import { Badge, Button, DataTable } from "..";
+import { VideoChannelEditDialog } from "./video-channel-edit-dialog";
 
 interface IVideoChannelsTableProps {
   data: VideoChannel[];
@@ -57,12 +58,13 @@ const VideoChannelActions = ({ channel }: { channel: VideoChannel }) => {
   };
 
   return (
-    <div className="flex w-24 items-center justify-end gap-1">
+    <div className="flex w-32 items-center justify-end gap-1">
       <Button asChild variant="ghost" size="icon" title="Open channel">
         <a href={channel.url} target="_blank" rel="noreferrer">
           <ExternalLink className="size-4" />
         </a>
       </Button>
+      <VideoChannelEditDialog channel={channel} />
       <Button
         variant="ghost"
         size="icon"

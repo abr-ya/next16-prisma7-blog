@@ -33,6 +33,7 @@ export type { PostFormValues } from "./admin-pages/post-form";
 export { VideoForm } from "./admin-pages/video-form";
 export type { VideoFormValues } from "./admin-pages/video-form";
 export { VideoChannelCreateDialog } from "./admin-pages/video-channel-create-dialog";
+export { VideoChannelEditDialog } from "./admin-pages/video-channel-edit-dialog";
 export { VideoChannelsTable } from "./admin-pages/video-channels-table";
 export { VideosTable } from "./admin-pages/videos-table";
 export { MdDocsTable } from "./admin-pages/md-docs-table";
