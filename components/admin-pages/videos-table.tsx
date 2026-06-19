@@ -1,6 +1,5 @@
 "use client";
 
-import type { Video } from "@/generated/prisma/client";
 import { ColumnDef } from "@tanstack/react-table";
 import { ArrowUpDown, Copy, ExternalLink, ImageIcon, Pencil, Trash } from "lucide-react";
 import Link from "next/link";
@@ -8,13 +7,13 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 
-import { deleteVideo, resolveAndSaveVideoThumbnail } from "@/app/_data/videos";
+import { deleteVideo, resolveAndSaveVideoThumbnail, type VideoWithChannel } from "@/app/_data/videos";
 import { getYouTubeVideoId } from "@/lib/video-providers/youtube";
 
 import { Badge, Button, DataTable } from "..";
 
 interface IVideosTableProps {
-  data: Video[];
+  data: VideoWithChannel[];
 }
 
 const formatDate = (date: Date) =>
@@ -33,9 +32,10 @@ const formatDateTime = (date: Date) =>
     minute: "2-digit",
   });
 
-const formatVisibility = (visibility: Video["visibility"]) => (visibility === "PUBLIC" ? "Public" : "Private");
+const formatVisibility = (visibility: VideoWithChannel["visibility"]) =>
+  visibility === "PUBLIC" ? "Public" : "Private";
 
-const VideoActions = ({ video }: { video: Video }) => {
+const VideoActions = ({ video }: { video: VideoWithChannel }) => {
   const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
   const [isResolvingThumbnail, setIsResolvingThumbnail] = useState(false);
@@ -138,7 +138,7 @@ const VideoActions = ({ video }: { video: Video }) => {
   );
 };
 
-const columns: ColumnDef<Video>[] = [
+const columns: ColumnDef<VideoWithChannel>[] = [
   {
     accessorKey: "title",
     header: ({ column }) => (
@@ -179,6 +179,18 @@ const columns: ColumnDef<Video>[] = [
         {formatVisibility(row.original.visibility)}
       </Badge>
     ),
+  },
+  {
+    accessorKey: "channel",
+    header: "Channel",
+    cell: ({ row }) =>
+      row.original.channel ? (
+        <Badge variant="outline" className="max-w-36 truncate">
+          {row.original.channel.name}
+        </Badge>
+      ) : (
+        <span className="block w-20 truncate text-xs text-muted-foreground">No channel</span>
+      ),
   },
   {
     accessorKey: "videoDate",

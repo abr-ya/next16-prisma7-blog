@@ -102,7 +102,7 @@ The first implementation can use a confirmation prompt before deletion. A richer
 - [x] VC-10 Add channel selector to `VideoForm`.
 - [x] VC-11 Persist `channelId` in `createVideo` and `updateVideo`.
 - [x] VC-12 Include channel data in admin video queries.
-- [ ] VC-13 Show channel links in `VideosTable`.
+- [x] VC-13 Show channel labels in `VideosTable`.
 - [ ] VC-14 Include public channel data in public video queries.
 - [ ] VC-15 Show public channel links on public video list/detail views.
 - [ ] VC-16 Run Prisma migration against the development database.
