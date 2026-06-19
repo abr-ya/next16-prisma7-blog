@@ -101,7 +101,7 @@ The first implementation can use a confirmation prompt before deletion. A richer
 - [x] VC-09 Add channel create/edit UI.
 - [x] VC-10 Add channel selector to `VideoForm`.
 - [x] VC-11 Persist `channelId` in `createVideo` and `updateVideo`.
-- [ ] VC-12 Include channel data in admin video queries.
+- [x] VC-12 Include channel data in admin video queries.
 - [ ] VC-13 Show channel links in `VideosTable`.
 - [ ] VC-14 Include public channel data in public video queries.
 - [ ] VC-15 Show public channel links on public video list/detail views.

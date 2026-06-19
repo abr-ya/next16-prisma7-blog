@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
-import type { Video } from "@/generated/prisma/client";
+import type { Prisma, Video } from "@/generated/prisma/client";
 import type { VideoVisibility } from "@/generated/prisma/enums";
 import { authSession } from "@/lib/auth-utils";
 import { normalizeVideoThumbnailUrl } from "@/lib/video-thumbnail-url";
@@ -17,6 +17,10 @@ export type VideoActionValues = {
   videoDate: Date | string;
   visibility?: VideoVisibility;
 };
+
+export type VideoWithChannel = Prisma.VideoGetPayload<{
+  include: { channel: true };
+}>;
 
 const DEFAULT_VIDEO_VISIBILITY: VideoVisibility = "PRIVATE";
 
@@ -55,6 +59,7 @@ export const getAllVideos = async () => {
 
     return prisma.video.findMany({
       where: { userId },
+      include: { channel: true },
       orderBy: { createdAt: "desc" },
     });
   } catch (err) {
@@ -70,6 +75,7 @@ export const getVideoById = async (id: string) => {
 
     return prisma.video.findFirst({
       where: { id, userId },
+      include: { channel: true },
     });
   } catch (err) {
     console.error({ err });
