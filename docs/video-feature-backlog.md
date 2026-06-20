@@ -30,6 +30,14 @@ Detailed thumbnail analysis and implementation tracking:
 - Show channels as external links in admin and public video views.
 - Add channel filtering and sorting to admin and public video lists.
 
+### Public Video Browse Controls
+
+- Detailed plan: `docs/video-public-browse-feature-plan.md`.
+- Add public sorting so visitors can choose between recently added videos and video-date ordering.
+- Add server-side pagination before the public list grows too large.
+- Keep browse state in URL query params so sorted and paginated views are shareable.
+- Add channel, tag, search, and provider filters only when those data surfaces are ready.
+
 ### Tags
 
 - Model video tags closer to categories, not as a plain `String[]`.
@@ -42,7 +50,7 @@ Detailed thumbnail analysis and implementation tracking:
 ## Later Backlog
 
 - Add video embeds after provider detection exists.
-- Add search across title, URL, channel, tags, notes, and extracted metadata.
+- Add broader search across title, URL, channel, tags, notes, and extracted metadata after public browse controls exist.
 - Add import/export for video links.
 - Add bulk actions in the admin video table.
 - Add notes and timestamp comments after list/detail organization is stable.
