@@ -105,16 +105,16 @@ The first implementation can use a confirmation prompt before deletion. A richer
 - [x] VC-13 Show channel labels in `VideosTable`.
 - [x] VC-14 Include public channel data in public video queries.
 - [x] VC-15 Show public channel links on public video list/detail views.
-- [ ] VC-16 Run Prisma migration against the development database.
-- [ ] VC-17 Run `npm run postinstall`.
+- [x] VC-16 Run Prisma migration against the development database.
+- [x] VC-17 Run `npm run postinstall`.
 - [x] VC-18 Run `npm run tsc`.
 - [x] VC-19 Run `npm run lint`.
 - [x] VC-20 Run targeted ESLint for changed component files.
-- [ ] VC-21 Manually verify channel create/edit/delete flows.
-- [ ] VC-22 Manually verify video channel assignment and clearing.
-- [ ] VC-23 Manually verify public videos with public, hidden, and missing channels.
+- [x] VC-21 Manually verify channel create/edit/delete flows.
+- [x] VC-22 Manually verify video channel assignment and clearing.
+- [x] VC-23 Manually verify public videos with public, hidden, and missing channels.
 
-Next task: VC-16 Run Prisma migration against the development database.
+Next task: none for the current channel rollout.
 
 ## Could Do Later
 

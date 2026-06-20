@@ -27,7 +27,7 @@ const PublicVideoPage = async ({ params }: { params: Promise<{ id: string }> }) 
               </Badge>
             ) : null}
           </div>
-          <h1 className="text-3xl font-bold leading-tight md:text-5xl">{video.title}</h1>
+          <h1 className="text-2xl font-semibold leading-tight md:text-3xl">{video.title}</h1>
           <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
             <span className="flex items-center gap-1">
               <CalendarDays className="size-4" />

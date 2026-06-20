@@ -11,7 +11,7 @@ Status markers:
 ## Current Status
 
 - Phase: 4
-- Next task: VC-16 in `docs/video-channel-feature-plan.md`
+- Next task: none for the current channel rollout.
 - Notes: Public video pages are manually verified, and the current thumbnail behavior is accepted as-is. Channels are now planned as global external channel records with optional images and `PUBLIC` / `HIDDEN` visibility.
 
 ## Phase 0: Planning
@@ -135,7 +135,7 @@ Detailed plan: `docs/video-channel-feature-plan.md`.
 - [ ] V4-11 Add channel filtering and sorting to video lists.
 - [x] V4-12 Run `npm run tsc`.
 - [x] V4-13 Run `npm run lint`.
-- [ ] V4-14 Manually verify channel create/edit/filter flows.
+- [x] V4-14 Manually verify channel create/edit/filter flows.
 
 ## Phase 5: Tags
 
