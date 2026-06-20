@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
-import type { Prisma, Video } from "@/generated/prisma/client";
+import type { Prisma } from "@/generated/prisma/client";
 import type { VideoVisibility } from "@/generated/prisma/enums";
 import { authSession } from "@/lib/auth-utils";
 import { normalizeVideoThumbnailUrl } from "@/lib/video-thumbnail-url";
@@ -83,12 +83,13 @@ export const getVideoById = async (id: string) => {
   }
 };
 
-export const getPublicVideos = async (): Promise<Video[]> => {
+export const getPublicVideos = async (): Promise<VideoWithChannel[]> => {
   try {
     const { default: prisma } = await import("@/lib/prisma");
 
     return prisma.video.findMany({
       where: { visibility: "PUBLIC" },
+      include: { channel: true },
       orderBy: { videoDate: "desc" },
     });
   } catch (err) {
@@ -97,12 +98,13 @@ export const getPublicVideos = async (): Promise<Video[]> => {
   }
 };
 
-export const getPublicVideoById = async (id: string): Promise<Video | null> => {
+export const getPublicVideoById = async (id: string): Promise<VideoWithChannel | null> => {
   try {
     const { default: prisma } = await import("@/lib/prisma");
 
     return prisma.video.findFirst({
       where: { id, visibility: "PUBLIC" },
+      include: { channel: true },
     });
   } catch (err) {
     console.error({ err });

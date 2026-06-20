@@ -24,7 +24,16 @@ const VideosPage = async () => {
               <Card key={video.id} className="gap-3">
                 <CardHeader className="gap-3">
                   <div className="flex items-center justify-between gap-3">
-                    <Badge variant="secondary">Public</Badge>
+                    <div className="flex min-w-0 flex-wrap items-center gap-2">
+                      <Badge variant="secondary">Public</Badge>
+                      {video.channel ? (
+                        <Badge asChild variant="outline" className="max-w-40">
+                          <a href={video.channel.url} target="_blank" rel="noreferrer" className="truncate">
+                            {video.channel.name}
+                          </a>
+                        </Badge>
+                      ) : null}
+                    </div>
                     <span className="flex items-center gap-1 text-xs text-muted-foreground">
                       <CalendarDays className="size-3.5" />
                       {format(video.videoDate, "PPP")}

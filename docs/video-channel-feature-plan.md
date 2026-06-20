@@ -77,9 +77,9 @@ model Video {
 
 ## Public Behavior
 
-- Public video list/detail views can show the video channel when the channel is `PUBLIC`.
-- A public channel label should link to the channel's external `url`.
-- Hidden channels should not be promoted in public UI.
+- Public video list/detail views should show the selected channel when the video is public, even if the channel itself is `HIDDEN`.
+- A public video channel label should link to the channel's external `url`.
+- Hidden channels should not be promoted in future public channel lists or standalone channel pages.
 - Videos with hidden channels should still remain public if the video itself is public.
 
 ## Deletion Behavior
@@ -103,8 +103,8 @@ The first implementation can use a confirmation prompt before deletion. A richer
 - [x] VC-11 Persist `channelId` in `createVideo` and `updateVideo`.
 - [x] VC-12 Include channel data in admin video queries.
 - [x] VC-13 Show channel labels in `VideosTable`.
-- [ ] VC-14 Include public channel data in public video queries.
-- [ ] VC-15 Show public channel links on public video list/detail views.
+- [x] VC-14 Include public channel data in public video queries.
+- [x] VC-15 Show public channel links on public video list/detail views.
 - [ ] VC-16 Run Prisma migration against the development database.
 - [ ] VC-17 Run `npm run postinstall`.
 - [x] VC-18 Run `npm run tsc`.
@@ -113,6 +113,8 @@ The first implementation can use a confirmation prompt before deletion. A richer
 - [ ] VC-21 Manually verify channel create/edit/delete flows.
 - [ ] VC-22 Manually verify video channel assignment and clearing.
 - [ ] VC-23 Manually verify public videos with public, hidden, and missing channels.
+
+Next task: VC-16 Run Prisma migration against the development database.
 
 ## Could Do Later
 

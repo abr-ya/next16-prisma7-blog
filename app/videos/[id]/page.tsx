@@ -16,7 +16,17 @@ const PublicVideoPage = async ({ params }: { params: Promise<{ id: string }> }) 
     <main className="min-h-screen px-4 py-10">
       <article className="mx-auto flex w-full max-w-3xl flex-col gap-6">
         <div className="flex flex-col gap-3">
-          <Badge variant="secondary">Public</Badge>
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant="secondary">Public</Badge>
+            {video.channel ? (
+              <Badge asChild variant="outline" className="max-w-full">
+                <a href={video.channel.url} target="_blank" rel="noreferrer" className="truncate">
+                  <ExternalLink className="size-3" />
+                  {video.channel.name}
+                </a>
+              </Badge>
+            ) : null}
+          </div>
           <h1 className="text-3xl font-bold leading-tight md:text-5xl">{video.title}</h1>
           <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
             <span className="flex items-center gap-1">
