@@ -182,3 +182,4 @@ Goal: add comments and timestamped notes on video detail pages.
 - [ ] VB-05 Add search across title, URL, tags, channels, notes, and metadata.
 - [ ] VB-06 Add import/export for video links.
 - [ ] VB-07 Add bulk actions in the video table.
+- [ ] VB-08 Fix the public navbar hydration warning by auditing `NavigationMenuList` HTML structure.

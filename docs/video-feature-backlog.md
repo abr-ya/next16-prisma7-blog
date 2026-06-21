@@ -54,3 +54,4 @@ Detailed thumbnail analysis and implementation tracking:
 - Add import/export for video links.
 - Add bulk actions in the admin video table.
 - Add notes and timestamp comments after list/detail organization is stable.
+- Fix the public navbar hydration warning by auditing `NavigationMenuList` HTML structure, especially the direct `Navigation:` text inside the menu list.

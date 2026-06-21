@@ -15,7 +15,7 @@ Add public video browse controls so visitors can choose a useful ordering and mo
 - Keep public pages limited to videos with `visibility: PUBLIC`.
 - Keep `videoDate` as the date of the video itself.
 - Treat `createdAt` as the date the video was added to this library.
-- Default public sorting should probably be `Recently added` (`createdAt desc`), because that matches the user expectation for "new videos".
+- Default public sorting is `Video date` (`videoDate desc`) so the library keeps emphasizing when the original videos were published.
 - Keep channel visibility separate:
   - public video cards can show their selected channel;
   - hidden channels should not appear in standalone public channel indexes unless we later decide otherwise.
@@ -75,11 +75,11 @@ Do not add a visibility filter to the public UI. The public query should always 
 
 ## Implementation Checklist
 
-- [ ] VPB-01 Decide default public sort (`createdAt desc` vs `videoDate desc`).
-- [ ] VPB-02 Add sort parsing for `/videos` search params.
-- [ ] VPB-03 Update `getPublicVideos` to accept sort and pagination options.
+- [x] VPB-01 Decide default public sort (`createdAt desc` vs `videoDate desc`). Use `Video date` (`videoDate desc`) by default.
+- [x] VPB-02 Add sort parsing for `/videos` search params.
+- [x] VPB-03 Update `getPublicVideos` to accept sort options.
 - [ ] VPB-04 Add server-side pagination metadata for public videos.
-- [ ] VPB-05 Add compact sort controls to `/videos`.
+- [x] VPB-05 Add compact sort controls to `/videos`.
 - [ ] VPB-06 Add pagination controls to `/videos`.
 - [ ] VPB-07 Preserve query params across sort and page changes.
 - [ ] VPB-08 Add channel filter only after public channel browse behavior is clear.

@@ -22,7 +22,16 @@ export type VideoWithChannel = Prisma.VideoGetPayload<{
   include: { channel: true };
 }>;
 
+export type PublicVideoSort = "createdAt-desc" | "videoDate-desc" | "title-asc";
+
 const DEFAULT_VIDEO_VISIBILITY: VideoVisibility = "PRIVATE";
+const DEFAULT_PUBLIC_VIDEO_SORT: PublicVideoSort = "videoDate-desc";
+
+const publicVideoOrderBy: Record<PublicVideoSort, Prisma.VideoOrderByWithRelationInput[]> = {
+  "createdAt-desc": [{ createdAt: "desc" }, { videoDate: "desc" }],
+  "videoDate-desc": [{ videoDate: "desc" }, { createdAt: "desc" }],
+  "title-asc": [{ title: "asc" }, { videoDate: "desc" }],
+};
 
 const getRequiredUserId = async () => {
   const session = await authSession();
@@ -83,14 +92,18 @@ export const getVideoById = async (id: string) => {
   }
 };
 
-export const getPublicVideos = async (): Promise<VideoWithChannel[]> => {
+export const getPublicVideos = async ({
+  sort = DEFAULT_PUBLIC_VIDEO_SORT,
+}: {
+  sort?: PublicVideoSort;
+} = {}): Promise<VideoWithChannel[]> => {
   try {
     const { default: prisma } = await import("@/lib/prisma");
 
     return prisma.video.findMany({
       where: { visibility: "PUBLIC" },
       include: { channel: true },
-      orderBy: { videoDate: "desc" },
+      orderBy: publicVideoOrderBy[sort],
     });
   } catch (err) {
     console.error({ err });
