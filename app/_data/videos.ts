@@ -26,6 +26,8 @@ export type PublicVideoSort = "createdAt-desc" | "videoDate-desc" | "title-asc";
 
 const DEFAULT_VIDEO_VISIBILITY: VideoVisibility = "PRIVATE";
 const DEFAULT_PUBLIC_VIDEO_SORT: PublicVideoSort = "videoDate-desc";
+const DEFAULT_PUBLIC_VIDEO_PAGE = 1;
+const DEFAULT_PUBLIC_VIDEO_PAGE_SIZE = 12;
 
 const publicVideoOrderBy: Record<PublicVideoSort, Prisma.VideoOrderByWithRelationInput[]> = {
   "createdAt-desc": [{ createdAt: "desc" }, { videoDate: "desc" }],
@@ -94,17 +96,42 @@ export const getVideoById = async (id: string) => {
 
 export const getPublicVideos = async ({
   sort = DEFAULT_PUBLIC_VIDEO_SORT,
+  page = DEFAULT_PUBLIC_VIDEO_PAGE,
+  pageSize = DEFAULT_PUBLIC_VIDEO_PAGE_SIZE,
 }: {
   sort?: PublicVideoSort;
-} = {}): Promise<VideoWithChannel[]> => {
+  page?: number;
+  pageSize?: number;
+} = {}): Promise<{
+  videos: VideoWithChannel[];
+  totalCount: number;
+  page: number;
+  pageCount: number;
+  pageSize: number;
+}> => {
   try {
     const { default: prisma } = await import("@/lib/prisma");
+    const where = { visibility: "PUBLIC" } satisfies Prisma.VideoWhereInput;
+    const normalizedPageSize = Math.max(1, pageSize);
+    const totalCount = await prisma.video.count({ where });
+    const pageCount = Math.max(1, Math.ceil(totalCount / normalizedPageSize));
+    const normalizedPage = Math.min(Math.max(1, page), pageCount);
 
-    return prisma.video.findMany({
-      where: { visibility: "PUBLIC" },
+    const videos = await prisma.video.findMany({
+      where,
       include: { channel: true },
       orderBy: publicVideoOrderBy[sort],
+      skip: (normalizedPage - 1) * normalizedPageSize,
+      take: normalizedPageSize,
     });
+
+    return {
+      videos,
+      totalCount,
+      page: normalizedPage,
+      pageCount,
+      pageSize: normalizedPageSize,
+    };
   } catch (err) {
     console.error({ err });
     throw new Error("Something went wrong (getPublicVideos)");
