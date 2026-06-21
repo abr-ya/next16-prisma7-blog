@@ -38,6 +38,14 @@ Detailed thumbnail analysis and implementation tracking:
 - Keep browse state in URL query params so sorted and paginated views are shareable.
 - Add channel, tag, search, and provider filters only when those data surfaces are ready.
 
+### Admin Video Table Pagination
+
+- Add pagination to the admin video table when the library grows beyond a comfortable single-page table.
+- Prefer a shared `DataTable` enhancement first, with client-side pagination and page-size controls such as 10, 20, and 50 rows.
+- Keep server-side admin pagination as a later option if admin filtering, search, or very large datasets make loading all videos too heavy.
+- Preserve the current TanStack sorting behavior while paginating.
+- Consider applying the shared table pagination pattern to other admin tables after the video table proves it useful.
+
 ### Tags
 
 - Model video tags closer to categories, not as a plain `String[]`.
@@ -53,5 +61,6 @@ Detailed thumbnail analysis and implementation tracking:
 - Add broader search across title, URL, channel, tags, notes, and extracted metadata after public browse controls exist.
 - Add import/export for video links.
 - Add bulk actions in the admin video table.
+- Add shared admin table pagination, starting with the video table.
 - Add notes and timestamp comments after list/detail organization is stable.
 - Fix the public navbar hydration warning by auditing `NavigationMenuList` HTML structure, especially the direct `Navigation:` text inside the menu list.

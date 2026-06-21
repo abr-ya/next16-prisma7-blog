@@ -85,7 +85,7 @@ Do not add a visibility filter to the public UI. The public query should always 
 - [ ] VPB-08 Add channel filter only after public channel browse behavior is clear.
 - [x] VPB-09 Run `npm run tsc`.
 - [x] VPB-10 Run `npm run lint`.
-- [ ] VPB-11 Manually verify default sort, alternate sort, and pagination.
+- [x] VPB-11 Manually verify default sort, alternate sort, and pagination.
 
 ## Could Do Later
 
