@@ -23,6 +23,25 @@ If the developer asks to bypass or violates the OpenSpec methodology, say so exp
 
 Small obvious fixes may be implemented directly when they do not change product scope, public behavior, data contracts, or architecture. Mention when a fix is being treated as small and outside a formal OpenSpec change.
 
+## Feature Numbering
+
+Use one project-wide sequence for planned features, OpenSpec changes, and matching git branches.
+
+Format:
+
+`feature-<3 digits>-<area>-<short-action>`
+
+Examples:
+
+- `feature-001-video-admin-table-pagination`
+- `feature-002-video-public-channel-filter`
+- `feature-003-blog-post-search`
+- `feature-004-md-docs-editor-polish`
+
+Use the same name for the OpenSpec change directory and the git branch when possible.
+Before starting a new numbered feature, check `openspec/backlog.md` for the next available number.
+Do not reuse feature numbers, even if an item is cancelled or archived.
+
 ## Token Economy
 
 Spend tokens deliberately.
@@ -63,4 +82,3 @@ Notes:
 - Preserve user changes in the working tree.
 - Keep changes scoped to the requested capability.
 - Avoid new dependencies unless they clearly reduce implementation risk or match existing project direction.
-

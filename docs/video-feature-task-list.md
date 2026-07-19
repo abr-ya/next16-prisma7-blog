@@ -176,7 +176,7 @@ Goal: add comments and timestamped notes on video detail pages.
 ## Backlog
 
 - [x] VB-01 Add metadata extraction plan for thumbnails and duration.
-- [x] VB-02 Implement optional video thumbnails through `docs/video-thumbnail-feature-task-list.md`. Current behavior is accepted as-is; paused thumbnail enhancements are "Could Do Later". Keep duration extraction as a later metadata task.
+- [x] VB-02 Implement optional video thumbnails. Current behavior is accepted in `openspec/specs/video-library/spec.md`; historical planning is archived at `docs/archive/video-thumbnail-feature-task-list.md`. Paused thumbnail enhancements are "Could Do Later". Keep duration extraction as a later metadata task.
 - [ ] VB-03 Add provider detection/adapters where metadata is available.
 - [ ] VB-04 Add video embeds after provider detection exists.
 - [ ] VB-05 Add search across title, URL, tags, channels, notes, and metadata.
