@@ -16,5 +16,4 @@ Use the same `feature-<3 digits>-<area>-<short-action>` name for the OpenSpec ch
 
 | ID | Status | Change | Area | Summary |
 | --- | --- | --- | --- | --- |
-| feature-001 | Planned | feature-001-video-admin-table-pagination | video/admin | Add client-side pagination to the admin video table, starting from the shared DataTable pattern. |
-
+| feature-001 | Proposed | feature-001-video-admin-table-pagination | video/admin | Add client-side pagination to the admin video table, starting from the shared DataTable pattern. |
