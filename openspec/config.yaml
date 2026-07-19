@@ -1,0 +1,87 @@
+schema: spec-driven
+
+project:
+  context: |
+    Project: personal blog/content hub built with Next.js App Router.
+
+    Tech stack:
+    - TypeScript, React 19, Next.js 16 App Router.
+    - Prisma 7 with PostgreSQL; generated Prisma client lives in generated/prisma.
+    - better-auth for authentication.
+    - Tailwind CSS 4, shadcn-style local UI components, Radix UI primitives, lucide-react icons.
+    - Tiptap for rich text editing, UploadThing for uploaded media, react-markdown/remark-gfm/mermaid for docs rendering.
+
+    Architecture:
+    - Route segments and server pages live under app/.
+    - Admin functionality lives under app/admin and components/admin-pages.
+    - Public blog/docs/videos pages live under app/blog, app/docs, app/videos and matching components/*-pages folders.
+    - Data access helpers live under app/_data.
+    - Shared application helpers live under lib.
+    - Shared reusable UI primitives live under components/ui.
+    - Reusable layout components live under components/layout.
+    - Prisma schema and migrations live under prisma.
+    - Generated Prisma client output is generated/prisma and is imported through the project helpers, not edited manually.
+
+    Naming and code conventions:
+    - Use TypeScript and keep components, route files, and helper modules consistent with existing file names.
+    - Component files use kebab-case file names and PascalCase exported React components.
+    - Prefer explicit domain names such as video, video-channel, md-doc, post, category, link.
+    - Keep server-only data access in server pages/actions/helpers; keep client interactivity inside client components.
+    - Reuse existing UI primitives from components/ui before adding new primitives.
+    - Use lucide-react icons for icon buttons when an icon exists.
+    - Avoid broad refactors during feature changes; keep changes scoped to the requested capability.
+
+    Main modules:
+    - app/_data: database/query helpers for posts, docs, links, logs, videos, and video channels.
+    - app/api/auth/[...all]: better-auth route handler.
+    - app/api/uploadthing: UploadThing configuration and route handler.
+    - components/admin-pages: admin CRUD tables, dialogs, and forms.
+    - components/blog-pages, components/docs, components/video-pages: public content UI.
+    - components/common: shared rich text and table building blocks.
+    - lib/prisma.ts: Prisma access.
+    - lib/auth.ts, lib/auth-client.ts, lib/auth-utils.ts: auth setup and helpers.
+    - lib/uploadthing.ts: UploadThing helpers.
+    - lib/video-providers and lib/video-thumbnail-url.ts: video provider/thumbnail logic.
+    - docs: implementation notes, plans, reports, and backlog-style project docs.
+
+    Testing and validation:
+    - There is currently no dedicated npm test script.
+    - Use npm run tsc for TypeScript validation.
+    - Use npm run lint for lint validation.
+    - Use npm run build before considering user-facing or routing/database changes complete when feasible.
+    - For Prisma/schema changes, run prisma generate through npm postinstall behavior or npx prisma generate as needed, and validate migrations/schema carefully.
+    - For UI-heavy changes, do a manual browser check in addition to static validation.
+
+    Project constraints:
+    - Preserve existing database data and migrations; do not reset or rewrite migrations unless explicitly requested.
+    - Do not edit generated/prisma manually.
+    - Keep public visibility rules explicit, especially for videos and video channels.
+    - Keep admin-only workflows under /admin and authenticated paths.
+    - Prefer small, reviewable feature slices with docs/checklist updates when behavior changes.
+    - Avoid introducing new dependencies unless they clearly reduce implementation risk or match existing project direction.
+
+    Commands:
+    - npm run dev: start local Next.js development server.
+    - npm run build: build the application.
+    - npm run start: start the production build.
+    - npm run lint: run ESLint over app files.
+    - npm run fix: run ESLint auto-fix over app files.
+    - npm run tsc: run TypeScript type checking.
+
+# Per-artifact rules (optional)
+# Add custom rules for specific artifacts.
+rules:
+  proposal:
+    - State the user-facing outcome first.
+    - Include Non-goals for any feature with ambiguous scope.
+    - Mention affected routes, data models, and admin/public surfaces when relevant.
+  design:
+    - Describe data model changes, server/client boundaries, and migration impact when applicable.
+    - Call out security, auth, visibility, and data-preservation concerns.
+  tasks:
+    - Break implementation into small reviewable steps.
+    - Include validation tasks for npm run tsc, npm run lint, and npm run build when relevant.
+    - Include docs/checklist updates when behavior or project workflow changes.
+  spec:
+    - Use observable requirements with clear SHALL statements.
+    - Cover admin and public behavior separately when both are affected.
