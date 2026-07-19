@@ -1,5 +1,7 @@
 # Video Feature Plan
 
+Archived planning note: this file is historical. Current accepted video behavior lives in `openspec/specs/video-library/spec.md`; future video work is tracked in `openspec/backlog.md`.
+
 ## Context
 
 The project already has a Next.js App Router structure with Prisma models for posts, markdown docs, links, categories, users, and logs. Videos should be a separate entity rather than an extension of `Link`, because they need a video-specific date, future detail pages, channels, tags, comments, and timestamp notes.
@@ -204,7 +206,7 @@ Acceptance criteria:
 
 Add organization by channel after the core video CRUD is stable. A channel is a global shared directory entry for an external video channel, not a user-owned folder.
 
-Detailed plan: `docs/video-channel-feature-plan.md`.
+Detailed plan: `docs/archive/video-channel-feature-plan.md`.
 
 Tasks:
 
@@ -322,4 +324,4 @@ npx prisma generate
 
 ## Video Backlog
 
-See `docs/video-feature-backlog.md` for metadata, channel, tag, search, import/export, and bulk-action backlog items.
+See `openspec/backlog.md` for metadata, channel, tag, search, import/export, and bulk-action backlog items.

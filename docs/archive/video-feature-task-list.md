@@ -1,6 +1,8 @@
 # Video Feature Task List
 
-Use this file as the working checklist for `docs/video-feature-plan.md`.
+Archived planning note: this file is historical. Current accepted video behavior lives in `openspec/specs/video-library/spec.md`; future video work is tracked in `openspec/backlog.md`.
+
+Use this file as the historical checklist for `docs/archive/video-feature-plan.md`.
 
 Status markers:
 
@@ -17,7 +19,7 @@ Status markers:
 ## Phase 0: Planning
 
 - [x] V0-01 Create high-level video feature plan.
-- [x] V0-02 Save the plan in `docs/video-feature-plan.md`.
+- [x] V0-02 Save the plan in `docs/archive/video-feature-plan.md`.
 - [x] V0-03 Create this task checklist.
 - [x] V0-04 Decide whether the MVP includes delete controls.
 - [x] V0-05 Decide whether videos are private only or will also have public pages.
@@ -120,7 +122,7 @@ Goal: users can browse and open read-only video pages outside the admin area.
 
 Goal: allow videos to reference global external channels without deleting videos when a channel is removed.
 
-Detailed plan: `docs/video-channel-feature-plan.md`.
+Detailed plan: `docs/archive/video-channel-feature-plan.md`.
 
 - [x] V4-01 Add global `VideoChannel` model with `name`, external `url`, optional `imageUrl`, and visibility.
 - [x] V4-02 Add optional `channelId` to `Video`.
