@@ -1,8 +1,8 @@
 ## 1. Table Pagination
 
-- [ ] 1.1 Extend the shared `DataTable` component with opt-in client-side pagination using TanStack Table pagination state.
-- [ ] 1.2 Add compact pagination controls that show current page state and previous/next navigation.
-- [ ] 1.3 Keep existing sorting behavior compatible with paginated rows.
+- [x] 1.1 Extend the shared `DataTable` component with opt-in client-side pagination using TanStack Table pagination state.
+- [x] 1.2 Add compact pagination controls that show current page state and previous/next navigation.
+- [x] 1.3 Keep existing sorting behavior compatible with paginated rows.
 
 ## 2. Admin Videos Integration
 
