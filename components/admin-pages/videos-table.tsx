@@ -16,6 +16,8 @@ interface IVideosTableProps {
   data: VideoWithChannel[];
 }
 
+const ADMIN_VIDEOS_PAGE_SIZE = 10;
+
 const formatDate = (date: Date) =>
   date.toLocaleDateString("ru-RU", {
     year: "numeric",
@@ -238,6 +240,6 @@ const columns: ColumnDef<VideoWithChannel>[] = [
 export const VideosTable = ({ data }: IVideosTableProps) => (
   <div className="flex w-full min-w-0 max-w-full flex-col gap-2 p-4">
     <div className="text-sm text-muted-foreground">videos count: {data.length}</div>
-    <DataTable data={data} columns={columns} />
+    <DataTable data={data} columns={columns} pagination={{ pageSize: ADMIN_VIDEOS_PAGE_SIZE }} />
   </div>
 );

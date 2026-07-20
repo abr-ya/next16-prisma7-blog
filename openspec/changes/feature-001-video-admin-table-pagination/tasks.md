@@ -6,14 +6,14 @@
 
 ## 2. Admin Videos Integration
 
-- [ ] 2.1 Enable pagination in `VideosTable` with a sensible default page size for the wide admin video table.
-- [ ] 2.2 Confirm existing row actions still work for visible paginated rows: open, copy video ID, fetch thumbnail, edit, and delete.
-- [ ] 2.3 Keep the current owner-scoped server query unchanged.
+- [x] 2.1 Enable pagination in `VideosTable` with a sensible default page size for the wide admin video table.
+- [x] 2.2 Confirm existing row actions still work for visible paginated rows: open, copy video ID, fetch thumbnail, edit, and delete.
+- [x] 2.3 Keep the current owner-scoped server query unchanged.
 
 ## 3. Validation
 
-- [ ] 3.1 Run targeted ESLint for changed component files.
-- [ ] 3.2 Run `npm run tsc`.
-- [ ] 3.3 Run `npm run lint`.
-- [ ] 3.4 Run `npm run build` when feasible.
-- [ ] 3.5 Perform a manual browser check expectation for `/admin/videos` with enough rows to require pagination.
+- [x] 3.1 Run targeted ESLint for changed component files.
+- [x] 3.2 Run `npm run tsc`.
+- [x] 3.3 Run `npm run lint`.
+- [x] 3.4 Run `npm run build` when feasible.
+- [x] 3.5 Perform a manual browser check expectation for `/admin/videos` with enough rows to require pagination.
