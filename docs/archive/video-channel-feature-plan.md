@@ -1,5 +1,7 @@
 # Video Channel Feature Plan
 
+Archived planning note: this file is historical. Current accepted channel behavior lives in `openspec/specs/video-library/spec.md`; future channel filtering/sorting work is tracked in `openspec/backlog.md`.
+
 ## Context
 
 The video feature already supports admin CRUD, private/public visibility, public video pages, and an accepted thumbnail MVP. Channels are the next organization layer for saved videos.

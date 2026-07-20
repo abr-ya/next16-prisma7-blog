@@ -1,6 +1,6 @@
 # Video Thumbnail Feature Task List
 
-Use this file as the working checklist for `docs/video-thumbnail-feature-plan.md`.
+Use this archived file as the historical working checklist for `docs/archive/video-thumbnail-feature-plan.md`.
 
 Status markers:
 

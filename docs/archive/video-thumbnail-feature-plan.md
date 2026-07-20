@@ -226,4 +226,4 @@ The current implementation is accepted as the thumbnail MVP. Manual upload, list
 
 ## Implementation Checklist
 
-The executable checklist is maintained in `docs/video-thumbnail-feature-task-list.md`.
+The archived executable checklist is maintained in `docs/archive/video-thumbnail-feature-task-list.md`.

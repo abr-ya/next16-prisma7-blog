@@ -1,5 +1,7 @@
 # Video Feature Backlog
 
+Archived planning note: this file is historical. Current accepted video behavior lives in `openspec/specs/video-library/spec.md`; future video work is tracked in `openspec/backlog.md`.
+
 Use this backlog for video ideas that are not part of the current public pages milestone.
 
 ## Priority Candidates
@@ -8,8 +10,10 @@ Use this backlog for video ideas that are not part of the current public pages m
 
 Detailed thumbnail analysis and implementation tracking:
 
-- `docs/video-thumbnail-feature-plan.md`
-- `docs/video-thumbnail-feature-task-list.md`
+- Accepted baseline: `openspec/specs/video-library/spec.md`.
+- Archived planning history:
+  - `docs/archive/video-thumbnail-feature-plan.md`
+  - `docs/archive/video-thumbnail-feature-task-list.md`
 
 - Add optional `thumbnailUrl` to `Video`.
 - Add optional `durationSeconds` to `Video`.
@@ -20,7 +24,7 @@ Detailed thumbnail analysis and implementation tracking:
 
 ### Channels
 
-- Detailed plan: `docs/video-channel-feature-plan.md`.
+- Detailed plan: `docs/archive/video-channel-feature-plan.md`.
 - Replace the earlier folder idea with global external video channels.
 - Add `VideoChannel` with `name`, external `url`, optional `imageUrl`, `visibility`, timestamps, and a relation to videos.
 - Add optional `channelId` on `Video`.
@@ -32,7 +36,8 @@ Detailed thumbnail analysis and implementation tracking:
 
 ### Public Video Browse Controls
 
-- Detailed plan: `docs/video-public-browse-feature-plan.md`.
+- Accepted baseline: `openspec/specs/video-library/spec.md`.
+- Archived planning history: `docs/archive/video-public-browse-feature-plan.md`.
 - Add public sorting so visitors can choose between recently added videos and video-date ordering.
 - Add server-side pagination before the public list grows too large.
 - Keep browse state in URL query params so sorted and paginated views are shareable.
