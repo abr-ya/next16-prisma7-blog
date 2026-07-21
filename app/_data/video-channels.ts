@@ -14,6 +14,8 @@ export type VideoChannelActionValues = {
   visibility?: VideoChannelVisibility;
 };
 
+export type PublicVideoChannelOption = Pick<VideoChannel, "id" | "name">;
+
 const DEFAULT_VIDEO_CHANNEL_VISIBILITY: VideoChannelVisibility = "PUBLIC";
 
 const getRequiredUserId = async () => {
@@ -93,6 +95,31 @@ export const getVideoChannelById = async (id: string): Promise<VideoChannel | nu
   } catch (err) {
     console.error({ err });
     throw new Error("Something went wrong (getVideoChannelById)");
+  }
+};
+
+export const getPublicVideoChannelOptions = async (): Promise<PublicVideoChannelOption[]> => {
+  try {
+    const { default: prisma } = await import("@/lib/prisma");
+
+    return prisma.videoChannel.findMany({
+      where: {
+        visibility: "PUBLIC",
+        videos: {
+          some: {
+            visibility: "PUBLIC",
+          },
+        },
+      },
+      select: {
+        id: true,
+        name: true,
+      },
+      orderBy: [{ name: "asc" }, { createdAt: "desc" }],
+    });
+  } catch (err) {
+    console.error({ err });
+    throw new Error("Something went wrong (getPublicVideoChannelOptions)");
   }
 };
 

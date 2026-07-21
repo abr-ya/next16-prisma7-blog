@@ -1,7 +1,17 @@
 import { format } from "date-fns";
-import { ArrowDownAZ, CalendarDays, ChevronLeft, ChevronRight, Clock3, ExternalLink, PlayCircle } from "lucide-react";
+import {
+  ArrowDownAZ,
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+  Clock3,
+  ExternalLink,
+  PlayCircle,
+  Tv,
+} from "lucide-react";
 import Link from "next/link";
 
+import { getPublicVideoChannelOptions } from "@/app/_data/video-channels";
 import { getPublicVideos } from "@/app/_data/videos";
 import type { PublicVideoSort } from "@/app/_data/videos";
 import { Badge, Button, Card, CardContent, CardHeader, CardTitle } from "@/components/index";
@@ -11,6 +21,7 @@ export const dynamic = "force-dynamic";
 
 type VideosPageProps = {
   searchParams?: Promise<{
+    channel?: string | string[];
     page?: string | string[];
     sort?: string | string[];
   }>;
@@ -30,9 +41,6 @@ const getSortValue = (sort: string | string[] | undefined): PublicVideoSort => {
   return sortOptions.some((option) => option.value === value) ? (value as PublicVideoSort) : DEFAULT_PUBLIC_VIDEO_SORT;
 };
 
-const getSortHref = (sort: PublicVideoSort) =>
-  sort === DEFAULT_PUBLIC_VIDEO_SORT ? "/videos" : `/videos?sort=${sort}`;
-
 const getPageValue = (page: string | string[] | undefined) => {
   const value = Array.isArray(page) ? page[0] : page;
   const parsed = Number(value);
@@ -40,14 +48,32 @@ const getPageValue = (page: string | string[] | undefined) => {
   return Number.isInteger(parsed) && parsed > 0 ? parsed : 1;
 };
 
-const getPageHref = ({ page, sort }: { page: number; sort: PublicVideoSort }) => {
+const getChannelValue = (channel: string | string[] | undefined, channelOptions: { id: string }[]) => {
+  const value = Array.isArray(channel) ? channel[0] : channel;
+
+  return channelOptions.some((option) => option.id === value) ? value : null;
+};
+
+const getVideosHref = ({
+  channelId,
+  page,
+  sort,
+}: {
+  channelId?: string | null;
+  page?: number;
+  sort: PublicVideoSort;
+}) => {
   const params = new URLSearchParams();
 
   if (sort !== DEFAULT_PUBLIC_VIDEO_SORT) {
     params.set("sort", sort);
   }
 
-  if (page > 1) {
+  if (channelId) {
+    params.set("channel", channelId);
+  }
+
+  if (page && page > 1) {
     params.set("page", String(page));
   }
 
@@ -60,7 +86,14 @@ const VideosPage = async ({ searchParams }: VideosPageProps) => {
   const params = await searchParams;
   const activeSort = getSortValue(params?.sort);
   const requestedPage = getPageValue(params?.page);
-  const { videos, totalCount, page, pageCount } = await getPublicVideos({ sort: activeSort, page: requestedPage });
+  const channelOptions = await getPublicVideoChannelOptions();
+  const activeChannelId = getChannelValue(params?.channel, channelOptions);
+  const activeChannel = channelOptions.find((channel) => channel.id === activeChannelId);
+  const { videos, totalCount, page, pageCount } = await getPublicVideos({
+    sort: activeSort,
+    page: requestedPage,
+    channelId: activeChannelId,
+  });
   const hasPagination = pageCount > 1;
 
   return (
@@ -71,15 +104,47 @@ const VideosPage = async ({ searchParams }: VideosPageProps) => {
             <h1 className="text-3xl font-bold">Videos</h1>
             <p className="max-w-2xl text-sm text-muted-foreground">Public video links from the library.</p>
           </div>
-          <div className="flex flex-wrap gap-2" aria-label="Sort videos">
-            {sortOptions.map(({ value, label, icon: Icon }) => (
-              <Button key={value} asChild variant={activeSort === value ? "default" : "outline"} size="sm">
-                <Link href={getSortHref(value)} aria-current={activeSort === value ? "page" : undefined}>
-                  <Icon />
-                  {label}
-                </Link>
-              </Button>
-            ))}
+          <div className="flex flex-col gap-2 md:items-end">
+            <div className="flex flex-wrap gap-2" aria-label="Sort videos">
+              {sortOptions.map(({ value, label, icon: Icon }) => (
+                <Button key={value} asChild variant={activeSort === value ? "default" : "outline"} size="sm">
+                  <Link
+                    href={getVideosHref({ sort: value, channelId: activeChannelId })}
+                    aria-current={activeSort === value ? "page" : undefined}
+                  >
+                    <Icon />
+                    {label}
+                  </Link>
+                </Button>
+              ))}
+            </div>
+            {channelOptions.length > 0 ? (
+              <div className="flex max-w-full flex-wrap gap-2 md:justify-end" aria-label="Filter videos by channel">
+                <Button asChild variant={activeChannelId ? "outline" : "default"} size="sm">
+                  <Link href={getVideosHref({ sort: activeSort })}>
+                    <Tv />
+                    All channels
+                  </Link>
+                </Button>
+                {channelOptions.map((channel) => (
+                  <Button
+                    key={channel.id}
+                    asChild
+                    variant={activeChannelId === channel.id ? "default" : "outline"}
+                    size="sm"
+                    className="max-w-48"
+                  >
+                    <Link
+                      href={getVideosHref({ sort: activeSort, channelId: channel.id })}
+                      aria-current={activeChannelId === channel.id ? "page" : undefined}
+                      className="truncate"
+                    >
+                      {channel.name}
+                    </Link>
+                  </Button>
+                ))}
+              </div>
+            ) : null}
           </div>
         </div>
 
@@ -156,7 +221,13 @@ const VideosPage = async ({ searchParams }: VideosPageProps) => {
                     aria-disabled={page <= 1}
                     className={page <= 1 ? "pointer-events-none opacity-50" : undefined}
                   >
-                    <Link href={getPageHref({ page: Math.max(1, page - 1), sort: activeSort })}>
+                    <Link
+                      href={getVideosHref({
+                        page: Math.max(1, page - 1),
+                        sort: activeSort,
+                        channelId: activeChannelId,
+                      })}
+                    >
                       <ChevronLeft />
                       Previous
                     </Link>
@@ -168,7 +239,13 @@ const VideosPage = async ({ searchParams }: VideosPageProps) => {
                     aria-disabled={page >= pageCount}
                     className={page >= pageCount ? "pointer-events-none opacity-50" : undefined}
                   >
-                    <Link href={getPageHref({ page: Math.min(pageCount, page + 1), sort: activeSort })}>
+                    <Link
+                      href={getVideosHref({
+                        page: Math.min(pageCount, page + 1),
+                        sort: activeSort,
+                        channelId: activeChannelId,
+                      })}
+                    >
                       Next
                       <ChevronRight />
                     </Link>
@@ -178,7 +255,9 @@ const VideosPage = async ({ searchParams }: VideosPageProps) => {
             ) : null}
           </>
         ) : (
-          <p className="text-muted-foreground">No public videos yet.</p>
+          <p className="text-muted-foreground">
+            {activeChannel ? `No public videos for ${activeChannel.name} yet.` : "No public videos yet."}
+          </p>
         )}
       </section>
     </main>
