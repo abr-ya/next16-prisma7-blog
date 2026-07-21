@@ -26,3 +26,5 @@ Use the same `feature-<3 digits>-<area>-<short-action>` name for the OpenSpec ch
 | feature-008 | Planned | feature-008-video-admin-bulk-actions | video/admin | Add bulk actions to the admin video table. |
 | feature-009 | Planned | feature-009-public-navbar-hydration-fix | navigation/public | Fix the public navbar hydration warning by auditing the `NavigationMenuList` HTML structure. |
 | feature-010 | Planned | feature-010-admin-table-pagination-rollout | admin/tables | Apply the shared client-side admin table pagination pattern to other admin tables after the video table slice proves it useful. |
+| feature-011 | Planned | feature-011-comments-page-workflow | comments/public | Turn the placeholder comments page into a functional comments workflow backed by the existing comment model. |
+| feature-012 | Planned | feature-012-saved-posts-admin-workflow | posts/admin | Define and implement the saved posts admin workflow currently represented by a placeholder. |
