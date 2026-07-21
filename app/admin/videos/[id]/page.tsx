@@ -42,6 +42,10 @@ const VideoPage = async ({ params }: { params: Promise<{ id: string }> }) => {
           channels={channels}
           visibility={video.visibility}
           videoDate={video.videoDate}
+          provider={video.provider}
+          providerVideoId={video.providerVideoId}
+          embedUrl={video.embedUrl}
+          durationSeconds={video.durationSeconds}
         />
       </div>
     </AdminPageLayout>

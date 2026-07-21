@@ -8,6 +8,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { deleteVideo, resolveAndSaveVideoThumbnail, type VideoWithChannel } from "@/app/_data/videos";
+import { formatVideoDuration, formatVideoProvider } from "@/lib/video-metadata-format";
 import { getYouTubeVideoId } from "@/lib/video-providers/youtube";
 
 import { Badge, Button, DataTable } from "..";
@@ -43,7 +44,7 @@ const VideoActions = ({ video }: { video: VideoWithChannel }) => {
   const [isResolvingThumbnail, setIsResolvingThumbnail] = useState(false);
 
   const handleCopyId = async () => {
-    const videoId = getYouTubeVideoId(video.url);
+    const videoId = video.providerVideoId ?? getYouTubeVideoId(video.url);
 
     if (!videoId) {
       toast.error("Video ID was not found in the URL");
@@ -181,6 +182,34 @@ const columns: ColumnDef<VideoWithChannel>[] = [
         {formatVisibility(row.original.visibility)}
       </Badge>
     ),
+  },
+  {
+    accessorKey: "provider",
+    header: "Provider",
+    cell: ({ row }) => {
+      const provider = formatVideoProvider(row.original.provider);
+      const duration = formatVideoDuration(row.original.durationSeconds);
+
+      if (!provider && !row.original.providerVideoId && !duration) {
+        return <span className="block w-24 truncate text-xs text-muted-foreground">No metadata</span>;
+      }
+
+      return (
+        <div className="flex w-36 flex-col gap-1 text-xs">
+          {provider ? (
+            <Badge variant="outline" className="w-fit">
+              {provider}
+            </Badge>
+          ) : null}
+          {row.original.providerVideoId ? (
+            <span className="truncate font-mono text-muted-foreground" title={row.original.providerVideoId}>
+              {row.original.providerVideoId}
+            </span>
+          ) : null}
+          {duration ? <span className="text-muted-foreground">{duration}</span> : null}
+        </div>
+      );
+    },
   },
   {
     accessorKey: "channel",

@@ -6,6 +6,7 @@ import type { Prisma } from "@/generated/prisma/client";
 import type { VideoVisibility } from "@/generated/prisma/enums";
 import { authSession } from "@/lib/auth-utils";
 import { normalizeVideoThumbnailUrl } from "@/lib/video-thumbnail-url";
+import { extractVideoProviderMetadata } from "@/lib/video-providers";
 import { getYouTubeThumbnailUrl } from "@/lib/video-providers/youtube";
 
 export type VideoActionValues = {
@@ -51,6 +52,28 @@ const normalizeVideoDate = (videoDate: Date | string) => {
   }
 
   return date;
+};
+
+const getVideoMetadataData = ({
+  url,
+  thumbnailUrl,
+  allowProviderThumbnail,
+}: {
+  url: string;
+  thumbnailUrl?: string | null;
+  allowProviderThumbnail: boolean;
+}) => {
+  const metadata = extractVideoProviderMetadata(url);
+  const normalizedThumbnailUrl = normalizeVideoThumbnailUrl(thumbnailUrl);
+  const providerThumbnailUrl = allowProviderThumbnail ? normalizeVideoThumbnailUrl(metadata.thumbnailUrl) : null;
+
+  return {
+    thumbnailUrl: normalizedThumbnailUrl ?? providerThumbnailUrl,
+    provider: metadata.provider,
+    providerVideoId: metadata.providerVideoId,
+    embedUrl: metadata.embedUrl,
+    durationSeconds: metadata.durationSeconds,
+  };
 };
 
 const revalidateVideoAdminPaths = (id?: string) => {
@@ -168,7 +191,7 @@ export const createVideo = async ({
       data: {
         title,
         url,
-        thumbnailUrl: normalizeVideoThumbnailUrl(thumbnailUrl),
+        ...getVideoMetadataData({ url, thumbnailUrl, allowProviderThumbnail: true }),
         channelId: channelId || null,
         videoDate: normalizeVideoDate(videoDate),
         visibility,
@@ -202,7 +225,7 @@ export const updateVideo = async ({
 
     const existingVideo = await prisma.video.findFirst({
       where: { id, userId },
-      select: { id: true },
+      select: { id: true, thumbnailUrl: true },
     });
 
     if (!existingVideo) throw new Error("Video not found");
@@ -212,7 +235,11 @@ export const updateVideo = async ({
       data: {
         title,
         url,
-        thumbnailUrl: normalizeVideoThumbnailUrl(thumbnailUrl),
+        ...getVideoMetadataData({
+          url,
+          thumbnailUrl,
+          allowProviderThumbnail: !thumbnailUrl && !existingVideo.thumbnailUrl,
+        }),
         channelId: channelId || null,
         videoDate: normalizeVideoDate(videoDate),
         visibility,
@@ -268,7 +295,7 @@ export const resolveAndSaveVideoThumbnail = async (id: string) => {
 
     await prisma.video.update({
       where: { id: existingVideo.id },
-      data: { thumbnailUrl },
+      data: { ...extractVideoProviderMetadata(existingVideo.url), thumbnailUrl },
     });
 
     revalidateVideoAdminPaths(existingVideo.id);

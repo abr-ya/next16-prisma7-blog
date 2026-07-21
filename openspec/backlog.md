@@ -17,7 +17,7 @@ Use the same `feature-<3 digits>-<area>-<short-action>` name for the OpenSpec ch
 | ID | Status | Change | Area | Summary |
 | --- | --- | --- | --- | --- |
 | feature-001 | Done | feature-001-video-admin-table-pagination | video/admin | Add client-side pagination to the admin video table, starting from the shared DataTable pattern. |
-| feature-002 | Planned | feature-002-video-metadata-provider-extraction | video/metadata | Add provider-aware metadata extraction for duration, provider IDs, thumbnails, and embeds while keeping saves failure-tolerant. |
+| feature-002 | In Progress | feature-002-video-metadata-provider-extraction | video/metadata | Add provider-aware metadata extraction for provider IDs, thumbnails, and embeds while keeping saves failure-tolerant. |
 | feature-003 | Planned | feature-003-video-channel-list-filters | video/channels | Add channel filtering and sorting to admin and public video lists. |
 | feature-004 | Planned | feature-004-video-tags | video/tags | Add reusable video tags, video/tag assignment, badges, and tag filtering. |
 | feature-005 | Planned | feature-005-video-notes-timestamps | video/notes | Add video notes and timestamped comments on video detail pages. |
@@ -28,3 +28,4 @@ Use the same `feature-<3 digits>-<area>-<short-action>` name for the OpenSpec ch
 | feature-010 | Planned | feature-010-admin-table-pagination-rollout | admin/tables | Apply the shared client-side admin table pagination pattern to other admin tables after the video table slice proves it useful. |
 | feature-011 | Planned | feature-011-comments-page-workflow | comments/public | Turn the placeholder comments page into a functional comments workflow backed by the existing comment model. |
 | feature-012 | Planned | feature-012-saved-posts-admin-workflow | posts/admin | Define and implement the saved posts admin workflow currently represented by a placeholder. |
+| feature-013 | Planned | feature-013-video-duration-api-extraction | video/metadata | Add API-backed video duration extraction while preserving failure-tolerant video saves. |
