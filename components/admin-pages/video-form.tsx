@@ -12,6 +12,7 @@ import { createLogEvent } from "@/app/_data/log";
 import { createVideo, updateVideo } from "@/app/_data/videos";
 import type { VideoChannel } from "@/generated/prisma/client";
 import type { VideoVisibility } from "@/generated/prisma/enums";
+import { formatVideoDuration, formatVideoProvider } from "@/lib/video-metadata-format";
 import { isSupportedVideoThumbnailUrl } from "@/lib/video-thumbnail-url";
 import { getYouTubeThumbnailUrl } from "@/lib/video-providers/youtube";
 import {
@@ -71,6 +72,10 @@ export type VideoFormValues = z.infer<typeof formSchema>;
 type VideoFormProps = Omit<Partial<VideoFormValues>, "videoDate"> & {
   channels?: VideoChannel[];
   videoDate?: Date | string;
+  provider?: string | null;
+  providerVideoId?: string | null;
+  embedUrl?: string | null;
+  durationSeconds?: number | null;
 };
 
 const formatDateInputValue = (date?: Date | string) => {
@@ -92,6 +97,10 @@ export const VideoForm = ({
   channels = [],
   videoDate,
   visibility = "PRIVATE",
+  provider,
+  providerVideoId,
+  embedUrl,
+  durationSeconds,
 }: VideoFormProps) => {
   const router = useRouter();
   const form = useForm<VideoFormValues>({
@@ -109,6 +118,9 @@ export const VideoForm = ({
   });
   const thumbnailUrl = form.watch("thumbnailUrl");
   const previewThumbnailUrl = isSupportedVideoThumbnailUrl(thumbnailUrl) ? thumbnailUrl : null;
+  const providerLabel = formatVideoProvider(provider);
+  const durationLabel = formatVideoDuration(durationSeconds);
+  const hasProviderMetadata = providerLabel || providerVideoId || embedUrl || durationLabel;
 
   const handleFetchThumbnail = () => {
     const resolvedThumbnailUrl = getYouTubeThumbnailUrl(form.getValues("url"));
@@ -229,6 +241,27 @@ export const VideoForm = ({
             <CardTitle>Video Details</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-6">
+            {hasProviderMetadata ? (
+              <div className="flex flex-col gap-2 rounded-md border bg-muted/30 p-3 text-sm">
+                <div className="font-medium">Provider metadata</div>
+                {providerLabel ? <div className="text-muted-foreground">Provider: {providerLabel}</div> : null}
+                {providerVideoId ? (
+                  <div className="break-all font-mono text-xs text-muted-foreground">ID: {providerVideoId}</div>
+                ) : null}
+                {durationLabel ? <div className="text-muted-foreground">Duration: {durationLabel}</div> : null}
+                {embedUrl ? (
+                  <a
+                    href={embedUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="break-all text-xs text-blue-500 underline-offset-4 hover:underline"
+                  >
+                    {embedUrl}
+                  </a>
+                ) : null}
+              </div>
+            ) : null}
+
             <FormField
               control={form.control}
               name="visibility"

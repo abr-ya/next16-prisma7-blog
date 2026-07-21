@@ -5,6 +5,7 @@ import Link from "next/link";
 import { getPublicVideos } from "@/app/_data/videos";
 import type { PublicVideoSort } from "@/app/_data/videos";
 import { Badge, Button, Card, CardContent, CardHeader, CardTitle } from "@/components/index";
+import { formatVideoDuration, formatVideoProvider } from "@/lib/video-metadata-format";
 
 export const dynamic = "force-dynamic";
 
@@ -91,6 +92,12 @@ const VideosPage = async ({ searchParams }: VideosPageProps) => {
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex min-w-0 flex-wrap items-center gap-2">
                         <Badge variant="secondary">Public</Badge>
+                        {formatVideoProvider(video.provider) ? (
+                          <Badge variant="outline">{formatVideoProvider(video.provider)}</Badge>
+                        ) : null}
+                        {formatVideoDuration(video.durationSeconds) ? (
+                          <Badge variant="outline">{formatVideoDuration(video.durationSeconds)}</Badge>
+                        ) : null}
                         {video.channel ? (
                           <Badge asChild variant="outline" className="max-w-40">
                             <a href={video.channel.url} target="_blank" rel="noreferrer" className="truncate">

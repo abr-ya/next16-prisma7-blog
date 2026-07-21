@@ -1,3 +1,5 @@
+import { emptyVideoProviderMetadata, type VideoProviderMetadata } from "./metadata";
+
 const YOUTUBE_VIDEO_ID_PATTERN = /^[A-Za-z0-9_-]{11}$/;
 
 const normalizeHostname = (hostname: string) => hostname.toLowerCase().replace(/^www\./, "");
@@ -52,4 +54,26 @@ export const getYouTubeThumbnailUrl = (value: string) => {
   if (!videoId) return null;
 
   return `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+};
+
+export const getYouTubeEmbedUrl = (value: string) => {
+  const videoId = getYouTubeVideoId(value);
+
+  if (!videoId) return null;
+
+  return `https://www.youtube.com/embed/${videoId}`;
+};
+
+export const extractYouTubeMetadata = (value: string): VideoProviderMetadata => {
+  const videoId = getYouTubeVideoId(value);
+
+  if (!videoId) return emptyVideoProviderMetadata();
+
+  return {
+    provider: "youtube",
+    providerVideoId: videoId,
+    thumbnailUrl: `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
+    embedUrl: `https://www.youtube.com/embed/${videoId}`,
+    durationSeconds: null,
+  };
 };
