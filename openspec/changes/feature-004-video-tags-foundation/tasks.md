@@ -30,5 +30,5 @@
 - [x] 4.6 Run `npm run lint`.
 - [x] 4.7 Run targeted ESLint for changed component files outside root lint coverage.
 - [x] 4.8 Ask the user to run `npm run build` locally before closeout because schema and user-facing routes change.
-- [ ] 4.9 Remove temporary slug/debug logging before archive if video tags reuse `lib/slug-generator.ts`.
-- [ ] 4.10 Manually verify video create/edit tag assignment, admin tag badges, public tag badges, and unchanged public visibility behavior in a browser.
+- [x] 4.9 Remove temporary slug/debug logging before archive if video tags reuse `lib/slug-generator.ts`.
+- [x] 4.10 Manually verify video create/edit tag assignment, admin tag badges, public tag badges, and unchanged public visibility behavior in a browser.

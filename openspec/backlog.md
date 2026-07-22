@@ -29,6 +29,6 @@ Use the same `feature-<3 digits>-<area>-<short-action>` name for the OpenSpec ch
 | feature-011 | Planned | feature-011-comments-page-workflow | comments/public | Turn the placeholder comments page into a functional comments workflow backed by the existing comment model. |
 | feature-012 | Planned | feature-012-saved-posts-admin-workflow | posts/admin | Define and implement the saved posts admin workflow currently represented by a placeholder. |
 | feature-013 | Planned | feature-013-video-duration-api-extraction | video/metadata | Add API-backed video duration extraction while preserving failure-tolerant video saves. |
-| feature-014 | Planned | feature-014-public-video-tag-filtering | video/tags | Add public `/videos` filtering by video tag once tag foundation behavior is proven. |
+| feature-014 | Planned | feature-014-public-video-tag-filtering | video/tags | Add public `/videos` filtering by video tag once tag foundation behavior is proven, with tag UI visually distinct from channel badges. |
 | feature-015 | Planned | feature-015-video-tag-management | video/tags | Define dedicated admin tag management for rename, delete, merge, ordering, or visual tag metadata. |
 | feature-016 | Planned | feature-016-video-tag-confirm-dialog | video/tags | Replace the browser-native new-tag confirmation with an app-styled confirmation dialog. |

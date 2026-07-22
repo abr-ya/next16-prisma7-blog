@@ -183,13 +183,6 @@ export const VideoForm = ({
     const tagsWithPendingInput = mergePendingTagInput(data.tags, tagInputValue);
     const newTagNames = getNewTagNames(tagsWithPendingInput, tagOptions);
 
-    console.log("[video-tags-debug] VideoForm submit", {
-      formTags: data.tags,
-      tagInputValue,
-      tagsWithPendingInput,
-      newTagNames,
-    });
-
     if (newTagNames.length > 0) {
       const confirmed = window.confirm(`Create new video tag(s): ${newTagNames.join(", ")}?`);
 
@@ -202,11 +195,6 @@ export const VideoForm = ({
       thumbnailUrl: data.thumbnailUrl || null,
       channelId: data.channelId || null,
     };
-
-    console.log("[video-tags-debug] VideoForm action payload", {
-      id,
-      tags: values.tags,
-    });
 
     if (id) {
       await updateVideo(values);
