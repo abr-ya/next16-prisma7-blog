@@ -32,6 +32,11 @@ const PublicVideoPage = async ({ params }: { params: Promise<{ id: string }> }) 
                 </a>
               </Badge>
             ) : null}
+            {video.tags.map(({ tag }) => (
+              <Badge key={tag.id} variant="outline" className="max-w-full truncate">
+                {tag.name}
+              </Badge>
+            ))}
           </div>
           <h1 className="text-2xl font-semibold leading-tight md:text-3xl">{video.title}</h1>
           <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">

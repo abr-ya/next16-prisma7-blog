@@ -14,10 +14,10 @@
 
 ## 3. Tag Badge Display
 
-- [ ] 3.1 Show assigned tag badges in the admin video table without breaking sorting, pagination, filtering, or row actions.
-- [ ] 3.2 Show assigned tag badges on the public video list only for videos returned by existing public visibility queries.
-- [ ] 3.3 Show assigned tag badges on public video detail only for public videos.
-- [ ] 3.4 Keep tag badges passive in this feature; do not add public tag filter links or tag management actions.
+- [x] 3.1 Show assigned tag badges in the admin video table without breaking sorting, pagination, filtering, or row actions.
+- [x] 3.2 Show assigned tag badges on the public video list only for videos returned by existing public visibility queries.
+- [x] 3.3 Show assigned tag badges on public video detail only for public videos.
+- [x] 3.4 Keep tag badges passive in this feature; do not add public tag filter links or tag management actions.
 
 ## 4. Backlog And Validation
 
