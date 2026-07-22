@@ -2,6 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ImageIcon, X } from "lucide-react";
+import dynamic from "next/dynamic";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
@@ -36,12 +37,21 @@ import {
   Spinner,
 } from "..";
 
+const CreatableSelect = dynamic(() => import("react-select/creatable"), {
+  ssr: false,
+});
+
 const videoVisibilityOptions = [
   { value: "PRIVATE", label: "Private" },
   { value: "PUBLIC", label: "Public" },
 ] as const satisfies { value: VideoVisibility; label: string }[];
 
 const NO_CHANNEL_VALUE = "__no_channel__";
+
+type VideoTagSelectOption = {
+  label: string;
+  value: string;
+};
 
 const formSchema = z.object({
   id: z.string().optional(),
@@ -58,6 +68,7 @@ const formSchema = z.object({
     .optional()
     .or(z.literal("")),
   channelId: z.string().nullable().optional().or(z.literal("")),
+  tags: z.array(z.object({ label: z.string(), value: z.string() })),
   visibility: z.enum(["PRIVATE", "PUBLIC"]),
   videoDate: z
     .string()
@@ -71,6 +82,7 @@ export type VideoFormValues = z.infer<typeof formSchema>;
 
 type VideoFormProps = Omit<Partial<VideoFormValues>, "videoDate"> & {
   channels?: VideoChannel[];
+  tagOptions?: VideoTagSelectOption[];
   videoDate?: Date | string;
   provider?: string | null;
   providerVideoId?: string | null;
@@ -95,6 +107,8 @@ export const VideoForm = ({
   thumbnailUrl: defaultThumbnailUrl = "",
   channelId = "",
   channels = [],
+  tags = [],
+  tagOptions = [],
   videoDate,
   visibility = "PRIVATE",
   provider,
@@ -111,6 +125,7 @@ export const VideoForm = ({
       url,
       thumbnailUrl: defaultThumbnailUrl ?? "",
       channelId: channelId ?? "",
+      tags,
       visibility,
       videoDate: formatDateInputValue(videoDate),
     },
@@ -230,6 +245,34 @@ export const VideoForm = ({
                     Clear
                   </Button>
                 </div>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="tags"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Tags</FormLabel>
+                <FormControl>
+                  <CreatableSelect
+                    isMulti
+                    isClearable
+                    options={tagOptions}
+                    value={field.value}
+                    onChange={(value) => field.onChange(Array.from(value as readonly VideoTagSelectOption[]))}
+                    onCreateOption={(value) => {
+                      const newOption = {
+                        label: value,
+                        value,
+                      };
+                      field.onChange([...field.value, newOption]);
+                    }}
+                    components={{ IndicatorsContainer: () => null }}
+                  />
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )}

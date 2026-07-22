@@ -8,9 +8,9 @@
 ## 2. Admin Assignment
 
 - [x] 2.1 Extend video create and update actions to persist normalized tag assignments after preserving owner scoping.
-- [ ] 2.2 Add tag input or selection controls to the admin video form for create and edit flows.
-- [ ] 2.3 Load existing tag options for the admin video form without requiring a dedicated tag management page.
-- [ ] 2.4 Keep create/edit validation, provider metadata extraction, thumbnail behavior, channel assignment, and visibility behavior working with tags.
+- [x] 2.2 Add tag input or selection controls to the admin video form for create and edit flows.
+- [x] 2.3 Load existing tag options for the admin video form without requiring a dedicated tag management page.
+- [x] 2.4 Keep create/edit validation, provider metadata extraction, thumbnail behavior, channel assignment, and visibility behavior working with tags.
 
 ## 3. Tag Badge Display
 
@@ -27,6 +27,6 @@
 - [ ] 4.4 Run `openspec validate feature-004-video-tags-foundation --strict`.
 - [x] 4.5 Run `npm run tsc`.
 - [ ] 4.6 Run `npm run lint`.
-- [ ] 4.7 Run targeted ESLint for changed component files outside root lint coverage.
+- [x] 4.7 Run targeted ESLint for changed component files outside root lint coverage.
 - [ ] 4.8 Ask the user to run `npm run build` locally before closeout because schema and user-facing routes change.
 - [ ] 4.9 Manually verify video create/edit tag assignment, admin tag badges, public tag badges, and unchanged public visibility behavior in a browser.
