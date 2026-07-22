@@ -50,3 +50,4 @@ The video library currently has channels, visibility, provider metadata, admin/p
 
 - Should tag slugs be exposed in public URLs later, or should public filtering use tag ids?
 - Should future tag management allow global tags, per-user tags, or both?
+- Remove the temporary debug log in `lib/slug-generator.ts` before archiving this change or any follow-up that standardizes video tag slug generation.

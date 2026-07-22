@@ -91,22 +91,28 @@ const getVideoTagAssignmentData = async (tags: VideoTagInput[] = []) => {
   const normalizedTags = normalizeVideoTags(tags);
   const { default: prisma } = await import("@/lib/prisma");
 
-  await Promise.all(
+  console.log("[video-tags-debug] getVideoTagAssignmentData", {
+    inputTags: tags,
+    normalizedTags,
+  });
+
+  const persistedTags = await Promise.all(
     normalizedTags.map((tag) =>
       prisma.videoTag.upsert({
         where: { slug: tag.slug },
         create: tag,
         update: { name: tag.name },
+        select: { id: true },
       }),
     ),
   );
 
-  return normalizedTags.map((tag) => ({
-    tag: {
-      connect: {
-        slug: tag.slug,
-      },
-    },
+  console.log("[video-tags-debug] persisted video tags", {
+    persistedTags,
+  });
+
+  return persistedTags.map((tag) => ({
+    tagId: tag.id,
   }));
 };
 
@@ -228,9 +234,13 @@ export const createVideo = async ({
   visibility = DEFAULT_VIDEO_VISIBILITY,
 }: VideoActionValues) => {
   try {
+    console.log("[video-tags-debug] createVideo received tags", { tags });
+
     const userId = await getRequiredUserId();
     const { default: prisma } = await import("@/lib/prisma");
     const tagAssignments = await getVideoTagAssignmentData(tags);
+
+    console.log("[video-tags-debug] createVideo tagAssignments", { tagAssignments });
 
     const video = await prisma.video.create({
       data: {
@@ -269,6 +279,8 @@ export const updateVideo = async ({
   try {
     if (!id) throw new Error("Video id is required");
 
+    console.log("[video-tags-debug] updateVideo received tags", { id, tags });
+
     const userId = await getRequiredUserId();
     const { default: prisma } = await import("@/lib/prisma");
 
@@ -280,6 +292,9 @@ export const updateVideo = async ({
     if (!existingVideo) throw new Error("Video not found");
 
     const tagAssignments = await getVideoTagAssignmentData(tags);
+
+    console.log("[video-tags-debug] updateVideo tagAssignments", { id, tagAssignments });
+
     const video = await prisma.video.update({
       where: { id },
       data: {

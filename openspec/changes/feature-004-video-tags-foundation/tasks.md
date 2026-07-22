@@ -11,6 +11,7 @@
 - [x] 2.2 Add tag input or selection controls to the admin video form for create and edit flows.
 - [x] 2.3 Load existing tag options for the admin video form without requiring a dedicated tag management page.
 - [x] 2.4 Keep create/edit validation, provider metadata extraction, thumbnail behavior, channel assignment, and visibility behavior working with tags.
+- [x] 2.5 Ask admins to confirm newly entered tags before creating them while allowing existing tags without confirmation.
 
 ## 3. Tag Badge Display
 
@@ -21,12 +22,13 @@
 
 ## 4. Backlog And Validation
 
-- [ ] 4.1 Keep public tag filtering deferred to `feature-014-public-video-tag-filtering`.
-- [ ] 4.2 Keep dedicated tag management deferred to `feature-015-video-tag-management`.
+- [x] 4.1 Keep public tag filtering deferred to `feature-014-public-video-tag-filtering`.
+- [x] 4.2 Keep dedicated tag management deferred to `feature-015-video-tag-management`.
 - [x] 4.3 Run Prisma schema/migration validation and client generation checks.
-- [ ] 4.4 Run `openspec validate feature-004-video-tags-foundation --strict`.
+- [x] 4.4 Run `openspec validate feature-004-video-tags-foundation --strict`.
 - [x] 4.5 Run `npm run tsc`.
-- [ ] 4.6 Run `npm run lint`.
+- [x] 4.6 Run `npm run lint`.
 - [x] 4.7 Run targeted ESLint for changed component files outside root lint coverage.
-- [ ] 4.8 Ask the user to run `npm run build` locally before closeout because schema and user-facing routes change.
-- [ ] 4.9 Manually verify video create/edit tag assignment, admin tag badges, public tag badges, and unchanged public visibility behavior in a browser.
+- [x] 4.8 Ask the user to run `npm run build` locally before closeout because schema and user-facing routes change.
+- [ ] 4.9 Remove temporary slug/debug logging before archive if video tags reuse `lib/slug-generator.ts`.
+- [ ] 4.10 Manually verify video create/edit tag assignment, admin tag badges, public tag badges, and unchanged public visibility behavior in a browser.

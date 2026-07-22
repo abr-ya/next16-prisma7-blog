@@ -31,3 +31,4 @@ Use the same `feature-<3 digits>-<area>-<short-action>` name for the OpenSpec ch
 | feature-013 | Planned | feature-013-video-duration-api-extraction | video/metadata | Add API-backed video duration extraction while preserving failure-tolerant video saves. |
 | feature-014 | Planned | feature-014-public-video-tag-filtering | video/tags | Add public `/videos` filtering by video tag once tag foundation behavior is proven. |
 | feature-015 | Planned | feature-015-video-tag-management | video/tags | Define dedicated admin tag management for rename, delete, merge, ordering, or visual tag metadata. |
+| feature-016 | Planned | feature-016-video-tag-confirm-dialog | video/tags | Replace the browser-native new-tag confirmation with an app-styled confirmation dialog. |

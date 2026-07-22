@@ -15,7 +15,7 @@ export const createVideoTagSlug = (value: string) =>
     .toLocaleLowerCase()
     .normalize("NFKD")
     .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/[^\p{L}\p{N}]+/gu, "-")
     .replace(/^-+|-+$/g, "");
 
 export const normalizeVideoTagName = (value: string) => normalizeWhitespace(value);

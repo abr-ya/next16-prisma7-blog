@@ -11,6 +11,13 @@ The video library SHALL support reusable video tag records that can be assigned 
 - **AND** the system SHALL normalize tag names so duplicate whitespace or casing does not create duplicate tags
 - **AND** the system SHALL assign the saved tags to the video
 
+#### Scenario: Admin confirms new video tags
+
+- **WHEN** an authenticated admin saves a video with selected or typed tag names that do not match existing tag options
+- **THEN** the form SHALL ask the admin to confirm creating the new tag records
+- **AND** cancelling the confirmation SHALL stop the video save
+- **AND** selecting only existing tag options SHALL NOT require confirmation
+
 #### Scenario: System preserves videos without tags
 
 - **WHEN** an authenticated admin saves a video without tag names

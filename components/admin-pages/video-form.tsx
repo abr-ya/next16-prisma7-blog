@@ -5,6 +5,7 @@ import { ImageIcon, X } from "lucide-react";
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -14,6 +15,7 @@ import { createVideo, updateVideo } from "@/app/_data/videos";
 import type { VideoChannel } from "@/generated/prisma/client";
 import type { VideoVisibility } from "@/generated/prisma/enums";
 import { formatVideoDuration, formatVideoProvider } from "@/lib/video-metadata-format";
+import { createVideoTagSlug } from "@/lib/video-tags";
 import { isSupportedVideoThumbnailUrl } from "@/lib/video-thumbnail-url";
 import { getYouTubeThumbnailUrl } from "@/lib/video-providers/youtube";
 import {
@@ -100,6 +102,33 @@ const formatDateInputValue = (date?: Date | string) => {
   return parsedDate.toISOString().slice(0, 10);
 };
 
+const getNewTagNames = (tags: VideoTagSelectOption[], tagOptions: VideoTagSelectOption[]) => {
+  const existingSlugs = new Set(tagOptions.map((tag) => createVideoTagSlug(tag.value || tag.label)));
+  const newTags = new Map<string, string>();
+
+  tags.forEach((tag) => {
+    const name = tag.label.trim();
+    const slug = createVideoTagSlug(tag.value || tag.label);
+
+    if (name && slug && !existingSlugs.has(slug)) {
+      newTags.set(slug, name);
+    }
+  });
+
+  return Array.from(newTags.values());
+};
+
+const mergePendingTagInput = (tags: VideoTagSelectOption[], inputValue: string) => {
+  const name = inputValue.trim();
+  const slug = createVideoTagSlug(name);
+
+  if (!name || !slug || tags.some((tag) => createVideoTagSlug(tag.value || tag.label) === slug)) {
+    return tags;
+  }
+
+  return [...tags, { label: name, value: name }];
+};
+
 export const VideoForm = ({
   id,
   title = "",
@@ -117,6 +146,7 @@ export const VideoForm = ({
   durationSeconds,
 }: VideoFormProps) => {
   const router = useRouter();
+  const [tagInputValue, setTagInputValue] = useState("");
   const form = useForm<VideoFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -150,7 +180,33 @@ export const VideoForm = ({
   };
 
   const onSubmit = async (data: VideoFormValues) => {
-    const values = { ...data, thumbnailUrl: data.thumbnailUrl || null, channelId: data.channelId || null };
+    const tagsWithPendingInput = mergePendingTagInput(data.tags, tagInputValue);
+    const newTagNames = getNewTagNames(tagsWithPendingInput, tagOptions);
+
+    console.log("[video-tags-debug] VideoForm submit", {
+      formTags: data.tags,
+      tagInputValue,
+      tagsWithPendingInput,
+      newTagNames,
+    });
+
+    if (newTagNames.length > 0) {
+      const confirmed = window.confirm(`Create new video tag(s): ${newTagNames.join(", ")}?`);
+
+      if (!confirmed) return;
+    }
+
+    const values = {
+      ...data,
+      tags: tagsWithPendingInput,
+      thumbnailUrl: data.thumbnailUrl || null,
+      channelId: data.channelId || null,
+    };
+
+    console.log("[video-tags-debug] VideoForm action payload", {
+      id,
+      tags: values.tags,
+    });
 
     if (id) {
       await updateVideo(values);
@@ -164,6 +220,15 @@ export const VideoForm = ({
 
     router.refresh();
     router.push("/admin/videos");
+  };
+
+  const updateTags = (nextTags: VideoTagSelectOption[]) => {
+    setTagInputValue("");
+    form.setValue("tags", nextTags, {
+      shouldDirty: true,
+      shouldTouch: true,
+      shouldValidate: true,
+    });
   };
 
   return (
@@ -261,14 +326,19 @@ export const VideoForm = ({
                     isMulti
                     isClearable
                     options={tagOptions}
+                    inputValue={tagInputValue}
                     value={field.value}
-                    onChange={(value) => field.onChange(Array.from(value as readonly VideoTagSelectOption[]))}
+                    onInputChange={(value) => {
+                      setTagInputValue(value);
+                      return value;
+                    }}
+                    onChange={(value) => updateTags(Array.from(value as readonly VideoTagSelectOption[]))}
                     onCreateOption={(value) => {
                       const newOption = {
                         label: value,
                         value,
                       };
-                      field.onChange([...field.value, newOption]);
+                      updateTags([...field.value, newOption]);
                     }}
                     components={{ IndicatorsContainer: () => null }}
                   />
