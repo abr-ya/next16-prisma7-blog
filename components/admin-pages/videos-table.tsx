@@ -4,20 +4,21 @@ import { ColumnDef } from "@tanstack/react-table";
 import { ArrowUpDown, Copy, ExternalLink, ImageIcon, Pencil, Trash } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { deleteVideo, resolveAndSaveVideoThumbnail, type VideoWithChannel } from "@/app/_data/videos";
 import { formatVideoDuration, formatVideoProvider } from "@/lib/video-metadata-format";
 import { getYouTubeVideoId } from "@/lib/video-providers/youtube";
 
-import { Badge, Button, DataTable } from "..";
+import { Badge, Button, DataTable, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "..";
 
 interface IVideosTableProps {
   data: VideoWithChannel[];
 }
 
 const ADMIN_VIDEOS_PAGE_SIZE = 10;
+const ALL_CHANNELS_VALUE = "__all_channels__";
 
 const formatDate = (date: Date) =>
   date.toLocaleDateString("ru-RU", {
@@ -266,9 +267,46 @@ const columns: ColumnDef<VideoWithChannel>[] = [
   },
 ];
 
-export const VideosTable = ({ data }: IVideosTableProps) => (
-  <div className="flex w-full min-w-0 max-w-full flex-col gap-2 p-4">
-    <div className="text-sm text-muted-foreground">videos count: {data.length}</div>
-    <DataTable data={data} columns={columns} pagination={{ pageSize: ADMIN_VIDEOS_PAGE_SIZE }} />
-  </div>
-);
+export const VideosTable = ({ data }: IVideosTableProps) => {
+  const [selectedChannelId, setSelectedChannelId] = useState(ALL_CHANNELS_VALUE);
+  const channelOptions = useMemo(() => {
+    const channels = new Map<string, NonNullable<VideoWithChannel["channel"]>>();
+
+    data.forEach((video) => {
+      if (video.channel) {
+        channels.set(video.channel.id, video.channel);
+      }
+    });
+
+    return Array.from(channels.values()).sort((first, second) => first.name.localeCompare(second.name));
+  }, [data]);
+  const filteredData = useMemo(
+    () =>
+      selectedChannelId === ALL_CHANNELS_VALUE ? data : data.filter((video) => video.channelId === selectedChannelId),
+    [data, selectedChannelId],
+  );
+
+  return (
+    <div className="flex w-full min-w-0 max-w-full flex-col gap-3 p-4">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="text-sm text-muted-foreground">videos count: {filteredData.length}</div>
+        {channelOptions.length > 0 ? (
+          <Select value={selectedChannelId} onValueChange={setSelectedChannelId}>
+            <SelectTrigger className="w-full sm:w-64" aria-label="Filter videos by channel">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL_CHANNELS_VALUE}>All channels</SelectItem>
+              {channelOptions.map((channel) => (
+                <SelectItem key={channel.id} value={channel.id}>
+                  {channel.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        ) : null}
+      </div>
+      <DataTable data={filteredData} columns={columns} pagination={{ pageSize: ADMIN_VIDEOS_PAGE_SIZE }} />
+    </div>
+  );
+};

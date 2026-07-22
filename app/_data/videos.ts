@@ -86,13 +86,17 @@ const revalidateVideoAdminPaths = (id?: string) => {
   }
 };
 
-export const getAllVideos = async () => {
+export type VideoListQuery = {
+  channelId?: string | null;
+};
+
+export const getAllVideos = async ({ channelId }: VideoListQuery = {}) => {
   try {
     const userId = await getRequiredUserId();
     const { default: prisma } = await import("@/lib/prisma");
 
     return prisma.video.findMany({
-      where: { userId },
+      where: { userId, ...(channelId ? { channelId } : {}) },
       include: { channel: true },
       orderBy: { createdAt: "desc" },
     });
@@ -121,10 +125,12 @@ export const getPublicVideos = async ({
   sort = DEFAULT_PUBLIC_VIDEO_SORT,
   page = DEFAULT_PUBLIC_VIDEO_PAGE,
   pageSize = DEFAULT_PUBLIC_VIDEO_PAGE_SIZE,
+  channelId,
 }: {
   sort?: PublicVideoSort;
   page?: number;
   pageSize?: number;
+  channelId?: string | null;
 } = {}): Promise<{
   videos: VideoWithChannel[];
   totalCount: number;
@@ -134,7 +140,10 @@ export const getPublicVideos = async ({
 }> => {
   try {
     const { default: prisma } = await import("@/lib/prisma");
-    const where = { visibility: "PUBLIC" } satisfies Prisma.VideoWhereInput;
+    const where = {
+      visibility: "PUBLIC",
+      ...(channelId ? { channelId } : {}),
+    } satisfies Prisma.VideoWhereInput;
     const normalizedPageSize = Math.max(1, pageSize);
     const totalCount = await prisma.video.count({ where });
     const pageCount = Math.max(1, Math.ceil(totalCount / normalizedPageSize));
