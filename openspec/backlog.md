@@ -19,7 +19,7 @@ Use the same `feature-<3 digits>-<area>-<short-action>` name for the OpenSpec ch
 | feature-001 | Done | feature-001-video-admin-table-pagination | video/admin | Add client-side pagination to the admin video table, starting from the shared DataTable pattern. |
 | feature-002 | Done | feature-002-video-metadata-provider-extraction | video/metadata | Add provider-aware metadata extraction for provider IDs, thumbnails, and embeds while keeping saves failure-tolerant. |
 | feature-003 | Done | feature-003-video-channel-list-filters | video/channels | Add channel filtering and sorting to admin and public video lists. |
-| feature-004 | Proposed | feature-004-video-tags-foundation | video/tags | Add reusable video tags, admin video/tag assignment, and tag badges without public tag filtering. |
+| feature-004 | Done | feature-004-video-tags-foundation | video/tags | Add reusable video tags, admin video/tag assignment, and tag badges without public tag filtering. |
 | feature-005 | Planned | feature-005-video-notes-timestamps | video/notes | Add video notes and timestamped comments on video detail pages. |
 | feature-006 | Planned | feature-006-video-search | video/search | Add broader video search across title, URL, channel, tags, notes, and extracted metadata. |
 | feature-007 | Planned | feature-007-video-import-export | video/tools | Add import and export workflows for saved video links. |
