@@ -2,8 +2,10 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ImageIcon, X } from "lucide-react";
+import dynamic from "next/dynamic";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -13,6 +15,7 @@ import { createVideo, updateVideo } from "@/app/_data/videos";
 import type { VideoChannel } from "@/generated/prisma/client";
 import type { VideoVisibility } from "@/generated/prisma/enums";
 import { formatVideoDuration, formatVideoProvider } from "@/lib/video-metadata-format";
+import { createVideoTagSlug } from "@/lib/video-tags";
 import { isSupportedVideoThumbnailUrl } from "@/lib/video-thumbnail-url";
 import { getYouTubeThumbnailUrl } from "@/lib/video-providers/youtube";
 import {
@@ -36,12 +39,21 @@ import {
   Spinner,
 } from "..";
 
+const CreatableSelect = dynamic(() => import("react-select/creatable"), {
+  ssr: false,
+});
+
 const videoVisibilityOptions = [
   { value: "PRIVATE", label: "Private" },
   { value: "PUBLIC", label: "Public" },
 ] as const satisfies { value: VideoVisibility; label: string }[];
 
 const NO_CHANNEL_VALUE = "__no_channel__";
+
+type VideoTagSelectOption = {
+  label: string;
+  value: string;
+};
 
 const formSchema = z.object({
   id: z.string().optional(),
@@ -58,6 +70,7 @@ const formSchema = z.object({
     .optional()
     .or(z.literal("")),
   channelId: z.string().nullable().optional().or(z.literal("")),
+  tags: z.array(z.object({ label: z.string(), value: z.string() })),
   visibility: z.enum(["PRIVATE", "PUBLIC"]),
   videoDate: z
     .string()
@@ -71,6 +84,7 @@ export type VideoFormValues = z.infer<typeof formSchema>;
 
 type VideoFormProps = Omit<Partial<VideoFormValues>, "videoDate"> & {
   channels?: VideoChannel[];
+  tagOptions?: VideoTagSelectOption[];
   videoDate?: Date | string;
   provider?: string | null;
   providerVideoId?: string | null;
@@ -88,6 +102,33 @@ const formatDateInputValue = (date?: Date | string) => {
   return parsedDate.toISOString().slice(0, 10);
 };
 
+const getNewTagNames = (tags: VideoTagSelectOption[], tagOptions: VideoTagSelectOption[]) => {
+  const existingSlugs = new Set(tagOptions.map((tag) => createVideoTagSlug(tag.value || tag.label)));
+  const newTags = new Map<string, string>();
+
+  tags.forEach((tag) => {
+    const name = tag.label.trim();
+    const slug = createVideoTagSlug(tag.value || tag.label);
+
+    if (name && slug && !existingSlugs.has(slug)) {
+      newTags.set(slug, name);
+    }
+  });
+
+  return Array.from(newTags.values());
+};
+
+const mergePendingTagInput = (tags: VideoTagSelectOption[], inputValue: string) => {
+  const name = inputValue.trim();
+  const slug = createVideoTagSlug(name);
+
+  if (!name || !slug || tags.some((tag) => createVideoTagSlug(tag.value || tag.label) === slug)) {
+    return tags;
+  }
+
+  return [...tags, { label: name, value: name }];
+};
+
 export const VideoForm = ({
   id,
   title = "",
@@ -95,6 +136,8 @@ export const VideoForm = ({
   thumbnailUrl: defaultThumbnailUrl = "",
   channelId = "",
   channels = [],
+  tags = [],
+  tagOptions = [],
   videoDate,
   visibility = "PRIVATE",
   provider,
@@ -103,6 +146,7 @@ export const VideoForm = ({
   durationSeconds,
 }: VideoFormProps) => {
   const router = useRouter();
+  const [tagInputValue, setTagInputValue] = useState("");
   const form = useForm<VideoFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -111,6 +155,7 @@ export const VideoForm = ({
       url,
       thumbnailUrl: defaultThumbnailUrl ?? "",
       channelId: channelId ?? "",
+      tags,
       visibility,
       videoDate: formatDateInputValue(videoDate),
     },
@@ -135,7 +180,21 @@ export const VideoForm = ({
   };
 
   const onSubmit = async (data: VideoFormValues) => {
-    const values = { ...data, thumbnailUrl: data.thumbnailUrl || null, channelId: data.channelId || null };
+    const tagsWithPendingInput = mergePendingTagInput(data.tags, tagInputValue);
+    const newTagNames = getNewTagNames(tagsWithPendingInput, tagOptions);
+
+    if (newTagNames.length > 0) {
+      const confirmed = window.confirm(`Create new video tag(s): ${newTagNames.join(", ")}?`);
+
+      if (!confirmed) return;
+    }
+
+    const values = {
+      ...data,
+      tags: tagsWithPendingInput,
+      thumbnailUrl: data.thumbnailUrl || null,
+      channelId: data.channelId || null,
+    };
 
     if (id) {
       await updateVideo(values);
@@ -149,6 +208,15 @@ export const VideoForm = ({
 
     router.refresh();
     router.push("/admin/videos");
+  };
+
+  const updateTags = (nextTags: VideoTagSelectOption[]) => {
+    setTagInputValue("");
+    form.setValue("tags", nextTags, {
+      shouldDirty: true,
+      shouldTouch: true,
+      shouldValidate: true,
+    });
   };
 
   return (
@@ -230,6 +298,39 @@ export const VideoForm = ({
                     Clear
                   </Button>
                 </div>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="tags"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Tags</FormLabel>
+                <FormControl>
+                  <CreatableSelect
+                    isMulti
+                    isClearable
+                    options={tagOptions}
+                    inputValue={tagInputValue}
+                    value={field.value}
+                    onInputChange={(value) => {
+                      setTagInputValue(value);
+                      return value;
+                    }}
+                    onChange={(value) => updateTags(Array.from(value as readonly VideoTagSelectOption[]))}
+                    onCreateOption={(value) => {
+                      const newOption = {
+                        label: value,
+                        value,
+                      };
+                      updateTags([...field.value, newOption]);
+                    }}
+                    components={{ IndicatorsContainer: () => null }}
+                  />
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )}

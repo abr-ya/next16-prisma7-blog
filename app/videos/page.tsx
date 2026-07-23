@@ -170,6 +170,11 @@ const VideosPage = async ({ searchParams }: VideosPageProps) => {
                             </a>
                           </Badge>
                         ) : null}
+                        {video.tags.map(({ tag }) => (
+                          <Badge key={tag.id} variant="outline" className="max-w-40 truncate">
+                            {tag.name}
+                          </Badge>
+                        ))}
                       </div>
                       <div className="flex shrink-0 flex-col items-end gap-1 text-xs text-muted-foreground">
                         <span className="flex items-center gap-1">

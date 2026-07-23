@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import type { Prisma } from "@/generated/prisma/client";
 import type { VideoVisibility } from "@/generated/prisma/enums";
 import { authSession } from "@/lib/auth-utils";
+import { normalizeVideoTags, type VideoTagInput } from "@/lib/video-tags";
 import { normalizeVideoThumbnailUrl } from "@/lib/video-thumbnail-url";
 import { extractVideoProviderMetadata } from "@/lib/video-providers";
 import { getYouTubeThumbnailUrl } from "@/lib/video-providers/youtube";
@@ -15,12 +16,13 @@ export type VideoActionValues = {
   url: string;
   thumbnailUrl?: string | null;
   channelId?: string | null;
+  tags?: VideoTagInput[];
   videoDate: Date | string;
   visibility?: VideoVisibility;
 };
 
 export type VideoWithChannel = Prisma.VideoGetPayload<{
-  include: { channel: true };
+  include: { channel: true; tags: { include: { tag: true } } };
 }>;
 
 export type PublicVideoSort = "createdAt-desc" | "videoDate-desc" | "title-asc";
@@ -76,6 +78,35 @@ const getVideoMetadataData = ({
   };
 };
 
+const videoWithMetadataInclude = {
+  channel: true,
+  tags: {
+    include: {
+      tag: true,
+    },
+  },
+} satisfies Prisma.VideoInclude;
+
+const getVideoTagAssignmentData = async (tags: VideoTagInput[] = []) => {
+  const normalizedTags = normalizeVideoTags(tags);
+  const { default: prisma } = await import("@/lib/prisma");
+
+  const persistedTags = await Promise.all(
+    normalizedTags.map((tag) =>
+      prisma.videoTag.upsert({
+        where: { slug: tag.slug },
+        create: tag,
+        update: { name: tag.name },
+        select: { id: true },
+      }),
+    ),
+  );
+
+  return persistedTags.map((tag) => ({
+    tagId: tag.id,
+  }));
+};
+
 const revalidateVideoAdminPaths = (id?: string) => {
   revalidatePath("/admin/videos");
   revalidatePath("/videos");
@@ -97,7 +128,7 @@ export const getAllVideos = async ({ channelId }: VideoListQuery = {}) => {
 
     return prisma.video.findMany({
       where: { userId, ...(channelId ? { channelId } : {}) },
-      include: { channel: true },
+      include: videoWithMetadataInclude,
       orderBy: { createdAt: "desc" },
     });
   } catch (err) {
@@ -113,7 +144,7 @@ export const getVideoById = async (id: string) => {
 
     return prisma.video.findFirst({
       where: { id, userId },
-      include: { channel: true },
+      include: videoWithMetadataInclude,
     });
   } catch (err) {
     console.error({ err });
@@ -151,7 +182,7 @@ export const getPublicVideos = async ({
 
     const videos = await prisma.video.findMany({
       where,
-      include: { channel: true },
+      include: videoWithMetadataInclude,
       orderBy: publicVideoOrderBy[sort],
       skip: (normalizedPage - 1) * normalizedPageSize,
       take: normalizedPageSize,
@@ -176,7 +207,7 @@ export const getPublicVideoById = async (id: string): Promise<VideoWithChannel |
 
     return prisma.video.findFirst({
       where: { id, visibility: "PUBLIC" },
-      include: { channel: true },
+      include: videoWithMetadataInclude,
     });
   } catch (err) {
     console.error({ err });
@@ -189,12 +220,14 @@ export const createVideo = async ({
   url,
   thumbnailUrl,
   channelId,
+  tags,
   videoDate,
   visibility = DEFAULT_VIDEO_VISIBILITY,
 }: VideoActionValues) => {
   try {
     const userId = await getRequiredUserId();
     const { default: prisma } = await import("@/lib/prisma");
+    const tagAssignments = await getVideoTagAssignmentData(tags);
 
     const video = await prisma.video.create({
       data: {
@@ -202,6 +235,9 @@ export const createVideo = async ({
         url,
         ...getVideoMetadataData({ url, thumbnailUrl, allowProviderThumbnail: true }),
         channelId: channelId || null,
+        tags: {
+          create: tagAssignments,
+        },
         videoDate: normalizeVideoDate(videoDate),
         visibility,
         userId,
@@ -223,6 +259,7 @@ export const updateVideo = async ({
   url,
   thumbnailUrl,
   channelId,
+  tags,
   videoDate,
   visibility = DEFAULT_VIDEO_VISIBILITY,
 }: VideoActionValues) => {
@@ -239,6 +276,8 @@ export const updateVideo = async ({
 
     if (!existingVideo) throw new Error("Video not found");
 
+    const tagAssignments = await getVideoTagAssignmentData(tags);
+
     const video = await prisma.video.update({
       where: { id },
       data: {
@@ -250,6 +289,10 @@ export const updateVideo = async ({
           allowProviderThumbnail: !thumbnailUrl && !existingVideo.thumbnailUrl,
         }),
         channelId: channelId || null,
+        tags: {
+          deleteMany: {},
+          create: tagAssignments,
+        },
         videoDate: normalizeVideoDate(videoDate),
         visibility,
       },

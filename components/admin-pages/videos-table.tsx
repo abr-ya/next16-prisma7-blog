@@ -39,6 +39,8 @@ const formatDateTime = (date: Date) =>
 const formatVisibility = (visibility: VideoWithChannel["visibility"]) =>
   visibility === "PUBLIC" ? "Public" : "Private";
 
+const getVideoTags = (video: VideoWithChannel) => video.tags.map(({ tag }) => tag);
+
 const VideoActions = ({ video }: { video: VideoWithChannel }) => {
   const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
@@ -223,6 +225,27 @@ const columns: ColumnDef<VideoWithChannel>[] = [
       ) : (
         <span className="block w-20 truncate text-xs text-muted-foreground">No channel</span>
       ),
+  },
+  {
+    id: "tags",
+    header: "Tags",
+    cell: ({ row }) => {
+      const tags = getVideoTags(row.original);
+
+      if (tags.length === 0) {
+        return <span className="block w-16 truncate text-xs text-muted-foreground">No tags</span>;
+      }
+
+      return (
+        <div className="flex w-40 flex-wrap gap-1">
+          {tags.map((tag) => (
+            <Badge key={tag.id} variant="outline" className="max-w-36 truncate">
+              {tag.name}
+            </Badge>
+          ))}
+        </div>
+      );
+    },
   },
   {
     accessorKey: "videoDate",

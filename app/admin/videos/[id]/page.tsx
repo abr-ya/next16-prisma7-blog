@@ -1,13 +1,14 @@
 import { notFound } from "next/navigation";
 
 import { getAllVideoChannels } from "@/app/_data/video-channels";
+import { getAllVideoTags } from "@/app/_data/video-tags";
 import { getVideoById } from "@/app/_data/videos";
 import { AdminPageLayout, VideoForm } from "@/components/index";
 
 const VideoPage = async ({ params }: { params: Promise<{ id: string }> }) => {
   const { id } = await params;
 
-  const [video, channels] = await Promise.all([
+  const [video, channels, tags] = await Promise.all([
     id === "new"
       ? Promise.resolve({
           id: "",
@@ -17,9 +18,11 @@ const VideoPage = async ({ params }: { params: Promise<{ id: string }> }) => {
           channelId: null,
           videoDate: new Date(),
           visibility: "PRIVATE" as const,
+          tags: [],
         })
       : getVideoById(id),
     getAllVideoChannels(),
+    getAllVideoTags(),
   ]);
 
   if (!video) notFound();
@@ -40,6 +43,11 @@ const VideoPage = async ({ params }: { params: Promise<{ id: string }> }) => {
           thumbnailUrl={video.thumbnailUrl}
           channelId={video.channelId}
           channels={channels}
+          tags={video.tags.map(({ tag }: { tag: { name: string; slug: string } }) => ({
+            label: tag.name,
+            value: tag.slug,
+          }))}
+          tagOptions={tags.map((tag) => ({ label: tag.name, value: tag.slug }))}
           visibility={video.visibility}
           videoDate={video.videoDate}
           provider={video.provider}

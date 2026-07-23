@@ -217,6 +217,7 @@ model Video {
   durationSeconds Int?
   channelId       String?
   channel         VideoChannel?   @relation(fields: [channelId], references: [id], onDelete: SetNull)
+  tags            VideosToVideoTags[]
   userId          String
   user            User            @relation(references: [id], fields: [userId], onDelete: Cascade)
   createdAt       DateTime        @default(now())
@@ -227,6 +228,28 @@ model Video {
   @@index([visibility])
   @@index([provider, providerVideoId])
   @@index([channelId])
+}
+
+model VideoTag {
+  id        String              @id @default(uuid())
+  name      String
+  slug      String              @unique
+  videos    VideosToVideoTags[]
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @default(now()) @updatedAt
+
+  @@index([name])
+}
+
+model VideosToVideoTags {
+  video       Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  videoId     String
+  tag         VideoTag @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  tagId       String
+  assignedAt  DateTime @default(now())
+
+  @@id([videoId, tagId])
+  @@index([tagId])
 }
 // Video - finish
 
