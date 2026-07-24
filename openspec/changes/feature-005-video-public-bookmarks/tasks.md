@@ -1,8 +1,8 @@
 ## 1. Data Model
 
-- [ ] 1.1 Add `VideoBookmark` to `prisma/schema.prisma` with relations to `User` and `Video`, owner/video indexes, and cascade deletion from user/video.
-- [ ] 1.2 Create the Prisma migration for the bookmark table using the existing project flow.
-- [ ] 1.3 Regenerate the Prisma client without editing `generated/prisma` manually.
+- [x] 1.1 Add `VideoBookmark` to `prisma/schema.prisma` with relations to `User` and `Video`, owner/video indexes, and cascade deletion from user/video.
+- [x] 1.2 Create the Prisma migration for the bookmark table using the existing project flow.
+- [x] 1.3 Regenerate the Prisma client without editing `generated/prisma` manually.
 
 ## 2. Server Behavior
 
