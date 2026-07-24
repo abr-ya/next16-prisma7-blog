@@ -11,7 +11,11 @@ import {
   updateVideoBookmark,
   type PublicVideoBookmark,
 } from "@/app/_data/video-bookmarks";
-import { Badge, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Input, Spinner } from "@/components";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Spinner } from "@/components/ui/spinner";
 import { formatVideoTimestamp, getVideoTimestampUrl } from "@/lib/video-timestamp-url";
 
 type VideoBookmarkManagerProps = {
