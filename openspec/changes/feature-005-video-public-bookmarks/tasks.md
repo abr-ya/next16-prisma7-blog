@@ -13,10 +13,10 @@
 
 ## 3. Public Video Detail UI
 
-- [ ] 3.1 Fetch the current session and current user's bookmarks in `app/videos/[id]/page.tsx` only after the video is confirmed public.
-- [ ] 3.2 Add a client bookmark manager component for creating, listing, editing, and deleting bookmarks.
-- [ ] 3.3 Keep anonymous visitors on the existing read-only video detail without bookmark mutation controls.
-- [ ] 3.4 Render bookmark timestamps as links to the external video moment when supported, with stable empty/loading/error states.
+- [x] 3.1 Fetch the current session and current user's bookmarks in `app/videos/[id]/page.tsx` only after the video is confirmed public.
+- [x] 3.2 Add a client bookmark manager component for creating, listing, editing, and deleting bookmarks.
+- [x] 3.3 Keep anonymous visitors on the existing read-only video detail without bookmark mutation controls.
+- [x] 3.4 Render bookmark timestamps as links to the external video moment when supported, with stable empty/loading/error states.
 
 ## 4. Documentation And Validation
 
