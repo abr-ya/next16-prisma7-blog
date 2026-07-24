@@ -20,8 +20,8 @@
 
 ## 4. Documentation And Validation
 
-- [ ] 4.1 Update OpenSpec/backlog state or related feature checklist notes to reflect implementation progress.
-- [ ] 4.2 Run `npm run tsc`.
-- [ ] 4.3 Run `npm run lint` plus targeted ESLint for changed non-`app` files if needed.
+- [x] 4.1 Update OpenSpec/backlog state or related feature checklist notes to reflect implementation progress.
+- [x] 4.2 Run `npm run tsc`.
+- [x] 4.3 Run `npm run lint` plus targeted ESLint for changed non-`app` files if needed.
 - [ ] 4.4 Ask the user to run local `npm run build` and paste the result before completion.
 - [ ] 4.5 Perform a manual browser check for signed-in bookmark management, anonymous read-only detail, private-video not-found behavior, and timestamp links.
