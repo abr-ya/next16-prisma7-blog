@@ -14,22 +14,23 @@ datasource db {
 }
 
 model User {
-  id            String    @id
-  name          String
-  email         String
-  emailVerified Boolean   @default(false)
-  image         String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  sessions      Session[]
-  accounts      Account[]
-  comments      Comment[]
-  categories    Category[]
-  posts         Post[]
-  links         Link[]
-  logs          Log[]
-  postImages    PostImage[]
-  videos        Video[]
+  id             String          @id
+  name           String
+  email          String
+  emailVerified  Boolean         @default(false)
+  image          String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  sessions       Session[]
+  accounts       Account[]
+  comments       Comment[]
+  categories     Category[]
+  posts          Post[]
+  links          Link[]
+  logs           Log[]
+  postImages     PostImage[]
+  videos         Video[]
+  videoBookmarks VideoBookmark[]
 
   @@unique([email])
   @@map("user")
@@ -120,15 +121,15 @@ model Post {
   createdAt  DateTime   @default(now())
   updatedAt  DateTime   @default(now()) @updatedAt
 
-  links      LinksToPosts[]
-  images     PostImage[]
+  links  LinksToPosts[]
+  images PostImage[]
 }
 
 model PostImage {
   id        String   @id @default(uuid())
   url       String
-  fileKey   String?  // UploadThing file key, for deleting from storage
-  userId    String?  // User who uploaded the image
+  fileKey   String? // UploadThing file key, for deleting from storage
+  userId    String? // User who uploaded the image
   user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
   postId    String?
   post      Post?    @relation(fields: [postId], references: [id], onDelete: SetNull)
@@ -152,21 +153,22 @@ enum PostStatus {
   published
   draft
 }
+
 // Updated Posts model - finish
 
 // Link - start
 model Link {
-  id        String   @id @default(uuid())
-  name      String
+  id          String   @id @default(uuid())
+  name        String
   description String?
-  userId    String
-  user      User     @relation(references: [id], fields: [userId], onDelete: Cascade)
-  url       String
-  shortCode String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now()) @updatedAt
+  userId      String
+  user        User     @relation(references: [id], fields: [userId], onDelete: Cascade)
+  url         String
+  shortCode   String   @unique
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
 
-  posts     LinksToPosts[]
+  posts LinksToPosts[]
 }
 
 model LinksToPosts {
@@ -178,6 +180,7 @@ model LinksToPosts {
 
   @@id([postId, linkId])
 }
+
 // Link - finish
 
 // Video - start
@@ -205,23 +208,24 @@ model VideoChannel {
 }
 
 model Video {
-  id              String          @id @default(uuid())
+  id              String              @id @default(uuid())
   title           String
   url             String
   thumbnailUrl    String?
   videoDate       DateTime
-  visibility      VideoVisibility @default(PRIVATE)
+  visibility      VideoVisibility     @default(PRIVATE)
   provider        String?
   providerVideoId String?
   embedUrl        String?
   durationSeconds Int?
   channelId       String?
-  channel         VideoChannel?   @relation(fields: [channelId], references: [id], onDelete: SetNull)
+  channel         VideoChannel?       @relation(fields: [channelId], references: [id], onDelete: SetNull)
   tags            VideosToVideoTags[]
+  bookmarks       VideoBookmark[]
   userId          String
-  user            User            @relation(references: [id], fields: [userId], onDelete: Cascade)
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @default(now()) @updatedAt
+  user            User                @relation(references: [id], fields: [userId], onDelete: Cascade)
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @default(now()) @updatedAt
 
   @@index([userId])
   @@index([videoDate])
@@ -242,15 +246,32 @@ model VideoTag {
 }
 
 model VideosToVideoTags {
-  video       Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
-  videoId     String
-  tag         VideoTag @relation(fields: [tagId], references: [id], onDelete: Cascade)
-  tagId       String
-  assignedAt  DateTime @default(now())
+  video      Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  videoId    String
+  tag        VideoTag @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  tagId      String
+  assignedAt DateTime @default(now())
 
   @@id([videoId, tagId])
   @@index([tagId])
 }
+
+model VideoBookmark {
+  id               String   @id @default(uuid())
+  videoId          String
+  video            Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  userId           String
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  timestampSeconds Int
+  label            String?
+  note             String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @default(now()) @updatedAt
+
+  @@index([userId, videoId, timestampSeconds])
+  @@index([videoId])
+}
+
 // Video - finish
 
 // Logging model - start
@@ -269,4 +290,5 @@ model Log {
   details   String?
   createdAt DateTime @default(now())
 }
+
 // Logging model - finish

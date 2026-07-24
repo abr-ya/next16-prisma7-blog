@@ -2,9 +2,12 @@ import { format } from "date-fns";
 import { CalendarDays, ExternalLink, PlayCircle } from "lucide-react";
 import { notFound } from "next/navigation";
 
+import { getCurrentUserVideoBookmarks } from "@/app/_data/video-bookmarks";
 import { getPublicVideoById } from "@/app/_data/videos";
 import { Badge, Button } from "@/components/index";
+import { VideoBookmarkManager } from "@/components/video-pages/video-bookmark-manager";
 import { VideoThumbnail } from "@/components/video-pages/video-thumbnail";
+import { authSession } from "@/lib/auth-utils";
 import { formatVideoDuration, formatVideoProvider } from "@/lib/video-metadata-format";
 
 const PublicVideoPage = async ({ params }: { params: Promise<{ id: string }> }) => {
@@ -13,6 +16,8 @@ const PublicVideoPage = async ({ params }: { params: Promise<{ id: string }> }) 
 
   if (!video) notFound();
 
+  const session = await authSession();
+  const bookmarks = session ? await getCurrentUserVideoBookmarks(video.id) : [];
   const providerLabel = formatVideoProvider(video.provider);
   const durationLabel = formatVideoDuration(video.durationSeconds);
 
@@ -72,6 +77,8 @@ const PublicVideoPage = async ({ params }: { params: Promise<{ id: string }> }) 
             </a>
           </Button>
         </div>
+
+        {session ? <VideoBookmarkManager videoId={video.id} videoUrl={video.url} initialBookmarks={bookmarks} /> : null}
       </article>
     </main>
   );
