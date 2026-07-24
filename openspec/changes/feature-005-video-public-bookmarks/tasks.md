@@ -6,10 +6,10 @@
 
 ## 2. Server Behavior
 
-- [ ] 2.1 Add bookmark data helpers/actions under `app/_data` with authenticated create, update, delete, and current-user list behavior.
-- [ ] 2.2 Validate bookmark inputs: public video id, non-negative integer timestamp seconds, bounded label/note text, and current-user ownership.
-- [ ] 2.3 Revalidate `/videos/{id}` after bookmark create, update, and delete mutations.
-- [ ] 2.4 Add timestamp URL formatting helper coverage for supported external video URLs.
+- [x] 2.1 Add bookmark data helpers/actions under `app/_data` with authenticated create, update, delete, and current-user list behavior.
+- [x] 2.2 Validate bookmark inputs: public video id, non-negative integer timestamp seconds, bounded label/note text, and current-user ownership.
+- [x] 2.3 Revalidate `/videos/{id}` after bookmark create, update, and delete mutations.
+- [x] 2.4 Add timestamp URL formatting helper coverage for supported external video URLs.
 
 ## 3. Public Video Detail UI
 
