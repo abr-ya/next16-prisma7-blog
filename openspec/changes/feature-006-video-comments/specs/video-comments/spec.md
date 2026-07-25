@@ -1,22 +1,19 @@
 ## ADDED Requirements
 
-### Requirement: Public video comments
+### Requirement: Public video comment reads
 
-The system SHALL let visitors read comments attached to public videos.
+The system SHALL provide server-side reads for comments attached to public videos.
 
-#### Scenario: Visitor lists comments for a public video
+#### Scenario: System lists comments for a public video
 
-- **WHEN** a visitor opens `/videos/{id}` for a public video
+- **WHEN** server code requests comments for a public video
 - **THEN** the system SHALL query comments attached to that video
 - **AND** the system SHALL order comments by `createdAt` ascending
-- **AND** the page SHALL render the comments in a discussion section
 
-#### Scenario: Visitor cannot list comments for private video
+#### Scenario: System does not list comments for private video
 
-- **WHEN** a visitor opens `/videos/{id}`
-- **AND** no public video exists with that id
-- **THEN** the system SHALL render the route not-found state
-- **AND** the system SHALL NOT expose comments for that video
+- **WHEN** server code requests comments for a private or missing video
+- **THEN** the system SHALL NOT expose comments for that video through the public video comment helper
 
 ### Requirement: Authenticated video comment mutations
 
@@ -60,25 +57,3 @@ The system SHALL let authenticated users create, update, and delete their own co
 - **WHEN** a user attempts to create, update, or delete a comment through the public video workflow
 - **AND** the target video is private or missing
 - **THEN** the system SHALL reject the operation
-
-### Requirement: Public video comment UI
-
-The public video detail page SHALL show a video discussion surface with mutation controls only for signed-in users.
-
-#### Scenario: Signed-in user sees comment controls
-
-- **WHEN** an authenticated user opens `/videos/{id}` for a public video
-- **THEN** the page SHALL show a comment form
-- **AND** the page SHALL show edit and delete controls for comments owned by that user
-- **AND** the page SHALL NOT show mutation controls for comments owned by other users
-
-#### Scenario: Anonymous visitor sees read-only comments
-
-- **WHEN** an anonymous visitor opens `/videos/{id}` for a public video
-- **THEN** the page SHALL show existing comments when any exist
-- **AND** the page SHALL NOT show comment creation, edit, or delete controls
-
-#### Scenario: Public video has no comments
-
-- **WHEN** a visitor opens `/videos/{id}` for a public video with no comments
-- **THEN** the page SHALL render a stable empty discussion state

@@ -13,19 +13,11 @@
 - [x] 2.4 Keep comments unavailable through public workflows for private or missing videos.
 - [x] 2.5 Revalidate `/videos/{id}` after create, update, and delete mutations.
 
-## 3. Public Video Detail UI
+## 3. Documentation And Validation
 
-- [ ] 3.1 Fetch public video comments in `app/videos/[id]/page.tsx` only after the video is confirmed public.
-- [ ] 3.2 Add a dedicated video comments client component for creating, listing, editing, and deleting comments.
-- [ ] 3.3 Show existing comments to anonymous visitors without mutation controls.
-- [ ] 3.4 Show create controls to signed-in users and edit/delete controls only for comments owned by the current user.
-- [ ] 3.5 Render stable empty, pending, and error states without disrupting the existing video detail and bookmark sections.
-
-## 4. Documentation And Validation
-
-- [x] 4.1 Update OpenSpec/backlog state or related feature checklist notes to reflect implementation progress.
-- [x] 4.2 Run `openspec validate feature-006-video-comments --strict`.
-- [x] 4.3 Run `npm run tsc`.
-- [x] 4.4 Run `npm run lint` plus targeted ESLint for changed non-`app` files if needed.
-- [ ] 4.5 Ask the user to run local `npm run build` and paste the result before completion.
-- [ ] 4.6 Perform a manual browser check for signed-in comment management, anonymous read-only comments, private-video not-found behavior, and coexistence with bookmark controls.
+- [x] 3.1 Update OpenSpec/backlog state or related feature checklist notes to reflect implementation progress.
+- [x] 3.2 Run `openspec validate feature-006-video-comments --strict`.
+- [x] 3.3 Run `npm run tsc`.
+- [x] 3.4 Run `npm run lint` plus targeted ESLint for changed non-`app` files if needed.
+- [x] 3.5 Ask the user to apply the migration locally with the existing Prisma flow.
+- [x] 3.6 Ask the user to run local `npm run build` and paste the result before completion.
