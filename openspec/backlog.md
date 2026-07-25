@@ -29,7 +29,8 @@ Use the same `feature-<3 digits>-<area>-<short-action>` name for the OpenSpec ch
 | feature-005 | Done | feature-005-video-public-bookmarks | video/bookmarks | Add public-video timestamp bookmarks so authenticated people can save linked moments in each other's public videos. |
 | feature-006 | Done | feature-006-video-comments | video/comments | Add the public-video comments data model and server actions as a foundation before UI work. |
 | feature-007 | Proposed | feature-007-video-detail-bookmark-polish | video/bookmarks | Polish the public video detail page with inline video actions, earlier bookmark placement, all/my bookmark views, and dialog-based bookmark creation. |
-| feature-008 | Planned | feature-008-video-comments-public-ui | video/comments | Add the public video detail comments UI for reading comments and signed-in comment management. |
+| feature-008 | Proposed | feature-008-site-share-metadata | site/metadata | Add dynamic share metadata so public pages expose titles, descriptions, and preview images for link previews. |
+| feature-009 | Planned | feature-009-video-comments-public-ui | video/comments | Add the public video detail comments UI for reading comments and signed-in comment management. |
 | feature-020 | Planned | feature-020-video-search | video/search | Add broader video search across title, URL, channel, tags, notes, bookmarks, comments, and extracted metadata. |
 | feature-021 | Planned | feature-021-video-import-export | video/tools | Add import and export workflows for saved video links. |
 | feature-022 | Planned | feature-022-video-admin-bulk-actions | video/admin | Add bulk actions to the admin video table. |
