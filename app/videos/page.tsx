@@ -9,15 +9,22 @@ import {
   PlayCircle,
   Tv,
 } from "lucide-react";
+import type { Metadata } from "next";
 import Link from "next/link";
 
 import { getPublicVideoChannelOptions } from "@/app/_data/video-channels";
 import { getPublicVideos } from "@/app/_data/videos";
 import type { PublicVideoSort } from "@/app/_data/videos";
 import { Badge, Button, Card, CardContent, CardHeader, CardTitle } from "@/components/index";
+import { buildPageMetadata } from "@/lib/site-metadata";
 import { formatVideoDuration, formatVideoProvider } from "@/lib/video-metadata-format";
 
 export const dynamic = "force-dynamic";
+export const metadata: Metadata = buildPageMetadata({
+  title: "Videos",
+  description: "Public video links from the library.",
+  path: "/videos",
+});
 
 type VideosPageProps = {
   searchParams?: Promise<{
