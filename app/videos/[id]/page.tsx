@@ -1,5 +1,6 @@
 import { format } from "date-fns";
 import { CalendarDays, ExternalLink, PlayCircle } from "lucide-react";
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { getCurrentUserVideoBookmarks } from "@/app/_data/video-bookmarks";
@@ -8,9 +9,38 @@ import { Badge, Button } from "@/components/index";
 import { VideoBookmarkManager } from "@/components/video-pages/video-bookmark-manager";
 import { VideoThumbnail } from "@/components/video-pages/video-thumbnail";
 import { authSession } from "@/lib/auth-utils";
+import { buildPageMetadata } from "@/lib/site-metadata";
 import { formatVideoDuration, formatVideoProvider } from "@/lib/video-metadata-format";
 
-const PublicVideoPage = async ({ params }: { params: Promise<{ id: string }> }) => {
+type PublicVideoPageProps = {
+  params: Promise<{ id: string }>;
+};
+
+const getVideoDescription = (title?: string | null) =>
+  title ? `Watch "${title}" from the public video library.` : "Public video link from the library.";
+
+export const generateMetadata = async ({ params }: PublicVideoPageProps): Promise<Metadata> => {
+  const { id } = await params;
+  const video = await getPublicVideoById(id);
+
+  if (!video) {
+    return buildPageMetadata({
+      title: "Video",
+      description: getVideoDescription(),
+      path: `/videos/${id}`,
+    });
+  }
+
+  return buildPageMetadata({
+    title: video.title,
+    description: getVideoDescription(video.title),
+    path: `/videos/${video.id}`,
+    image: video.thumbnailUrl,
+    type: "article",
+  });
+};
+
+const PublicVideoPage = async ({ params }: PublicVideoPageProps) => {
   const { id } = await params;
   const video = await getPublicVideoById(id);
 

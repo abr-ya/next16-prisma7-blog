@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "sonner";
+import { buildPageMetadata, siteUrl } from "@/lib/site-metadata";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -14,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Blog | Next 16",
-  description: "Blog with different themes with Next.js 16 and Prisma 7",
+  metadataBase: siteUrl,
+  ...buildPageMetadata(),
 };
 
 export default function RootLayout({
