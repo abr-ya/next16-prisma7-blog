@@ -100,8 +100,13 @@ model Comment {
   id        String   @id @default(cuid())
   content   String
   createdAt DateTime @default(now())
+  videoId   String?
+  video     Video?   @relation(fields: [videoId], references: [id], onDelete: Cascade)
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([videoId, createdAt])
+  @@index([userId, videoId])
 }
 
 // Updated Posts model - start
@@ -222,6 +227,7 @@ model Video {
   channel         VideoChannel?       @relation(fields: [channelId], references: [id], onDelete: SetNull)
   tags            VideosToVideoTags[]
   bookmarks       VideoBookmark[]
+  comments        Comment[]
   userId          String
   user            User                @relation(references: [id], fields: [userId], onDelete: Cascade)
   createdAt       DateTime            @default(now())

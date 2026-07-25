@@ -1,9 +1,9 @@
 ## 1. Data Model
 
-- [ ] 1.1 Extend `prisma/schema.prisma` so `Comment` can be linked to a `Video` while preserving existing generic comments.
-- [ ] 1.2 Add indexes for public video comment reads and current-user mutation checks.
-- [ ] 1.3 Create the Prisma migration with the existing project flow.
-- [ ] 1.4 Regenerate the Prisma client without editing `generated/prisma` manually.
+- [x] 1.1 Extend `prisma/schema.prisma` so `Comment` can be linked to a `Video` while preserving existing generic comments.
+- [x] 1.2 Add indexes for public video comment reads and current-user mutation checks.
+- [x] 1.3 Create the Prisma migration with the existing project flow.
+- [x] 1.4 Regenerate the Prisma client without editing `generated/prisma` manually.
 
 ## 2. Server Behavior
 
@@ -23,8 +23,8 @@
 
 ## 4. Documentation And Validation
 
-- [ ] 4.1 Update OpenSpec/backlog state or related feature checklist notes to reflect implementation progress.
-- [ ] 4.2 Run `openspec validate feature-006-video-comments --strict`.
+- [x] 4.1 Update OpenSpec/backlog state or related feature checklist notes to reflect implementation progress.
+- [x] 4.2 Run `openspec validate feature-006-video-comments --strict`.
 - [ ] 4.3 Run `npm run tsc`.
 - [ ] 4.4 Run `npm run lint` plus targeted ESLint for changed non-`app` files if needed.
 - [ ] 4.5 Ask the user to run local `npm run build` and paste the result before completion.
