@@ -27,7 +27,7 @@ Use the same `feature-<3 digits>-<area>-<short-action>` name for the OpenSpec ch
 | feature-003 | Done | feature-003-video-channel-list-filters | video/channels | Add channel filtering and sorting to admin and public video lists. |
 | feature-004 | Done | feature-004-video-tags-foundation | video/tags | Add reusable video tags, admin video/tag assignment, and tag badges without public tag filtering. |
 | feature-005 | Done | feature-005-video-public-bookmarks | video/bookmarks | Add public-video timestamp bookmarks so authenticated people can save linked moments in each other's public videos. |
-| feature-006 | Planned | feature-006-video-comments | video/comments | Add comments or discussion on public video detail pages as a separate conversation feature from timestamp bookmarks. |
+| feature-006 | Proposed | feature-006-video-comments | video/comments | Add comments or discussion on public video detail pages as a separate conversation feature from timestamp bookmarks. |
 | feature-020 | Planned | feature-020-video-search | video/search | Add broader video search across title, URL, channel, tags, notes, bookmarks, comments, and extracted metadata. |
 | feature-021 | Planned | feature-021-video-import-export | video/tools | Add import and export workflows for saved video links. |
 | feature-022 | Planned | feature-022-video-admin-bulk-actions | video/admin | Add bulk actions to the admin video table. |
