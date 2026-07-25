@@ -1,0 +1,59 @@
+## ADDED Requirements
+
+### Requirement: Public video comment reads
+
+The system SHALL provide server-side reads for comments attached to public videos.
+
+#### Scenario: System lists comments for a public video
+
+- **WHEN** server code requests comments for a public video
+- **THEN** the system SHALL query comments attached to that video
+- **AND** the system SHALL order comments by `createdAt` ascending
+
+#### Scenario: System does not list comments for private video
+
+- **WHEN** server code requests comments for a private or missing video
+- **THEN** the system SHALL NOT expose comments for that video through the public video comment helper
+
+### Requirement: Authenticated video comment mutations
+
+The system SHALL let authenticated users create, update, and delete their own comments on public videos.
+
+#### Scenario: Authenticated user creates a video comment
+
+- **WHEN** an authenticated user submits a plain-text comment for a public video
+- **AND** the comment content is non-empty after trimming
+- **THEN** the system SHALL create a comment owned by that user and linked to that video
+- **AND** the system SHALL revalidate the affected public video detail page
+
+#### Scenario: Anonymous visitor cannot create a video comment
+
+- **WHEN** an anonymous visitor attempts to create a video comment
+- **THEN** the system SHALL reject the mutation as unauthorized
+- **AND** no comment SHALL be created
+
+#### Scenario: User edits own video comment
+
+- **WHEN** an authenticated user submits valid changes for a comment they own
+- **AND** the linked video is public
+- **THEN** the system SHALL update that comment's content
+- **AND** the system SHALL revalidate the affected public video detail page
+
+#### Scenario: User deletes own video comment
+
+- **WHEN** an authenticated user deletes a comment they own
+- **AND** the linked video is public
+- **THEN** the system SHALL delete that comment
+- **AND** the system SHALL revalidate the affected public video detail page
+
+#### Scenario: User cannot mutate another user's video comment
+
+- **WHEN** an authenticated user attempts to update or delete a comment owned by another user
+- **THEN** the system SHALL reject the mutation or return a failed result
+- **AND** the other user's comment SHALL remain unchanged
+
+#### Scenario: Private video comments are unavailable through public workflows
+
+- **WHEN** a user attempts to create, update, or delete a comment through the public video workflow
+- **AND** the target video is private or missing
+- **THEN** the system SHALL reject the operation
