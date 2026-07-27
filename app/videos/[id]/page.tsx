@@ -3,7 +3,7 @@ import { CalendarDays, ExternalLink, PlayCircle } from "lucide-react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import { getCurrentUserVideoBookmarks } from "@/app/_data/video-bookmarks";
+import { getPublicVideoBookmarks } from "@/app/_data/video-bookmarks";
 import { getPublicVideoById } from "@/app/_data/videos";
 import { Badge, Button } from "@/components/index";
 import { VideoBookmarkManager } from "@/components/video-pages/video-bookmark-manager";
@@ -47,7 +47,7 @@ const PublicVideoPage = async ({ params }: PublicVideoPageProps) => {
   if (!video) notFound();
 
   const session = await authSession();
-  const bookmarks = session ? await getCurrentUserVideoBookmarks(video.id) : [];
+  const bookmarks = session ? await getPublicVideoBookmarks(video.id) : [];
   const providerLabel = formatVideoProvider(video.provider);
   const durationLabel = formatVideoDuration(video.durationSeconds);
 
@@ -95,20 +95,21 @@ const PublicVideoPage = async ({ params }: PublicVideoPageProps) => {
           <VideoThumbnail src={video.thumbnailUrl} title={video.title} videoUrl={video.url} />
         )}
 
-        <div className="rounded-md border bg-muted/30 p-4">
-          <div className="break-all text-sm text-muted-foreground">{video.url}</div>
-        </div>
+        <div className="grid gap-4">
+          <div className="flex flex-col gap-3 rounded-md border bg-muted/30 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0 break-all text-sm text-muted-foreground sm:break-normal">{video.url}</div>
+            <Button asChild className="w-full shrink-0 sm:w-auto">
+              <a href={video.url} target="_blank" rel="noreferrer">
+                {video.embedUrl ? <PlayCircle /> : <ExternalLink />}
+                Open video
+              </a>
+            </Button>
+          </div>
 
-        <div>
-          <Button asChild>
-            <a href={video.url} target="_blank" rel="noreferrer">
-              {video.embedUrl ? <PlayCircle /> : <ExternalLink />}
-              Open video
-            </a>
-          </Button>
+          {session ? (
+            <VideoBookmarkManager videoId={video.id} videoUrl={video.url} initialBookmarks={bookmarks} />
+          ) : null}
         </div>
-
-        {session ? <VideoBookmarkManager videoId={video.id} videoUrl={video.url} initialBookmarks={bookmarks} /> : null}
       </article>
     </main>
   );

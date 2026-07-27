@@ -24,6 +24,13 @@ The system SHALL let authenticated users persist timestamp bookmarks for public 
 - **THEN** the system SHALL query bookmarks for that video owned by the current user
 - **AND** the system SHALL order those bookmarks by `timestampSeconds` ascending and then `createdAt` ascending
 
+#### Scenario: Authenticated user lists all bookmarks for a public video
+
+- **WHEN** an authenticated user opens `/videos/{id}` for a public video
+- **THEN** the system SHALL provide a way to list all bookmarks linked to that public video
+- **AND** the system SHALL order those bookmarks by `timestampSeconds` ascending and then `createdAt` ascending
+- **AND** each bookmark SHALL preserve enough ownership information for the UI to identify bookmarks owned by the current user
+
 #### Scenario: Anonymous visitor cannot create bookmarks
 
 - **WHEN** an anonymous visitor attempts to create a video bookmark
@@ -32,7 +39,7 @@ The system SHALL let authenticated users persist timestamp bookmarks for public 
 
 ### Requirement: Bookmark ownership and visibility
 
-The system SHALL enforce bookmark ownership and public-video visibility for all bookmark reads and mutations.
+The system SHALL enforce bookmark ownership for mutations and public-video visibility for bookmark reads.
 
 #### Scenario: User edits own bookmark
 
@@ -60,6 +67,11 @@ The system SHALL enforce bookmark ownership and public-video visibility for all 
 - **AND** the target video is private or missing
 - **THEN** the system SHALL reject the operation or return no bookmark surface for that video
 
+#### Scenario: Anonymous visitor cannot list all bookmarks
+
+- **WHEN** an anonymous visitor opens `/videos/{id}` for a public video
+- **THEN** the page SHALL NOT expose the `My bookmarks` or `All bookmarks` bookmark surface
+
 ### Requirement: Public video bookmark UI
 
 The public video detail page SHALL expose bookmark controls only to signed-in users.
@@ -67,18 +79,24 @@ The public video detail page SHALL expose bookmark controls only to signed-in us
 #### Scenario: Signed-in user sees bookmark controls
 
 - **WHEN** an authenticated user opens `/videos/{id}` for a public video
-- **THEN** the page SHALL show a bookmark form for entering a timestamp and optional text
-- **AND** the page SHALL show the user's existing bookmarks for that video when any exist
+- **THEN** the page SHALL show a bookmark action that opens a dialog for entering a timestamp and optional text
+- **AND** the page SHALL show a `My bookmarks` view containing the user's existing bookmarks for that video when any exist
+- **AND** the page SHALL show an `All bookmarks` view containing all existing bookmarks for that public video when any exist
 - **AND** each listed bookmark SHALL include a timestamp link to the external video at that moment when the provider URL supports timestamp query parameters
 
-#### Scenario: Signed-in user manages existing bookmarks
+#### Scenario: Signed-in user manages own bookmarks in any view
 
-- **WHEN** an authenticated user sees their bookmark list on `/videos/{id}`
-- **THEN** each bookmark SHALL provide controls to edit and delete that bookmark
+- **WHEN** an authenticated user sees a bookmark they own on `/videos/{id}`
+- **THEN** that bookmark SHALL provide controls to edit and delete it
 - **AND** those controls SHALL apply only to the current user's bookmarks
+
+#### Scenario: Signed-in user sees another user's bookmark
+
+- **WHEN** an authenticated user sees a bookmark owned by another user in the `All bookmarks` view
+- **THEN** the page SHALL NOT show edit or delete controls for that bookmark
 
 #### Scenario: Anonymous visitor sees read-only video detail
 
 - **WHEN** an anonymous visitor opens `/videos/{id}` for a public video
 - **THEN** the page SHALL keep the video detail readable
-- **AND** the page SHALL NOT show bookmark creation, edit, or delete controls
+- **AND** the page SHALL NOT show bookmark creation, edit, delete, or all-bookmark controls
