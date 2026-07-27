@@ -20,6 +20,7 @@
 - [x] 3.4 Move the bookmark creation form into a dialog opened from the bookmark surface.
 - [x] 3.5 Keep create, update, delete, empty, pending, and error states stable after switching views.
 - [x] 3.6 Extract the shared bookmark create/edit form and dialog so manager state is separate from form layout.
+- [x] 3.7 Extract bookmark list rendering from the manager.
 
 ## 4. Validation
 
