@@ -14,8 +14,18 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatVideoTimestamp, getVideoTimestampUrl } from "@/lib/video-timestamp-url";
 
 type VideoBookmarkManagerProps = {
@@ -29,6 +39,8 @@ type BookmarkFormValues = {
   label: string;
   note: string;
 };
+
+type BookmarkView = "my" | "all";
 
 const emptyValues: BookmarkFormValues = {
   timestampSeconds: "",
@@ -108,9 +120,13 @@ export const VideoBookmarkManager = ({ videoId, videoUrl, initialBookmarks }: Vi
   const router = useRouter();
   const [bookmarks, setBookmarks] = useState(() => sortBookmarks(initialBookmarks));
   const [createValues, setCreateValues] = useState<BookmarkFormValues>(emptyValues);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [activeView, setActiveView] = useState<BookmarkView>("my");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingValues, setEditingValues] = useState<BookmarkFormValues>(emptyValues);
   const [pendingAction, setPendingAction] = useState<string | null>(null);
+
+  const myBookmarks = useMemo(() => bookmarks.filter((bookmark) => bookmark.isOwnedByCurrentUser), [bookmarks]);
 
   const editingBookmark = useMemo(
     () => bookmarks.find((bookmark) => bookmark.id === editingId) ?? null,
@@ -126,6 +142,7 @@ export const VideoBookmarkManager = ({ videoId, videoUrl, initialBookmarks }: Vi
 
       setBookmarks((current) => sortBookmarks([...current, bookmark]));
       setCreateValues(emptyValues);
+      setCreateDialogOpen(false);
       toast.success("Bookmark saved");
       router.refresh();
     } catch {
@@ -136,6 +153,8 @@ export const VideoBookmarkManager = ({ videoId, videoUrl, initialBookmarks }: Vi
   };
 
   const startEditing = (bookmark: PublicVideoBookmark) => {
+    if (!bookmark.isOwnedByCurrentUser) return;
+
     setEditingId(bookmark.id);
     setEditingValues(toFormValues(bookmark));
   };
@@ -191,78 +210,64 @@ export const VideoBookmarkManager = ({ videoId, videoUrl, initialBookmarks }: Vi
     }
   };
 
-  return (
-    <Card className="gap-4 rounded-md">
-      <CardHeader className="gap-1">
-        <CardTitle>Bookmarks</CardTitle>
-        <CardDescription>Your saved moments for this video.</CardDescription>
-      </CardHeader>
-      <CardContent className="grid gap-5">
-        <form className="grid gap-3" onSubmit={handleCreate}>
-          <BookmarkTextFields
-            values={createValues}
-            idPrefix="new-video-bookmark"
-            disabled={pendingAction === "create"}
-            onChange={setCreateValues}
-          />
-          <Button type="submit" className="w-fit" disabled={pendingAction === "create"}>
-            {pendingAction === "create" ? <Spinner className="size-5" /> : <Plus className="size-4" />}
-            Add bookmark
-          </Button>
-        </form>
+  const renderBookmarkList = (items: PublicVideoBookmark[], emptyMessage: string, showOwner: boolean) => (
+    <div className="grid gap-3">
+      {items.length === 0 ? (
+        <div className="rounded-md border border-dashed px-4 py-5 text-sm text-muted-foreground">{emptyMessage}</div>
+      ) : (
+        items.map((bookmark) => {
+          const timestampUrl = getVideoTimestampUrl(videoUrl, bookmark.timestampSeconds);
+          const isEditing = editingId === bookmark.id;
+          const isPending = pendingAction === bookmark.id;
 
-        <div className="grid gap-3">
-          {bookmarks.length === 0 ? (
-            <div className="rounded-md border border-dashed px-4 py-5 text-sm text-muted-foreground">
-              No bookmarks yet.
-            </div>
-          ) : (
-            bookmarks.map((bookmark) => {
-              const timestampUrl = getVideoTimestampUrl(videoUrl, bookmark.timestampSeconds);
-              const isEditing = editingId === bookmark.id;
-              const isPending = pendingAction === bookmark.id;
-
-              return (
-                <div key={bookmark.id} className="rounded-md border p-4">
-                  {isEditing ? (
-                    <form className="grid gap-3" onSubmit={handleUpdate}>
-                      <BookmarkTextFields
-                        values={editingValues}
-                        idPrefix={`video-bookmark-${bookmark.id}`}
-                        disabled={isPending}
-                        onChange={setEditingValues}
-                      />
-                      <div className="flex flex-wrap gap-2">
-                        <Button type="submit" size="sm" disabled={isPending}>
-                          {isPending ? <Spinner className="size-4" /> : <Save className="size-4" />}
-                          Save
-                        </Button>
-                        <Button type="button" variant="outline" size="sm" disabled={isPending} onClick={cancelEditing}>
-                          <X className="size-4" />
-                          Cancel
-                        </Button>
+          return (
+            <div key={bookmark.id} className="rounded-md border p-4">
+              {isEditing ? (
+                <form className="grid gap-3" onSubmit={handleUpdate}>
+                  <BookmarkTextFields
+                    values={editingValues}
+                    idPrefix={`video-bookmark-${bookmark.id}`}
+                    disabled={isPending}
+                    onChange={setEditingValues}
+                  />
+                  <div className="flex flex-wrap gap-2">
+                    <Button type="submit" size="sm" disabled={isPending}>
+                      {isPending ? <Spinner className="size-4" /> : <Save className="size-4" />}
+                      Save
+                    </Button>
+                    <Button type="button" variant="outline" size="sm" disabled={isPending} onClick={cancelEditing}>
+                      <X className="size-4" />
+                      Cancel
+                    </Button>
+                  </div>
+                </form>
+              ) : (
+                <div className="grid gap-3">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Badge variant="secondary">{formatVideoTimestamp(bookmark.timestampSeconds)}</Badge>
+                        {bookmark.label ? <h2 className="text-sm font-semibold">{bookmark.label}</h2> : null}
                       </div>
-                    </form>
-                  ) : (
-                    <div className="grid gap-3">
-                      <div className="flex flex-wrap items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <Badge variant="secondary">{formatVideoTimestamp(bookmark.timestampSeconds)}</Badge>
-                            {bookmark.label ? <h2 className="text-sm font-semibold">{bookmark.label}</h2> : null}
-                          </div>
-                          {bookmark.note ? (
-                            <p className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground">{bookmark.note}</p>
-                          ) : null}
-                        </div>
-                        <div className="flex shrink-0 gap-1">
-                          {timestampUrl ? (
-                            <Button asChild variant="ghost" size="icon" title="Open timestamp">
-                              <a href={timestampUrl} target="_blank" rel="noreferrer">
-                                <ExternalLink className="size-4" />
-                              </a>
-                            </Button>
-                          ) : null}
+                      {showOwner ? (
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Saved by {bookmark.isOwnedByCurrentUser ? "you" : bookmark.ownerName}
+                        </p>
+                      ) : null}
+                      {bookmark.note ? (
+                        <p className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground">{bookmark.note}</p>
+                      ) : null}
+                    </div>
+                    <div className="flex shrink-0 gap-1">
+                      {timestampUrl ? (
+                        <Button asChild variant="ghost" size="icon" title="Open timestamp">
+                          <a href={timestampUrl} target="_blank" rel="noreferrer">
+                            <ExternalLink className="size-4" />
+                          </a>
+                        </Button>
+                      ) : null}
+                      {bookmark.isOwnedByCurrentUser ? (
+                        <>
                           <Button
                             type="button"
                             variant="ghost"
@@ -284,15 +289,66 @@ export const VideoBookmarkManager = ({ videoId, videoUrl, initialBookmarks }: Vi
                           >
                             {isPending ? <Spinner className="size-4" /> : <Trash2 className="size-4" />}
                           </Button>
-                        </div>
-                      </div>
+                        </>
+                      ) : null}
                     </div>
-                  )}
+                  </div>
                 </div>
-              );
-            })
-          )}
+              )}
+            </div>
+          );
+        })
+      )}
+    </div>
+  );
+
+  return (
+    <Card className="gap-4 rounded-md">
+      <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="grid gap-1">
+          <CardTitle>Bookmarks</CardTitle>
+          <CardDescription>Your saved moments for this video.</CardDescription>
         </div>
+        <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+          <DialogTrigger asChild>
+            <Button type="button" className="w-full sm:w-auto" disabled={pendingAction === "create"}>
+              <Plus className="size-4" />
+              Add bookmark
+            </Button>
+          </DialogTrigger>
+          <DialogContent aria-describedby="video-bookmark-create-description">
+            <DialogHeader>
+              <DialogTitle>Add bookmark</DialogTitle>
+              <DialogDescription id="video-bookmark-create-description">
+                Save a timestamp and optional notes for this video.
+              </DialogDescription>
+            </DialogHeader>
+            <form className="grid gap-4" onSubmit={handleCreate}>
+              <BookmarkTextFields
+                values={createValues}
+                idPrefix="new-video-bookmark"
+                disabled={pendingAction === "create"}
+                onChange={setCreateValues}
+              />
+              <DialogFooter>
+                <Button type="submit" disabled={pendingAction === "create"}>
+                  {pendingAction === "create" ? <Spinner className="size-5" /> : <Plus className="size-4" />}
+                  Add bookmark
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </CardHeader>
+      <CardContent>
+        <Tabs value={activeView} onValueChange={(value) => setActiveView(value as BookmarkView)} className="gap-4">
+          <TabsList className="grid w-full grid-cols-2 sm:w-fit">
+            <TabsTrigger value="my">My bookmarks ({myBookmarks.length})</TabsTrigger>
+            <TabsTrigger value="all">All bookmarks ({bookmarks.length})</TabsTrigger>
+          </TabsList>
+          <TabsContent value="my">{renderBookmarkList(myBookmarks, "No bookmarks yet.", false)}</TabsContent>
+          <TabsContent value="all">{renderBookmarkList(bookmarks, "No public bookmarks yet.", true)}</TabsContent>
+        </Tabs>
       </CardContent>
     </Card>
   );

@@ -14,11 +14,11 @@
 
 ## 3. Bookmark Manager UI
 
-- [ ] 3.1 Add a `My bookmarks` / `All bookmarks` switch to the bookmark manager.
-- [ ] 3.2 Render bookmark lists chronologically by timestamp and then creation time in both views.
-- [ ] 3.3 Show edit and delete controls only for bookmarks owned by the current user.
-- [ ] 3.4 Move the bookmark creation form into a dialog opened from the bookmark surface.
-- [ ] 3.5 Keep create, update, delete, empty, pending, and error states stable after switching views.
+- [x] 3.1 Add a `My bookmarks` / `All bookmarks` switch to the bookmark manager.
+- [x] 3.2 Render bookmark lists chronologically by timestamp and then creation time in both views.
+- [x] 3.3 Show edit and delete controls only for bookmarks owned by the current user.
+- [x] 3.4 Move the bookmark creation form into a dialog opened from the bookmark surface.
+- [x] 3.5 Keep create, update, delete, empty, pending, and error states stable after switching views.
 
 ## 4. Validation
 
