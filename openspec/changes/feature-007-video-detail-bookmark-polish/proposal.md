@@ -10,7 +10,7 @@ Public video detail pages should make the video action and bookmark workflow fas
 - Show bookmarks in chronological order by timestamp, with stable created-time ordering for equal timestamps.
 - Keep edit and delete actions limited to the current user's bookmarks, even in the `All bookmarks` view.
 - Move bookmark creation into a dialog opened from the bookmark surface.
-- Defer the public comments UI to `feature-008-video-comments-public-ui`.
+- Defer the public comments UI to `feature-010-video-comments-public-ui`.
 - Non-goals: public comments UI, anonymous bookmark viewing, bookmark privacy settings, moderation, reactions, notifications, search, or schema changes unless implementation discovers the current model cannot support the read efficiently.
 
 ## Capabilities

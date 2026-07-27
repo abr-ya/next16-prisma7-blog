@@ -16,10 +16,16 @@ export type VideoBookmarkActionValues = {
   note?: string | null;
 };
 
-export type PublicVideoBookmark = Prisma.VideoBookmarkGetPayload<{
+type SelectedVideoBookmark = Prisma.VideoBookmarkGetPayload<{
   select: {
     id: true;
     videoId: true;
+    userId: true;
+    user: {
+      select: {
+        name: true;
+      };
+    };
     timestampSeconds: true;
     label: true;
     note: true;
@@ -28,9 +34,28 @@ export type PublicVideoBookmark = Prisma.VideoBookmarkGetPayload<{
   };
 }>;
 
+export type PublicVideoBookmark = {
+  id: string;
+  videoId: string;
+  ownerUserId: string;
+  ownerName: string;
+  isOwnedByCurrentUser: boolean;
+  timestampSeconds: number;
+  label: string | null;
+  note: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
 const videoBookmarkSelect = {
   id: true,
   videoId: true,
+  userId: true,
+  user: {
+    select: {
+      name: true,
+    },
+  },
   timestampSeconds: true,
   label: true,
   note: true,
@@ -90,6 +115,19 @@ const getBookmarkMutationData = ({ timestampSeconds, label, note }: VideoBookmar
   note: normalizeOptionalText(note, MAX_BOOKMARK_NOTE_LENGTH, "Bookmark note"),
 });
 
+const toPublicVideoBookmark = (bookmark: SelectedVideoBookmark, currentUserId: string): PublicVideoBookmark => ({
+  id: bookmark.id,
+  videoId: bookmark.videoId,
+  ownerUserId: bookmark.userId,
+  ownerName: bookmark.user.name,
+  isOwnedByCurrentUser: bookmark.userId === currentUserId,
+  timestampSeconds: bookmark.timestampSeconds,
+  label: bookmark.label,
+  note: bookmark.note,
+  createdAt: bookmark.createdAt,
+  updatedAt: bookmark.updatedAt,
+});
+
 export const getCurrentUserVideoBookmarks = async (videoId: string): Promise<PublicVideoBookmark[]> => {
   try {
     const session = await authSession();
@@ -98,7 +136,7 @@ export const getCurrentUserVideoBookmarks = async (videoId: string): Promise<Pub
 
     const { default: prisma } = await import("@/lib/prisma");
 
-    return prisma.videoBookmark.findMany({
+    const bookmarks = await prisma.videoBookmark.findMany({
       where: {
         userId: session.user.id,
         videoId,
@@ -109,9 +147,37 @@ export const getCurrentUserVideoBookmarks = async (videoId: string): Promise<Pub
       select: videoBookmarkSelect,
       orderBy: [{ timestampSeconds: "asc" }, { createdAt: "asc" }],
     });
+
+    return bookmarks.map((bookmark) => toPublicVideoBookmark(bookmark, session.user.id));
   } catch (err) {
     console.error({ err });
     throw new Error("Something went wrong (getCurrentUserVideoBookmarks)");
+  }
+};
+
+export const getAllPublicVideoBookmarks = async (videoId: string): Promise<PublicVideoBookmark[]> => {
+  try {
+    const session = await authSession();
+
+    if (!session) return [];
+
+    const { default: prisma } = await import("@/lib/prisma");
+
+    const bookmarks = await prisma.videoBookmark.findMany({
+      where: {
+        videoId,
+        video: {
+          visibility: "PUBLIC",
+        },
+      },
+      select: videoBookmarkSelect,
+      orderBy: [{ timestampSeconds: "asc" }, { createdAt: "asc" }],
+    });
+
+    return bookmarks.map((bookmark) => toPublicVideoBookmark(bookmark, session.user.id));
+  } catch (err) {
+    console.error({ err });
+    throw new Error("Something went wrong (getAllPublicVideoBookmarks)");
   }
 };
 
@@ -132,7 +198,7 @@ export const createVideoBookmark = async (values: VideoBookmarkActionValues) => 
 
     revalidatePath(`/videos/${video.id}`);
 
-    return bookmark;
+    return toPublicVideoBookmark(bookmark, userId);
   } catch (err) {
     console.error({ err });
     throw new Error("Something went wrong (createVideoBookmark)");
@@ -166,7 +232,7 @@ export const updateVideoBookmark = async (values: VideoBookmarkActionValues) => 
 
     revalidatePath(`/videos/${existingBookmark.videoId}`);
 
-    return bookmark;
+    return toPublicVideoBookmark(bookmark, userId);
   } catch (err) {
     console.error({ err });
     throw new Error("Something went wrong (updateVideoBookmark)");

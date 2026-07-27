@@ -1,9 +1,9 @@
 ## 1. Planning And Data Reads
 
-- [ ] 1.1 Update the backlog so this bookmark/detail polish slice is `feature-007` and public comments UI moves to `feature-008`.
-- [ ] 1.2 Extend `app/_data/video-bookmarks.ts` with a public-video-safe all-bookmarks read helper for signed-in visitors.
-- [ ] 1.3 Include ownership metadata needed for the client to distinguish current-user bookmarks from other users' bookmarks.
-- [ ] 1.4 Preserve existing owner-only create, update, and delete behavior.
+- [x] 1.1 Update the backlog so this bookmark/detail polish slice is `feature-007`, mark it in progress, and keep public comments UI deferred to `feature-010`.
+- [x] 1.2 Extend `app/_data/video-bookmarks.ts` with a public-video-safe all-bookmarks read helper for signed-in visitors.
+- [x] 1.3 Include ownership metadata needed for the client to distinguish current-user bookmarks from other users' bookmarks.
+- [x] 1.4 Preserve existing owner-only create, update, and delete behavior.
 
 ## 2. Public Video Detail Layout
 
