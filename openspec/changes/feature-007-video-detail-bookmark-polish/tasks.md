@@ -24,8 +24,8 @@
 
 ## 4. Validation
 
-- [ ] 4.1 Run `openspec validate feature-007-video-detail-bookmark-polish --strict`.
-- [ ] 4.2 Run `npm run tsc`.
-- [ ] 4.3 Run `npm run lint` plus targeted ESLint for changed non-`app` files if needed.
-- [ ] 4.4 Ask the user to run local `npm run build` and paste the result before completion.
-- [ ] 4.5 Perform a manual browser check for desktop/mobile URL row layout, bookmark placement, my/all switching, dialog creation, owner-only controls, and anonymous read-only behavior.
+- [x] 4.1 Run `openspec validate feature-007-video-detail-bookmark-polish --strict`.
+- [x] 4.2 Run `npm run tsc`.
+- [x] 4.3 Run `npm run lint` plus targeted ESLint for changed non-`app` files if needed.
+- [x] 4.4 Ask the user to run local `npm run build` and paste the result before completion.
+- [x] 4.5 Perform a manual browser check for desktop/mobile URL row layout, bookmark placement, my/all switching, dialog creation, owner-only controls, and anonymous read-only behavior.

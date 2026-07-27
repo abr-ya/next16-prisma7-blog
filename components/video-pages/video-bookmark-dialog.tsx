@@ -10,10 +10,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  VideoBookmarkForm,
-  type VideoBookmarkFormValues,
-} from "@/components/video-pages/video-bookmark-form";
+import { VideoBookmarkForm, type VideoBookmarkFormValues } from "@/components/video-pages/video-bookmark-form";
 
 type VideoBookmarkDialogMode = "create" | "edit";
 

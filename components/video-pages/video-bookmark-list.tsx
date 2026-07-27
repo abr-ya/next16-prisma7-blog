@@ -108,9 +108,7 @@ export const VideoBookmarkList = ({
 }: VideoBookmarkListProps) => {
   if (bookmarks.length === 0) {
     return (
-      <div className="rounded-md border border-dashed px-4 py-5 text-sm text-muted-foreground">
-        {emptyMessage}
-      </div>
+      <div className="rounded-md border border-dashed px-4 py-5 text-sm text-muted-foreground">{emptyMessage}</div>
     );
   }
 

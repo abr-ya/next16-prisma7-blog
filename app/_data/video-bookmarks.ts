@@ -136,7 +136,7 @@ export const getPublicVideoBookmarks = async (videoId: string): Promise<PublicVi
 
     const { default: prisma } = await import("@/lib/prisma");
 
-    const bookmarks = await prisma.videoBookmark.findMany({
+    const bookmarks: SelectedVideoBookmark[] = await prisma.videoBookmark.findMany({
       where: {
         videoId,
         video: {
