@@ -128,34 +128,7 @@ const toPublicVideoBookmark = (bookmark: SelectedVideoBookmark, currentUserId: s
   updatedAt: bookmark.updatedAt,
 });
 
-export const getCurrentUserVideoBookmarks = async (videoId: string): Promise<PublicVideoBookmark[]> => {
-  try {
-    const session = await authSession();
-
-    if (!session) return [];
-
-    const { default: prisma } = await import("@/lib/prisma");
-
-    const bookmarks = await prisma.videoBookmark.findMany({
-      where: {
-        userId: session.user.id,
-        videoId,
-        video: {
-          visibility: "PUBLIC",
-        },
-      },
-      select: videoBookmarkSelect,
-      orderBy: [{ timestampSeconds: "asc" }, { createdAt: "asc" }],
-    });
-
-    return bookmarks.map((bookmark) => toPublicVideoBookmark(bookmark, session.user.id));
-  } catch (err) {
-    console.error({ err });
-    throw new Error("Something went wrong (getCurrentUserVideoBookmarks)");
-  }
-};
-
-export const getAllPublicVideoBookmarks = async (videoId: string): Promise<PublicVideoBookmark[]> => {
+export const getPublicVideoBookmarks = async (videoId: string): Promise<PublicVideoBookmark[]> => {
   try {
     const session = await authSession();
 
@@ -177,7 +150,7 @@ export const getAllPublicVideoBookmarks = async (videoId: string): Promise<Publi
     return bookmarks.map((bookmark) => toPublicVideoBookmark(bookmark, session.user.id));
   } catch (err) {
     console.error({ err });
-    throw new Error("Something went wrong (getAllPublicVideoBookmarks)");
+    throw new Error("Something went wrong (getPublicVideoBookmarks)");
   }
 };
 

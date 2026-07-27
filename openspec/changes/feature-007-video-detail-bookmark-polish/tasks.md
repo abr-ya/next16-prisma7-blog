@@ -1,16 +1,16 @@
 ## 1. Planning And Data Reads
 
 - [x] 1.1 Update the backlog so this bookmark/detail polish slice is `feature-007`, mark it in progress, and keep public comments UI deferred to `feature-010`.
-- [x] 1.2 Extend `app/_data/video-bookmarks.ts` with a public-video-safe all-bookmarks read helper for signed-in visitors.
+- [x] 1.2 Extend `app/_data/video-bookmarks.ts` with a single public-video-safe bookmark read helper for signed-in visitors.
 - [x] 1.3 Include ownership metadata needed for the client to distinguish current-user bookmarks from other users' bookmarks.
 - [x] 1.4 Preserve existing owner-only create, update, and delete behavior.
 
 ## 2. Public Video Detail Layout
 
-- [ ] 2.1 Update `/videos/{id}` data loading so signed-in visitors receive both `My bookmarks` and `All bookmarks` data.
-- [ ] 2.2 Render the video URL and `Open video` action in one responsive row.
-- [ ] 2.3 Move the bookmark surface directly below the video URL/action row.
-- [ ] 2.4 Preserve anonymous read-only behavior without bookmark controls.
+- [x] 2.1 Update `/videos/{id}` data loading so signed-in visitors receive public-video bookmarks with ownership metadata for `My bookmarks` and `All bookmarks` views.
+- [x] 2.2 Render the video URL and `Open video` action in one responsive row.
+- [x] 2.3 Move the bookmark surface directly below the video URL/action row.
+- [x] 2.4 Preserve anonymous read-only behavior without bookmark controls.
 
 ## 3. Bookmark Manager UI
 
