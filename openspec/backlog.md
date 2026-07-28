@@ -30,9 +30,10 @@ Use the same `feature-<3 digits>-<area>-<short-action>` name for the OpenSpec ch
 | feature-006 | Done | feature-006-video-comments | video/comments | Add the public-video comments data model and server actions as a foundation before UI work. |
 | feature-007 | Done | feature-007-video-detail-bookmark-polish | video/bookmarks | Polish the public video detail page with inline video actions, earlier bookmark placement, all/my bookmark views, and dialog-based bookmark creation. |
 | feature-008 | Done | feature-008-site-share-metadata | site/metadata | Add the reusable share metadata foundation and apply it first to public video pages. |
-| feature-009 | Planned | feature-009-site-share-metadata-content-pages | site/metadata | Extend share metadata to blog posts, docs, and public listing pages after the video slice is proven. |
+| feature-009 | Planned | feature-009-docs-share-metadata | docs/metadata | Extend share metadata to public docs pages first as the next narrow proof point after the video slice. |
 | feature-010 | Planned | feature-010-video-comments-public-ui | video/comments | Add the public video detail comments UI for reading comments and signed-in comment management. |
 | feature-011 | Planned | feature-011-video-preview-player-toggle | video/detail | Always show the video preview on public video detail pages and add a preview/player toggle, disabling player mode with a short reason when embed playback is unavailable. |
+| feature-012 | Planned | feature-012-site-share-metadata-content-pages | site/metadata | Extend share metadata to blog posts and remaining public listing pages after the docs metadata slice is proven. |
 | feature-020 | Planned | feature-020-video-search | video/search | Add broader video search across title, URL, channel, tags, notes, bookmarks, comments, and extracted metadata. |
 | feature-021 | Planned | feature-021-video-import-export | video/tools | Add import and export workflows for saved video links. |
 | feature-022 | Planned | feature-022-video-admin-bulk-actions | video/admin | Add bulk actions to the admin video table. |
