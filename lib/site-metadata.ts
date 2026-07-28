@@ -56,6 +56,25 @@ const getPreviewImageUrl = (image?: string | null) => {
   return toAbsoluteUrl(trimmedImage || DEFAULT_SHARE_IMAGE_PATH);
 };
 
+export const getMarkdownMetadataDescription = (content?: string | null, maxLength = 160) => {
+  const normalizedContent = content
+    ?.replace(/```[\s\S]*?```/g, " ")
+    .replace(/`([^`]+)`/g, "$1")
+    .replace(/!\[[^\]]*]\([^)]*\)/g, " ")
+    .replace(/\[([^\]]+)]\([^)]*\)/g, "$1")
+    .replace(/^#{1,6}\s+/gm, "")
+    .replace(/^>\s?/gm, "")
+    .replace(/[*_~>#-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (!normalizedContent) return null;
+
+  if (normalizedContent.length <= maxLength) return normalizedContent;
+
+  return `${normalizedContent.slice(0, maxLength - 1).trim()}...`;
+};
+
 export const buildPageMetadata = ({
   title,
   description,
