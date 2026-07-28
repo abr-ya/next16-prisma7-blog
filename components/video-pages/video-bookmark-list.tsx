@@ -3,9 +3,7 @@
 import { Edit2, ExternalLink, Trash2 } from "lucide-react";
 
 import type { PublicVideoBookmark } from "@/app/_data/video-bookmarks";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Spinner } from "@/components/ui/spinner";
+import { Badge, Button, Spinner } from "@/components/index";
 import { formatVideoTimestamp, getVideoTimestampUrl } from "@/lib/video-timestamp-url";
 
 type VideoBookmarkListProps = {
