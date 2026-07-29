@@ -8,6 +8,7 @@ The system SHALL show a comment count on public video detail pages.
 
 - **WHEN** a visitor opens a public video detail page with comments
 - **THEN** the system SHALL show the number of comments attached to that public video
+- **AND** the system SHALL indicate that comment list display is planned
 
 #### Scenario: Visitor views zero comments
 
@@ -38,5 +39,6 @@ The system SHALL keep anonymous public video visitors in a read-only comment cre
 
 - **WHEN** an anonymous visitor opens a public video detail page
 - **THEN** the system SHALL show the public video comment count
+- **AND** the system SHALL indicate that comment list display is planned
 - **AND** the system SHALL NOT show a comment creation form
 - **AND** the system SHALL show a sign-in prompt for commenting
