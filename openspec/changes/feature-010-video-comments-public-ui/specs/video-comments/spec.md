@@ -1,54 +1,42 @@
 ## ADDED Requirements
 
-### Requirement: Public video comment UI
+### Requirement: Public video comment count UI
 
-The system SHALL show public video comments on public video detail pages.
+The system SHALL show a comment count on public video detail pages.
 
-#### Scenario: Visitor views existing comments
+#### Scenario: Visitor views comment count
 
 - **WHEN** a visitor opens a public video detail page with comments
-- **THEN** the system SHALL show those comments in chronological order
-- **AND** each comment SHALL show its author and creation date
+- **THEN** the system SHALL show the number of comments attached to that public video
 
-#### Scenario: Visitor views a video with no comments
+#### Scenario: Visitor views zero comments
 
 - **WHEN** a visitor opens a public video detail page with no comments
-- **THEN** the system SHALL show an empty comments state
+- **THEN** the system SHALL show a zero-comment state
 
-### Requirement: Authenticated video comment UI management
+### Requirement: Authenticated video comment creation UI
 
-The system SHALL let authenticated users manage their own comments from public video detail pages.
+The system SHALL let authenticated users create a plain-text comment from public video detail pages.
 
 #### Scenario: Authenticated user adds a comment
 
 - **WHEN** an authenticated user submits a non-empty comment from a public video detail page
 - **THEN** the system SHALL create the comment through the public video comment workflow
-- **AND** the new comment SHALL appear in the comments list without requiring manual navigation
+- **AND** the visible comment count SHALL update without requiring manual navigation
 
-#### Scenario: Authenticated user edits own comment
+#### Scenario: Authenticated user submits an empty comment
 
-- **WHEN** an authenticated user edits one of their own comments from a public video detail page
-- **THEN** the system SHALL update the comment through the public video comment workflow
-- **AND** the updated content SHALL appear in the comments list without requiring manual navigation
+- **WHEN** an authenticated user attempts to submit an empty comment from a public video detail page
+- **THEN** the system SHALL NOT submit the comment creation request
+- **AND** the visible comment count SHALL remain unchanged
 
-#### Scenario: Authenticated user deletes own comment
+### Requirement: Anonymous video comment creation access
 
-- **WHEN** an authenticated user deletes one of their own comments from a public video detail page
-- **THEN** the system SHALL remove the comment through the public video comment workflow
-- **AND** the deleted comment SHALL disappear from the comments list without requiring manual navigation
+The system SHALL keep anonymous public video visitors in a read-only comment creation state.
 
-#### Scenario: Authenticated user views another user's comment
-
-- **WHEN** an authenticated user views a comment owned by another user
-- **THEN** the system SHALL NOT show edit or delete controls for that comment
-
-### Requirement: Anonymous video comment UI access
-
-The system SHALL keep anonymous public video visitors in a read-only comment state.
-
-#### Scenario: Anonymous visitor views comments
+#### Scenario: Anonymous visitor views comment prompt
 
 - **WHEN** an anonymous visitor opens a public video detail page
-- **THEN** the system SHALL show existing comments and empty states
-- **AND** the system SHALL NOT show comment create, edit, or delete controls
+- **THEN** the system SHALL show the public video comment count
+- **AND** the system SHALL NOT show a comment creation form
 - **AND** the system SHALL show a sign-in prompt for commenting
