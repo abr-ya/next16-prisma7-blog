@@ -86,7 +86,7 @@ The system SHALL derive share metadata from public markdown doc detail records.
 - **AND** the page SHALL expose a description derived from doc content when possible
 - **AND** the page SHALL expose Open Graph metadata
 - **AND** the page SHALL expose Twitter card metadata
-- **AND** the page SHALL use the stable site fallback preview image
+- **AND** the page SHALL use the doc preview image when present or the stable site fallback preview image otherwise
 
 #### Scenario: Public doc detail has canonical URL
 
@@ -97,6 +97,26 @@ The system SHALL derive share metadata from public markdown doc detail records.
 
 - **WHEN** metadata is generated for a missing or unavailable doc slug
 - **THEN** the page SHALL NOT expose content-specific doc title or description metadata
+
+### Requirement: Markdown doc preview image metadata
+
+The system SHALL use markdown doc preview images for doc detail share metadata when a preview image is present.
+
+#### Scenario: Doc detail metadata uses stored preview image
+
+- **WHEN** metadata is generated for an existing `/docs/[slug]` page whose doc has a preview image URL
+- **THEN** the metadata SHALL use that preview image for Open Graph metadata
+- **AND** the metadata SHALL use that preview image for Twitter card metadata
+
+#### Scenario: Doc detail metadata falls back without stored preview image
+
+- **WHEN** metadata is generated for an existing `/docs/[slug]` page whose doc has no preview image URL
+- **THEN** the metadata SHALL use the stable site fallback preview image
+
+#### Scenario: Missing doc does not expose preview image metadata
+
+- **WHEN** metadata is generated for a missing or unavailable doc slug
+- **THEN** the metadata SHALL NOT expose a doc-specific preview image
 
 ### Requirement: Public blog listing metadata
 
