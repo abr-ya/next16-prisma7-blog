@@ -3,13 +3,16 @@
 import Image from "next/image";
 import { useState } from "react";
 
+import { cn } from "@/lib/utils";
+
 type VideoThumbnailProps = {
   src?: string | null;
   title: string;
   videoUrl: string;
+  className?: string;
 };
 
-export const VideoThumbnail = ({ src, title, videoUrl }: VideoThumbnailProps) => {
+export const VideoThumbnail = ({ src, title, videoUrl, className }: VideoThumbnailProps) => {
   const [hasError, setHasError] = useState(false);
   const shouldShowImage = src && !hasError;
 
@@ -19,7 +22,10 @@ export const VideoThumbnail = ({ src, title, videoUrl }: VideoThumbnailProps) =>
       target="_blank"
       rel="noreferrer"
       aria-label={`Open ${title} video in a new tab`}
-      className="relative block aspect-[4/3] w-full max-w-md overflow-hidden rounded-md border bg-muted transition-opacity hover:opacity-90"
+      className={cn(
+        "relative block aspect-[4/3] w-full max-w-md overflow-hidden rounded-md border bg-muted transition-opacity hover:opacity-90",
+        className,
+      )}
     >
       {shouldShowImage ? (
         <Image

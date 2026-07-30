@@ -9,7 +9,7 @@ import { getPublicVideoById } from "@/app/_data/videos";
 import { Badge, Button } from "@/components/index";
 import { VideoBookmarkManager } from "@/components/video-pages/video-bookmark-manager";
 import { VideoCommentComposer } from "@/components/video-pages/video-comment-composer";
-import { VideoThumbnail } from "@/components/video-pages/video-thumbnail";
+import { VideoDetailMedia } from "@/components/video-pages/video-detail-media";
 import { authSession } from "@/lib/auth-utils";
 import { buildPageMetadata } from "@/lib/site-metadata";
 import { formatVideoDuration, formatVideoProvider } from "@/lib/video-metadata-format";
@@ -86,17 +86,12 @@ const PublicVideoPage = async ({ params }: PublicVideoPageProps) => {
           </div>
         </div>
 
-        {video.embedUrl ? (
-          <iframe
-            src={video.embedUrl}
-            title={video.title}
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-            allowFullScreen
-            className="aspect-video w-full rounded-md border bg-muted"
-          />
-        ) : (
-          <VideoThumbnail src={video.thumbnailUrl} title={video.title} videoUrl={video.url} />
-        )}
+        <VideoDetailMedia
+          title={video.title}
+          videoUrl={video.url}
+          thumbnailUrl={video.thumbnailUrl}
+          embedUrl={video.embedUrl}
+        />
 
         <div className="grid gap-4">
           <div className="flex flex-col gap-3 rounded-md border bg-muted/30 p-4 sm:flex-row sm:items-center sm:justify-between">
