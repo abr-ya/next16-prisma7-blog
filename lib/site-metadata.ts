@@ -56,12 +56,19 @@ const getPreviewImageUrl = (image?: string | null) => {
   return toAbsoluteUrl(trimmedImage || DEFAULT_SHARE_IMAGE_PATH);
 };
 
-export const getMarkdownMetadataDescription = (content?: string | null, maxLength = 160) => {
+export const getTextMetadataDescription = (content?: string | null, maxLength = 160) => {
   const normalizedContent = content
     ?.replace(/```[\s\S]*?```/g, " ")
     .replace(/`([^`]+)`/g, "$1")
     .replace(/!\[[^\]]*]\([^)]*\)/g, " ")
     .replace(/\[([^\]]+)]\([^)]*\)/g, "$1")
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
     .replace(/^#{1,6}\s+/gm, "")
     .replace(/^>\s?/gm, "")
     .replace(/[*_~>#-]+/g, " ")
@@ -74,6 +81,8 @@ export const getMarkdownMetadataDescription = (content?: string | null, maxLengt
 
   return `${normalizedContent.slice(0, maxLength - 1).trim()}...`;
 };
+
+export const getMarkdownMetadataDescription = getTextMetadataDescription;
 
 export const buildPageMetadata = ({
   title,

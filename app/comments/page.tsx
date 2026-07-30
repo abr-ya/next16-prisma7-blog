@@ -1,4 +1,13 @@
+import type { Metadata } from "next";
+
 import { CommentForm, PageLayout } from "@/components/index";
+import { buildPageMetadata } from "@/lib/site-metadata";
+
+export const metadata: Metadata = buildPageMetadata({
+  title: "Comments",
+  description: "Public comments and messages for the site.",
+  path: "/comments",
+});
 
 const CommentsPage = () => {
   const comments = []; // Placeholder for comments data
