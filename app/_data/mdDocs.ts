@@ -34,10 +34,13 @@ export const createMdDoc = async (params: MdDocFormValues) => {
     if (!session) throw new Error("Unauthorized: User Id not found");
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { id, ...rest } = params;
+    const { id, previewImageUrl, ...rest } = params;
 
     const res = await prisma.mdDoc.create({
-      data: rest,
+      data: {
+        ...rest,
+        previewImageUrl: previewImageUrl?.trim() || null,
+      },
     });
 
     revalidatePublicMarkdownBlogCaches();
@@ -56,11 +59,14 @@ export const updateMdDoc = async (params: MdDocFormValues) => {
 
     if (!session) throw new Error("Unauthorized: User Id not found");
 
-    const { id, ...rest } = params;
+    const { id, previewImageUrl, ...rest } = params;
 
     const res = await prisma.mdDoc.update({
       where: { id },
-      data: rest,
+      data: {
+        ...rest,
+        previewImageUrl: previewImageUrl?.trim() || null,
+      },
     });
 
     revalidatePublicMarkdownBlogCaches();
