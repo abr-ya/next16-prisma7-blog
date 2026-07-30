@@ -1,11 +1,41 @@
 import Image from "next/image";
+import type { Metadata } from "next";
 
 import { getPostBySlug, updatePostViews } from "@/app/_data/posts";
 import { IPostDetails } from "@/app/_interfaces/post.interface";
 import { LinkBlock, PostUserAndCategory, RichTextViewer } from "@/components/index";
 import { authSession } from "@/lib/auth-utils";
+import { buildPageMetadata, getTextMetadataDescription } from "@/lib/site-metadata";
 
-const PostDetailPage = async ({ params }: { params: Promise<{ slug: string }> }) => {
+type BlogPostPageProps = {
+  params: Promise<{ slug: string }>;
+};
+
+const getPostDescription = (content?: string | null) =>
+  getTextMetadataDescription(content) || "Public blog post from the library.";
+
+export const generateMetadata = async ({ params }: BlogPostPageProps): Promise<Metadata> => {
+  const { slug } = await params;
+  const post = await getPostBySlug(slug);
+
+  if (!post) {
+    return buildPageMetadata({
+      title: "Blog",
+      description: "Posts, notes, and updates from the public blog.",
+      path: `/blog/${slug}`,
+    });
+  }
+
+  return buildPageMetadata({
+    title: post.title,
+    description: getPostDescription(post.content),
+    path: `/blog/${post.slug}`,
+    image: post.imageUrl,
+    type: "article",
+  });
+};
+
+const PostDetailPage = async ({ params }: BlogPostPageProps) => {
   const { slug } = await params;
   const session = await authSession();
 

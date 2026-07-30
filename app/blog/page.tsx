@@ -1,8 +1,16 @@
+import type { Metadata } from "next";
+
 import { getAllPosts } from "../_data/posts";
 import { About, Pagination, PostCard } from "@/components/index";
 import { IPostWithUserAndCategory } from "../_interfaces/post.interface";
+import { buildPageMetadata } from "@/lib/site-metadata";
 
 export const dynamic = "force-dynamic";
+export const metadata: Metadata = buildPageMetadata({
+  title: "Blog",
+  description: "Posts, notes, and updates from the public blog.",
+  path: "/blog",
+});
 
 const BlogPage = async () => {
   const posts: IPostWithUserAndCategory[] = await getAllPosts();
