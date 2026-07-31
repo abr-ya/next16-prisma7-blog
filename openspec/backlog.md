@@ -36,7 +36,7 @@ Use the same `feature-<3 digits>-<area>-<short-action>` name for the OpenSpec ch
 | feature-011 | Done | feature-011-video-preview-player-toggle | video/detail | Always show the video preview on public video detail pages and add a preview/player toggle, disabling player mode with a short reason when embed playback is unavailable. |
 | feature-012 | Done | feature-012-site-share-metadata-content-pages | site/metadata | Extend share metadata to blog posts and remaining public listing pages after the docs metadata slice is proven. |
 | feature-013 | Done | feature-013-md-doc-preview-image | docs/admin | Add an optional preview image to markdown docs and use it as the doc share metadata image when present. |
-| feature-014 | In Progress | feature-014-video-comments-list-rendering | video/comments | Render public video detail comment lists with comment text, date, user avatar, and user display name. |
+| feature-014 | Done | feature-014-video-comments-list-rendering | video/comments | Render public video detail comment lists with comment text, date, user avatar, and user display name. |
 | feature-015 | Planned | feature-015-video-comments-own-management | video/comments | Add signed-in own-comment edit and delete controls on public video detail comment lists. |
 | feature-016 | Planned | feature-016-video-comments-edit-delete-expiry | video/comments | Prevent editing and deleting own comments after they are more than 24 hours old. |
 | feature-017 | Planned | feature-017-file-sharing-structure | files/architecture | Define the project-wide file upload and public download structure for archives, videos, and other files before splitting it into implementation slices. |
