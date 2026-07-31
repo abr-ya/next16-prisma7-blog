@@ -110,7 +110,10 @@ const PublicVideoPage = async ({ params }: PublicVideoPageProps) => {
 
           <VideoCommentComposer
             videoId={video.id}
-            initialCommentCount={comments.length}
+            initialComments={comments.map((comment) => ({
+              ...comment,
+              createdAt: comment.createdAt.toISOString(),
+            }))}
             isAuthenticated={Boolean(session)}
           />
         </div>
