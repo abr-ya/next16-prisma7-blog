@@ -85,13 +85,14 @@ model Verification {
 }
 
 model MdDoc {
-  id          String   @id @default(cuid())
-  slug        String   @unique
-  title       String
-  description String?
-  content     String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id              String   @id @default(cuid())
+  slug            String   @unique
+  title           String
+  description     String?
+  previewImageUrl String?
+  content         String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   @@map("BlogPost")
 }

@@ -31,8 +31,13 @@ export const ImageUploader = ({ defaultUrl, onChange, endpoint }: IImageUploader
         <div className="mt-3 flex gap-2">
           <button
             type="button"
+            aria-label="Clear image"
             className="absolute rounded-full right-0 top-0 bg-white opacity-60
             hover:opacity-100 shadow-2xl p-2 m-2 cursor-pointer"
+            onClick={() => {
+              handleSet(null);
+              setShowDropzone(true);
+            }}
           >
             <X />
           </button>

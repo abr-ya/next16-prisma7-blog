@@ -9,6 +9,7 @@ const MdDocAdminPage = async ({ params }: { params: Promise<{ id: string }> }) =
     id: "",
     title: "",
     description: null,
+    previewImageUrl: null,
     content: "",
     slug: "",
   };
@@ -40,6 +41,7 @@ const MdDocAdminPage = async ({ params }: { params: Promise<{ id: string }> }) =
           id={post.id}
           title={post.title}
           description={post.description || ""}
+          previewImageUrl={post.previewImageUrl}
           content={post.content}
           slug={post.slug}
         />

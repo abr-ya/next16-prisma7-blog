@@ -11,19 +11,20 @@ import { createMdDoc, updateMdDoc } from "@/app/_data/mdDocs";
 import { createLogEvent } from "@/app/_data/log";
 import { createSlug } from "@/lib/slug-generator";
 import { MdRenderer } from "../docs/md-renderer";
-import { Button, Card, CardContent, CardHeader, CardTitle, Input } from "..";
+import { Button, Card, CardContent, CardHeader, CardTitle, ImageUploader, Input } from "..";
 
 const formSchema = z.object({
   id: z.string().optional(),
   title: z.string().min(3, { message: "Title is required" }),
   description: z.string().optional(),
+  previewImageUrl: z.url({ message: "Preview image must be a valid URL" }).nullable().optional(),
   content: z.string().min(3, { message: "Content is required" }),
   slug: z.string().min(3, { message: "Slug is required" }),
 });
 
 export type MdDocFormValues = z.infer<typeof formSchema>;
 
-export const MdDocForm = ({ id, title, description, content, slug }: MdDocFormValues) => {
+export const MdDocForm = ({ id, title, description, previewImageUrl, content, slug }: MdDocFormValues) => {
   const router = useRouter();
   const form = useForm({
     resolver: zodResolver(formSchema),
@@ -31,6 +32,7 @@ export const MdDocForm = ({ id, title, description, content, slug }: MdDocFormVa
       id,
       title,
       description,
+      previewImageUrl: previewImageUrl ?? null,
       content,
       slug,
     },
@@ -104,6 +106,26 @@ export const MdDocForm = ({ id, title, description, content, slug }: MdDocFormVa
                 <FormLabel>Description</FormLabel>
                 <FormControl>
                   <Input {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="previewImageUrl"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Preview image</FormLabel>
+                <FormControl>
+                  <ImageUploader
+                    endpoint="imageUploader"
+                    defaultUrl={field.value}
+                    onChange={(url) => {
+                      field.onChange(url);
+                    }}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>

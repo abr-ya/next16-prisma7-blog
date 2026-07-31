@@ -27,6 +27,7 @@ export const generateMetadata = async ({ params }: MdDocPageProps): Promise<Meta
     title: post.title,
     description: getDocDescription(post.content),
     path: `/docs/${post.slug}`,
+    image: post.previewImageUrl,
     type: "article",
   });
 };
