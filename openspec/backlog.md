@@ -15,8 +15,9 @@ Use the same `feature-<3 digits>-<area>-<short-action>` name for the OpenSpec ch
 ## Numbering Reserve
 
 - `feature-001` through `feature-004` are completed historical slices and keep their numbers.
-- `feature-005` through `feature-019` are reserved for the next near-term video detail and social slices.
-- `feature-020+` rows are parked backlog ideas; promote or split them into the reserved range only when they become the next implementation candidate and before creating an OpenSpec change.
+- `feature-005` through `feature-019` are reserved for the next near-term product slices.
+- `feature-020` through `feature-039` are available for upcoming near-term candidates as the roadmap clarifies.
+- `feature-040+` rows are parked backlog ideas; promote or split them into the reserved range only when they become the next implementation candidate and before creating an OpenSpec change.
 
 ## Features
 
@@ -35,15 +36,20 @@ Use the same `feature-<3 digits>-<area>-<short-action>` name for the OpenSpec ch
 | feature-011 | Done | feature-011-video-preview-player-toggle | video/detail | Always show the video preview on public video detail pages and add a preview/player toggle, disabling player mode with a short reason when embed playback is unavailable. |
 | feature-012 | Done | feature-012-site-share-metadata-content-pages | site/metadata | Extend share metadata to blog posts and remaining public listing pages after the docs metadata slice is proven. |
 | feature-013 | Done | feature-013-md-doc-preview-image | docs/admin | Add an optional preview image to markdown docs and use it as the doc share metadata image when present. |
-| feature-014 | Planned | feature-014-video-comments-list-management | video/comments | Render public video detail comment lists and add signed-in own-comment edit/delete management. |
-| feature-020 | Planned | feature-020-video-search | video/search | Add broader video search across title, URL, channel, tags, notes, bookmarks, comments, and extracted metadata. |
-| feature-021 | Planned | feature-021-video-import-export | video/tools | Add import and export workflows for saved video links. |
-| feature-022 | Planned | feature-022-video-admin-bulk-actions | video/admin | Add bulk actions to the admin video table. |
-| feature-023 | Planned | feature-023-public-navbar-hydration-fix | navigation/public | Fix the public navbar hydration warning by auditing the `NavigationMenuList` HTML structure. |
-| feature-024 | Planned | feature-024-admin-table-pagination-rollout | admin/tables | Apply the shared client-side admin table pagination pattern to other admin tables after the video table slice proves it useful. |
-| feature-025 | Planned | feature-025-comments-page-workflow | comments/public | Turn the placeholder comments page into a functional comments workflow backed by the existing comment model. |
-| feature-026 | Planned | feature-026-saved-posts-admin-workflow | posts/admin | Define and implement the saved posts admin workflow currently represented by a placeholder. |
-| feature-027 | Planned | feature-027-video-duration-api-extraction | video/metadata | Add API-backed video duration extraction while preserving failure-tolerant video saves. |
-| feature-028 | Planned | feature-028-public-video-tag-filtering | video/tags | Add public `/videos` filtering by video tag once tag foundation behavior is proven, with tag UI visually distinct from channel badges. |
-| feature-029 | Planned | feature-029-video-tag-management | video/tags | Define dedicated admin tag management for rename, delete, merge, ordering, or visual tag metadata. |
-| feature-030 | Planned | feature-030-video-tag-confirm-dialog | video/tags | Replace the browser-native new-tag confirmation with an app-styled confirmation dialog. |
+| feature-014 | Planned | feature-014-video-comments-list-rendering | video/comments | Render public video detail comment lists with comment text, date, user avatar, and user display name. |
+| feature-015 | Planned | feature-015-video-comments-own-management | video/comments | Add signed-in own-comment edit and delete controls on public video detail comment lists. |
+| feature-016 | Planned | feature-016-video-comments-edit-delete-expiry | video/comments | Prevent editing and deleting own comments after they are more than 24 hours old. |
+| feature-017 | Planned | feature-017-file-sharing-structure | files/architecture | Define the project-wide file upload and public download structure for archives, videos, and other files before splitting it into implementation slices. |
+| feature-018 | Planned | feature-018-comments-domain-structure | comments/architecture | Define the project-wide comment structure across video comments, future post comments, and the standalone `/comments` page before expanding comments beyond videos. |
+| feature-019 | Planned | feature-019-content-tags-structure | content/tags | Define a project-wide tag structure that reuses the proven video tag workflow for posts and future content types, including the shared pieces worth extracting. |
+| feature-020 | Planned | feature-020-admin-database-backup-structure | admin/database | Define the admin-panel database backup structure, including full or partial backups, export formats, user-role audit, access controls, and restore boundaries before implementation slices. |
+| feature-040 | Planned | feature-040-video-search | video/search | Add broader video search across title, URL, channel, tags, notes, bookmarks, comments, and extracted metadata. |
+| feature-041 | Planned | feature-041-video-import-export | video/tools | Add import and export workflows for saved video links. |
+| feature-042 | Planned | feature-042-video-admin-bulk-actions | video/admin | Add bulk actions to the admin video table. |
+| feature-043 | Planned | feature-043-public-navbar-hydration-fix | navigation/public | Fix the public navbar hydration warning by auditing the `NavigationMenuList` HTML structure. |
+| feature-044 | Planned | feature-044-admin-table-pagination-rollout | admin/tables | Apply the shared client-side admin table pagination pattern to other admin tables after the video table slice proves it useful. |
+| feature-045 | Planned | feature-045-saved-posts-admin-workflow | posts/admin | Define and implement the saved posts admin workflow currently represented by a placeholder. |
+| feature-046 | Planned | feature-046-video-duration-api-extraction | video/metadata | Add API-backed video duration extraction while preserving failure-tolerant video saves. |
+| feature-047 | Planned | feature-047-public-video-tag-filtering | video/tags | Add public `/videos` filtering by video tag once tag foundation behavior is proven, with tag UI visually distinct from channel badges. |
+| feature-048 | Planned | feature-048-video-tag-management | video/tags | Define dedicated admin tag management for rename, delete, merge, ordering, or visual tag metadata. |
+| feature-049 | Planned | feature-049-video-tag-confirm-dialog | video/tags | Replace the browser-native new-tag confirmation with an app-styled confirmation dialog. |
