@@ -34,6 +34,6 @@
 
 - [x] 4.1 Run `openspec validate feature-016-admin-auth-roles-structure --strict`.
 - [x] 4.2 Run `openspec status --change feature-016-admin-auth-roles-structure`.
-- [ ] 4.3 Sync accepted specs before archive after review approval.
-- [ ] 4.4 Update `openspec/backlog.md` to `Done` only after accepted-spec sync and archive.
+- [x] 4.3 Sync accepted specs before archive after review approval.
+- [x] 4.4 Update `openspec/backlog.md` to `Done` only after accepted-spec sync and archive.
 - [x] 4.5 Run `git diff --check` after final OpenSpec edits.
