@@ -7,16 +7,18 @@
 
 ## 2. Role and Registration Decisions
 
-- [ ] 2.1 Define the initial role vocabulary for administrators and ordinary authenticated users.
-- [ ] 2.2 Decide how existing users should be defaulted or backfilled when roles are implemented.
-- [ ] 2.3 Decide whether public self-registration remains open, becomes invite-only, or remains open with non-admin defaults.
-- [ ] 2.4 Decide whether email verification is required before admin access.
-- [ ] 2.5 Decide whether Google and GitHub remain enabled long-term.
+- [ ] 2.1 Define the initial role vocabulary for administrators and ordinary authenticated creators.
+- [ ] 2.2 Define which `/admin` surfaces stay available to all authenticated users as creator-owned workspace features.
+- [ ] 2.3 Define which sensitive operations require an administrator role.
+- [ ] 2.4 Decide how existing users should be defaulted or backfilled when roles are implemented.
+- [ ] 2.5 Decide whether public self-registration remains open with ordinary user defaults, becomes invite-only, or uses another policy.
+- [ ] 2.6 Decide whether email verification is required before administrator access.
+- [ ] 2.7 Decide whether Google and GitHub remain enabled long-term.
 
 ## 3. Follow-up Slicing
 
 - [ ] 3.1 Define a role-storage implementation slice for the Prisma user role field and safe defaults.
-- [ ] 3.2 Define an admin route-gating slice for `requireAdmin()` and admin-only route enforcement.
+- [ ] 3.2 Define a sensitive-operation gating slice for `requireAdmin()` and administrator-only page/action enforcement.
 - [ ] 3.3 Define optional follow-up slices for invite flow, password reset, email verification, account settings, and provider/account cleanup.
 - [ ] 3.4 Confirm UploadThing site settings and sensitive file dashboards depend on role-gated admin access.
 

@@ -27,11 +27,17 @@ The system SHALL define the first role model before implementing role-gated admi
 
 - **WHEN** the role model is planned
 - **THEN** it SHALL define a minimal vocabulary for administrators and ordinary authenticated users
+- **AND** ordinary authenticated users SHALL retain access to creator-owned workspace features
 
 #### Scenario: Existing users receive safe defaults
 
 - **WHEN** a future role implementation adds persisted roles
 - **THEN** the plan SHALL define how existing users receive a safe default role
+
+#### Scenario: New users receive creator role by default
+
+- **WHEN** a future role implementation creates a new user through public registration or a social provider
+- **THEN** the planned authorization model SHALL assign the ordinary authenticated user role by default
 
 #### Scenario: Provider does not imply role
 
@@ -54,7 +60,13 @@ The system SHALL decide how registration should behave before roles are used for
 
 ### Requirement: Admin-only dependency boundaries
 
-The system SHALL define which future features depend on role-gated admin access.
+The system SHALL define which future features depend on role-gated admin access and which creator-owned surfaces stay session-gated.
+
+#### Scenario: Admin shell remains creator workspace
+
+- **WHEN** roles are planned for the admin area
+- **THEN** the plan SHALL keep creator-owned `/admin` workflows available to authenticated users
+- **AND** it SHALL NOT require the entire `/admin` layout to become administrator-only
 
 #### Scenario: Global settings wait for roles
 
@@ -66,3 +78,8 @@ The system SHALL define which future features depend on role-gated admin access.
 - **WHEN** the minimal file foundation is implemented before roles
 - **THEN** it MAY use the existing `/admin` session boundary
 - **AND** it SHALL NOT add sensitive global settings before role-gated admin access exists
+
+#### Scenario: Sensitive operations are role-gated
+
+- **WHEN** a future feature adds role management, all-user file views, database backups, global storage settings, or moderation of other users' content
+- **THEN** that feature SHALL require an administrator role check
