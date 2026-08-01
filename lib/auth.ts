@@ -2,6 +2,8 @@ import prisma from "./prisma";
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { nextCookies } from "better-auth/next-js";
+import { admin } from "better-auth/plugins";
+import { AUTH_ROLES } from "./auth-roles";
 
 export const auth = betterAuth({
   baseURL: process.env.BETTER_AUTH_URL,
@@ -23,5 +25,11 @@ export const auth = betterAuth({
       prompt: "select_account",
     },
   },
-  plugins: [nextCookies()],
+  plugins: [
+    admin({
+      defaultRole: AUTH_ROLES.USER,
+      adminRoles: [AUTH_ROLES.ADMIN],
+    }),
+    nextCookies(),
+  ],
 });
