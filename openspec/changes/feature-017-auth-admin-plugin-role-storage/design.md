@@ -2,7 +2,7 @@
 
 The accepted `admin-auth-roles-structure` spec defines `/admin` as an authenticated creator workspace and selects persisted first-party roles on the Prisma `User` model. It also names Better Auth Admin plugin conventions as the preferred role-storage direction, while deferring plugin installation to this implementation slice.
 
-The current app uses Better Auth with the Prisma adapter in `lib/auth.ts`, the client from `better-auth/react` in `lib/auth-client.ts`, and session helpers in `lib/auth-utils.ts`. Prisma stores users, sessions, accounts, and verification records in PostgreSQL. The current `User` model has no role field, and `requireAuth()` gates `/admin` by session presence only.
+The current app uses Better Auth with the Prisma adapter in `lib/auth.ts`, the client from `better-auth/react` in `lib/auth-client.ts`, and session helpers in `lib/auth-utils.ts`. Prisma stores users, sessions, accounts, and verification records in PostgreSQL. The current `User` model has no role, ban-status, or ban-metadata fields, `Session` has no impersonation field, and `requireAuth()` gates `/admin` by session presence only.
 
 Better Auth Admin plugin provides `user` and `admin` role conventions, admin endpoints such as set-role/list-users, and plugin schema fields. With the Prisma adapter, Better Auth schema generation can be used as a reference, but database migration must be applied through Prisma migrations, not Better Auth's built-in migrate flow.
 
@@ -13,6 +13,7 @@ Better Auth Admin plugin provides `user` and `admin` role conventions, admin end
 - Install Better Auth Admin plugin on the server auth configuration.
 - Add the matching admin client plugin where role/admin typing is useful.
 - Add persisted role storage to the existing Prisma `User` model with Better Auth-compatible role strings.
+- Add the other Admin plugin storage fields required by the installed plugin schema without exposing their UI capabilities.
 - Default existing users and new users to `user`.
 - Document the manual first-admin promotion path through Prisma Studio or SQL.
 - Add minimal server-only role helpers for future sensitive operations.
@@ -30,7 +31,9 @@ Better Auth Admin plugin provides `user` and `admin` role conventions, admin end
 
 ### Decision: Use Better Auth Admin plugin role storage
 
-Add the Better Auth Admin plugin to `lib/auth.ts` and align the persisted role field with the plugin's role conventions. The first active role values are `user` and `admin`; `editor` remains planned but unused.
+Add the Better Auth Admin plugin to `lib/auth.ts` and align the persisted auth storage fields with the installed plugin schema. The first active role values are `user` and `admin`; `editor` remains planned but unused.
+
+The installed plugin schema requires `User.role`, `User.banned`, `User.banReason`, `User.banExpires`, and `Session.impersonatedBy`. This slice should add those fields for compatibility, while keeping ban and impersonation behavior out of project UI scope.
 
 Alternative considered: add a project-owned Prisma enum without Better Auth Admin plugin. That would work for simple checks, but would split from Better Auth's role-management conventions and make future user-management features harder to adopt.
 
@@ -76,8 +79,8 @@ Alternative considered: build a user-management page now. That would pull in rol
 ## Migration Plan
 
 1. Update Better Auth server/client plugin configuration.
-2. Use Better Auth schema generation/docs as a reference for the required Admin plugin schema shape.
-3. Add the Prisma `User.role` field with default `user` and create a project-owned Prisma migration.
+2. Use Better Auth schema generation/docs and the installed plugin schema as a reference for the required Admin plugin schema shape.
+3. Add `User.role`, `User.banned`, `User.banReason`, `User.banExpires`, and `Session.impersonatedBy` with safe defaults/nullability and create a project-owned Prisma migration.
 4. Regenerate the Prisma client.
 5. Add minimal role constants and server-only helpers.
 6. Validate that ordinary authenticated users can still enter creator-owned `/admin` routes.

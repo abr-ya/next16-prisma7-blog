@@ -22,12 +22,18 @@ The system SHALL integrate Better Auth Admin plugin as the first auth-owned role
 
 ### Requirement: Persisted role storage
 
-The system SHALL store first-party roles on the existing Prisma `User` model using Better Auth-compatible role strings.
+The system SHALL store first-party roles and required Admin plugin fields on the existing Prisma auth models using Better Auth-compatible field shapes.
 
 #### Scenario: User model has role field
 
 - **WHEN** the Prisma schema is updated for role storage
 - **THEN** the `User` model SHALL include a persisted role field compatible with Better Auth Admin plugin conventions
+
+#### Scenario: Admin plugin fields are persisted
+
+- **WHEN** the Prisma schema is updated for Admin plugin compatibility
+- **THEN** the `User` model SHALL include the Admin plugin user fields required by the installed Better Auth version
+- **AND** the `Session` model SHALL include the Admin plugin session fields required by the installed Better Auth version
 
 #### Scenario: Existing users default safely
 

@@ -1,15 +1,15 @@
 ## 1. Schema and Plugin Preparation
 
-- [ ] 1.1 Review the Better Auth Admin plugin schema requirements against the current `better-auth` version.
-- [ ] 1.2 Confirm the Prisma `User` model changes needed for plugin-compatible role storage.
-- [ ] 1.3 Decide whether any Admin plugin session fields are required for this slice or can be deferred.
+- [x] 1.1 Review the Better Auth Admin plugin schema requirements against the current `better-auth` version.
+- [x] 1.2 Confirm the Prisma `User` model changes needed for plugin-compatible role and ban-status storage.
+- [x] 1.3 Decide whether any Admin plugin `Session` fields are required for this slice or can be deferred.
 
 ## 2. Prisma Role Storage
 
-- [ ] 2.1 Add a Better Auth-compatible role field to the Prisma `User` model with safe `user` default.
-- [ ] 2.2 Create a Prisma migration that backfills existing users to `user`.
-- [ ] 2.3 Regenerate the Prisma client through the project flow.
-- [ ] 2.4 Do not edit `generated/prisma` manually.
+- [x] 2.1 Add Better Auth-compatible Admin plugin fields to the Prisma auth models with safe defaults/nullability.
+- [x] 2.2 Create a Prisma migration that backfills existing users to `user` and `banned = false`.
+- [x] 2.3 Regenerate the Prisma client through the project flow.
+- [x] 2.4 Do not edit `generated/prisma` manually.
 
 ## 3. Better Auth Integration
 
@@ -35,7 +35,7 @@
 ## 6. Validation
 
 - [ ] 6.1 Run `openspec validate feature-017-auth-admin-plugin-role-storage --strict`.
-- [ ] 6.2 Run Prisma schema/client validation after the schema change.
+- [x] 6.2 Run Prisma schema/client validation after the schema change.
 - [ ] 6.3 Run `npm run tsc`.
 - [ ] 6.4 Run `npm run lint`.
 - [ ] 6.5 Run targeted ESLint for changed files outside root lint coverage when needed.
