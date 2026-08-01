@@ -1,19 +1,35 @@
 "use client";
 
+import { format } from "date-fns";
 import { MessageCircle, Send } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 
-import { createVideoComment } from "@/app/_data/video-comments";
-import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Spinner } from "@/components/index";
+import { createVideoComment, type PublicVideoComment } from "@/app/_data/video-comments";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+  Button,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  Spinner,
+} from "@/components/index";
 
 const MAX_COMMENT_CONTENT_LENGTH = 2000;
 
+type VideoCommentListItem = Omit<PublicVideoComment, "createdAt"> & {
+  createdAt: string;
+};
+
 type VideoCommentComposerProps = {
   videoId: string;
-  initialCommentCount: number;
+  initialComments: VideoCommentListItem[];
   isAuthenticated: boolean;
 };
 
@@ -24,10 +40,28 @@ const formatCommentCount = (count: number) => {
   return `${count} comments`;
 };
 
-export const VideoCommentComposer = ({ videoId, initialCommentCount, isAuthenticated }: VideoCommentComposerProps) => {
+const avatarFallbackText = (name?: string | null): string => {
+  const normalizedName = name?.trim();
+
+  if (!normalizedName) return "?";
+
+  const parts = normalizedName.split(/\s+/).filter(Boolean);
+
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[1][0]).toUpperCase();
+  }
+
+  const word = parts[0];
+
+  return word.length >= 2 ? word.slice(0, 2).toUpperCase() : word[0].toUpperCase();
+};
+
+const formatCommentDate = (value: string) => format(new Date(value), "PPP");
+
+export const VideoCommentComposer = ({ videoId, initialComments, isAuthenticated }: VideoCommentComposerProps) => {
   const router = useRouter();
   const [content, setContent] = useState("");
-  const [commentCount, setCommentCount] = useState(initialCommentCount);
+  const [commentCount, setCommentCount] = useState(initialComments.length);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const trimmedContent = content.trim();
   const isSubmitDisabled = isSubmitting || trimmedContent.length === 0;
@@ -61,7 +95,7 @@ export const VideoCommentComposer = ({ videoId, initialCommentCount, isAuthentic
             <MessageCircle className="size-5" />
             Comments
           </CardTitle>
-          <CardDescription>{formatCommentCount(commentCount)}. Comment list coming soon.</CardDescription>
+          <CardDescription>{formatCommentCount(commentCount)}</CardDescription>
         </div>
         {!isAuthenticated ? (
           <Button asChild variant="outline" className="w-full sm:w-auto">
@@ -69,8 +103,44 @@ export const VideoCommentComposer = ({ videoId, initialCommentCount, isAuthentic
           </Button>
         ) : null}
       </CardHeader>
-      {isAuthenticated ? (
-        <CardContent>
+      <CardContent className="grid gap-5">
+        {initialComments.length > 0 ? (
+          <div className="grid gap-3">
+            {initialComments.map((comment) => {
+              const authorName = comment.user.name || "Anonymous";
+
+              return (
+                <article key={comment.id} className="rounded-md border p-4">
+                  <div className="flex min-w-0 gap-3">
+                    <Avatar className="size-9 shrink-0 rounded-full">
+                      {comment.user.image ? (
+                        <AvatarImage src={comment.user.image} alt={`${authorName}'s avatar`} />
+                      ) : null}
+                      <AvatarFallback delayMs={comment.user.image ? 600 : 0}>
+                        {avatarFallbackText(authorName)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="grid min-w-0 gap-2">
+                      <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                        <h2 className="text-sm font-semibold leading-none">{authorName}</h2>
+                        <time className="text-xs text-muted-foreground" dateTime={comment.createdAt}>
+                          {formatCommentDate(comment.createdAt)}
+                        </time>
+                      </div>
+                      <p className="whitespace-pre-wrap break-words text-sm text-muted-foreground">{comment.content}</p>
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="rounded-md border border-dashed px-4 py-5 text-sm text-muted-foreground">
+            No comments yet. Be the first to start the discussion.
+          </div>
+        )}
+
+        {isAuthenticated ? (
           <form className="grid gap-3" onSubmit={handleSubmit}>
             <div className="grid gap-1.5">
               <label className="text-sm font-medium" htmlFor="video-comment-content">
@@ -96,8 +166,8 @@ export const VideoCommentComposer = ({ videoId, initialCommentCount, isAuthentic
               </Button>
             </div>
           </form>
-        </CardContent>
-      ) : null}
+        ) : null}
+      </CardContent>
     </Card>
   );
 };

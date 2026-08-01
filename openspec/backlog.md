@@ -36,13 +36,14 @@ Use the same `feature-<3 digits>-<area>-<short-action>` name for the OpenSpec ch
 | feature-011 | Done | feature-011-video-preview-player-toggle | video/detail | Always show the video preview on public video detail pages and add a preview/player toggle, disabling player mode with a short reason when embed playback is unavailable. |
 | feature-012 | Done | feature-012-site-share-metadata-content-pages | site/metadata | Extend share metadata to blog posts and remaining public listing pages after the docs metadata slice is proven. |
 | feature-013 | Done | feature-013-md-doc-preview-image | docs/admin | Add an optional preview image to markdown docs and use it as the doc share metadata image when present. |
-| feature-014 | Planned | feature-014-video-comments-list-rendering | video/comments | Render public video detail comment lists with comment text, date, user avatar, and user display name. |
+| feature-014 | Done | feature-014-video-comments-list-rendering | video/comments | Render public video detail comment lists with comment text, date, user avatar, and user display name. |
 | feature-015 | Planned | feature-015-video-comments-own-management | video/comments | Add signed-in own-comment edit and delete controls on public video detail comment lists. |
 | feature-016 | Planned | feature-016-video-comments-edit-delete-expiry | video/comments | Prevent editing and deleting own comments after they are more than 24 hours old. |
 | feature-017 | Planned | feature-017-file-sharing-structure | files/architecture | Define the project-wide file upload and public download structure for archives, videos, and other files before splitting it into implementation slices. |
 | feature-018 | Planned | feature-018-comments-domain-structure | comments/architecture | Define the project-wide comment structure across video comments, future post comments, and the standalone `/comments` page before expanding comments beyond videos. |
 | feature-019 | Planned | feature-019-content-tags-structure | content/tags | Define a project-wide tag structure that reuses the proven video tag workflow for posts and future content types, including the shared pieces worth extracting. |
 | feature-020 | Planned | feature-020-admin-database-backup-structure | admin/database | Define the admin-panel database backup structure, including full or partial backups, export formats, user-role audit, access controls, and restore boundaries before implementation slices. |
+| feature-021 | Planned | feature-021-comment-link-handling-structure | comments/links | Analyze comment link handling and define whether plain URLs in comments should become safe clickable links immediately, including parsing, sanitization, and rendering rules. |
 | feature-040 | Planned | feature-040-video-search | video/search | Add broader video search across title, URL, channel, tags, notes, bookmarks, comments, and extracted metadata. |
 | feature-041 | Planned | feature-041-video-import-export | video/tools | Add import and export workflows for saved video links. |
 | feature-042 | Planned | feature-042-video-admin-bulk-actions | video/admin | Add bulk actions to the admin video table. |
