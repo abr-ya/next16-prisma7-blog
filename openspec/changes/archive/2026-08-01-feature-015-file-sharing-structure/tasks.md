@@ -41,6 +41,6 @@
 - [x] 6.4 Run `npm run tsc`.
 - [x] 6.5 Run `npm run lint` plus targeted ESLint for changed files outside `app/`.
 - [x] 6.6 Ask the user to run `npm run build` locally before closeout because this slice touches routing, Prisma, and UploadThing; user-provided build output passed and manual `/admin/files` upload check passed.
-- [ ] 6.7 Sync accepted specs before archive after review approval.
-- [ ] 6.8 Update `openspec/backlog.md` to `Done` only after accepted-spec sync and archive.
-- [ ] 6.9 Run `git diff --check` after final OpenSpec edits.
+- [x] 6.7 Sync accepted specs before archive after review approval.
+- [x] 6.8 Update `openspec/backlog.md` to `Done` only after accepted-spec sync and archive.
+- [x] 6.9 Run `git diff --check` after final OpenSpec edits.
