@@ -63,12 +63,23 @@ The system SHALL enforce the first general-file quota at the application backend
 
 ### Requirement: Minimal admin files page
 
-The system SHALL provide a minimal admin files page for the first file foundation.
+The system SHALL provide a minimal admin files dashboard for the first file foundation.
 
 #### Scenario: Admin sees own file count
 
 - **WHEN** an authenticated admin opens `/admin/files`
 - **THEN** the page SHALL display the current user's stored file count
+
+#### Scenario: Admin sees tracked uploaded files
+
+- **WHEN** an authenticated admin opens `/admin/files`
+- **THEN** the page SHALL display a simple list of first-party file assets recorded by the new general file route
+
+#### Scenario: Admin sees UploadThing usage points
+
+- **WHEN** an authenticated admin opens `/admin/files`
+- **THEN** the page SHALL display the known UploadThing usage points in the current project
+- **AND** it SHALL distinguish tracked general file assets from legacy image/upload URL surfaces that are not migrated in this slice
 
 #### Scenario: Admin can upload from files page
 

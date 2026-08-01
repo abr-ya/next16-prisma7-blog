@@ -31,6 +31,7 @@ model User {
   postImages     PostImage[]
   videos         Video[]
   videoBookmarks VideoBookmark[]
+  fileAssets     FileAsset[]
 
   @@unique([email])
   @@map("user")
@@ -161,6 +162,59 @@ enum PostStatus {
 }
 
 // Updated Posts model - finish
+
+// File assets - start
+enum FileAssetProvider {
+  UPLOADTHING
+}
+
+enum FileAssetPurpose {
+  ADMIN_UPLOAD
+  ARCHIVE_ATTACHMENT
+  VIDEO_ATTACHMENT
+  PREVIEW_IMAGE
+  RICH_TEXT_IMAGE
+  STANDALONE_SHARED_FILE
+}
+
+enum FileAssetVisibility {
+  PRIVATE
+  UNLISTED
+  PUBLIC
+}
+
+enum FileAssetStatus {
+  ACTIVE
+  DETACHED
+  PENDING_DELETE
+  DELETED
+}
+
+model FileAsset {
+  id           String              @id @default(uuid())
+  provider     FileAssetProvider   @default(UPLOADTHING)
+  fileKey      String              @unique
+  customId     String?
+  url          String
+  name         String
+  mimeType     String
+  sizeBytes    Int
+  purpose      FileAssetPurpose    @default(ADMIN_UPLOAD)
+  visibility   FileAssetVisibility @default(PRIVATE)
+  status       FileAssetStatus     @default(ACTIVE)
+  ownerUserId  String
+  owner        User                @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
+  uploadedAt   DateTime            @default(now())
+  updatedAt    DateTime            @default(now()) @updatedAt
+  deletedAt    DateTime?
+
+  @@index([ownerUserId, status])
+  @@index([purpose])
+  @@index([visibility])
+  @@index([uploadedAt])
+}
+
+// File assets - finish
 
 // Link - start
 model Link {

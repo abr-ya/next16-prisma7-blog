@@ -127,7 +127,9 @@ export const VideoCommentComposer = ({ videoId, initialComments, isAuthenticated
                           {formatCommentDate(comment.createdAt)}
                         </time>
                       </div>
-                      <p className="whitespace-pre-wrap break-words text-sm text-muted-foreground">{comment.content}</p>
+                      <p className="whitespace-pre-wrap wrap-break-word text-sm text-muted-foreground">
+                        {comment.content}
+                      </p>
                     </div>
                   </div>
                 </article>
