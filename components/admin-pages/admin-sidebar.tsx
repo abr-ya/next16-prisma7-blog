@@ -1,4 +1,4 @@
-import { Calendar, ChartPie, ExternalLink, FileText, House, Inbox, ListVideo, Search, Video } from "lucide-react";
+import { Calendar, ChartPie, ExternalLink, File, FileText, House, Inbox, ListVideo, Search, Video } from "lucide-react";
 
 import {
   Sidebar,
@@ -43,6 +43,11 @@ const items = [
     title: "MD Docs",
     url: "/admin/md-docs",
     icon: FileText,
+  },
+  {
+    title: "Files",
+    url: "/admin/files",
+    icon: File,
   },
   {
     title: "Videos",
