@@ -1,4 +1,16 @@
-import { Calendar, ChartPie, ExternalLink, File, FileText, House, Inbox, ListVideo, Search, Video } from "lucide-react";
+import {
+  Calendar,
+  ChartPie,
+  Database,
+  ExternalLink,
+  File,
+  FileText,
+  House,
+  Inbox,
+  ListVideo,
+  Search,
+  Video,
+} from "lucide-react";
 
 import {
   Sidebar,
@@ -50,6 +62,12 @@ const items = [
     icon: File,
   },
   {
+    title: "Database",
+    url: "/admin/database",
+    icon: Database,
+    adminOnly: true,
+  },
+  {
     title: "Videos",
     url: "/admin/videos",
     icon: Video,
@@ -68,9 +86,10 @@ const items = [
 
 interface AdminSidebarProps {
   user: IUser | null;
+  isAdmin?: boolean;
 }
 
-export const AdminSidebar = ({ user }: AdminSidebarProps) => (
+export const AdminSidebar = ({ user, isAdmin = false }: AdminSidebarProps) => (
   <Sidebar>
     <SidebarContent>
       <SidebarGroup>
@@ -80,16 +99,18 @@ export const AdminSidebar = ({ user }: AdminSidebarProps) => (
           <div className="mb-3 text-sm text-muted-foreground">{user ? `Hello, ${user.name}!` : "Not signed in"}</div>
 
           <SidebarMenu>
-            {items.map((item) => (
-              <SidebarMenuItem key={item.title}>
-                <SidebarMenuButton asChild>
-                  <a href={item.url}>
-                    <item.icon />
-                    <span>{item.title}</span>
-                  </a>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            ))}
+            {items
+              .filter((item) => !item.adminOnly || isAdmin)
+              .map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild>
+                    <a href={item.url}>
+                      <item.icon />
+                      <span>{item.title}</span>
+                    </a>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
           </SidebarMenu>
         </SidebarGroupContent>
       </SidebarGroup>

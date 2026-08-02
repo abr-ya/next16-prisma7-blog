@@ -20,6 +20,12 @@ The system SHALL define database backup controls as sensitive administrator-only
 - **WHEN** database backup functionality is implemented
 - **THEN** public routes SHALL NOT expose backup controls, backup manifests, generated backup files, or restore controls
 
+#### Scenario: Structure page is admin-only
+
+- **WHEN** the first database backup structure page is implemented
+- **THEN** it SHALL render only after server-side `admin` role authorization succeeds
+- **AND** it SHALL describe planned backup scopes, metadata, audit, and restore boundaries without generating backup artifacts
+
 ### Requirement: Backup scopes
 
 The system SHALL define full and partial database backup scopes before backup generation is implemented.
@@ -103,6 +109,11 @@ The system SHALL treat database restore as a separate high-risk capability.
 ### Requirement: Implementation follow-up boundaries
 
 The system SHALL split database backup work into small implementation slices after the structure is accepted.
+
+#### Scenario: First slice can publish a structure page
+
+- **WHEN** this structure slice is implemented
+- **THEN** it MAY add an admin-only informational database backup page that documents the contract before executable backup operations exist
 
 #### Scenario: First implementation can generate backups manually
 
