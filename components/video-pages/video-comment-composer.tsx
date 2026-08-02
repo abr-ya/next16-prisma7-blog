@@ -8,6 +8,7 @@ import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 
 import { createVideoComment, type PublicVideoComment } from "@/app/_data/video-comments";
+import { CommentText } from "@/components/common/comment-text";
 import {
   Avatar,
   AvatarFallback,
@@ -127,9 +128,10 @@ export const VideoCommentComposer = ({ videoId, initialComments, isAuthenticated
                           {formatCommentDate(comment.createdAt)}
                         </time>
                       </div>
-                      <p className="whitespace-pre-wrap wrap-break-word text-sm text-muted-foreground">
-                        {comment.content}
-                      </p>
+                      <CommentText
+                        value={comment.content}
+                        className="whitespace-pre-wrap wrap-break-word text-sm text-muted-foreground"
+                      />
                     </div>
                   </div>
                 </article>
