@@ -51,8 +51,10 @@ Use the same `feature-<3 digits>-<area>-<short-action>` name for the OpenSpec ch
 | feature-026 | Planned | feature-026-video-comments-edit-delete-expiry | video/comments | Prevent editing and deleting own comments after they are more than 24 hours old. |
 | feature-027 | Planned | feature-027-email-password-account-flow | auth/email | Finish first-party email/password account creation and login with form UX, mailbox-backed email verification, and password reset boundaries. |
 | feature-028 | Planned | feature-028-github-account-flow | auth/github | Finish GitHub account creation and sign-in with provider configuration, callback handling, email availability checks, and account-linking boundaries. |
-| feature-029 | Planned | feature-029-content-tags-post-normalization | content/tags | Migrate legacy `Post.tags` string-array values into shared content tag records and post/tag assignments with a compatibility reader and manual review only for ambiguous conflicts. |
+| feature-029 | Planned | feature-029-content-tags-post-adoption | content/tags | Move post tag reads and writes onto shared content tag records and post/tag assignments while preserving legacy `Post.tags` readability without bulk-migrating old values yet. |
+| feature-030 | Planned | feature-030-content-tags-legacy-post-migration | content/tags | Review legacy `Post.tags` values, merge or drop old tag variants as needed, then migrate approved values into shared content tags with an auditable compatibility boundary. |
 | feature-031 | Planned | feature-031-video-comments-own-management | video/comments | Add signed-in own-comment edit and delete controls on public video detail comment lists after earlier comment follow-ups are prioritized. |
+| feature-032 | Planned | feature-032-content-tags-admin-management | content/tags | Add content-wide admin tag management for shared tags, including rename, merge, delete or detach boundaries, and usage visibility by content type. |
 | feature-040 | Planned | feature-040-video-search | video/search | Add broader video search across title, URL, channel, tags, notes, bookmarks, comments, and extracted metadata. |
 | feature-041 | Planned | feature-041-video-import-export | video/tools | Add import and export workflows for saved video links. |
 | feature-042 | Planned | feature-042-video-admin-bulk-actions | video/admin | Add bulk actions to the admin video table. |
@@ -61,5 +63,5 @@ Use the same `feature-<3 digits>-<area>-<short-action>` name for the OpenSpec ch
 | feature-045 | Planned | feature-045-saved-posts-admin-workflow | posts/admin | Define and implement the saved posts admin workflow currently represented by a placeholder. |
 | feature-046 | Planned | feature-046-video-duration-api-extraction | video/metadata | Add API-backed video duration extraction while preserving failure-tolerant video saves. |
 | feature-047 | Planned | feature-047-public-video-tag-filtering | video/tags | Add public `/videos` filtering by video tag once tag foundation behavior is proven, with tag UI visually distinct from channel badges. |
-| feature-048 | Planned | feature-048-video-tag-management | video/tags | Define dedicated admin tag management for rename, delete, merge, ordering, or visual tag metadata. |
+| feature-048 | Cancelled | feature-048-video-tag-management | video/tags | Superseded by `feature-032-content-tags-admin-management` so tag management is content-wide instead of video-only. |
 | feature-049 | Planned | feature-049-video-tag-confirm-dialog | video/tags | Replace the browser-native new-tag confirmation with an app-styled confirmation dialog. |

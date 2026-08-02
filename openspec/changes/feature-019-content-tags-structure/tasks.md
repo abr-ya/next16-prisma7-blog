@@ -8,7 +8,7 @@
 ## 2. Planning Metadata
 
 - [ ] 2.1 Update `openspec/backlog.md` so `feature-019-content-tags-structure` reflects the current OpenSpec phase.
-- [ ] 2.2 Add a follow-up backlog candidate for automatic post tag normalization without expanding this architecture feature.
+- [ ] 2.2 Add follow-up backlog candidates for post shared-tag adoption, controlled legacy post tag migration, and content-wide admin tag management without expanding this architecture feature.
 
 ## 3. Validation
 

@@ -48,11 +48,17 @@ Video tags already prove the core behavior: admins can create/select reusable ta
 
 Alternative considered: rewrite videos to shared tags before touching posts. That may be useful later, but it should be a separate compatibility slice after the shared contract is accepted.
 
-### Treat `Post.tags String[]` As Legacy-Compatible Data
+### Split Post Adoption From Legacy Post Tag Migration
 
-Current post tags should remain readable and editable until a dedicated migration exists. Plan that migration as `feature-029-content-tags-post-normalization`: it should read existing string tags, normalize them into shared tag records, create post/tag assignments, and keep a rollback path or compatibility reader until the array can be retired safely. Manual cleanup should be reserved for ambiguous slug/name conflicts, not for routine tag transfer.
+Current post tags should remain readable and editable while posts move to the shared tag system. Plan post adoption as a separate implementation slice that adds shared post/tag storage and teaches post reads/writes to use it for new edits. Plan legacy `Post.tags` review and transfer as a later controlled migration slice so existing tag values can be inspected, merged, renamed, or dropped before they become canonical shared tags.
 
-Alternative considered: leave posts on string arrays indefinitely. That keeps implementation cheap but blocks shared tag browsing, tag reuse, and consistent public/admin behavior.
+Alternative considered: combine post adoption and old tag migration in one slice. That is faster, but it gives less control over legacy tag cleanup and makes it harder to review ambiguous tag values before they become shared records.
+
+### Manage Tags In A Content-Wide Admin Surface
+
+Dedicated tag management should be planned as a content-wide admin feature, not a video-only tool. It should eventually handle rename, merge, delete/detach, usage counts by content type, and review states for legacy imports while preserving content-specific visibility and ownership rules.
+
+Alternative considered: build separate tag managers for videos and posts. That matches today's storage split, but it would duplicate workflows exactly where the project is trying to introduce a shared tag domain.
 
 ### Keep Public Visibility Attached To Content, Not Tags
 
@@ -63,7 +69,7 @@ Alternative considered: put visibility directly on tags. That is useful for mode
 ## Risks / Trade-offs
 
 - Schema drift between old video tags and future shared tags -> Mitigation: keep video behavior as the reference contract and require compatibility tests before any video migration.
-- Post tag migration could lose spelling or casing choices -> Mitigation: define normalized slug identity while preserving display `name` from first or latest accepted canonical value; require manual review only for ambiguous conflicts.
+- Post tag migration could lose spelling, casing, or intentionally separate meanings -> Mitigation: split legacy migration into a controlled review feature where ambiguous tags can be merged, renamed, or dropped before transfer.
 - Shared tags may become too broad too early -> Mitigation: keep this feature architecture-only and split concrete implementation into follow-up slices.
 - Public tag surfaces may leak private content counts -> Mitigation: require all public tag reads to join through public content filters, not raw assignment totals.
 - Typed assignment tables add more schema objects than a polymorphic join -> Mitigation: accept the small schema cost in exchange for referential integrity and simpler Prisma queries.
@@ -72,9 +78,11 @@ Alternative considered: put visibility directly on tags. That is useful for mode
 
 1. Accept this architecture as `content-tags` without runtime changes.
 2. Add a follow-up shared helper slice that extracts generic normalization/input helpers while preserving `lib/video-tags.ts` compatibility.
-3. Add `feature-029-content-tags-post-normalization` to create shared tag records and typed post assignments from existing `Post.tags`.
-4. Add public/admin behavior slices only after data compatibility is proven.
-5. Consider migrating video storage from `VideoTag` to shared tags only after post normalization and helper extraction are stable.
+3. Add a post adoption slice that creates shared tag records and typed post assignments for new/edited post tags while preserving legacy `Post.tags` readability.
+4. Add a controlled legacy post tag review/migration slice after post adoption so old tags can be inspected, merged, removed, and then transferred.
+5. Add a content-wide admin tag management slice after the shared tag model exists.
+6. Add public filtering/tag pages only after data compatibility and admin management boundaries are proven.
+7. Consider migrating video storage from `VideoTag` to shared tags only after post adoption and helper extraction are stable.
 
 Rollback for future implementation slices should preserve original string or video-tag data until the replacement readers and writes are validated.
 
