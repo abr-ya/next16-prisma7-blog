@@ -98,6 +98,24 @@ The system SHALL render comments attached to public videos on public video detai
 - **WHEN** a visitor opens a private or missing video through the public video route
 - **THEN** the system SHALL NOT expose comments for that private or missing video
 
+#### Scenario: Visitor sees supported comment URLs as links
+
+- **WHEN** a public video comment contains a supported plain URL beginning with `https://`, `http://`, or `www.`
+- **THEN** the comment text SHALL render that URL as an inline clickable link
+- **AND** ordinary non-link text SHALL remain visible in its original order
+
+#### Scenario: Visitor sees unsupported comment URL candidates as text
+
+- **WHEN** a public video comment contains an unsupported or invalid URL candidate
+- **THEN** the comment text SHALL render that candidate as plain text
+- **AND** the comment list SHALL remain usable
+
+#### Scenario: Visitor sees safe generated comment links
+
+- **WHEN** a supported URL renders as a link in public video comment text
+- **THEN** the generated anchor SHALL use `target="_blank"`
+- **AND** the generated anchor SHALL use `rel="nofollow ugc noopener noreferrer"`
+
 ### Requirement: Authenticated video comment creation UI
 
 The system SHALL let authenticated users create a plain-text comment from public video detail pages.
