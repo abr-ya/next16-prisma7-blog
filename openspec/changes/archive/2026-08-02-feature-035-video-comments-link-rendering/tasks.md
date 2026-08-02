@@ -13,8 +13,9 @@
 
 ## 3. Validation
 
-- [ ] 3.1 Run `openspec validate feature-035-video-comments-link-rendering --strict`.
+- [x] 3.1 Run `openspec validate feature-035-video-comments-link-rendering --strict`.
 - [x] 3.2 Run `npm run tsc`.
 - [x] 3.3 Run targeted ESLint for changed component/helper files.
 - [x] 3.4 Run `git diff --check`.
-- [ ] 3.5 Ask for or perform a browser check covering supported URLs, unsupported schemes, trailing punctuation, and long URLs in video comments.
+- [x] 3.5 Run `npm run build`.
+- [x] 3.6 Ask for or perform a browser check covering supported URLs, unsupported schemes, trailing punctuation, and long URLs in video comments.
