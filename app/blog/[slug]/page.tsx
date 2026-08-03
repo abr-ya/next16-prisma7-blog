@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 
 import { getPostBySlug, updatePostViews } from "@/app/_data/posts";
 import { IPostDetails } from "@/app/_interfaces/post.interface";
-import { LinkBlock, PostUserAndCategory, RichTextViewer } from "@/components/index";
+import { Badge, LinkBlock, PostUserAndCategory, RichTextViewer } from "@/components/index";
 import { authSession } from "@/lib/auth-utils";
 import { buildPageMetadata, getTextMetadataDescription } from "@/lib/site-metadata";
 
@@ -47,6 +47,9 @@ const PostDetailPage = async ({ params }: BlogPostPageProps) => {
 
   if (!post) return null;
 
+  const hasTags = post.tags.length > 0;
+  const hasConnectedLinks = post.links.length > 0;
+
   return (
     <div className="w-full flex flex-col items-center p-6 md:p-2">
       <div className="flex max-w-6xl flex-col gap-6 justify-center">
@@ -75,17 +78,27 @@ const PostDetailPage = async ({ params }: BlogPostPageProps) => {
         {/* RichTextViewer */}
         <RichTextViewer content={post?.content} />
 
-        <div className="flex gap-2 py-6 flex-wrap">todo: tags</div>
-        {/* Links */}
-        {session?.user.id ? (
-          <div className="flex flex-col gap-2 py-6">
-            <h3 className="text-xl font-semibold">Connected links:</h3>
-            {post.links.map((pl) => (
-              <LinkBlock key={pl.linkId} pl={pl} userID={session?.user.id} />
+        {hasTags ? (
+          <div className="flex gap-2 py-6 flex-wrap">
+            {post.tags.map((tag) => (
+              <Badge key={tag} variant="secondary">
+                #{tag}
+              </Badge>
             ))}
           </div>
-        ) : post.links.length ? (
-          <div className="py-6">Log in to see links</div>
+        ) : null}
+        {/* Links */}
+        {hasConnectedLinks ? (
+          session?.user.id ? (
+            <div className="flex flex-col gap-2 py-6">
+              <h3 className="text-xl font-semibold">Connected links:</h3>
+              {post.links.map((pl) => (
+                <LinkBlock key={pl.linkId} pl={pl} userID={session.user.id} />
+              ))}
+            </div>
+          ) : (
+            <div className="py-6">Log in to see links</div>
+          )
         ) : null}
       </div>
     </div>
