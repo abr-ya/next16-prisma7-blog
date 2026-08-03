@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { getPublicVideoBookmarks } from "@/app/_data/video-bookmarks";
-import { getPublicVideoComments } from "@/app/_data/video-comments";
+import { getPublicVideoCommentListItems } from "@/app/_data/video-comments";
 import { getPublicVideoById } from "@/app/_data/videos";
 import { Badge, Button } from "@/components/index";
 import { VideoBookmarkManager } from "@/components/video-pages/video-bookmark-manager";
@@ -50,7 +50,7 @@ const PublicVideoPage = async ({ params }: PublicVideoPageProps) => {
 
   const session = await authSession();
   const bookmarks = session ? await getPublicVideoBookmarks(video.id) : [];
-  const comments = await getPublicVideoComments(video.id);
+  const comments = await getPublicVideoCommentListItems(video.id);
   const providerLabel = formatVideoProvider(video.provider);
   const durationLabel = formatVideoDuration(video.durationSeconds);
 
@@ -108,14 +108,7 @@ const PublicVideoPage = async ({ params }: PublicVideoPageProps) => {
             <VideoBookmarkManager videoId={video.id} videoUrl={video.url} initialBookmarks={bookmarks} />
           ) : null}
 
-          <VideoCommentComposer
-            videoId={video.id}
-            initialComments={comments.map((comment) => ({
-              ...comment,
-              createdAt: comment.createdAt.toISOString(),
-            }))}
-            isAuthenticated={Boolean(session)}
-          />
+          <VideoCommentComposer videoId={video.id} initialComments={comments} isAuthenticated={Boolean(session)} />
         </div>
       </article>
     </main>

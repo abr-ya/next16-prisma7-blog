@@ -79,6 +79,18 @@ The system SHALL define a normalized comment list item contract for future share
 - **WHEN** video, post, or future document comments are queried
 - **THEN** target-specific helpers SHALL normalize raw records into the shared comment list item contract
 
+#### Scenario: Runtime contract is available to implementation code
+
+- **WHEN** shared comment foundation code is implemented
+- **THEN** the system SHALL provide a reusable runtime comment list item contract
+- **AND** the contract SHALL include comment id, content, serialized creation timestamp, author display data, and target metadata
+
+#### Scenario: Existing video comments normalize to shared contract
+
+- **WHEN** public video comments are prepared for UI consumption
+- **THEN** target-specific helpers SHALL be able to normalize those comments into the shared comment list item contract
+- **AND** each normalized video comment SHALL include a target link to its public video detail page
+
 ### Requirement: Comment ownership and moderation boundaries
 
 The system SHALL define ownership and moderation boundaries for project-wide comments.
