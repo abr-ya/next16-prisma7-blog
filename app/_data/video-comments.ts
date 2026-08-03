@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import type { Prisma } from "@/generated/prisma/client";
 import { authSession } from "@/lib/auth-utils";
+import type { CommentListItem } from "@/lib/comments";
 
 const MAX_COMMENT_CONTENT_LENGTH = 2000;
 
@@ -27,6 +28,13 @@ export type PublicVideoComment = Prisma.CommentGetPayload<{
         image: true;
       };
     };
+    video: {
+      select: {
+        id: true;
+        title: true;
+        thumbnailUrl: true;
+      };
+    };
   };
 }>;
 
@@ -41,6 +49,13 @@ const videoCommentSelect = {
       id: true,
       name: true,
       image: true,
+    },
+  },
+  video: {
+    select: {
+      id: true,
+      title: true,
+      thumbnailUrl: true,
     },
   },
 } satisfies Prisma.CommentSelect;
@@ -97,6 +112,33 @@ export const getPublicVideoComments = async (videoId: string): Promise<PublicVid
     console.error({ err });
     throw new Error("Something went wrong (getPublicVideoComments)");
   }
+};
+
+const toVideoCommentListItem = (comment: PublicVideoComment): CommentListItem => {
+  const videoId = comment.video?.id ?? comment.videoId ?? "";
+
+  return {
+    id: comment.id,
+    content: comment.content,
+    createdAt: comment.createdAt.toISOString(),
+    author: {
+      id: comment.user.id,
+      displayName: comment.user.name,
+      image: comment.user.image,
+    },
+    target: {
+      type: "video",
+      title: comment.video?.title ?? "Video",
+      href: `/videos/${videoId}`,
+      previewImageUrl: comment.video?.thumbnailUrl ?? null,
+    },
+  };
+};
+
+export const getPublicVideoCommentListItems = async (videoId: string): Promise<CommentListItem[]> => {
+  const comments = await getPublicVideoComments(videoId);
+
+  return comments.map(toVideoCommentListItem);
 };
 
 export const createVideoComment = async (values: VideoCommentActionValues) => {

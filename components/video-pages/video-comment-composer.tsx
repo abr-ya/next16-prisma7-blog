@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 
-import { createVideoComment, type PublicVideoComment } from "@/app/_data/video-comments";
+import { createVideoComment } from "@/app/_data/video-comments";
 import { CommentText } from "@/components/common/comment-text";
 import {
   Avatar,
@@ -21,16 +21,13 @@ import {
   CardTitle,
   Spinner,
 } from "@/components/index";
+import type { CommentListItem } from "@/lib/comments";
 
 const MAX_COMMENT_CONTENT_LENGTH = 2000;
 
-type VideoCommentListItem = Omit<PublicVideoComment, "createdAt"> & {
-  createdAt: string;
-};
-
 type VideoCommentComposerProps = {
   videoId: string;
-  initialComments: VideoCommentListItem[];
+  initialComments: CommentListItem[];
   isAuthenticated: boolean;
 };
 
@@ -108,16 +105,16 @@ export const VideoCommentComposer = ({ videoId, initialComments, isAuthenticated
         {initialComments.length > 0 ? (
           <div className="grid gap-3">
             {initialComments.map((comment) => {
-              const authorName = comment.user.name || "Anonymous";
+              const authorName = comment.author.displayName || "Anonymous";
 
               return (
                 <article key={comment.id} className="rounded-md border p-4">
                   <div className="flex min-w-0 gap-3">
                     <Avatar className="size-9 shrink-0 rounded-full">
-                      {comment.user.image ? (
-                        <AvatarImage src={comment.user.image} alt={`${authorName}'s avatar`} />
+                      {comment.author.image ? (
+                        <AvatarImage src={comment.author.image} alt={`${authorName}'s avatar`} />
                       ) : null}
-                      <AvatarFallback delayMs={comment.user.image ? 600 : 0}>
+                      <AvatarFallback delayMs={comment.author.image ? 600 : 0}>
                         {avatarFallbackText(authorName)}
                       </AvatarFallback>
                     </Avatar>
