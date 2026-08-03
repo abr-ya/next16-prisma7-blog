@@ -2,6 +2,8 @@
 
 ### Requirement: Video comments participate in shared comment domain
 
+The system SHALL adapt existing public video comments to the shared comment domain without changing current public video comment behavior.
+
 #### Scenario: Video comments expose shared list items
 
 - **WHEN** public video comments are queried for a public video detail page

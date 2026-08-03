@@ -2,6 +2,8 @@
 
 ### Requirement: Reusable comment UI contract
 
+The system SHALL provide a normalized comment list item contract for shared comment UI and target-specific adapters.
+
 #### Scenario: Runtime contract is available to implementation code
 
 - **WHEN** shared comment foundation code is implemented

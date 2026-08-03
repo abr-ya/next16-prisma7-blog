@@ -20,14 +20,14 @@
 
 ## 4. OpenSpec And Backlog
 
-- [ ] 4.1 Update accepted specs during archive after implementation is complete.
-- [ ] 4.2 Move `feature-022` to `Done` in `openspec/backlog.md` only during archive.
+- [x] 4.1 Update accepted specs during archive after implementation is complete.
+- [x] 4.2 Move `feature-022` to `Done` in `openspec/backlog.md` only during archive.
 
 ## 5. Validation
 
-- [ ] 5.1 Run `openspec validate feature-022-video-comments-shared-foundation --strict`.
-- [ ] 5.2 Run `npm run tsc`.
-- [ ] 5.3 Run targeted ESLint for changed files outside root lint coverage.
-- [ ] 5.4 Run `npm run lint`.
+- [x] 5.1 Run `openspec validate feature-022-video-comments-shared-foundation --strict`.
+- [x] 5.2 Run `npm run tsc`.
+- [x] 5.3 Run targeted ESLint for changed files outside root lint coverage.
+- [x] 5.4 Run `npm run lint`.
 - [x] 5.5 Perform a browser check on a public video with comments, a public video without comments, anonymous comment access, and authenticated comment creation.
 - [x] 5.6 Run `git diff --check`.
