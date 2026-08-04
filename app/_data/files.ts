@@ -197,3 +197,57 @@ export const recordUploadThingFileAsset = async ({
 
   return fileAsset;
 };
+
+export const getFileAssetForDownload = async (fileId: string, userId?: string) => {
+  const fileAsset = await prisma.fileAsset.findUnique({
+    where: {
+      id: fileId,
+    },
+  });
+
+  if (!fileAsset || fileAsset.status !== ACTIVE_FILE_STATUS) {
+    throw new Error("File not found");
+  }
+
+  // Check access based on visibility
+  if (fileAsset.visibility === "PRIVATE") {
+    if (!userId) {
+      throw new Error("Authentication required");
+    }
+
+    // Allow owner or admin
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, role: true },
+    });
+
+    const isOwner = fileAsset.ownerUserId === userId;
+    const isAdmin = user?.role === "admin";
+
+    if (!isOwner && !isAdmin) {
+      throw new Error("Access denied");
+    }
+  }
+
+  // PUBLIC and UNLISTED files are accessible to anyone with the link
+
+  return fileAsset;
+};
+
+export const logFileDownload = async (fileId: string, userId?: string, ipAddress?: string) => {
+  try {
+    await prisma.log.create({
+      data: {
+        action: "downloadFile",
+        userId: userId ?? "anonymous",
+        details: JSON.stringify({
+          fileId,
+          ipAddress,
+          timestamp: new Date().toISOString(),
+        }),
+      },
+    });
+  } catch (err) {
+    console.error("Failed to log file download:", err);
+  }
+};
