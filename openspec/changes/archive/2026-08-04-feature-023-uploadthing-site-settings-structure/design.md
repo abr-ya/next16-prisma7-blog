@@ -106,10 +106,19 @@ Alternative considered: include per-file audit in settings. That couples setting
 
 Rollback for this structure slice is documentation-only: archive is reversible through a follow-up spec change. No database or runtime rollback is expected.
 
-## Open Questions
+## Resolved Questions
 
-- Should the first implementation call UploadThing API for provider-sourced metadata, or defer that to a later slice?
-- Should per-user storage limit be configurable per-user (e.g., higher limit for admins) or remain a single site-wide constant?
-- Should settings include a breakdown of storage by file purpose (`ADMIN_UPLOAD`, future purposes) or remain a single total?
-- Should settings display the legacy `imageUploader` route behavior, or only focus on tracked `FileAsset` routes?
-- Should editable controls write to environment variables, a database-backed config table, or a server-side JSON file?
+**UploadThing API integration:**
+Deferred to a separate implementation slice. First settings page will show only app-computed values from the database. Provider-sourced metadata (account limits, plan tier) can be added later when API integration is proven useful.
+
+**Per-user storage quotas:**
+Remain a single site-wide constant (`GENERAL_FILE_USER_STORAGE_LIMIT_BYTES`) in first implementation. Per-user configurable quotas are deferred to `feature-100-per-user-storage-quota-configuration`.
+
+**Storage breakdown by purpose:**
+Included in first implementation. Settings will display total storage and file count broken down by `FileAsset.purpose` (e.g., `ADMIN_UPLOAD`, future `POST_ATTACHMENT`, `DOC_PREVIEW`). This provides entry point for future drill-down feature (`feature-070-admin-file-category-drill-down`).
+
+**Legacy imageUploader visibility:**
+Settings will show both tracked routes (`fileUploader` creating `FileAsset`) and legacy routes (`imageUploader` not creating `FileAsset`), clearly labeled to distinguish tracked vs untracked uploads. This provides honest visibility before `feature-050-image-upload-tracking-migration`.
+
+**Editable config storage strategy:**
+Deferred to `feature-071-site-settings-storage-structure`. First implementation displays read-only values from code constants and database. Future editable controls will require a separate design for persistence (env/database/config file), hot reload, and audit.
