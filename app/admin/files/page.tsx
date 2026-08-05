@@ -2,22 +2,16 @@ import { FileText, HardDrive, ListChecks, UploadCloud } from "lucide-react";
 
 import { getCurrentUserFileStats, getUploadThingUsagePoints, listTrackedFileAssets } from "@/app/_data/files";
 import { FileUploadForm } from "@/components/admin-pages/file-upload-form";
+import { FilesTable } from "@/components/admin-pages/files-table";
 import { AdminPageLayout } from "@/components/layout/admin-page-layout";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatFileSize } from "@/lib/file-upload-limits";
 
 const breadcrumbs = [
   { label: "Dashboard", to: "/admin" },
   { label: "Files", to: null },
 ];
-
-const formatDate = (date: Date) =>
-  new Intl.DateTimeFormat("en", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(date);
 
 const AdminFilesPage = async () => {
   const [stats, files] = await Promise.all([getCurrentUserFileStats(), listTrackedFileAssets()]);
@@ -88,47 +82,7 @@ const AdminFilesPage = async () => {
           </Card>
         </section>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Tracked File Assets</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Size</TableHead>
-                  <TableHead>Purpose</TableHead>
-                  <TableHead>Uploaded</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {files.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
-                      No tracked files yet.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  files.map((file) => (
-                    <TableRow key={file.id}>
-                      <TableCell className="max-w-[280px] truncate font-medium">
-                        <a href={`/files/${file.id}/download`} className="hover:underline">
-                          {file.name}
-                        </a>
-                      </TableCell>
-                      <TableCell>{file.mimeType}</TableCell>
-                      <TableCell>{formatFileSize(file.sizeBytes)}</TableCell>
-                      <TableCell>{file.purpose}</TableCell>
-                      <TableCell>{formatDate(file.uploadedAt)}</TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+        <FilesTable data={files} />
       </div>
     </AdminPageLayout>
   );

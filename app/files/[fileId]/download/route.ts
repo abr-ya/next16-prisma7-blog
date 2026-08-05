@@ -3,10 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getFileAssetForDownload, logFileDownload } from "@/app/_data/files";
 import { auth } from "@/lib/auth";
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ fileId: string }> }
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ fileId: string }> }) {
   try {
     const { fileId } = await params;
 
@@ -26,19 +23,13 @@ export async function GET(
 
     if (!fileResponse.ok) {
       console.error(`Failed to fetch file from provider: ${fileResponse.status}`);
-      return NextResponse.json(
-        { error: "Failed to retrieve file from storage" },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Failed to retrieve file from storage" }, { status: 500 });
     }
 
     // Stream file to client with appropriate headers
     const headers = new Headers();
     headers.set("Content-Type", fileAsset.mimeType);
-    headers.set(
-      "Content-Disposition",
-      `attachment; filename="${encodeURIComponent(fileAsset.name)}"`
-    );
+    headers.set("Content-Disposition", `attachment; filename="${encodeURIComponent(fileAsset.name)}"`);
     headers.set("Cache-Control", "public, max-age=31536000, immutable");
 
     // Copy provider content-length if available

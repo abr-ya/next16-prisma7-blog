@@ -93,12 +93,25 @@ export const listCurrentUserFileAssets = async (): Promise<FileAsset[]> => {
   });
 };
 
-export const listTrackedFileAssets = async (): Promise<FileAsset[]> => {
+export type FileAssetWithOwner = FileAsset & {
+  owner: {
+    name: string;
+  };
+};
+
+export const listTrackedFileAssets = async (): Promise<FileAssetWithOwner[]> => {
   await getRequiredUserId();
 
   return prisma.fileAsset.findMany({
     where: {
       status: ACTIVE_FILE_STATUS,
+    },
+    include: {
+      owner: {
+        select: {
+          name: true,
+        },
+      },
     },
     orderBy: {
       uploadedAt: "desc",
