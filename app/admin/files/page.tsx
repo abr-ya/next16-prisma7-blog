@@ -114,7 +114,7 @@ const AdminFilesPage = async () => {
                   files.map((file) => (
                     <TableRow key={file.id}>
                       <TableCell className="max-w-[280px] truncate font-medium">
-                        <a href={file.url} target="_blank" rel="noreferrer" className="hover:underline">
+                        <a href={`/files/${file.id}/download`} className="hover:underline">
                           {file.name}
                         </a>
                       </TableCell>
