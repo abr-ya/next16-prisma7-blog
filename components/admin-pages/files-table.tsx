@@ -5,6 +5,7 @@ import { ArrowUpDown } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import type { FileAssetWithOwner } from "@/app/_data/files";
+import { FileAssetPurpose, FileAssetStatus, FileAssetVisibility } from "@/generated/prisma/enums";
 import { formatFileSize } from "@/lib/file-upload-limits";
 
 import { Badge, Button, DataTable, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "..";
@@ -17,6 +18,9 @@ const ADMIN_FILES_PAGE_SIZE = 10;
 const ALL_PURPOSES_VALUE = "__all_purposes__";
 const ALL_VISIBILITIES_VALUE = "__all_visibilities__";
 const ALL_STATUSES_VALUE = "__all_statuses__";
+const FILE_PURPOSE_OPTIONS = Object.values(FileAssetPurpose);
+const FILE_VISIBILITY_OPTIONS = Object.values(FileAssetVisibility);
+const FILE_STATUS_OPTIONS = Object.values(FileAssetStatus);
 
 const formatDateTime = (date: Date) =>
   date.toLocaleDateString("ru-RU", {
@@ -27,8 +31,8 @@ const formatDateTime = (date: Date) =>
     minute: "2-digit",
   });
 
-const formatPurpose = (purpose: string) => {
-  const purposeLabels: Record<string, string> = {
+const formatPurpose = (purpose: FileAssetWithOwner["purpose"]) => {
+  const purposeLabels: Record<FileAssetWithOwner["purpose"], string> = {
     ADMIN_UPLOAD: "Admin Upload",
     ARCHIVE_ATTACHMENT: "Archive Attachment",
     VIDEO_ATTACHMENT: "Video Attachment",
@@ -36,26 +40,34 @@ const formatPurpose = (purpose: string) => {
     RICH_TEXT_IMAGE: "Rich Text Image",
     STANDALONE_SHARED_FILE: "Standalone Shared File",
   };
-  return purposeLabels[purpose] || purpose;
+  return purposeLabels[purpose];
 };
 
-const formatVisibility = (visibility: string) => {
-  const visibilityLabels: Record<string, string> = {
+const formatVisibility = (visibility: FileAssetWithOwner["visibility"]) => {
+  const visibilityLabels: Record<FileAssetWithOwner["visibility"], string> = {
     PRIVATE: "Private",
     UNLISTED: "Unlisted",
     PUBLIC: "Public",
   };
-  return visibilityLabels[visibility] || visibility;
+  return visibilityLabels[visibility];
 };
 
-const formatStatus = (status: string) => {
-  const statusLabels: Record<string, string> = {
+const formatStatus = (status: FileAssetWithOwner["status"]) => {
+  const statusLabels: Record<FileAssetWithOwner["status"], string> = {
     ACTIVE: "Active",
     DETACHED: "Detached",
     PENDING_DELETE: "Pending Delete",
     DELETED: "Deleted",
   };
-  return statusLabels[status] || status;
+  return statusLabels[status];
+};
+
+const getStatusBadgeVariant = (status: FileAssetWithOwner["status"]) => {
+  if (status === "ACTIVE") return "default";
+  if (status === "PENDING_DELETE") return "outline";
+  if (status === "DELETED") return "destructive";
+
+  return "secondary";
 };
 
 const columns: ColumnDef<FileAssetWithOwner>[] = [
@@ -67,15 +79,31 @@ const columns: ColumnDef<FileAssetWithOwner>[] = [
         <ArrowUpDown />
       </Button>
     ),
-    cell: ({ row }) => (
-      <a
-        href={`/files/${row.original.id}/download`}
-        className="block max-w-70 truncate font-medium text-blue-500 underline-offset-4 hover:underline"
-        title={row.original.name}
-      >
-        {row.original.name}
-      </a>
-    ),
+    cell: ({ row }) => {
+      const file = row.original;
+
+      return (
+        <div className="flex min-w-72 max-w-96 flex-col gap-1">
+          <a
+            href={`/files/${file.id}/download`}
+            className="truncate font-medium text-blue-500 underline-offset-4 hover:underline"
+            title={file.name}
+          >
+            {file.name}
+          </a>
+          <div className="flex flex-col gap-0.5 text-xs text-muted-foreground">
+            <span className="truncate font-mono" title={file.fileKey}>
+              key: {file.fileKey}
+            </span>
+            {file.customId ? (
+              <span className="truncate font-mono" title={file.customId}>
+                custom: {file.customId}
+              </span>
+            ) : null}
+          </div>
+        </div>
+      );
+    },
   },
   {
     accessorKey: "mimeType",
@@ -117,15 +145,15 @@ const columns: ColumnDef<FileAssetWithOwner>[] = [
     accessorKey: "status",
     header: "Status",
     cell: ({ row }) => (
-      <Badge variant={row.original.status === "ACTIVE" ? "default" : "secondary"}>
-        {formatStatus(row.original.status)}
-      </Badge>
+      <Badge variant={getStatusBadgeVariant(row.original.status)}>{formatStatus(row.original.status)}</Badge>
     ),
   },
   {
     accessorKey: "owner",
     header: "Owner",
-    cell: ({ row }) => <span className="block w-32 truncate text-sm">{row.original.owner.name}</span>,
+    cell: ({ row }) => (
+      <span className="block w-32 truncate text-sm">{row.original.owner?.name || "Unknown owner"}</span>
+    ),
   },
   {
     accessorKey: "uploadedAt",
@@ -153,24 +181,6 @@ export const FilesTable = ({ data }: IFilesTableProps) => {
   const [selectedStatus, setSelectedStatus] = useState("ACTIVE");
   const [searchQuery, setSearchQuery] = useState("");
 
-  const purposeOptions = useMemo(() => {
-    const purposes = new Set<string>();
-    data.forEach((file) => purposes.add(file.purpose));
-    return Array.from(purposes).sort();
-  }, [data]);
-
-  const visibilityOptions = useMemo(() => {
-    const visibilities = new Set<string>();
-    data.forEach((file) => visibilities.add(file.visibility));
-    return Array.from(visibilities).sort();
-  }, [data]);
-
-  const statusOptions = useMemo(() => {
-    const statuses = new Set<string>();
-    data.forEach((file) => statuses.add(file.status));
-    return Array.from(statuses).sort();
-  }, [data]);
-
   const filteredData = useMemo(() => {
     return data.filter((file) => {
       const matchesPurpose = selectedPurpose === ALL_PURPOSES_VALUE || file.purpose === selectedPurpose;
@@ -194,51 +204,45 @@ export const FilesTable = ({ data }: IFilesTableProps) => {
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full sm:w-64"
           />
-          {purposeOptions.length > 0 ? (
-            <Select value={selectedPurpose} onValueChange={setSelectedPurpose}>
-              <SelectTrigger className="w-full sm:w-48" aria-label="Filter files by purpose">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={ALL_PURPOSES_VALUE}>All purposes</SelectItem>
-                {purposeOptions.map((purpose) => (
-                  <SelectItem key={purpose} value={purpose}>
-                    {formatPurpose(purpose)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          ) : null}
-          {visibilityOptions.length > 0 ? (
-            <Select value={selectedVisibility} onValueChange={setSelectedVisibility}>
-              <SelectTrigger className="w-full sm:w-48" aria-label="Filter files by visibility">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={ALL_VISIBILITIES_VALUE}>All visibilities</SelectItem>
-                {visibilityOptions.map((visibility) => (
-                  <SelectItem key={visibility} value={visibility}>
-                    {formatVisibility(visibility)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          ) : null}
-          {statusOptions.length > 0 ? (
-            <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-              <SelectTrigger className="w-full sm:w-48" aria-label="Filter files by status">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={ALL_STATUSES_VALUE}>All statuses</SelectItem>
-                {statusOptions.map((status) => (
-                  <SelectItem key={status} value={status}>
-                    {formatStatus(status)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          ) : null}
+          <Select value={selectedPurpose} onValueChange={setSelectedPurpose}>
+            <SelectTrigger className="w-full sm:w-48" aria-label="Filter files by purpose">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL_PURPOSES_VALUE}>All purposes</SelectItem>
+              {FILE_PURPOSE_OPTIONS.map((purpose) => (
+                <SelectItem key={purpose} value={purpose}>
+                  {formatPurpose(purpose)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={selectedVisibility} onValueChange={setSelectedVisibility}>
+            <SelectTrigger className="w-full sm:w-48" aria-label="Filter files by visibility">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL_VISIBILITIES_VALUE}>All visibilities</SelectItem>
+              {FILE_VISIBILITY_OPTIONS.map((visibility) => (
+                <SelectItem key={visibility} value={visibility}>
+                  {formatVisibility(visibility)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+            <SelectTrigger className="w-full sm:w-48" aria-label="Filter files by status">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL_STATUSES_VALUE}>All statuses</SelectItem>
+              {FILE_STATUS_OPTIONS.map((status) => (
+                <SelectItem key={status} value={status}>
+                  {formatStatus(status)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
       <DataTable data={filteredData} columns={columns} pagination={{ pageSize: ADMIN_FILES_PAGE_SIZE }} />

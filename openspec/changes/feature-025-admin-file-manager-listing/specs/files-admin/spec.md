@@ -4,7 +4,7 @@
 
 Enhance the admin file management page with pagination, search, filters, and improved metadata display to help administrators navigate and manage tracked file assets.
 
-## Requirements
+## ADDED Requirements
 
 ### Requirement: File list pagination
 
