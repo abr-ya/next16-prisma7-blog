@@ -44,11 +44,11 @@
 - [x] 7.2 Run `npm run lint`.
 - [x] 7.3 Run targeted ESLint for `components/admin-pages/files-table.tsx` and `app/_data/files.ts`.
 - [x] 7.4 Run `git diff --check`.
-- [ ] 7.5 Test pagination, search, and filters in browser on `/admin/files`.
-- [ ] 7.6 Confirm download links work for different file types.
+- [x] 7.5 Test pagination, search, and filters in browser on `/admin/files`.
+- [x] 7.6 Confirm download links work for different file types.
 - [x] 7.7 Ask user to run `npm run build` for final validation.
 
 ## 8. Documentation
 
-- [ ] 8.1 Update `openspec/backlog.md` to mark feature-025 as Done.
-- [ ] 8.2 Archive OpenSpec change to `openspec/changes/archive/2026-08-05-feature-025-admin-file-manager-listing/`.
+- [x] 8.1 Update `openspec/backlog.md` to mark feature-025 as Done.
+- [x] 8.2 Archive OpenSpec change to `openspec/changes/archive/2026-08-06-feature-025-admin-file-manager-listing/`.
