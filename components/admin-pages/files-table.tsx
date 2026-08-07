@@ -1,7 +1,7 @@
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
-import { ArrowUpDown } from "lucide-react";
+import { ArrowUpDown, Eye } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import type { FileAssetWithOwner } from "@/app/_data/files";
@@ -9,6 +9,7 @@ import { FileAssetPurpose, FileAssetStatus, FileAssetVisibility } from "@/genera
 import { formatFileSize } from "@/lib/file-upload-limits";
 
 import { Badge, Button, DataTable, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "..";
+import { FilePreviewDialog, isFilePreviewable } from "./file-preview-dialog";
 
 interface IFilesTableProps {
   data: FileAssetWithOwner[];
@@ -70,7 +71,7 @@ const getStatusBadgeVariant = (status: FileAssetWithOwner["status"]) => {
   return "secondary";
 };
 
-const columns: ColumnDef<FileAssetWithOwner>[] = [
+const getColumns = (onPreview: (file: FileAssetWithOwner) => void): ColumnDef<FileAssetWithOwner>[] => [
   {
     accessorKey: "name",
     header: ({ column }) => (
@@ -173,6 +174,28 @@ const columns: ColumnDef<FileAssetWithOwner>[] = [
       </div>
     ),
   },
+  {
+    id: "actions",
+    header: "Actions",
+    cell: ({ row }) => {
+      const file = row.original;
+      const previewable = isFilePreviewable(file.mimeType);
+
+      return (
+        <Button
+          type="button"
+          variant="outline"
+          size="icon-sm"
+          title={previewable ? `Preview ${file.name}` : "Preview unavailable for this file type"}
+          aria-label={previewable ? `Preview ${file.name}` : "Preview unavailable for this file type"}
+          disabled={!previewable}
+          onClick={() => onPreview(file)}
+        >
+          <Eye className="size-4" />
+        </Button>
+      );
+    },
+  },
 ];
 
 export const FilesTable = ({ data }: IFilesTableProps) => {
@@ -180,6 +203,8 @@ export const FilesTable = ({ data }: IFilesTableProps) => {
   const [selectedVisibility, setSelectedVisibility] = useState(ALL_VISIBILITIES_VALUE);
   const [selectedStatus, setSelectedStatus] = useState("ACTIVE");
   const [searchQuery, setSearchQuery] = useState("");
+  const [previewFile, setPreviewFile] = useState<FileAssetWithOwner | null>(null);
+  const columns = useMemo(() => getColumns(setPreviewFile), []);
 
   const filteredData = useMemo(() => {
     return data.filter((file) => {
@@ -246,6 +271,11 @@ export const FilesTable = ({ data }: IFilesTableProps) => {
         </div>
       </div>
       <DataTable data={filteredData} columns={columns} pagination={{ pageSize: ADMIN_FILES_PAGE_SIZE }} />
+      <FilePreviewDialog
+        file={previewFile}
+        open={Boolean(previewFile)}
+        onOpenChange={(open) => !open && setPreviewFile(null)}
+      />
     </div>
   );
 };

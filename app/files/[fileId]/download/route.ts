@@ -6,6 +6,7 @@ import { auth } from "@/lib/auth";
 export async function GET(request: NextRequest, { params }: { params: Promise<{ fileId: string }> }) {
   try {
     const { fileId } = await params;
+    const disposition = request.nextUrl.searchParams.get("disposition") === "inline" ? "inline" : "attachment";
 
     // Get session for access control
     const session = await auth.api.getSession({ headers: request.headers });
@@ -29,7 +30,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     // Stream file to client with appropriate headers
     const headers = new Headers();
     headers.set("Content-Type", fileAsset.mimeType);
-    headers.set("Content-Disposition", `attachment; filename="${encodeURIComponent(fileAsset.name)}"`);
+    headers.set("Content-Disposition", `${disposition}; filename="${encodeURIComponent(fileAsset.name)}"`);
     headers.set("Cache-Control", "public, max-age=31536000, immutable");
 
     // Copy provider content-length if available
