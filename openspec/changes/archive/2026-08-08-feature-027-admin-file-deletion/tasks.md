@@ -17,4 +17,4 @@
 - [x] 3.2 Run `npm run tsc`.
 - [x] 3.3 Run `npm run lint`.
 - [x] 3.4 Validate local `npm run build`.
-- [ ] 3.5 Manually verify `/admin/files`: active file delete flow, default active filtering, pending-delete visibility via status filter, and disabled non-active actions.
+- [x] 3.5 Manually verify `/admin/files`: active file delete flow, default active filtering, pending-delete visibility via status filter, and disabled non-active actions.
