@@ -1,6 +1,6 @@
 ## Purpose
 
-Define the project-wide tag domain structure and post runtime adoption of shared content tags while other content types follow later slices.
+Define the project-wide tag domain structure, post runtime adoption of shared content tags, and admin-controlled legacy post-tag migration while other content types follow later slices.
 
 ## Requirements
 
@@ -52,7 +52,7 @@ The system SHALL keep tag assignments compatible with each content type's owners
 
 ### Requirement: Legacy Tag Compatibility
 
-The system SHALL keep compatibility boundaries for existing tag implementations while posts adopt shared content tags.
+The system SHALL keep compatibility boundaries for existing tag implementations while posts use shared content tags, including an admin-controlled path to migrate remaining legacy-only `Post.tags` values.
 
 #### Scenario: Existing video tags remain compatible
 
@@ -65,7 +65,7 @@ The system SHALL keep compatibility boundaries for existing tag implementations 
 - **WHEN** posts adopt shared content tags
 - **THEN** existing `Post.tags` string-array values SHALL remain readable as legacy data for posts without assignments
 - **AND** new shared post/tag assignments SHALL NOT require immediate bulk transfer of old string tags on deploy
-- **AND** the system SHALL preserve the ability to identify posts by their previous tag values until a later migration completes
+- **AND** the system SHALL preserve the ability to identify posts by their previous tag values until a controlled migration completes or the post is re-saved
 
 #### Scenario: Post reads prefer shared tags then legacy strings
 
@@ -73,12 +73,12 @@ The system SHALL keep compatibility boundaries for existing tag implementations 
 - **THEN** they SHALL prefer display names from content-tag assignments when present
 - **AND** they SHALL fall back to `Post.tags` when the post has no content-tag assignments
 
-#### Scenario: Legacy post tag migration is planned separately
+#### Scenario: Legacy-only post tags can be migrated under admin control
 
-- **WHEN** the architecture identifies legacy post string tags without shared assignments
-- **THEN** the project SHALL plan their review and transfer as a separate controlled migration feature (`feature-030`)
-- **AND** the migration feature SHALL allow old tag values to be inspected before they become canonical shared tags
-- **AND** ambiguous, duplicate, unwanted, or renamed tags SHALL be eligible for manual merge, drop, or rename decisions during that process
+- **WHEN** an admin runs the legacy post-tag migration apply action
+- **THEN** eligible posts with legacy-only `Post.tags` values SHALL receive planned shared content-tag assignments according to the migration policy
+- **AND** the operator SHALL be able to inspect an inventory and dry-run results before apply
+- **AND** unwanted or ambiguous tags SHALL be eligible for drop or rename decisions via the migration policy
 
 #### Scenario: Shared admin tag management is planned separately
 
@@ -89,13 +89,13 @@ The system SHALL keep compatibility boundaries for existing tag implementations 
 
 ### Requirement: Implementation Slice Boundaries
 
-The system SHALL keep later shared-tag work outside the post-adoption slice after architecture acceptance.
+The system SHALL keep later shared-tag work outside completed post-adoption and legacy-migration slices.
 
 #### Scenario: Architecture remains the contract for non-post content
 
-- **WHEN** this post-adoption feature is implemented
-- **THEN** videos, docs, and files SHALL NOT be required to migrate onto shared content tags in the same slice
-- **AND** schema adoption for posts, legacy migration, public filtering, and admin management work SHALL remain separate follow-up slices where not already delivered
+- **WHEN** post adoption and legacy migration features are implemented
+- **THEN** videos, docs, and files SHALL NOT be required to migrate onto shared content tags in those slices
+- **AND** public filtering and content-wide admin management work SHALL remain separate follow-up slices where not already delivered
 
 #### Scenario: Future tag features declare their content scope
 

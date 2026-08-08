@@ -1,6 +1,6 @@
 ## Purpose
 
-Define runtime post adoption of shared content tags: assignment storage, admin read/write through shared tags, dual-read display with legacy `Post.tags` fallback, and boundaries for later migration and admin management slices.
+Define runtime post adoption of shared content tags: assignment storage, admin read/write through shared tags, dual-read display with legacy `Post.tags` fallback, and boundaries for later admin management while legacy bulk transfer uses the dedicated migration feature.
 
 ## Requirements
 
@@ -30,7 +30,7 @@ The system SHALL keep `Post.tags` populated with the normalized display names fr
 
 - **WHEN** a post is created or updated with tags that resolve into shared content tags
 - **THEN** `Post.tags` SHALL be written to the sorted list of those tag display names
-- **AND** posts that are never saved after this feature ships MAY still have only legacy `Post.tags` values without assignments until a later migration
+- **AND** posts that are never saved after this feature ships MAY still have only legacy `Post.tags` values without assignments until a controlled migration or re-save
 
 ### Requirement: Dual-Read Display Tags For Posts
 
@@ -56,22 +56,22 @@ The system SHALL resolve display tags for posts by preferring shared content-tag
 
 ### Requirement: Post Tag Adoption Scope Boundaries
 
-Post content-tag adoption SHALL limit runtime changes to posts and shall leave related work for later numbered features.
+Post content-tag adoption SHALL keep video tags and content-wide tag management out of scope, while remaining legacy-only `Post.tags` values SHALL be migratable through the dedicated legacy migration feature.
 
 #### Scenario: Video tags remain on VideoTag storage
 
-- **WHEN** this feature is implemented
+- **WHEN** post content-tag adoption is used
 - **THEN** `VideoTag` and `VideosToVideoTags` behavior SHALL remain the active runtime path for videos
 - **AND** public and admin video tag flows SHALL NOT be required to use `ContentTag`
 
-#### Scenario: Legacy bulk migration stays out of this slice
+#### Scenario: Remaining legacy-only posts use controlled migration
 
-- **WHEN** this feature is implemented
-- **THEN** the system SHALL NOT bulk-create content-tag assignments from historical `Post.tags` values for unsaved posts
-- **AND** controlled legacy review and transfer SHALL remain `feature-030-content-tags-legacy-post-migration`
+- **WHEN** posts still have non-empty `Post.tags` without content-tag assignments after adoption
+- **THEN** those values SHALL remain dual-read display sources until migrated or the post is re-saved
+- **AND** bulk transfer of those values SHALL be performed only through `feature-030-content-tags-legacy-post-migration` admin inventory, dry-run, and apply on the Tags page
 
-#### Scenario: Content-wide tag management stays out of this slice
+#### Scenario: Content-wide tag management stays out of adoption and migration slices
 
-- **WHEN** this feature is implemented
-- **THEN** the system SHALL NOT add admin rename, merge, delete, or usage-dashboard tools for shared tags
-- **AND** that work SHALL remain `feature-031-content-tags-admin-management`
+- **WHEN** post adoption or legacy migration is implemented
+- **THEN** the system SHALL NOT add admin rename, merge, delete, or usage-dashboard tools for shared tags beyond migration policy mapping
+- **AND** that ongoing management work SHALL remain `feature-031-content-tags-admin-management`
