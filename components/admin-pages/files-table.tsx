@@ -1,9 +1,12 @@
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
-import { ArrowUpDown, Eye } from "lucide-react";
+import { ArrowUpDown, Eye, Trash } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
+import { toast } from "sonner";
 
+import { markFileAssetPendingDelete } from "@/app/_actions/files";
 import type { FileAssetWithOwner } from "@/app/_data/files";
 import { FileAssetPurpose, FileAssetStatus, FileAssetVisibility } from "@/generated/prisma/enums";
 import { formatFileSize } from "@/lib/file-upload-limits";
@@ -71,6 +74,87 @@ const getStatusBadgeVariant = (status: FileAssetWithOwner["status"]) => {
   return "secondary";
 };
 
+const FileActions = ({
+  file,
+  onPreview,
+}: {
+  file: FileAssetWithOwner;
+  onPreview: (file: FileAssetWithOwner) => void;
+}) => {
+  const router = useRouter();
+  const [isDeleting, setIsDeleting] = useState(false);
+  const isActive = file.status === "ACTIVE";
+  const previewable = isActive && isFilePreviewable(file.mimeType);
+  const canDelete = isActive;
+
+  const handleDelete = async () => {
+    const confirmed = window.confirm(
+      `Mark "${file.name}" as pending delete? The stored provider file will not be removed yet.`,
+    );
+
+    if (!confirmed) return;
+
+    setIsDeleting(true);
+
+    try {
+      const result = await markFileAssetPendingDelete(file.id);
+
+      if (!result.success) {
+        toast.error(result.message);
+        router.refresh();
+        return;
+      }
+
+      toast.success(result.message);
+      router.refresh();
+    } catch {
+      toast.error("Something went wrong marking the file pending delete");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  return (
+    <div className="flex w-24 items-center justify-end gap-1">
+      <Button
+        type="button"
+        variant="outline"
+        size="icon-sm"
+        title={
+          previewable
+            ? `Preview ${file.name}`
+            : isActive
+              ? "Preview unavailable for this file type"
+              : "Preview unavailable for non-active files"
+        }
+        aria-label={
+          previewable
+            ? `Preview ${file.name}`
+            : isActive
+              ? "Preview unavailable for this file type"
+              : "Preview unavailable for non-active files"
+        }
+        disabled={!previewable}
+        onClick={() => onPreview(file)}
+      >
+        <Eye className="size-4" />
+      </Button>
+      <Button
+        type="button"
+        variant="outline"
+        size="icon-sm"
+        title={canDelete ? `Mark ${file.name} pending delete` : "Delete unavailable for non-active files"}
+        aria-label={canDelete ? `Mark ${file.name} pending delete` : "Delete unavailable for non-active files"}
+        className="text-destructive hover:text-destructive"
+        disabled={!canDelete || isDeleting}
+        onClick={handleDelete}
+      >
+        <Trash className="size-4" />
+      </Button>
+    </div>
+  );
+};
+
 const getColumns = (onPreview: (file: FileAssetWithOwner) => void): ColumnDef<FileAssetWithOwner>[] => [
   {
     accessorKey: "name",
@@ -82,16 +166,23 @@ const getColumns = (onPreview: (file: FileAssetWithOwner) => void): ColumnDef<Fi
     ),
     cell: ({ row }) => {
       const file = row.original;
+      const isActive = file.status === "ACTIVE";
 
       return (
         <div className="flex min-w-72 max-w-96 flex-col gap-1">
-          <a
-            href={`/files/${file.id}/download`}
-            className="truncate font-medium text-blue-500 underline-offset-4 hover:underline"
-            title={file.name}
-          >
-            {file.name}
-          </a>
+          {isActive ? (
+            <a
+              href={`/files/${file.id}/download`}
+              className="truncate font-medium text-blue-500 underline-offset-4 hover:underline"
+              title={file.name}
+            >
+              {file.name}
+            </a>
+          ) : (
+            <span className="truncate font-medium text-muted-foreground" title={file.name}>
+              {file.name}
+            </span>
+          )}
           <div className="flex flex-col gap-0.5 text-xs text-muted-foreground">
             <span className="truncate font-mono" title={file.fileKey}>
               key: {file.fileKey}
@@ -179,21 +270,8 @@ const getColumns = (onPreview: (file: FileAssetWithOwner) => void): ColumnDef<Fi
     header: "Actions",
     cell: ({ row }) => {
       const file = row.original;
-      const previewable = isFilePreviewable(file.mimeType);
 
-      return (
-        <Button
-          type="button"
-          variant="outline"
-          size="icon-sm"
-          title={previewable ? `Preview ${file.name}` : "Preview unavailable for this file type"}
-          aria-label={previewable ? `Preview ${file.name}` : "Preview unavailable for this file type"}
-          disabled={!previewable}
-          onClick={() => onPreview(file)}
-        >
-          <Eye className="size-4" />
-        </Button>
-      );
+      return <FileActions file={file} onPreview={onPreview} />;
     },
   },
 ];

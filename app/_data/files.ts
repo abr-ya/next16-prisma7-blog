@@ -103,9 +103,6 @@ export const listTrackedFileAssets = async (): Promise<FileAssetWithOwner[]> => 
   await getRequiredUserId();
 
   return prisma.fileAsset.findMany({
-    where: {
-      status: ACTIVE_FILE_STATUS,
-    },
     include: {
       owner: {
         select: {
@@ -116,7 +113,6 @@ export const listTrackedFileAssets = async (): Promise<FileAssetWithOwner[]> => 
     orderBy: {
       uploadedAt: "desc",
     },
-    take: 50,
   });
 };
 

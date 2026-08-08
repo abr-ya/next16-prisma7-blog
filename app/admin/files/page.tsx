@@ -6,6 +6,7 @@ import { FilesTable } from "@/components/admin-pages/files-table";
 import { AdminPageLayout } from "@/components/layout/admin-page-layout";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { requireAdmin } from "@/lib/auth-utils";
 import { formatFileSize } from "@/lib/file-upload-limits";
 
 const breadcrumbs = [
@@ -14,8 +15,11 @@ const breadcrumbs = [
 ];
 
 const AdminFilesPage = async () => {
+  await requireAdmin();
+
   const [stats, files] = await Promise.all([getCurrentUserFileStats(), listTrackedFileAssets()]);
   const usagePoints = getUploadThingUsagePoints();
+  const activeFilesCount = files.filter((file) => file.status === "ACTIVE").length;
 
   return (
     <AdminPageLayout breadcrumbs={breadcrumbs}>
@@ -46,7 +50,7 @@ const AdminFilesPage = async () => {
               <ListChecks className="size-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-semibold">{files.length}</div>
+              <div className="text-3xl font-semibold">{activeFilesCount}</div>
               <p className="mt-1 text-sm text-muted-foreground">active FileAsset records</p>
             </CardContent>
           </Card>

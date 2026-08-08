@@ -17,7 +17,8 @@ Use the same `feature-<3 digits>-<area>-<short-action>` name for the OpenSpec ch
 - `feature-001` through `feature-004` are completed historical slices and keep their numbers.
 - `feature-005` through `feature-019` are reserved for the next near-term product slices.
 - `feature-020` through `feature-039` are available for upcoming near-term candidates as the roadmap clarifies.
-- `feature-040+` rows are parked backlog ideas; promote or split them into the reserved range only when they become the next implementation candidate and before creating an OpenSpec change.
+- `feature-040` through `feature-049` are intentionally open for upcoming near-term promotions.
+- `feature-050+` rows are parked backlog ideas; promote or split them into the reserved range only when they become the next implementation candidate and before creating an OpenSpec change.
 
 ## Features
 
@@ -49,9 +50,7 @@ Use the same `feature-<3 digits>-<area>-<short-action>` name for the OpenSpec ch
 | feature-024 | Done | feature-024-public-file-downloads | files/public | Add app-owned public download routes for file assets that need stable URLs, access checks, or download audit. |
 | feature-025 | Done | feature-025-admin-file-manager-listing | files/admin | Add pagination, search, and filters (purpose/visibility/status) to admin file listing with enhanced metadata display. |
 | feature-026 | Done | feature-026-admin-file-preview | files/admin | Add file preview capability for common file types (images, PDFs, text files) with dialog or inline preview in admin file manager. |
-| feature-027 | Planned | feature-027-admin-file-deletion | files/admin | Add file deletion controls that transition files to cleanup states (DETACHED, PENDING_DELETE) with eventual removal workflow. |
-| feature-028 | Planned | feature-028-video-comments-edit-delete-expiry | video/comments | Prevent editing and deleting own comments after they are more than 24 hours old. |
-| feature-027 | Planned | feature-027-admin-file-deletion | files/admin | Add file deletion controls that transition files to cleanup states (DETACHED, PENDING_DELETE) with eventual removal workflow. |
+| feature-027 | Done | feature-027-admin-file-deletion | files/admin | Add file deletion controls that transition files to cleanup states (DETACHED, PENDING_DELETE) with eventual removal workflow. |
 | feature-028 | Planned | feature-028-video-comments-edit-delete-expiry | video/comments | Prevent editing and deleting own comments after they are more than 24 hours old. |
 | feature-029 | Planned | feature-029-email-password-account-flow | auth/email | Finish first-party email/password account creation and login with form UX, mailbox-backed email verification, and password reset boundaries. |
 | feature-030 | Planned | feature-030-github-account-flow | auth/github | Finish GitHub account creation and sign-in with provider configuration, callback handling, email availability checks, and account-linking boundaries. |
@@ -59,22 +58,22 @@ Use the same `feature-<3 digits>-<area>-<short-action>` name for the OpenSpec ch
 | feature-032 | Planned | feature-032-content-tags-legacy-post-migration | content/tags | Review legacy `Post.tags` values, merge or drop old tag variants as needed, then migrate approved values into shared content tags with an auditable compatibility boundary. |
 | feature-033 | Planned | feature-033-video-comments-own-management | video/comments | Add signed-in own-comment edit and delete controls on public video detail comment lists after earlier comment follow-ups are prioritized. |
 | feature-034 | Planned | feature-034-content-tags-admin-management | content/tags | Add content-wide admin tag management for shared tags, including rename, merge, delete or detach boundaries, and usage visibility by content type. |
-| feature-033 | Planned | feature-033-video-comments-own-management | video/comments | Add signed-in own-comment edit and delete controls on public video detail comment lists after earlier comment follow-ups are prioritized. |
-| feature-034 | Planned | feature-034-content-tags-admin-management | content/tags | Add content-wide admin tag management for shared tags, including rename, merge, delete or detach boundaries, and usage visibility by content type. |
 | feature-035 | Done | feature-035-blog-post-detail-tags-links | blog/detail | Render existing post tags on public blog post detail pages and only show connected-link UI when a post actually has connected links. |
 | feature-036 | Planned | feature-036-admin-database-backup-generation | admin/database | Add manual admin-triggered database backup generation and download using the accepted admin database backup structure, without restore, scheduling, retention, or external storage policy. |
 | feature-037 | Done | feature-037-video-comments-link-rendering | video/comments | Render safe clickable links for plain URLs in public video comment text using the accepted comment link handling structure. |
-| feature-040 | Planned | feature-040-video-search | video/search | Add broader video search across title, URL, channel, tags, notes, bookmarks, comments, and extracted metadata. |
-| feature-041 | Planned | feature-041-video-import-export | video/tools | Add import and export workflows for saved video links. |
-| feature-042 | Planned | feature-042-video-admin-bulk-actions | video/admin | Add bulk actions to the admin video table. |
-| feature-043 | Planned | feature-043-public-navbar-hydration-fix | navigation/public | Fix the public navbar hydration warning by auditing the `NavigationMenuList` HTML structure. |
-| feature-044 | Planned | feature-044-admin-table-pagination-rollout | admin/tables | Apply the shared client-side admin table pagination pattern to other admin tables after the video table slice proves it useful. |
-| feature-045 | Planned | feature-045-saved-posts-admin-workflow | posts/admin | Define and implement the saved posts admin workflow currently represented by a placeholder. |
-| feature-046 | Planned | feature-046-video-duration-api-extraction | video/metadata | Add API-backed video duration extraction while preserving failure-tolerant video saves. |
-| feature-047 | Planned | feature-047-public-video-tag-filtering | video/tags | Add public `/videos` filtering by video tag once tag foundation behavior is proven, with tag UI visually distinct from channel badges. |
-| feature-048 | Cancelled | feature-048-video-tag-management | video/tags | Superseded by `feature-032-content-tags-admin-management` so tag management is content-wide instead of video-only. |
-| feature-049 | Planned | feature-049-video-tag-confirm-dialog | video/tags | Replace the browser-native new-tag confirmation with an app-styled confirmation dialog. |
-| feature-050 | Planned | feature-050-image-upload-tracking-migration | files/migration | Migrate legacy `imageUploader` route to create `FileAsset` records and count toward user storage quota, or create new tracked image route and deprecate legacy route. |
+| feature-038 | Planned | feature-038-admin-confirm-dialogs | admin/ui | Replace browser-native confirmation prompts for admin destructive or sensitive actions with a reusable app-styled confirmation dialog, including the existing video, channel, file, and new-tag confirmation flows. |
+| feature-039 | Planned | feature-039-admin-sidebar-role-sections | navigation/admin | Split the admin sidebar into explicit signed-in workspace and admin-only control sections while keeping server-side role checks as the authorization boundary. |
+| feature-050 | Planned | feature-050-video-search | video/search | Add broader video search across title, URL, channel, tags, notes, bookmarks, comments, and extracted metadata. |
+| feature-051 | Planned | feature-051-video-import-export | video/tools | Add import and export workflows for saved video links. |
+| feature-052 | Planned | feature-052-video-admin-bulk-actions | video/admin | Add bulk actions to the admin video table. |
+| feature-053 | Planned | feature-053-public-navbar-hydration-fix | navigation/public | Fix the public navbar hydration warning by auditing the `NavigationMenuList` HTML structure. |
+| feature-054 | Planned | feature-054-admin-table-pagination-rollout | admin/tables | Apply the shared client-side admin table pagination pattern to other admin tables after the video table slice proves it useful. |
+| feature-055 | Planned | feature-055-saved-posts-admin-workflow | posts/admin | Define and implement the saved posts admin workflow currently represented by a placeholder. |
+| feature-056 | Planned | feature-056-video-duration-api-extraction | video/metadata | Add API-backed video duration extraction while preserving failure-tolerant video saves. |
+| feature-057 | Planned | feature-057-public-video-tag-filtering | video/tags | Add public `/videos` filtering by video tag once tag foundation behavior is proven, with tag UI visually distinct from channel badges. |
+| feature-058 | Cancelled | feature-058-video-tag-management | video/tags | Superseded by `feature-032-content-tags-admin-management` so tag management is content-wide instead of video-only. |
+| feature-059 | Cancelled | feature-059-video-tag-confirm-dialog | video/tags | Superseded by `feature-038-admin-confirm-dialogs`, which covers reusable app-styled confirmation dialogs across admin flows. |
+| feature-060 | Planned | feature-060-image-upload-tracking-migration | files/migration | Migrate legacy `imageUploader` route to create `FileAsset` records and count toward user storage quota, or create new tracked image route and deprecate legacy route. |
 | feature-070 | Planned | feature-070-admin-file-category-drill-down | files/admin | Add purpose-filtered file views in admin file manager with category-specific listing, previews, stats, and management controls accessible from settings breakdown. |
 | feature-071 | Planned | feature-071-site-settings-storage-structure | admin/settings | Define project-wide site settings storage strategy (env variables vs database table vs config file) for editable admin controls including persistence, hot reload, versioning, and audit boundaries. |
 | feature-072 | Planned | feature-072-file-upload-domain-isolation | files/upload | Add full domain isolation for file uploads using server-side proxy or signed URLs so browser never sees UploadThing provider URLs during upload or download. |
