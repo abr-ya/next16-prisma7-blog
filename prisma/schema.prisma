@@ -133,8 +133,31 @@ model Post {
   createdAt  DateTime   @default(now())
   updatedAt  DateTime   @default(now()) @updatedAt
 
-  links  LinksToPosts[]
-  images PostImage[]
+  links       LinksToPosts[]
+  images      PostImage[]
+  contentTags PostsToContentTags[]
+}
+
+model ContentTag {
+  id        String               @id @default(uuid())
+  name      String
+  slug      String               @unique
+  posts     PostsToContentTags[]
+  createdAt DateTime             @default(now())
+  updatedAt DateTime             @default(now()) @updatedAt
+
+  @@index([name])
+}
+
+model PostsToContentTags {
+  post       Post       @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId     String
+  tag        ContentTag @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  tagId      String
+  assignedAt DateTime   @default(now())
+
+  @@id([postId, tagId])
+  @@index([tagId])
 }
 
 model PostImage {

@@ -2,9 +2,10 @@ import Image from "next/image";
 import type { Metadata } from "next";
 
 import { getPostBySlug, updatePostViews } from "@/app/_data/posts";
-import { IPostDetails } from "@/app/_interfaces/post.interface";
+import type { IPostLink } from "@/app/_interfaces/post.interface";
 import { Badge, LinkBlock, PostUserAndCategory, RichTextViewer } from "@/components/index";
 import { authSession } from "@/lib/auth-utils";
+import { resolvePostDisplayTags } from "@/lib/content-tags";
 import { buildPageMetadata, getTextMetadataDescription } from "@/lib/site-metadata";
 
 type BlogPostPageProps = {
@@ -41,13 +42,13 @@ const PostDetailPage = async ({ params }: BlogPostPageProps) => {
 
   console.log("Post Detail,", slug, session?.user.id);
 
-  const post: IPostDetails = await getPostBySlug(slug);
-
-  updatePostViews(post?.id as string);
+  const post = await getPostBySlug(slug);
 
   if (!post) return null;
 
-  const hasTags = post.tags.length > 0;
+  updatePostViews(post.id);
+
+  const displayTags = resolvePostDisplayTags(post);
   const hasConnectedLinks = post.links.length > 0;
 
   return (
@@ -78,9 +79,9 @@ const PostDetailPage = async ({ params }: BlogPostPageProps) => {
         {/* RichTextViewer */}
         <RichTextViewer content={post?.content} />
 
-        {hasTags ? (
+        {displayTags.length > 0 ? (
           <div className="flex gap-2 py-6 flex-wrap">
-            {post.tags.map((tag) => (
+            {displayTags.map((tag) => (
               <Badge key={tag} variant="secondary">
                 #{tag}
               </Badge>
@@ -92,7 +93,7 @@ const PostDetailPage = async ({ params }: BlogPostPageProps) => {
           session?.user.id ? (
             <div className="flex flex-col gap-2 py-6">
               <h3 className="text-xl font-semibold">Connected links:</h3>
-              {post.links.map((pl) => (
+              {post.links.map((pl: IPostLink) => (
                 <LinkBlock key={pl.linkId} pl={pl} userID={session.user.id} />
               ))}
             </div>
