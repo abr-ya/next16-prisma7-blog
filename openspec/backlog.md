@@ -17,8 +17,11 @@ Use the same `feature-<3 digits>-<area>-<short-action>` name for the OpenSpec ch
 - `feature-001` through `feature-004` are completed historical slices and keep their numbers.
 - `feature-005` through `feature-019` are reserved for the next near-term product slices.
 - `feature-020` through `feature-039` are available for upcoming near-term candidates as the roadmap clarifies.
+- `feature-029` through `feature-031` are the consecutive content-tags implementation trilogy (post adoption → legacy migration → admin management).
+- After renumbers or cancellations, gaps in the near-term range (for example former `feature-032` and `feature-034` slots) are free again: prefer the lowest unused number when promoting the next candidate.
 - `feature-040` through `feature-049` are intentionally open for upcoming near-term promotions.
 - `feature-050+` rows are parked backlog ideas; promote or split them into the reserved range only when they become the next implementation candidate and before creating an OpenSpec change.
+- Never reassign a number that already has a Planned, In Progress, Done, or Cancelled row. Only unused gap numbers may be claimed.
 
 ## Features
 
@@ -52,10 +55,10 @@ Use the same `feature-<3 digits>-<area>-<short-action>` name for the OpenSpec ch
 | feature-026 | Done | feature-026-admin-file-preview | files/admin | Add file preview capability for common file types (images, PDFs, text files) with dialog or inline preview in admin file manager. |
 | feature-027 | Done | feature-027-admin-file-deletion | files/admin | Add file deletion controls that transition files to cleanup states (DETACHED, PENDING_DELETE) with eventual removal workflow. |
 | feature-028 | Done | feature-028-github-account-flow | auth/github | Finish GitHub account creation and sign-in with provider configuration, callback handling, email availability checks, and account-linking boundaries. |
-| feature-031 | Planned | feature-031-content-tags-post-adoption | content/tags | Move post tag reads and writes onto shared content tag records and post/tag assignments while preserving legacy `Post.tags` readability without bulk-migrating old values yet. |
-| feature-032 | Planned | feature-032-content-tags-legacy-post-migration | content/tags | Review legacy `Post.tags` values, merge or drop old tag variants as needed, then migrate approved values into shared content tags with an auditable compatibility boundary. |
+| feature-029 | Done | feature-029-content-tags-post-adoption | content/tags | Move post tag reads and writes onto shared content tag records and post/tag assignments while preserving legacy `Post.tags` readability without bulk-migrating old values yet. |
+| feature-030 | Planned | feature-030-content-tags-legacy-post-migration | content/tags | Review legacy `Post.tags` values, merge or drop old tag variants as needed, then migrate approved values into shared content tags with an auditable compatibility boundary. |
+| feature-031 | Planned | feature-031-content-tags-admin-management | content/tags | Add content-wide admin tag management for shared tags, including rename, merge, delete or detach boundaries, and usage visibility by content type. |
 | feature-033 | Planned | feature-033-video-comments-own-management | video/comments | Add signed-in own-comment edit and delete controls on public video detail comment lists after earlier comment follow-ups are prioritized. |
-| feature-034 | Planned | feature-034-content-tags-admin-management | content/tags | Add content-wide admin tag management for shared tags, including rename, merge, delete or detach boundaries, and usage visibility by content type. |
 | feature-035 | Done | feature-035-blog-post-detail-tags-links | blog/detail | Render existing post tags on public blog post detail pages and only show connected-link UI when a post actually has connected links. |
 | feature-036 | Planned | feature-036-admin-database-backup-generation | admin/database | Add manual admin-triggered database backup generation and download using the accepted admin database backup structure, without restore, scheduling, retention, or external storage policy. |
 | feature-037 | Done | feature-037-video-comments-link-rendering | video/comments | Render safe clickable links for plain URLs in public video comment text using the accepted comment link handling structure. |
@@ -69,7 +72,7 @@ Use the same `feature-<3 digits>-<area>-<short-action>` name for the OpenSpec ch
 | feature-055 | Planned | feature-055-saved-posts-admin-workflow | posts/admin | Define and implement the saved posts admin workflow currently represented by a placeholder. |
 | feature-056 | Planned | feature-056-video-duration-api-extraction | video/metadata | Add API-backed video duration extraction while preserving failure-tolerant video saves. |
 | feature-057 | Planned | feature-057-public-video-tag-filtering | video/tags | Add public `/videos` filtering by video tag once tag foundation behavior is proven, with tag UI visually distinct from channel badges. |
-| feature-058 | Cancelled | feature-058-video-tag-management | video/tags | Superseded by `feature-032-content-tags-admin-management` so tag management is content-wide instead of video-only. |
+| feature-058 | Cancelled | feature-058-video-tag-management | video/tags | Superseded by `feature-031-content-tags-admin-management` so tag management is content-wide instead of video-only. |
 | feature-059 | Cancelled | feature-059-video-tag-confirm-dialog | video/tags | Superseded by `feature-038-admin-confirm-dialogs`, which covers reusable app-styled confirmation dialogs across admin flows. |
 | feature-060 | Planned | feature-060-image-upload-tracking-migration | files/migration | Migrate legacy `imageUploader` route to create `FileAsset` records and count toward user storage quota, or create new tracked image route and deprecate legacy route. |
 | feature-061 | Planned | feature-061-video-comments-edit-delete-expiry | video/comments | Prevent editing and deleting own comments after they are more than 24 hours old. |

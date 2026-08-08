@@ -11,12 +11,18 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { createPost, updatePost } from "@/app/_data/posts";
 import { createLogEvent } from "@/app/_data/log";
+import { createContentTagSlug } from "@/lib/content-tags";
 import { createSlug } from "@/lib/slug-generator";
 import { Button, Card, CardContent, CardHeader, CardTitle, ImageUploader, Input, RichTextEditor, Spinner } from "..";
 
 const CreatableSelect = dynamic(() => import("react-select/creatable"), {
   ssr: false,
 });
+
+type ContentTagSelectOption = {
+  label: string;
+  value: string;
+};
 
 const formSchema = z.object({
   id: z.string().optional(),
@@ -32,6 +38,10 @@ const formSchema = z.object({
 
 export type PostFormValues = z.infer<typeof formSchema>;
 
+type PostFormProps = PostFormValues & {
+  tagOptions?: ContentTagSelectOption[];
+};
+
 export const PostForm = ({
   id,
   title,
@@ -42,7 +52,8 @@ export const PostForm = ({
   status,
   categories,
   slug,
-}: PostFormValues) => {
+  tagOptions = [],
+}: PostFormProps) => {
   const router = useRouter();
   const form = useForm({
     resolver: zodResolver(formSchema),
@@ -163,13 +174,21 @@ export const PostForm = ({
                   <CreatableSelect
                     isMulti
                     isClearable
-                    {...field}
+                    options={tagOptions}
+                    value={field.value}
+                    onChange={(value) => field.onChange(Array.from(value as readonly ContentTagSelectOption[]))}
                     onCreateOption={(value) => {
-                      const newOption = {
-                        label: value,
-                        value: value.toLocaleLowerCase(),
-                      };
-                      field.onChange([...field.value, newOption]);
+                      const name = value.trim();
+                      if (!name) return;
+
+                      const slug = createContentTagSlug(name);
+                      if (!slug) return;
+
+                      if (field.value.some((tag) => createContentTagSlug(tag.value || tag.label) === slug)) {
+                        return;
+                      }
+
+                      field.onChange([...field.value, { label: name, value: name }]);
                     }}
                     components={{ IndicatorsContainer: () => null }}
                   />
@@ -222,9 +241,9 @@ export const PostForm = ({
                           <SelectValue placeholder="Status" />
                         </SelectTrigger>
                         <SelectContent>
-                          {["published", "draft"].map((status) => (
-                            <SelectItem key={status} value={status}>
-                              {status}
+                          {["published", "draft"].map((statusOption) => (
+                            <SelectItem key={statusOption} value={statusOption}>
+                              {statusOption}
                             </SelectItem>
                           ))}
                         </SelectContent>
