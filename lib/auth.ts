@@ -4,6 +4,10 @@ import { prismaAdapter } from "better-auth/adapters/prisma";
 import { nextCookies } from "better-auth/next-js";
 import { admin } from "better-auth/plugins";
 import { AUTH_ROLES } from "./auth-roles";
+import { getGithubOAuthCredentials, getGoogleOAuthCredentials } from "./auth-provider-config";
+
+const githubOAuthCredentials = getGithubOAuthCredentials();
+const googleOAuthCredentials = getGoogleOAuthCredentials();
 
 export const auth = betterAuth({
   baseURL: process.env.BETTER_AUTH_URL,
@@ -14,16 +18,22 @@ export const auth = betterAuth({
     enabled: true,
   },
   socialProviders: {
-    google: {
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-      prompt: "select_account",
-    },
-    github: {
-      clientId: process.env.GITHUB_CLIENT_ID!,
-      clientSecret: process.env.GITHUB_CLIENT_SECRET!,
-      prompt: "select_account",
-    },
+    ...(googleOAuthCredentials
+      ? {
+          google: {
+            ...googleOAuthCredentials,
+            prompt: "select_account",
+          },
+        }
+      : {}),
+    ...(githubOAuthCredentials
+      ? {
+          github: {
+            ...githubOAuthCredentials,
+            prompt: "select_account",
+          },
+        }
+      : {}),
   },
   plugins: [
     admin({

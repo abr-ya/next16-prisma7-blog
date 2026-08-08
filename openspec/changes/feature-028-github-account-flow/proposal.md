@@ -10,6 +10,7 @@ Users should be able to create an account and sign in with GitHub through a clea
 - Surface actionable UI states for starting GitHub auth and for provider/configuration failures.
 - Preserve the existing role model: GitHub users receive the ordinary `user` role by default and GitHub does not imply admin access.
 - Define account-linking boundaries for matching or already-used email addresses without adding full account-management UI.
+- Defer real GitHub OAuth App credential creation and live browser provider verification to `feature-063-github-oauth-credentials-validation`.
 
 Non-goals:
 
@@ -18,6 +19,7 @@ Non-goals:
 - No admin user-management UI, role assignment UI, ban/impersonation UI, or account settings page.
 - No new auth database schema unless implementation proves the existing Better Auth schema is insufficient.
 - No custom OAuth provider implementation outside Better Auth.
+- No creation of real GitHub OAuth credentials or manual live GitHub callback smoke test in this slice.
 
 ## Capabilities
 

@@ -52,6 +52,12 @@ The system SHALL keep GitHub OAuth configuration server-owned and handle unavail
 - **THEN** the UI SHALL show an actionable error state
 - **AND** it SHALL NOT expose OAuth secrets or raw provider credentials
 
+#### Scenario: Live credential validation is deferred
+
+- **WHEN** this GitHub account-flow slice is implemented
+- **THEN** the system SHALL NOT require creating real GitHub OAuth App credentials as part of this slice
+- **AND** manual live provider callback verification SHALL be tracked by `feature-063-github-oauth-credentials-validation`
+
 ### Requirement: GitHub users keep ordinary role defaults
 
 The system SHALL preserve the existing role model for users authenticated through GitHub.

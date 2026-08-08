@@ -1,3 +1,10 @@
 import { AuthCard } from "./auth-card";
 
-export const SignInForm = () => <AuthCard>sign-in-form</AuthCard>;
+interface ISignInFormProps {
+  isGithubConfigured: boolean;
+  isGoogleConfigured: boolean;
+}
+
+export const SignInForm = ({ isGithubConfigured, isGoogleConfigured }: ISignInFormProps) => (
+  <AuthCard isGithubConfigured={isGithubConfigured} isGoogleConfigured={isGoogleConfigured} />
+);

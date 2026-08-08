@@ -14,6 +14,7 @@ Role storage is already implemented with ordinary `user` defaults and explicit a
 - Keep GitHub provider configuration server-owned and fail gracefully when required environment variables are missing.
 - Document and enforce that GitHub-created users receive the ordinary `user` role.
 - Define account-linking boundaries for email conflicts without adding a full account settings UI.
+- Keep real GitHub OAuth credential creation and live callback verification deferred to `feature-063-github-oauth-credentials-validation`.
 
 **Non-Goals:**
 
@@ -22,6 +23,7 @@ Role storage is already implemented with ordinary `user` defaults and explicit a
 - Do not change the Google provider flow except to preserve existing behavior.
 - Do not add role assignment, user management, or admin account controls.
 - Do not add a custom OAuth implementation outside Better Auth.
+- Do not create real GitHub OAuth App credentials or require a live provider smoke test in this slice.
 
 ## Decisions
 
@@ -51,7 +53,7 @@ Role storage is already implemented with ordinary `user` defaults and explicit a
 
 ## Risks / Trade-offs
 
-- GitHub provider behavior depends on environment configuration -> Validate with local/dev env and keep user-facing errors generic.
+- GitHub provider behavior depends on environment configuration -> Keep user-facing errors generic and defer live credential validation to `feature-063-github-oauth-credentials-validation`.
 - Same-email account linking can be security-sensitive -> Avoid custom merging and defer explicit linking UX.
-- OAuth callback behavior is hard to fully validate in sandbox -> Use static checks here and require local browser validation with configured GitHub credentials.
+- OAuth callback behavior is hard to fully validate in sandbox -> Use static/build checks here and track manual browser validation with configured GitHub credentials in `feature-063-github-oauth-credentials-validation`.
 - Sign-in/sign-up pages still need email/password polish later -> Keep placeholder email/password scope out of this GitHub slice and leave `feature-062-email-password-account-flow` parked.
