@@ -24,5 +24,5 @@
 - [x] 4.1 Run `npm run tsc` and fix type errors from new models/helpers.
 - [x] 4.2 Run `npm run lint` and targeted ESLint on changed non-`app/` files.
 - [x] 4.3 Ask for a local `npm run build` when schema/routes need full verification; do not bulk-migrate historical posts.
-- [ ] 4.4 Manually verify: create/edit post with tags, reload admin seed, public detail/list badges, post with only legacy tags still shows them, video tags unchanged.
+- [x] 4.4 Manually verify: create/edit post with tags, reload admin seed, public detail/list badges, post with only legacy tags still shows them, video tags unchanged.
 - [x] 4.5 Set `feature-029` backlog status to `In Progress` during implementation and `Done` after archive.
