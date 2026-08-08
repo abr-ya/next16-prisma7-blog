@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint \"./app/**/*.{js,ts,tsx}\" --quiet",
     "fix": "eslint \"./app/**/*.{js,ts,tsx}\" --fix",
+    "fix-comp": "eslint \"./components/**/*.{js,ts,tsx}\" --fix",
     "postinstall": "prisma generate",
     "tsc": "tsc --noEmit"
   },

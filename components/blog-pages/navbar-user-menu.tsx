@@ -43,9 +43,7 @@ export const NavbarUserMenu = ({ userName, userImage }: NavbarUserMenuProps) => 
     <>
       <NavigationMenuTrigger>
         <Avatar className="w-8 h-8 rounded-full">
-          {userImage ? (
-            <AvatarImage src={userImage} alt={userName ? `${userName}'s avatar` : "User avatar"} />
-          ) : null}
+          {userImage ? <AvatarImage src={userImage} alt={userName ? `${userName}'s avatar` : "User avatar"} /> : null}
           <AvatarFallback delayMs={userImage ? 600 : 0}>{fallbackLabel}</AvatarFallback>
         </Avatar>
       </NavigationMenuTrigger>

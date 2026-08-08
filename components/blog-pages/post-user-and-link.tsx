@@ -19,13 +19,7 @@ export const PostUserAndLink = ({ name, avatar, created, slug }: PostUserAndLink
       <div className="flex gap-1">
         <div className="relative h-8 w-8 rounded-full shadow-lg overflow-hidden">
           {avatar ? (
-            <Image
-              className="rounded-full shadow-lg"
-              src={avatar}
-              alt={name}
-              fill
-              sizes="32px"
-            />
+            <Image className="rounded-full shadow-lg" src={avatar} alt={name} fill sizes="32px" />
           ) : (
             <div className="flex h-full w-full items-center justify-center bg-muted text-[10px] font-semibold">
               {initials}

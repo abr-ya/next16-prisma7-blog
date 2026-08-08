@@ -9,11 +9,7 @@ import {
   type LegacyPostTagInventoryResult,
 } from "@/app/_data/content-tags-legacy-migration";
 import type { LegacyPostTagMigrationPolicy, LegacyPostTagMigrationSummary } from "@/lib/content-tags-legacy-migration";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
+import { Badge, Button, Label, Textarea, Card, CardContent, CardHeader, CardTitle } from "@/components/index";
 
 type TagsLegacyMigrationPanelProps = {
   inventory: LegacyPostTagInventoryResult;

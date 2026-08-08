@@ -6,11 +6,14 @@ export { Card, CardContent, CardHeader, CardTitle, CardDescription } from "./ui/
 export { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
 export { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "./ui/form";
 export { Input } from "./ui/input";
+export { Label } from "./ui/label";
 export * from "./ui/navigation-menu";
 export { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 export { Separator } from "./ui/separator";
 export { Sidebar, SidebarProvider } from "./ui/sidebar";
 export { Spinner } from "./ui/spinner";
+export { Textarea } from "./ui/textarea";
+export { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
 
 // Common Components
 export { DataTable } from "./common/data-table";
