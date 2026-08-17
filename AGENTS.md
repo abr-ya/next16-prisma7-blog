@@ -25,7 +25,7 @@ Small obvious fixes may be implemented directly when they do not change product 
 
 ## Feature Numbering
 
-Use one project-wide sequence for planned features, OpenSpec changes, and matching git branches.
+Use one project-wide sequence for active and completed numbered features. Backlog candidates do not receive a `feature-XXX` number until they are promoted into implementation.
 
 Format:
 
@@ -38,9 +38,15 @@ Examples:
 - `feature-003-blog-post-search`
 - `feature-004-md-docs-editor-polish`
 
-Use the same name for the OpenSpec change directory and the git branch when possible.
-Before starting a new numbered feature, check `openspec/backlog.md` for the next available number.
-Do not reuse feature numbers, even if an item is cancelled or archived.
+When promoting a backlog candidate:
+
+- Check `openspec/backlog.md` and `openspec/feature-history.md` for existing numbered features.
+- Assign the lowest unused `feature-XXX` number.
+- Use the same numbered name for the OpenSpec change directory and the git branch when possible.
+- Mark the row as `In Progress` in `openspec/backlog.md`.
+
+Completed features keep their numbers permanently in `openspec/feature-history.md`.
+Cancelled or deferred ideas should return to the unnumbered candidate pool unless already completed; cancelled candidates do not reserve feature numbers.
 
 ## Token Economy
 
