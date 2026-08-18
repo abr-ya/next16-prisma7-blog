@@ -39,6 +39,7 @@ Cancelled or deferred candidates do not reserve feature numbers.
 | feature-027 | feature-027-admin-file-deletion | files/admin | Add file deletion controls that transition files to cleanup states (DETACHED, PENDING_DELETE) with eventual removal workflow. |
 | feature-028 | feature-028-github-account-flow | auth/github | Finish GitHub account creation and sign-in with provider configuration, callback handling, email availability checks, and account-linking boundaries. |
 | feature-029 | feature-029-content-tags-post-adoption | content/tags | Move post tag reads and writes onto shared content tag records and post/tag assignments while preserving legacy `Post.tags` readability without bulk-migrating old values yet. |
+| feature-030 | feature-030-content-tags-review-status-workflow | content/tags | Add a review status for shared content tags so reviewed and needs-review tags keep working publicly while admins can inspect, approve, flag, replace, remove, or merge tags that need cleanup. |
 | feature-035 | feature-035-blog-post-detail-tags-links | blog/detail | Render existing post tags on public blog post detail pages and only show connected-link UI when a post actually has connected links. |
 | feature-037 | feature-037-video-comments-link-rendering | video/comments | Render safe clickable links for plain URLs in public video comment text using the accepted comment link handling structure. |
 

@@ -28,6 +28,13 @@ The system SHALL define and use shared content tags as a project-wide domain for
 - **THEN** the system SHALL store those tags as shared content tags and post-specific assignments
 - **AND** other content types MAY continue using their existing tag storage until their own adoption slices
 
+#### Scenario: Tag review status does not change public behavior
+
+- **WHEN** a shared content tag is marked as needing review
+- **THEN** the tag SHALL remain assigned to its content
+- **AND** public surfaces SHALL display and link the tag the same way they display reviewed shared tags
+- **AND** admin surfaces SHALL make the review status visible for cleanup decisions
+
 ### Requirement: Content Type Boundaries
 
 The system SHALL keep tag assignments compatible with each content type's ownership, visibility, and lifecycle rules.
@@ -76,16 +83,60 @@ The system SHALL keep compatibility boundaries for existing tag implementations 
 #### Scenario: Legacy post tag migration is planned separately
 
 - **WHEN** the architecture identifies legacy post string tags without shared assignments
-- **THEN** the project SHALL plan their review and transfer as a separate controlled migration feature (`feature-030`)
-- **AND** the migration feature SHALL allow old tag values to be inspected before they become canonical shared tags
-- **AND** ambiguous, duplicate, unwanted, or renamed tags SHALL be eligible for manual merge, drop, or rename decisions during that process
+- **THEN** the project SHALL plan their transfer as a separate controlled migration candidate
+- **AND** the migration SHALL create or mark imported legacy tag values as needing review instead of requiring them to become immediately canonical
+- **AND** ambiguous, duplicate, unwanted, or renamed tags SHALL be eligible for manual approve, merge, drop, or replace decisions through the review workflow
 
 #### Scenario: Shared admin tag management is planned separately
 
 - **WHEN** shared tag records and content assignments exist
-- **THEN** the project SHALL plan content-wide admin tag management as a separate feature (`feature-031`)
-- **AND** that feature SHALL cover shared tag rename, merge, delete or detach boundaries, and usage visibility by content type
+- **THEN** the project SHALL plan broader content-wide admin tag management as a separate candidate
+- **AND** that candidate SHALL cover shared tag rename, merge, delete or detach boundaries, and usage visibility by content type beyond the review workflow
 - **AND** it SHALL NOT be limited to video-only tags
+
+### Requirement: Admin Content Tag Review Workflow
+
+The system SHALL provide an admin-only workflow for reviewing shared content tags without treating review state as public visibility.
+
+#### Scenario: Admin marks a tag as needing review
+
+- **WHEN** an admin marks an existing shared content tag as needing review
+- **THEN** the tag SHALL keep its existing assignments
+- **AND** public tag display SHALL remain unchanged
+- **AND** admin tag views SHALL show that the tag requires review
+
+#### Scenario: Admin approves a reviewed tag candidate
+
+- **WHEN** an admin approves a tag that needs review
+- **THEN** the system SHALL mark the tag as reviewed or active
+- **AND** the tag SHALL keep its existing assignments
+
+#### Scenario: Admin reviews linked post usage
+
+- **WHEN** an admin opens the review view for a tag that needs review
+- **THEN** the system SHALL show linked post usage for shared post/tag assignments
+- **AND** the view SHALL provide enough post identity to decide whether each assignment should remain, be removed, or be replaced
+
+#### Scenario: Admin removes selected tag assignments
+
+- **WHEN** an admin removes a needs-review tag from selected posts
+- **THEN** the system SHALL delete only those selected post/tag assignments
+- **AND** it SHALL NOT delete the posts
+- **AND** it SHALL NOT hide unrelated assignments of the same tag
+
+#### Scenario: Admin replaces selected tag assignments
+
+- **WHEN** an admin replaces a needs-review tag with another tag for selected posts
+- **THEN** the selected posts SHALL receive the replacement tag assignment
+- **AND** the original selected assignments SHALL be removed
+- **AND** duplicate replacement assignments SHALL be deduplicated safely
+
+#### Scenario: Admin merges one tag into another
+
+- **WHEN** an admin merges a source tag into a target tag
+- **THEN** all source post assignments SHALL move to the target tag
+- **AND** posts that already have the target tag SHALL NOT receive duplicate assignments
+- **AND** the source tag SHALL no longer appear as an active cleanup item after the merge
 
 ### Requirement: Implementation Slice Boundaries
 
