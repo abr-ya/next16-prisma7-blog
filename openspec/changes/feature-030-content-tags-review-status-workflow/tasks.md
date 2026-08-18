@@ -6,11 +6,11 @@
 
 ## 2. Schema And Data Helpers
 
-- [ ] 2.1 Add `ContentTagStatus` with `ACTIVE` and `NEEDS_REVIEW` values.
-- [ ] 2.2 Add `ContentTag.status` with default `ACTIVE` without changing existing tag assignments.
-- [ ] 2.3 Regenerate Prisma client through the existing project flow.
-- [ ] 2.4 Add admin-only content-tag helpers for listing tags by status and reading linked post usage.
-- [ ] 2.5 Add server-side mutations for mark reviewed, mark needs-review, remove selected assignments, replace selected assignments, and merge tag.
+- [x] 2.1 Add `ContentTagStatus` with `ACTIVE` and `NEEDS_REVIEW` values.
+- [x] 2.2 Add `ContentTag.status` with default `ACTIVE` without changing existing tag assignments.
+- [x] 2.3 Regenerate Prisma client through the existing project flow.
+- [x] 2.4 Add admin-only content-tag helpers for listing tags by status and reading linked post usage.
+- [x] 2.5 Add server-side mutations for mark reviewed, mark needs-review, remove selected assignments, replace selected assignments, and merge tag.
 
 ## 3. Admin Review UI
 
