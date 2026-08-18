@@ -142,10 +142,12 @@ model ContentTag {
   id        String               @id @default(uuid())
   name      String
   slug      String               @unique
+  status    ContentTagStatus     @default(ACTIVE)
   posts     PostsToContentTags[]
   createdAt DateTime             @default(now())
   updatedAt DateTime             @default(now()) @updatedAt
 
+  @@index([status])
   @@index([name])
 }
 
@@ -187,6 +189,11 @@ model Category {
 enum PostStatus {
   published
   draft
+}
+
+enum ContentTagStatus {
+  ACTIVE
+  NEEDS_REVIEW
 }
 
 // Updated Posts model - finish

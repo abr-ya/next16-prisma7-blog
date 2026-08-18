@@ -1,8 +1,4 @@
-## Purpose
-
-Define the project-wide tag domain structure and post runtime adoption of shared content tags while other content types follow later slices.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Shared Content Tag Architecture
 
@@ -34,28 +30,6 @@ The system SHALL define and use shared content tags as a project-wide domain for
 - **THEN** the tag SHALL remain assigned to its content
 - **AND** public surfaces SHALL display and link the tag the same way they display reviewed shared tags
 - **AND** admin surfaces SHALL make the review status visible for cleanup decisions
-
-### Requirement: Content Type Boundaries
-
-The system SHALL keep tag assignments compatible with each content type's ownership, visibility, and lifecycle rules.
-
-#### Scenario: Admin manages tags through content forms
-
-- **WHEN** an authenticated admin edits tagged content
-- **THEN** the tag workflow SHALL preserve that content type's existing admin authorization rules
-- **AND** assigning tags SHALL NOT grant access to content outside those rules
-
-#### Scenario: Public tag display respects content visibility
-
-- **WHEN** the system displays tags on a public surface
-- **THEN** it SHALL only display tag assignments attached to content that is already public for that surface
-- **AND** tag display SHALL NOT expose private, draft, hidden, detached, or otherwise restricted content
-
-#### Scenario: Content deletion preserves data integrity
-
-- **WHEN** tagged content is deleted
-- **THEN** its tag assignments SHALL be removed or detached according to that content type's lifecycle rules
-- **AND** reusable tag records SHALL NOT by themselves expose deleted content
 
 ### Requirement: Legacy Tag Compatibility
 
@@ -137,19 +111,3 @@ The system SHALL provide an admin-only workflow for reviewing shared content tag
 - **THEN** all source post assignments SHALL move to the target tag
 - **AND** posts that already have the target tag SHALL NOT receive duplicate assignments
 - **AND** the source tag SHALL no longer appear as an active cleanup item after the merge
-
-### Requirement: Implementation Slice Boundaries
-
-The system SHALL keep later shared-tag work outside the post-adoption slice after architecture acceptance.
-
-#### Scenario: Architecture remains the contract for non-post content
-
-- **WHEN** this post-adoption feature is implemented
-- **THEN** videos, docs, and files SHALL NOT be required to migrate onto shared content tags in the same slice
-- **AND** schema adoption for posts, legacy migration, public filtering, and admin management work SHALL remain separate follow-up slices where not already delivered
-
-#### Scenario: Future tag features declare their content scope
-
-- **WHEN** a later feature adds or changes tag behavior
-- **THEN** its OpenSpec change SHALL identify the affected content type or shared helper layer
-- **AND** it SHALL state whether the change affects admin forms, public display, public filtering, data migration, or tag management
