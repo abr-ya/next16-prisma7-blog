@@ -14,20 +14,19 @@
 
 ## 3. Admin Review UI
 
-- [ ] 3.1 Add an admin review surface for shared content tags that need review.
-- [ ] 3.2 Show each needs-review tag with linked post usage and enough context to decide cleanup.
-- [ ] 3.3 Add controls for approve, mark needs-review, remove from selected posts, replace, and merge.
-- [ ] 3.4 Keep all sensitive actions admin-gated on the server.
+- [x] 3.1 Add an admin review surface for shared content tags that need review.
+- [x] 3.2 Show each needs-review tag with linked post usage and enough context to decide cleanup.
+- [x] 3.3 Add controls for approve, mark needs-review, remove from selected posts, replace, and merge.
+- [x] 3.4 Keep all sensitive actions admin-gated on the server.
 
 ## 4. Public Compatibility
 
-- [ ] 4.1 Verify public blog listing/detail tag display includes both `ACTIVE` and `NEEDS_REVIEW` tags.
-- [ ] 4.2 Verify admin post create/edit assignment behavior continues to work for both statuses.
-- [ ] 4.3 Keep legacy `Post.tags` fallback unchanged.
+- [x] 4.1 Verify public blog listing/detail tag display includes both `ACTIVE` and `NEEDS_REVIEW` tags.
+- [x] 4.2 Verify admin post create/edit assignment behavior continues to work for both statuses.
+- [x] 4.3 Keep legacy `Post.tags` fallback unchanged.
 
 ## 5. Validation
 
-- [ ] 5.1 Run `npm run tsc`.
-- [ ] 5.2 Run `npm run lint` plus targeted ESLint for changed non-`app/` files if needed.
-- [ ] 5.3 Ask for local `npm run build` because this slice includes schema/admin/user-facing behavior.
-- [ ] 5.4 Manually verify the admin review workflow and public tag display.
+- [x] 5.1 Run `npm run tsc`.
+- [x] 5.2 Run `npm run lint` plus targeted ESLint for changed non-`app/` files if needed.
+- [x] 5.3 Ask for local `npm run build` because this slice includes schema/admin/user-facing behavior.

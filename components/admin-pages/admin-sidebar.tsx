@@ -9,6 +9,7 @@ import {
   Inbox,
   ListVideo,
   Search,
+  Tags,
   Video,
 } from "lucide-react";
 
@@ -60,6 +61,12 @@ const items = [
     title: "Files",
     url: "/admin/files",
     icon: File,
+  },
+  {
+    title: "Content Tags",
+    url: "/admin/content-tags",
+    icon: Tags,
+    adminOnly: true,
   },
   {
     title: "Database",
