@@ -28,7 +28,7 @@ Backlog candidates stay unnumbered until they are promoted into implementation. 
 
 | Status | Candidate | Area | Summary |
 | --- | --- | --- | --- |
-| Ready | content-tags-legacy-post-draft-migration | content/tags | Import legacy `Post.tags` values as needs-review shared tag assignments without hiding them publicly, so admins can clean them up through the review workflow. |
+| In Progress | feature-031-content-tags-legacy-post-draft-migration | content/tags | Import legacy `Post.tags` values as needs-review shared tag assignments without hiding them publicly, so admins can clean them up through the review workflow. |
 | Ready | admin-confirm-dialogs | admin/ui | Replace browser-native confirmation prompts for admin destructive or sensitive actions with a reusable app-styled confirmation dialog, including the existing video, channel, file, and new-tag confirmation flows. |
 | Ready | public-navbar-hydration-fix | navigation/public | Fix the public navbar hydration warning by auditing the `NavigationMenuList` HTML structure. |
 
