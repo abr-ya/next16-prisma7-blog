@@ -72,7 +72,7 @@ The system SHALL keep compatibility boundaries for existing tag implementations 
 - **WHEN** posts adopt shared content tags
 - **THEN** existing `Post.tags` string-array values SHALL remain readable as legacy data for posts without assignments
 - **AND** new shared post/tag assignments SHALL NOT require immediate bulk transfer of old string tags on deploy
-- **AND** the system SHALL preserve the ability to identify posts by their previous tag values until a later migration completes
+- **AND** the system SHALL preserve the ability to identify posts by their previous tag values until a controlled import completes or the post is re-saved
 
 #### Scenario: Post reads prefer shared tags then legacy strings
 
@@ -83,7 +83,7 @@ The system SHALL keep compatibility boundaries for existing tag implementations 
 #### Scenario: Legacy post tag migration is planned separately
 
 - **WHEN** the architecture identifies legacy post string tags without shared assignments
-- **THEN** the project SHALL plan their transfer as a separate controlled migration candidate
+- **THEN** the project SHALL transfer them only through a controlled admin import workflow
 - **AND** the migration SHALL create or mark imported legacy tag values as needing review instead of requiring them to become immediately canonical
 - **AND** ambiguous, duplicate, unwanted, or renamed tags SHALL be eligible for manual approve, merge, drop, or replace decisions through the review workflow
 
@@ -93,6 +93,41 @@ The system SHALL keep compatibility boundaries for existing tag implementations 
 - **THEN** the project SHALL plan broader content-wide admin tag management as a separate candidate
 - **AND** that candidate SHALL cover shared tag rename, merge, delete or detach boundaries, and usage visibility by content type beyond the review workflow
 - **AND** it SHALL NOT be limited to video-only tags
+
+### Requirement: Admin Legacy Post Tag Import
+
+The system SHALL provide an admin-only import path that turns legacy post string tags into shared content-tag assignments without changing public visibility.
+
+#### Scenario: Admin inspects legacy-only post tags
+
+- **WHEN** an admin opens the content-tag admin migration surface
+- **THEN** the system SHALL show legacy `Post.tags` values from posts that have no shared content-tag assignments
+- **AND** the inventory SHALL include enough post usage context to understand which legacy values will be imported
+
+#### Scenario: Admin dry-runs legacy post tag import
+
+- **WHEN** an admin runs a dry-run for the legacy post-tag import
+- **THEN** the system SHALL report how many eligible posts, planned assignments, reusable tags, new tags, and skipped values are involved
+- **AND** the dry-run SHALL NOT create content tags, post/tag assignments, or post updates
+
+#### Scenario: Admin imports legacy post tags for review
+
+- **WHEN** an admin applies the legacy post-tag import
+- **THEN** eligible posts SHALL receive shared content-tag assignments based on normalized legacy `Post.tags` values
+- **AND** imported tag records SHALL be marked `NEEDS_REVIEW`
+- **AND** public tag display SHALL remain unchanged except that imported posts may now resolve tags through shared assignments instead of legacy fallback
+
+#### Scenario: Import remains idempotent
+
+- **WHEN** the legacy post-tag import is applied more than once
+- **THEN** posts that already have shared content-tag assignments SHALL NOT receive duplicate assignments
+- **AND** reusable tag records SHALL remain unique by slug
+
+#### Scenario: Imported tags enter existing review workflow
+
+- **WHEN** legacy tags are imported as `NEEDS_REVIEW`
+- **THEN** admins SHALL be able to approve, replace, remove, or merge those imported tags through the existing content-tag review workflow
+- **AND** the import workflow SHALL NOT need separate canonicalization controls for those cleanup actions
 
 ### Requirement: Admin Content Tag Review Workflow
 
