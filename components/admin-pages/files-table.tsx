@@ -11,7 +11,18 @@ import type { FileAssetWithOwner } from "@/app/_data/files";
 import { FileAssetPurpose, FileAssetStatus, FileAssetVisibility } from "@/generated/prisma/enums";
 import { formatFileSize } from "@/lib/file-upload-limits";
 
-import { Badge, Button, DataTable, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "..";
+import {
+  Badge,
+  Button,
+  ConfirmDialog,
+  DataTable,
+  Input,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "..";
 import { FilePreviewDialog, isFilePreviewable } from "./file-preview-dialog";
 
 interface IFilesTableProps {
@@ -83,17 +94,13 @@ const FileActions = ({
 }) => {
   const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const isActive = file.status === "ACTIVE";
   const previewable = isActive && isFilePreviewable(file.mimeType);
   const canDelete = isActive;
 
   const handleDelete = async () => {
-    const confirmed = window.confirm(
-      `Mark "${file.name}" as pending delete? The stored provider file will not be removed yet.`,
-    );
-
-    if (!confirmed) return;
-
+    setIsConfirmOpen(false);
     setIsDeleting(true);
 
     try {
@@ -115,43 +122,55 @@ const FileActions = ({
   };
 
   return (
-    <div className="flex w-24 items-center justify-end gap-1">
-      <Button
-        type="button"
-        variant="outline"
-        size="icon-sm"
-        title={
-          previewable
-            ? `Preview ${file.name}`
-            : isActive
-              ? "Preview unavailable for this file type"
-              : "Preview unavailable for non-active files"
-        }
-        aria-label={
-          previewable
-            ? `Preview ${file.name}`
-            : isActive
-              ? "Preview unavailable for this file type"
-              : "Preview unavailable for non-active files"
-        }
-        disabled={!previewable}
-        onClick={() => onPreview(file)}
-      >
-        <Eye className="size-4" />
-      </Button>
-      <Button
-        type="button"
-        variant="outline"
-        size="icon-sm"
-        title={canDelete ? `Mark ${file.name} pending delete` : "Delete unavailable for non-active files"}
-        aria-label={canDelete ? `Mark ${file.name} pending delete` : "Delete unavailable for non-active files"}
-        className="text-destructive hover:text-destructive"
-        disabled={!canDelete || isDeleting}
-        onClick={handleDelete}
-      >
-        <Trash className="size-4" />
-      </Button>
-    </div>
+    <>
+      <div className="flex w-24 items-center justify-end gap-1">
+        <Button
+          type="button"
+          variant="outline"
+          size="icon-sm"
+          title={
+            previewable
+              ? `Preview ${file.name}`
+              : isActive
+                ? "Preview unavailable for this file type"
+                : "Preview unavailable for non-active files"
+          }
+          aria-label={
+            previewable
+              ? `Preview ${file.name}`
+              : isActive
+                ? "Preview unavailable for this file type"
+                : "Preview unavailable for non-active files"
+          }
+          disabled={!previewable}
+          onClick={() => onPreview(file)}
+        >
+          <Eye className="size-4" />
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="icon-sm"
+          title={canDelete ? `Mark ${file.name} pending delete` : "Delete unavailable for non-active files"}
+          aria-label={canDelete ? `Mark ${file.name} pending delete` : "Delete unavailable for non-active files"}
+          className="text-destructive hover:text-destructive"
+          disabled={!canDelete || isDeleting}
+          onClick={() => setIsConfirmOpen(true)}
+        >
+          <Trash className="size-4" />
+        </Button>
+      </div>
+      <ConfirmDialog
+        open={isConfirmOpen}
+        onOpenChange={setIsConfirmOpen}
+        title={`Mark "${file.name}" pending delete?`}
+        description="The stored provider file will not be removed yet."
+        confirmLabel="Mark Pending Delete"
+        confirmVariant="destructive"
+        isPending={isDeleting}
+        onConfirm={handleDelete}
+      />
+    </>
   );
 };
 

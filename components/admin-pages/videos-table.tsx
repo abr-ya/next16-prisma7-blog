@@ -11,7 +11,17 @@ import { deleteVideo, resolveAndSaveVideoThumbnail, type VideoWithChannel } from
 import { formatVideoDuration, formatVideoProvider } from "@/lib/video-metadata-format";
 import { getYouTubeVideoId } from "@/lib/video-providers/youtube";
 
-import { Badge, Button, DataTable, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "..";
+import {
+  Badge,
+  Button,
+  ConfirmDialog,
+  DataTable,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "..";
 
 interface IVideosTableProps {
   data: VideoWithChannel[];
@@ -44,6 +54,7 @@ const getVideoTags = (video: VideoWithChannel) => video.tags.map(({ tag }) => ta
 const VideoActions = ({ video }: { video: VideoWithChannel }) => {
   const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isResolvingThumbnail, setIsResolvingThumbnail] = useState(false);
 
   const handleCopyId = async () => {
@@ -83,10 +94,7 @@ const VideoActions = ({ video }: { video: VideoWithChannel }) => {
   };
 
   const handleDelete = async () => {
-    const confirmed = window.confirm(`Delete video "${video.title}"?`);
-
-    if (!confirmed) return;
-
+    setIsConfirmOpen(false);
     setIsDeleting(true);
 
     try {
@@ -107,40 +115,51 @@ const VideoActions = ({ video }: { video: VideoWithChannel }) => {
   };
 
   return (
-    <div className="flex w-44 items-center justify-end gap-1">
-      <Button asChild variant="ghost" size="icon" title="Open video">
-        <a href={video.url} target="_blank" rel="noreferrer">
-          <ExternalLink className="size-4" />
-        </a>
-      </Button>
-      <Button variant="ghost" size="icon" title="Copy video ID" onClick={handleCopyId}>
-        <Copy className="size-4" />
-      </Button>
-      <Button
-        variant="ghost"
-        size="icon"
-        title={video.thumbnailUrl ? "Refresh thumbnail URL" : "Fetch thumbnail URL"}
-        disabled={isResolvingThumbnail}
-        onClick={handleResolveThumbnail}
-      >
-        <ImageIcon className="size-4" />
-      </Button>
-      <Button asChild variant="ghost" size="icon" title="Edit video">
-        <Link href={`/admin/videos/${video.id}`}>
-          <Pencil className="size-4" />
-        </Link>
-      </Button>
-      <Button
-        variant="ghost"
-        size="icon"
-        title="Delete video"
-        className="text-destructive hover:text-destructive"
-        disabled={isDeleting}
-        onClick={handleDelete}
-      >
-        <Trash className="size-4" />
-      </Button>
-    </div>
+    <>
+      <div className="flex w-44 items-center justify-end gap-1">
+        <Button asChild variant="ghost" size="icon" title="Open video">
+          <a href={video.url} target="_blank" rel="noreferrer">
+            <ExternalLink className="size-4" />
+          </a>
+        </Button>
+        <Button variant="ghost" size="icon" title="Copy video ID" onClick={handleCopyId}>
+          <Copy className="size-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          title={video.thumbnailUrl ? "Refresh thumbnail URL" : "Fetch thumbnail URL"}
+          disabled={isResolvingThumbnail}
+          onClick={handleResolveThumbnail}
+        >
+          <ImageIcon className="size-4" />
+        </Button>
+        <Button asChild variant="ghost" size="icon" title="Edit video">
+          <Link href={`/admin/videos/${video.id}`}>
+            <Pencil className="size-4" />
+          </Link>
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          title="Delete video"
+          className="text-destructive hover:text-destructive"
+          disabled={isDeleting}
+          onClick={() => setIsConfirmOpen(true)}
+        >
+          <Trash className="size-4" />
+        </Button>
+      </div>
+      <ConfirmDialog
+        open={isConfirmOpen}
+        onOpenChange={setIsConfirmOpen}
+        title={`Delete video "${video.title}"?`}
+        confirmLabel="Delete Video"
+        confirmVariant="destructive"
+        isPending={isDeleting}
+        onConfirm={handleDelete}
+      />
+    </>
   );
 };
 
