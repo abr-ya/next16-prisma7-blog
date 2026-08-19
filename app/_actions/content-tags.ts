@@ -18,6 +18,31 @@ const revalidateContentTagPaths = () => {
   revalidatePath("/blog");
 };
 
+const revalidatePostPaths = (postSlugs: string[]) => {
+  Array.from(new Set(postSlugs.filter(Boolean))).forEach((slug) => {
+    revalidatePath(`/blog/${slug}`);
+  });
+};
+
+const getContentTagPostSlugs = async (tagIds: string[]) => {
+  const selectedTagIds = Array.from(new Set(tagIds.filter(Boolean)));
+
+  if (selectedTagIds.length === 0) return [];
+
+  const assignments = await prisma.postsToContentTags.findMany({
+    where: { tagId: { in: selectedTagIds } },
+    select: {
+      post: {
+        select: {
+          slug: true,
+        },
+      },
+    },
+  });
+
+  return assignments.map((assignment: { post: { slug: string } }) => assignment.post.slug);
+};
+
 const normalizeTargetTag = (value: string): NormalizedContentTag | null => {
   const name = normalizeContentTagName(value);
   const slug = createContentTagSlug(name);
@@ -40,6 +65,49 @@ const getOrCreateTargetTag = async (targetName: string) => {
     update: { name: target.name },
     select: { id: true, slug: true },
   });
+};
+
+export const renameContentTag = async (tagId: string, nextName: string): Promise<ContentTagActionResult> => {
+  await requireAdmin();
+
+  const nextTag = normalizeTargetTag(nextName);
+
+  if (!nextTag) {
+    return {
+      success: false,
+      message: "A tag name is required.",
+    };
+  }
+
+  const existing = await prisma.contentTag.findUnique({
+    where: { slug: nextTag.slug },
+    select: { id: true },
+  });
+
+  if (existing && existing.id !== tagId) {
+    return {
+      success: false,
+      message: "Another tag already uses that slug. Use merge instead.",
+    };
+  }
+
+  const postSlugs = await getContentTagPostSlugs([tagId]);
+
+  await prisma.contentTag.update({
+    where: { id: tagId },
+    data: {
+      name: nextTag.name,
+      slug: nextTag.slug,
+    },
+  });
+
+  revalidateContentTagPaths();
+  revalidatePostPaths(postSlugs);
+
+  return {
+    success: true,
+    message: "Tag renamed.",
+  };
 };
 
 export const markContentTagReviewed = async (tagId: string): Promise<ContentTagActionResult> => {
@@ -89,6 +157,8 @@ export const removeContentTagAssignments = async (
     };
   }
 
+  const postSlugs = await getContentTagPostSlugs([tagId]);
+
   const result = await prisma.postsToContentTags.deleteMany({
     where: {
       tagId,
@@ -97,6 +167,7 @@ export const removeContentTagAssignments = async (
   });
 
   revalidateContentTagPaths();
+  revalidatePostPaths(postSlugs);
 
   return {
     success: true,
@@ -129,6 +200,8 @@ export const replaceContentTagAssignments = async (
     };
   }
 
+  const postSlugs = await getContentTagPostSlugs([sourceTagId, target.id]);
+
   await prisma.$transaction([
     prisma.postsToContentTags.createMany({
       data: selectedPostIds.map((postId) => ({
@@ -146,6 +219,7 @@ export const replaceContentTagAssignments = async (
   ]);
 
   revalidateContentTagPaths();
+  revalidatePostPaths(postSlugs);
 
   return {
     success: true,
@@ -164,6 +238,8 @@ export const mergeContentTag = async (sourceTagId: string, targetName: string): 
       message: "Choose a different target tag.",
     };
   }
+
+  const postSlugs = await getContentTagPostSlugs([sourceTagId, target.id]);
 
   await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     const sourceAssignments: { postId: string }[] = await tx.postsToContentTags.findMany({
@@ -185,9 +261,52 @@ export const mergeContentTag = async (sourceTagId: string, targetName: string): 
   });
 
   revalidateContentTagPaths();
+  revalidatePostPaths(postSlugs);
 
   return {
     success: true,
     message: "Tag merged.",
   };
+};
+
+export const deleteUnusedContentTag = async (tagId: string): Promise<ContentTagActionResult> => {
+  await requireAdmin();
+
+  const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+    const tag = await tx.contentTag.findUnique({
+      where: { id: tagId },
+      select: {
+        _count: {
+          select: { posts: true },
+        },
+      },
+    });
+
+    if (!tag) {
+      return {
+        success: false,
+        message: "Tag not found.",
+      };
+    }
+
+    if (tag._count.posts > 0) {
+      return {
+        success: false,
+        message: "Remove assignments or merge this tag before deleting it.",
+      };
+    }
+
+    await tx.contentTag.delete({
+      where: { id: tagId },
+    });
+
+    return {
+      success: true,
+      message: "Unused tag deleted.",
+    };
+  });
+
+  revalidateContentTagPaths();
+
+  return result;
 };
