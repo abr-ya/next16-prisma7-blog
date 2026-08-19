@@ -28,16 +28,15 @@ Backlog candidates stay unnumbered until they are promoted into implementation. 
 
 | Status | Candidate | Area | Summary |
 | --- | --- | --- | --- |
+| Ready | public-top-menu-section-coverage | navigation/public | Review the shared public top menu after the hydration fix and add all primary public sections such as blog, docs, videos, comments, and home while preserving auth-aware account access. |
+| Candidate | home-page-content-hub-header-links | home/public | Add a proper public home page header and revise the hero/home links so the landing page clearly points to the main content sections without stale labels like old version notes. |
 
 ## P1 Soon
 
 | Status | Candidate | Area | Summary |
 | --- | --- | --- | --- |
-| In Progress | feature-034-content-tags-admin-management | content/tags | Add the backend foundation for content-wide shared tag management, including admin-only usage data, rename, merge, status, selected detach, and unused delete boundaries. |
 | Ready | content-tags-admin-management-ui | content/tags | Build the admin UI for content-wide shared tag management on top of the backend foundation, including all-tags listing, usage inspection, dialogs, and management controls. |
 | Ready | admin-sidebar-role-sections | navigation/admin | Split the admin sidebar into explicit signed-in workspace and admin-only control sections while keeping server-side role checks as the authorization boundary. |
-| Ready | public-top-menu-section-coverage | navigation/public | Review the shared public top menu after the hydration fix and add all primary public sections such as blog, docs, videos, comments, and home while preserving auth-aware account access. |
-| Candidate | home-page-content-hub-header-links | home/public | Add a proper public home page header and revise the hero/home links so the landing page clearly points to the main content sections without stale labels like old version notes. |
 | Candidate | video-comments-own-management | video/comments | Add signed-in own-comment edit and delete controls on public video detail comment lists after earlier comment follow-ups are prioritized. |
 | Candidate | admin-database-backup-generation | admin/database | Add manual admin-triggered database backup generation and download using the accepted admin database backup structure, without restore, scheduling, retention, or external storage policy. |
 | Candidate | image-upload-tracking-migration | files/migration | Migrate legacy `imageUploader` route to create `FileAsset` records and count toward user storage quota, or create new tracked image route and deprecate legacy route. |
