@@ -9,7 +9,7 @@ import { toast } from "sonner";
 
 import { deleteVideoChannel } from "@/app/_data/video-channels";
 
-import { Badge, Button, DataTable } from "..";
+import { Badge, Button, ConfirmDialog, DataTable } from "..";
 import { VideoChannelEditDialog } from "./video-channel-edit-dialog";
 
 interface IVideoChannelsTableProps {
@@ -30,14 +30,10 @@ const formatVisibility = (visibility: VideoChannel["visibility"]) => (visibility
 const VideoChannelActions = ({ channel }: { channel: VideoChannel }) => {
   const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
 
   const handleDelete = async () => {
-    const confirmed = window.confirm(
-      `Delete channel "${channel.name}"? Related videos will keep working without a channel.`,
-    );
-
-    if (!confirmed) return;
-
+    setIsConfirmOpen(false);
     setIsDeleting(true);
 
     try {
@@ -58,24 +54,36 @@ const VideoChannelActions = ({ channel }: { channel: VideoChannel }) => {
   };
 
   return (
-    <div className="flex w-32 items-center justify-end gap-1">
-      <Button asChild variant="ghost" size="icon" title="Open channel">
-        <a href={channel.url} target="_blank" rel="noreferrer">
-          <ExternalLink className="size-4" />
-        </a>
-      </Button>
-      <VideoChannelEditDialog channel={channel} />
-      <Button
-        variant="ghost"
-        size="icon"
-        title="Delete channel"
-        className="text-destructive hover:text-destructive"
-        disabled={isDeleting}
-        onClick={handleDelete}
-      >
-        <Trash className="size-4" />
-      </Button>
-    </div>
+    <>
+      <div className="flex w-32 items-center justify-end gap-1">
+        <Button asChild variant="ghost" size="icon" title="Open channel">
+          <a href={channel.url} target="_blank" rel="noreferrer">
+            <ExternalLink className="size-4" />
+          </a>
+        </Button>
+        <VideoChannelEditDialog channel={channel} />
+        <Button
+          variant="ghost"
+          size="icon"
+          title="Delete channel"
+          className="text-destructive hover:text-destructive"
+          disabled={isDeleting}
+          onClick={() => setIsConfirmOpen(true)}
+        >
+          <Trash className="size-4" />
+        </Button>
+      </div>
+      <ConfirmDialog
+        open={isConfirmOpen}
+        onOpenChange={setIsConfirmOpen}
+        title={`Delete channel "${channel.name}"?`}
+        description="Related videos will keep working without a channel."
+        confirmLabel="Delete Channel"
+        confirmVariant="destructive"
+        isPending={isDeleting}
+        onConfirm={handleDelete}
+      />
+    </>
   );
 };
 

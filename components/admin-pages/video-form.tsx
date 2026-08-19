@@ -24,6 +24,7 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
+  ConfirmDialog,
   Form,
   FormControl,
   FormField,
@@ -147,6 +148,10 @@ export const VideoForm = ({
 }: VideoFormProps) => {
   const router = useRouter();
   const [tagInputValue, setTagInputValue] = useState("");
+  const [pendingSubmitValues, setPendingSubmitValues] = useState<VideoFormValues | null>(null);
+  const [pendingNewTagNames, setPendingNewTagNames] = useState<string[]>([]);
+  const [isNewTagsConfirmOpen, setIsNewTagsConfirmOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const form = useForm<VideoFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -179,35 +184,58 @@ export const VideoForm = ({
     toast.success("Thumbnail URL fetched");
   };
 
-  const onSubmit = async (data: VideoFormValues) => {
-    const tagsWithPendingInput = mergePendingTagInput(data.tags, tagInputValue);
-    const newTagNames = getNewTagNames(tagsWithPendingInput, tagOptions);
-
-    if (newTagNames.length > 0) {
-      const confirmed = window.confirm(`Create new video tag(s): ${newTagNames.join(", ")}?`);
-
-      if (!confirmed) return;
-    }
-
+  const saveVideo = async (data: VideoFormValues) => {
     const values = {
       ...data,
-      tags: tagsWithPendingInput,
       thumbnailUrl: data.thumbnailUrl || null,
       channelId: data.channelId || null,
     };
 
-    if (id) {
-      await updateVideo(values);
-      await createLogEvent("updateVideo", `Video updated: ${data.title}`);
-      toast.success("Video updated successfully");
-    } else {
-      await createVideo(values);
-      await createLogEvent("createVideo", `Video created: ${data.title}`);
-      toast.success("Video created successfully");
+    setIsSaving(true);
+
+    try {
+      if (id) {
+        await updateVideo(values);
+        await createLogEvent("updateVideo", `Video updated: ${data.title}`);
+        toast.success("Video updated successfully");
+      } else {
+        await createVideo(values);
+        await createLogEvent("createVideo", `Video created: ${data.title}`);
+        toast.success("Video created successfully");
+      }
+
+      router.refresh();
+      router.push("/admin/videos");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const onSubmit = async (data: VideoFormValues) => {
+    const tagsWithPendingInput = mergePendingTagInput(data.tags, tagInputValue);
+    const values = {
+      ...data,
+      tags: tagsWithPendingInput,
+    };
+    const newTagNames = getNewTagNames(tagsWithPendingInput, tagOptions);
+
+    if (newTagNames.length > 0) {
+      setPendingSubmitValues(values);
+      setPendingNewTagNames(newTagNames);
+      setIsNewTagsConfirmOpen(true);
+      return;
     }
 
-    router.refresh();
-    router.push("/admin/videos");
+    await saveVideo(values);
+  };
+
+  const confirmNewTagsAndSubmit = async () => {
+    if (!pendingSubmitValues) return;
+
+    setIsNewTagsConfirmOpen(false);
+    await saveVideo(pendingSubmitValues);
+    setPendingSubmitValues(null);
+    setPendingNewTagNames([]);
   };
 
   const updateTags = (nextTags: VideoTagSelectOption[]) => {
@@ -220,227 +248,242 @@ export const VideoForm = ({
   };
 
   return (
-    <Form {...form}>
-      <form className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]" onSubmit={form.handleSubmit(onSubmit)}>
-        <div className="flex flex-col gap-6">
-          <FormField
-            control={form.control}
-            name="title"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Title</FormLabel>
-                <FormControl>
-                  <Input {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+    <>
+      <Form {...form}>
+        <form className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]" onSubmit={form.handleSubmit(onSubmit)}>
+          <div className="flex flex-col gap-6">
+            <FormField
+              control={form.control}
+              name="title"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Title</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-          <FormField
-            control={form.control}
-            name="url"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>URL</FormLabel>
-                <FormControl>
-                  <Input {...field} type="url" />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+            <FormField
+              control={form.control}
+              name="url"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>URL</FormLabel>
+                  <FormControl>
+                    <Input {...field} type="url" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-          <FormField
-            control={form.control}
-            name="thumbnailUrl"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Thumbnail URL</FormLabel>
-                {previewThumbnailUrl ? (
-                  <a
-                    href={previewThumbnailUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="relative block aspect-[4/3] w-full max-w-md overflow-hidden rounded-md border bg-muted"
-                  >
-                    <Image
-                      src={previewThumbnailUrl}
-                      alt={`${form.getValues("title") || "Video"} thumbnail`}
-                      fill
-                      sizes="(min-width: 768px) 28rem, calc(100vw - 2rem)"
-                      className="object-cover"
+            <FormField
+              control={form.control}
+              name="thumbnailUrl"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Thumbnail URL</FormLabel>
+                  {previewThumbnailUrl ? (
+                    <a
+                      href={previewThumbnailUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="relative block aspect-[4/3] w-full max-w-md overflow-hidden rounded-md border bg-muted"
+                    >
+                      <Image
+                        src={previewThumbnailUrl}
+                        alt={`${form.getValues("title") || "Video"} thumbnail`}
+                        fill
+                        sizes="(min-width: 768px) 28rem, calc(100vw - 2rem)"
+                        className="object-cover"
+                      />
+                    </a>
+                  ) : null}
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <FormControl>
+                      <Input {...field} value={field.value ?? ""} type="url" />
+                    </FormControl>
+                    <Button type="button" variant="secondary" className="cursor-pointer" onClick={handleFetchThumbnail}>
+                      <ImageIcon className="size-4" />
+                      Fetch
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="cursor-pointer"
+                      disabled={!thumbnailUrl}
+                      onClick={() =>
+                        form.setValue("thumbnailUrl", "", {
+                          shouldDirty: true,
+                          shouldTouch: true,
+                          shouldValidate: true,
+                        })
+                      }
+                    >
+                      <X className="size-4" />
+                      Clear
+                    </Button>
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="tags"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Tags</FormLabel>
+                  <FormControl>
+                    <CreatableSelect
+                      isMulti
+                      isClearable
+                      options={tagOptions}
+                      inputValue={tagInputValue}
+                      value={field.value}
+                      onInputChange={(value) => {
+                        setTagInputValue(value);
+                        return value;
+                      }}
+                      onChange={(value) => updateTags(Array.from(value as readonly VideoTagSelectOption[]))}
+                      onCreateOption={(value) => {
+                        const newOption = {
+                          label: value,
+                          value,
+                        };
+                        updateTags([...field.value, newOption]);
+                      }}
+                      components={{ IndicatorsContainer: () => null }}
                     />
-                  </a>
-                ) : null}
-                <div className="flex flex-col gap-2 sm:flex-row">
-                  <FormControl>
-                    <Input {...field} value={field.value ?? ""} type="url" />
                   </FormControl>
-                  <Button type="button" variant="secondary" className="cursor-pointer" onClick={handleFetchThumbnail}>
-                    <ImageIcon className="size-4" />
-                    Fetch
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="cursor-pointer"
-                    disabled={!thumbnailUrl}
-                    onClick={() =>
-                      form.setValue("thumbnailUrl", "", {
-                        shouldDirty: true,
-                        shouldTouch: true,
-                        shouldValidate: true,
-                      })
-                    }
-                  >
-                    <X className="size-4" />
-                    Clear
-                  </Button>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          <Card className="w-full">
+            <CardHeader>
+              <CardTitle>Video Details</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-6">
+              {hasProviderMetadata ? (
+                <div className="flex flex-col gap-2 rounded-md border bg-muted/30 p-3 text-sm">
+                  <div className="font-medium">Provider metadata</div>
+                  {providerLabel ? <div className="text-muted-foreground">Provider: {providerLabel}</div> : null}
+                  {providerVideoId ? (
+                    <div className="break-all font-mono text-xs text-muted-foreground">ID: {providerVideoId}</div>
+                  ) : null}
+                  {durationLabel ? <div className="text-muted-foreground">Duration: {durationLabel}</div> : null}
+                  {embedUrl ? (
+                    <a
+                      href={embedUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="break-all text-xs text-blue-500 underline-offset-4 hover:underline"
+                    >
+                      {embedUrl}
+                    </a>
+                  ) : null}
                 </div>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+              ) : null}
 
-          <FormField
-            control={form.control}
-            name="tags"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Tags</FormLabel>
-                <FormControl>
-                  <CreatableSelect
-                    isMulti
-                    isClearable
-                    options={tagOptions}
-                    inputValue={tagInputValue}
-                    value={field.value}
-                    onInputChange={(value) => {
-                      setTagInputValue(value);
-                      return value;
-                    }}
-                    onChange={(value) => updateTags(Array.from(value as readonly VideoTagSelectOption[]))}
-                    onCreateOption={(value) => {
-                      const newOption = {
-                        label: value,
-                        value,
-                      };
-                      updateTags([...field.value, newOption]);
-                    }}
-                    components={{ IndicatorsContainer: () => null }}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
+              <FormField
+                control={form.control}
+                name="visibility"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Visibility</FormLabel>
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <FormControl>
+                        <SelectTrigger className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {videoVisibilityOptions.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-        <Card className="w-full">
-          <CardHeader>
-            <CardTitle>Video Details</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-6">
-            {hasProviderMetadata ? (
-              <div className="flex flex-col gap-2 rounded-md border bg-muted/30 p-3 text-sm">
-                <div className="font-medium">Provider metadata</div>
-                {providerLabel ? <div className="text-muted-foreground">Provider: {providerLabel}</div> : null}
-                {providerVideoId ? (
-                  <div className="break-all font-mono text-xs text-muted-foreground">ID: {providerVideoId}</div>
-                ) : null}
-                {durationLabel ? <div className="text-muted-foreground">Duration: {durationLabel}</div> : null}
-                {embedUrl ? (
-                  <a
-                    href={embedUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="break-all text-xs text-blue-500 underline-offset-4 hover:underline"
-                  >
-                    {embedUrl}
-                  </a>
-                ) : null}
-              </div>
-            ) : null}
+              <FormField
+                control={form.control}
+                name="channelId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Channel</FormLabel>
+                    <Select
+                      value={field.value || NO_CHANNEL_VALUE}
+                      onValueChange={(value) => field.onChange(value === NO_CHANNEL_VALUE ? "" : value)}
+                    >
+                      <FormControl>
+                        <SelectTrigger className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value={NO_CHANNEL_VALUE}>No channel</SelectItem>
+                        {channels.map((channel) => (
+                          <SelectItem key={channel.id} value={channel.id}>
+                            {channel.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-            <FormField
-              control={form.control}
-              name="visibility"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Visibility</FormLabel>
-                  <Select value={field.value} onValueChange={field.onChange}>
+              <FormField
+                control={form.control}
+                name="videoDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Video date</FormLabel>
                     <FormControl>
-                      <SelectTrigger className="w-full">
-                        <SelectValue />
-                      </SelectTrigger>
+                      <Input {...field} type="date" />
                     </FormControl>
-                    <SelectContent>
-                      {videoVisibilityOptions.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </CardContent>
+          </Card>
 
-            <FormField
-              control={form.control}
-              name="channelId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Channel</FormLabel>
-                  <Select
-                    value={field.value || NO_CHANNEL_VALUE}
-                    onValueChange={(value) => field.onChange(value === NO_CHANNEL_VALUE ? "" : value)}
-                  >
-                    <FormControl>
-                      <SelectTrigger className="w-full">
-                        <SelectValue />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value={NO_CHANNEL_VALUE}>No channel</SelectItem>
-                      {channels.map((channel) => (
-                        <SelectItem key={channel.id} value={channel.id}>
-                          {channel.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="videoDate"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Video date</FormLabel>
-                  <FormControl>
-                    <Input {...field} type="date" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </CardContent>
-        </Card>
-
-        <Button
-          type="submit"
-          className="w-fit cursor-pointer"
-          disabled={!form.formState.isValid || form.formState.isSubmitting}
-        >
-          {form.formState.isSubmitting ? <Spinner className="size-6" /> : "Save changes"}
-        </Button>
-      </form>
-    </Form>
+          <Button
+            type="submit"
+            className="w-fit cursor-pointer"
+            disabled={!form.formState.isValid || form.formState.isSubmitting || isSaving}
+          >
+            {form.formState.isSubmitting || isSaving ? <Spinner className="size-6" /> : "Save changes"}
+          </Button>
+        </form>
+      </Form>
+      <ConfirmDialog
+        open={isNewTagsConfirmOpen}
+        onOpenChange={setIsNewTagsConfirmOpen}
+        title="Create new video tags?"
+        description={`Create new video tag(s): ${pendingNewTagNames.join(", ")}?`}
+        confirmLabel="Create Tags"
+        isPending={isSaving}
+        onConfirm={confirmNewTagsAndSubmit}
+        onCancel={() => {
+          setPendingSubmitValues(null);
+          setPendingNewTagNames([]);
+        }}
+      />
+    </>
   );
 };

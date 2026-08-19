@@ -14,6 +14,7 @@ import type { LegacyPostTagMigrationSummary } from "@/lib/content-tags-legacy-mi
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ConfirmDialog } from "@/components/common/confirm-dialog";
 
 type TagsLegacyMigrationPanelProps = {
   inventory: LegacyPostTagInventoryResult;
@@ -61,6 +62,7 @@ const SummaryLines = ({ summary }: { summary: LegacyPostTagMigrationSummary }) =
 export const TagsLegacyMigrationPanel = ({ inventory }: TagsLegacyMigrationPanelProps) => {
   const router = useRouter();
   const [summary, setSummary] = useState<LegacyPostTagMigrationSummary | null>(null);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   const hasEligible = inventory.eligiblePosts > 0;
@@ -83,12 +85,7 @@ export const TagsLegacyMigrationPanel = ({ inventory }: TagsLegacyMigrationPanel
   };
 
   const runApply = () => {
-    const confirmed = window.confirm(
-      "Import all eligible legacy post tags as shared tags that need review? Public tag display will remain unchanged.",
-    );
-
-    if (!confirmed) return;
-
+    setIsConfirmOpen(false);
     startTransition(async () => {
       try {
         const result = await applyLegacyPostTagMigration();
@@ -120,7 +117,7 @@ export const TagsLegacyMigrationPanel = ({ inventory }: TagsLegacyMigrationPanel
               <Play className="size-4" />
               Dry Run
             </Button>
-            <Button type="button" disabled={isPending || !hasEligible} onClick={runApply}>
+            <Button type="button" disabled={isPending || !hasEligible} onClick={() => setIsConfirmOpen(true)}>
               <UploadCloud className="size-4" />
               Import
             </Button>
@@ -177,6 +174,15 @@ export const TagsLegacyMigrationPanel = ({ inventory }: TagsLegacyMigrationPanel
           </div>
         ) : null}
       </CardContent>
+      <ConfirmDialog
+        open={isConfirmOpen}
+        onOpenChange={setIsConfirmOpen}
+        title="Import legacy post tags?"
+        description="Eligible legacy post tags will become shared tags that need review. Public tag display will remain unchanged."
+        confirmLabel="Import Tags"
+        isPending={isPending}
+        onConfirm={runApply}
+      />
     </Card>
   );
 };

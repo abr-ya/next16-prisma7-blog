@@ -13,6 +13,7 @@ export { Sidebar, SidebarProvider } from "./ui/sidebar";
 export { Spinner } from "./ui/spinner";
 
 // Common Components
+export { ConfirmDialog } from "./common/confirm-dialog";
 export { DataTable } from "./common/data-table";
 export { RichTextEditor } from "./common/rich-text-editor";
 export { RichTextViewer } from "./common/rich-text-viewer";
