@@ -18,6 +18,15 @@ export type ContentTagReviewItem = ContentTagOption & {
   posts: ContentTagPostUsage[];
 };
 
+export type ContentTagUsageGroups = {
+  posts: ContentTagPostUsage[];
+};
+
+export type ContentTagManagementItem = ContentTagOption & {
+  totalUsageCount: number;
+  usage: ContentTagUsageGroups;
+};
+
 type ContentTagReviewRecord = ContentTagOption & {
   _count: { posts: number };
   posts: { post: ContentTagPostUsage }[];
@@ -84,5 +93,61 @@ export const getAdminContentTagsByStatus = async (status: ContentTagStatus): Pro
   } catch (err) {
     console.error({ err });
     throw new Error("Something went wrong (getAdminContentTagsByStatus)");
+  }
+};
+
+export const getAdminContentTagManagementItems = async (): Promise<ContentTagManagementItem[]> => {
+  try {
+    await requireAdmin();
+
+    const { default: prisma } = await import("@/lib/prisma");
+    const tags: ContentTagReviewRecord[] = await prisma.contentTag.findMany({
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        status: true,
+        _count: {
+          select: { posts: true },
+        },
+        posts: {
+          select: {
+            post: {
+              select: {
+                id: true,
+                title: true,
+                slug: true,
+                status: true,
+                updatedAt: true,
+              },
+            },
+          },
+          orderBy: {
+            post: {
+              updatedAt: "desc",
+            },
+          },
+        },
+      },
+      orderBy: [{ status: "desc" }, { name: "asc" }],
+    });
+
+    return tags.map((tag: ContentTagReviewRecord) => {
+      const posts = tag.posts.map((assignment: { post: ContentTagPostUsage }) => assignment.post);
+
+      return {
+        id: tag.id,
+        name: tag.name,
+        slug: tag.slug,
+        status: tag.status,
+        totalUsageCount: tag._count.posts,
+        usage: {
+          posts,
+        },
+      };
+    });
+  } catch (err) {
+    console.error({ err });
+    throw new Error("Something went wrong (getAdminContentTagManagementItems)");
   }
 };
