@@ -42,6 +42,7 @@ Cancelled or deferred candidates do not reserve feature numbers.
 | feature-030 | feature-030-content-tags-review-status-workflow | content/tags | Add a review status for shared content tags so reviewed and needs-review tags keep working publicly while admins can inspect, approve, flag, replace, remove, or merge tags that need cleanup. |
 | feature-031 | feature-031-content-tags-legacy-post-draft-migration | content/tags | Import legacy `Post.tags` values as needs-review shared tag assignments without hiding them publicly, so admins can clean them up through the review workflow. |
 | feature-032 | feature-032-admin-confirm-dialogs | admin/ui | Replace browser-native confirmation prompts for admin destructive or sensitive actions with a reusable app-styled confirmation dialog. |
+| feature-033 | feature-033-public-navbar-hydration-fix | navigation/public | Fix the public navbar hydration warning by correcting the shared public navbar `NavigationMenuList` structure. |
 | feature-035 | feature-035-blog-post-detail-tags-links | blog/detail | Render existing post tags on public blog post detail pages and only show connected-link UI when a post actually has connected links. |
 | feature-037 | feature-037-video-comments-link-rendering | video/comments | Render safe clickable links for plain URLs in public video comment text using the accepted comment link handling structure. |
 

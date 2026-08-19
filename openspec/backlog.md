@@ -28,7 +28,6 @@ Backlog candidates stay unnumbered until they are promoted into implementation. 
 
 | Status | Candidate | Area | Summary |
 | --- | --- | --- | --- |
-| In Progress | feature-033-public-navbar-hydration-fix | navigation/public | Fix the public navbar hydration warning by auditing the `NavigationMenuList` HTML structure. |
 
 ## P1 Soon
 
