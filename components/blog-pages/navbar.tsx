@@ -24,7 +24,9 @@ export const Navbar = ({ userId, userName, userImage }: INavbarProps) => {
     <NavigationMenu viewport={false} className="sticky top-0 z-50 mx-auto max-w-full my-5 bg-white py-2">
       <div className="flex justify-between w-full container">
         <NavigationMenuList className="flex-wrap">
-          Navigation:
+          <NavigationMenuItem>
+            <span className="px-2 text-sm text-muted-foreground">Navigation:</span>
+          </NavigationMenuItem>
           <NavigationMenuItem>
             <NavigationMenuLink href="/" className="hover:bg-blue-100 px-3 py-2 rounded-md">
               Home
