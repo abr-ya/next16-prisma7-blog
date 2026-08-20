@@ -28,7 +28,7 @@ Backlog candidates stay unnumbered until they are promoted into implementation. 
 
 | Status | Candidate | Area | Summary |
 | --- | --- | --- | --- |
-| Ready | public-top-menu-section-coverage | navigation/public | Review the shared public top menu after the hydration fix and add all primary public sections such as blog, docs, videos, comments, and home while preserving auth-aware account access. |
+| In Progress | feature-036-public-top-menu-section-coverage | navigation/public | Review the shared public top menu after the hydration fix and add all primary public sections such as blog, docs, videos, comments, and home while preserving auth-aware account access. |
 | Candidate | home-page-content-hub-header-links | home/public | Add a proper public home page header and revise the hero/home links so the landing page clearly points to the main content sections without stale labels like old version notes. |
 
 ## P1 Soon
@@ -37,6 +37,8 @@ Backlog candidates stay unnumbered until they are promoted into implementation. 
 | --- | --- | --- | --- |
 | Ready | content-tags-admin-management-ui | content/tags | Build the admin UI for content-wide shared tag management on top of the backend foundation, including all-tags listing, usage inspection, dialogs, and management controls. |
 | Ready | admin-sidebar-role-sections | navigation/admin | Split the admin sidebar into explicit signed-in workspace and admin-only control sections while keeping server-side role checks as the authorization boundary. |
+| Candidate | public-navbar-route-coverage | navigation/public | Decide and implement where the shared public navbar should be mounted beyond the current blog and videos layouts, including home, docs, docs detail, comments, and any public layout boundaries while preserving auth-aware account access. |
+| Candidate | public-navbar-multi-content-search | search/public | Replace the shared public navbar search placeholder with a working public search experience across visible blog posts, markdown docs, and public videos, with a route or dialog for grouped results and explicit visibility boundaries. |
 | Candidate | video-comments-own-management | video/comments | Add signed-in own-comment edit and delete controls on public video detail comment lists after earlier comment follow-ups are prioritized. |
 | Candidate | admin-database-backup-generation | admin/database | Add manual admin-triggered database backup generation and download using the accepted admin database backup structure, without restore, scheduling, retention, or external storage policy. |
 | Candidate | image-upload-tracking-migration | files/migration | Migrate legacy `imageUploader` route to create `FileAsset` records and count toward user storage quota, or create new tracked image route and deprecate legacy route. |
