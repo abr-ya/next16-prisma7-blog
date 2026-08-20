@@ -1,19 +1,4 @@
-# Public Navigation Specification
-
-## Purpose
-
-Defines the shared public navigation behavior for content layouts so visitors and signed-in users can move through public pages without client hydration errors or invalid navigation markup.
-
-## Requirements
-
-### Requirement: Public navbar renders hydration-safe navigation markup
-
-The system SHALL render the shared public navbar using valid navigation menu structure that does not produce React hydration warnings caused by invalid list children.
-
-#### Scenario: Public content page renders navbar without hydration warning
-
-- **WHEN** a visitor or signed-in user opens a public content page that includes the shared public navbar
-- **THEN** the navbar renders without a hydration warning caused by the navigation menu list structure
+## MODIFIED Requirements
 
 ### Requirement: Public navbar preserves existing navigation controls
 

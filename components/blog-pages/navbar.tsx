@@ -13,6 +13,14 @@ interface INavbarProps {
   userImage?: string | null;
 }
 
+const publicNavItems = [
+  { href: "/", label: "Home" },
+  { href: "/blog", label: "Blog" },
+  { href: "/docs", label: "Docs" },
+  { href: "/videos", label: "Videos" },
+  { href: "/comments", label: "Comments" },
+];
+
 export const Navbar = ({ userId, userName, userImage }: INavbarProps) => {
   const router = useRouter();
 
@@ -21,22 +29,19 @@ export const Navbar = ({ userId, userName, userImage }: INavbarProps) => {
   };
 
   return (
-    <NavigationMenu viewport={false} className="sticky top-0 z-50 mx-auto max-w-full my-5 bg-white py-2">
-      <div className="flex justify-between w-full container">
-        <NavigationMenuList className="flex-wrap">
+    <NavigationMenu viewport={false} className="sticky top-0 z-50 mx-auto my-5 max-w-full bg-white py-2">
+      <div className="container flex w-full flex-wrap items-center justify-between gap-3">
+        <NavigationMenuList className="flex-wrap items-center gap-1">
           <NavigationMenuItem>
             <span className="px-2 text-sm text-muted-foreground">Navigation:</span>
           </NavigationMenuItem>
-          <NavigationMenuItem>
-            <NavigationMenuLink href="/" className="hover:bg-blue-100 px-3 py-2 rounded-md">
-              Home
-            </NavigationMenuLink>
-          </NavigationMenuItem>
-          <NavigationMenuItem>
-            <NavigationMenuLink href="/videos" className="hover:bg-blue-100 px-3 py-2 rounded-md">
-              Videos
-            </NavigationMenuLink>
-          </NavigationMenuItem>
+          {publicNavItems.map((item) => (
+            <NavigationMenuItem key={item.href}>
+              <NavigationMenuLink href={item.href} className="block rounded-md px-3 py-2 text-sm hover:bg-blue-100">
+                {item.label}
+              </NavigationMenuLink>
+            </NavigationMenuItem>
+          ))}
           <NavigationMenuItem>
             <Button variant="ghost" onClick={goBack} className="cursor-pointer hover:bg-blue-100">
               Back
@@ -44,14 +49,14 @@ export const Navbar = ({ userId, userName, userImage }: INavbarProps) => {
           </NavigationMenuItem>
         </NavigationMenuList>
 
-        <NavigationMenuList className="flex-wrap">
+        <NavigationMenuList className="flex-wrap items-center gap-2">
           <NavigationMenuItem className="hidden md:block">
             <div className="mr-6 cursor-pointer" onClick={() => console.log("setIsOpen(true)")}>
               <Search />
             </div>
             {/* todo: SearchModal component */}
           </NavigationMenuItem>
-          <NavigationMenuItem className="hidden md:block">
+          <NavigationMenuItem>
             {userId ? (
               <NavbarUserMenu userName={userName ?? undefined} userImage={userImage} />
             ) : (
