@@ -33,3 +33,16 @@ The system SHALL keep a home page entry point to the admin dashboard while makin
 - **WHEN** a visitor opens `/`
 - **THEN** the home page includes a link to `/admin`
 - **AND** the admin link is visually less prominent than the primary public content section links
+
+### Requirement: Home page arranges supporting sections compactly
+The system SHALL arrange the About Me and Recent Documents supporting sections side by side on desktop-sized viewports, with About Me taking roughly one quarter of the row and Recent Documents taking roughly three quarters, and keep them readable on narrow viewports.
+
+#### Scenario: Desktop visitor sees supporting sections on one row
+- **WHEN** a visitor opens `/` on a desktop-sized viewport
+- **THEN** the About Me section and Recent Documents section are presented at the same visual level in a two-column layout
+- **AND** the Recent Documents section is wider than the About Me section
+
+#### Scenario: Mobile visitor sees readable supporting sections
+- **WHEN** a visitor opens `/` on a narrow viewport
+- **THEN** the About Me section and Recent Documents section remain readable
+- **AND** their text and controls do not overlap

@@ -5,16 +5,17 @@
 
 ## 2. Home Page Implementation
 
-- [ ] 2.1 Replace stale old/new hero copy with English content hub copy.
-- [ ] 2.2 Render primary linked cards for Blog, Video Links, Markdown Documents, and Comments in priority order.
-- [ ] 2.3 Add short descriptions for each primary section and mark Comments as work in progress.
-- [ ] 2.4 Keep the `/admin` dashboard link visible as a secondary action.
-- [ ] 2.5 Ensure the updated home layout remains responsive and does not make text overlap or overflow in the card/button surfaces.
+- [x] 2.1 Replace stale old/new hero copy with English content hub copy.
+- [x] 2.2 Render primary linked cards for Blog, Video Links, Markdown Documents, and Comments in priority order.
+- [x] 2.3 Add short descriptions for each primary section and mark Comments as work in progress.
+- [x] 2.4 Keep the `/admin` dashboard link visible as a secondary action.
+- [x] 2.5 Ensure the updated home layout remains responsive and does not make text overlap or overflow in the card/button surfaces.
+- [x] 2.6 Place About Me and Recent Documents at the same visual level in a responsive two-column home section, using a 25/75 desktop split.
 
 ## 3. Validation
 
-- [ ] 3.1 Run targeted lint for changed non-app files when applicable.
-- [ ] 3.2 Run `npm run tsc`.
-- [ ] 3.3 Run `npm run lint`.
-- [ ] 3.4 Note that `npm run build` should be run locally by the user if broader routing/build validation is desired.
-- [ ] 3.5 Manually inspect the home page in browser-sized desktop and mobile viewports.
+- [x] 3.1 Run targeted lint for changed non-app files when applicable.
+- [x] 3.2 Run `npm run tsc`.
+- [x] 3.3 Run `npm run lint`.
+- [x] 3.4 Note that `npm run build` should be run locally by the user if broader routing/build validation is desired.
+- [x] 3.5 Manually inspect the home page in browser-sized desktop and mobile viewports.

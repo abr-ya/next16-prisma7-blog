@@ -18,10 +18,12 @@ export default function HomePage() {
   return (
     <main className="min-h-screen">
       <HeroSection />
-      <AboutSection />
-      <Suspense fallback={<RecentDocumentsFallback />}>
-        <RecentDocuments />
-      </Suspense>
+      <div className="mx-auto grid w-full max-w-6xl grid-cols-1 gap-8 px-4 pb-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,3fr)]">
+        <AboutSection className="px-0 py-0" />
+        <Suspense fallback={<RecentDocumentsFallback className="px-0 py-0" />}>
+          <RecentDocuments className="px-0 py-0" />
+        </Suspense>
+      </div>
     </main>
   );
 }

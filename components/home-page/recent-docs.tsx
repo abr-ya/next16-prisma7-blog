@@ -3,7 +3,11 @@ import type { MdDoc } from "@/generated/prisma/client";
 import { getMdDocsLoadErrorMessage } from "@/lib/prisma-md-docs-load-error-message";
 import { getLatestMdDocs } from "@/app/_data/getMdDocs";
 
-export async function RecentDocuments() {
+interface RecentDocumentsProps {
+  className?: string;
+}
+
+export async function RecentDocuments({ className }: RecentDocumentsProps) {
   let mdDocs: MdDoc[] = [];
   let loadError: string | null = null;
 
@@ -20,7 +24,7 @@ export async function RecentDocuments() {
       loadError={loadError}
       showAllDocsLink
       title="Recent Documents (Markdown)"
-      className="py-10 px-4"
+      className={className}
     />
   );
 }
