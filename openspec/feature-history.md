@@ -47,6 +47,7 @@ Cancelled or deferred candidates do not reserve feature numbers.
 | feature-035 | feature-035-blog-post-detail-tags-links | blog/detail | Render existing post tags on public blog post detail pages and only show connected-link UI when a post actually has connected links. |
 | feature-036 | feature-036-public-top-menu-section-coverage | navigation/public | Add Home, Blog, Docs, Videos, and Comments links to the shared public navbar while preserving auth-aware account access and existing utility controls. |
 | feature-037 | feature-037-video-comments-link-rendering | video/comments | Render safe clickable links for plain URLs in public video comment text using the accepted comment link handling structure. |
+| feature-038 | feature-038-home-page-content-hub-header-links | home/public | Add a public home page content hub with prioritized section links, comments work-in-progress status, secondary admin access, and compact supporting sections. |
 
 ## Cancelled Candidate Notes
 

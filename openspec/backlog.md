@@ -28,7 +28,6 @@ Backlog candidates stay unnumbered until they are promoted into implementation. 
 
 | Status | Candidate | Area | Summary |
 | --- | --- | --- | --- |
-| In Progress | feature-038-home-page-content-hub-header-links | home/public | Add a proper public home page header and revise the hero/home links so the landing page clearly points to the main content sections without stale labels like old version notes. |
 
 ## P1 Soon
 
