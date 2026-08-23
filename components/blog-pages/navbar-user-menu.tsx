@@ -2,6 +2,9 @@
 
 import { LayoutDashboard, LogOut } from "lucide-react";
 import Link from "next/link";
+import { useT } from "next-i18next/client";
+import { useRouter } from "next/navigation";
+import { navigationNamespace } from "@/app/i18n/settings";
 import {
   Avatar,
   AvatarFallback,
@@ -11,7 +14,6 @@ import {
   NavigationMenuTrigger,
 } from "@/components/index";
 import { authClient } from "@/lib/auth-client";
-import { useRouter } from "next/navigation";
 
 export interface NavbarUserMenuProps {
   userName?: string;
@@ -31,6 +33,7 @@ const avatarFallbackText = (name?: string | null): string => {
 
 export const NavbarUserMenu = ({ userName, userImage }: NavbarUserMenuProps) => {
   const router = useRouter();
+  const { t } = useT(navigationNamespace);
 
   const handleSignOut = async () => {
     await authClient.signOut();
@@ -43,9 +46,7 @@ export const NavbarUserMenu = ({ userName, userImage }: NavbarUserMenuProps) => 
     <>
       <NavigationMenuTrigger>
         <Avatar className="w-8 h-8 rounded-full">
-          {userImage ? (
-            <AvatarImage src={userImage} alt={userName ? `${userName}'s avatar` : "User avatar"} />
-          ) : null}
+          {userImage ? <AvatarImage src={userImage} alt={userName ? `${userName}'s avatar` : "User avatar"} /> : null}
           <AvatarFallback delayMs={userImage ? 600 : 0}>{fallbackLabel}</AvatarFallback>
         </Avatar>
       </NavigationMenuTrigger>
@@ -55,13 +56,13 @@ export const NavbarUserMenu = ({ userName, userImage }: NavbarUserMenuProps) => 
             <NavigationMenuLink asChild>
               <Link href="/admin" className="flex-row items-center gap-2">
                 <LayoutDashboard />
-                Dashboard
+                {t("dashboard")}
               </Link>
             </NavigationMenuLink>
             <NavigationMenuLink asChild>
               <div className="flex-row items-center gap-2 cursor-pointer" onClick={() => void handleSignOut()}>
                 <LogOut />
-                Signout
+                {t("signout")}
               </div>
             </NavigationMenuLink>
           </li>

@@ -80,11 +80,13 @@ Preferred checks:
 - `npm run tsc`
 - `npm run lint`
 - `npm run build` for routing, Prisma, or user-facing behavior changes when feasible
+- `npm run dev` for browser/manual checks when a running app is needed
 
 Notes:
 
 - There is currently no dedicated `npm test` script.
 - The root lint script checks `./app/**/*.{js,ts,tsx}` only. For changed files under `components`, `lib`, or other folders, run targeted ESLint such as `npx eslint components/admin-pages/videos-table.tsx --quiet`.
+- When `npm run dev` is needed for manual/browser validation, ask the user to run it locally and report the URL/result instead of starting it in the sandbox.
 - When `npm run build` is needed, ask the user to run it locally and paste the result instead of running it in the sandbox. The sandbox can fail on restricted network access for Next/Google font fetches, and the user prefers to perform build validation locally.
 - For Prisma/schema changes, validate the schema and regenerate the client with the existing project flow. Do not edit generated Prisma client files manually.
 - For UI-heavy changes, include a manual browser check expectation; static checks are not enough.

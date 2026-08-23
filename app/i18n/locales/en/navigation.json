@@ -1,0 +1,15 @@
+{
+  "label": "Navigation:",
+  "home": "Home",
+  "blog": "Blog",
+  "docs": "Docs",
+  "videos": "Videos",
+  "comments": "Comments",
+  "back": "Back",
+  "login": "Log in",
+  "dashboard": "Dashboard",
+  "signout": "Sign out",
+  "languageLabel": "Language",
+  "languageEnglish": "English",
+  "languageRussian": "Russian"
+}
