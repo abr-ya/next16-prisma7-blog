@@ -28,7 +28,7 @@ Backlog candidates stay unnumbered until they are promoted into implementation. 
 
 | Status | Candidate | Area | Summary |
 | --- | --- | --- | --- |
-| Candidate | public-navbar-route-coverage | navigation/public | Decide and implement where the shared public navbar should be mounted beyond the current blog and videos layouts, including home, docs, docs detail, comments, and any public layout boundaries while preserving auth-aware account access. |
+| In Progress | feature-040-navigation-public-navbar-route-coverage | navigation/public | Decide and implement where the shared public navbar should be mounted beyond the current blog and videos layouts, including home, docs, docs detail, comments, and any public layout boundaries while preserving auth-aware account access. |
 
 ## P1 Soon
 
