@@ -1,0 +1,15 @@
+{
+  "label": "Навигация:",
+  "home": "Главная",
+  "blog": "Блог",
+  "docs": "Документы",
+  "videos": "Видео",
+  "comments": "Комментарии",
+  "back": "Назад",
+  "login": "Войти",
+  "dashboard": "Панель",
+  "signout": "Выйти",
+  "languageLabel": "Язык",
+  "languageEnglish": "Английский",
+  "languageRussian": "Русский"
+}
