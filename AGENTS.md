@@ -48,6 +48,14 @@ When promoting a backlog candidate:
 Completed features keep their numbers permanently in `openspec/feature-history.md`.
 Cancelled or deferred ideas should return to the unnumbered candidate pool unless already completed; cancelled candidates do not reserve feature numbers.
 
+## Commit Messages
+
+Use product or code area scopes in commit messages, not workflow/tooling scopes that apply to the whole project.
+
+- Prefer scopes such as `localization`, `public-nav`, `videos`, `admin`, `auth`, `docs`, or `content-tags`.
+- Do not use `openspec` as the scope merely because the change edits OpenSpec artifacts; this project uses OpenSpec throughout, so that scope adds little signal.
+- Example: prefer `docs(localization): propose feature-039 public navbar language switcher` over `docs(openspec): ...`.
+
 ## Token Economy
 
 Spend tokens deliberately.
