@@ -1,14 +1,17 @@
 ## Why
 
-Visitors should see the same public navigation shell across the main public content routes, not only on the Blog and Videos route groups. This closes the gap left after the navbar link and localization slices by making Home, Docs, Docs detail, Comments, Blog, Blog detail, Videos, and Video detail share the same route coverage expectations.
+Visitors should eventually see the same public navigation shell across the main public content routes, not only on the Blog and Videos route groups. This first slice prepares that rollout by documenting public route coverage, adding a reusable shared navbar shell, and proving it on the Docs route family before broadening the behavior surface.
 
 ## What Changes
 
-- Mount or reuse the shared public navbar on the remaining primary public routes where it is currently absent, including `/`, `/docs`, `/docs/[slug]`, and `/comments`.
-- Preserve existing navbar behavior on `/blog`, `/blog/[slug]`, `/videos`, and `/videos/[id]`.
+- Add a public navigation route coverage inventory document that lists primary public routes, current navbar coverage, intended coverage, and excluded route families.
+- Add or adapt a reusable shared public navbar shell that owns the server-side session lookup and passes auth-aware props to the existing navbar.
+- Mount the shared public navbar shell on `/docs` and `/docs/[slug]` as the pilot route family.
+- Preserve existing navbar behavior on `/blog`, `/blog/[slug]`, `/videos`, and `/videos/[id]` without requiring those route families to move to the new shell in this slice.
+- Leave `/` and `/comments` for a follow-up rollout after the docs pilot validates the shared shell pattern.
 - Keep the navbar auth-aware: visitors keep the login entry point, signed-in users keep account access, and admin authorization remains server-side.
 - Preserve the existing language switcher and localized navbar labels from the previous localization slice.
-- Keep each public page's existing content and layout intent intact while adding a consistent shared public navigation boundary.
+- Keep Docs listing/detail content, metadata, visibility behavior, slugs, and route URLs intact while adding the shared navbar.
 
 ### Non-goals
 
@@ -16,7 +19,8 @@ Visitors should see the same public navigation shell across the main public cont
 - Do not add a working public search experience; keep current search placeholder behavior.
 - Do not localize page body content beyond the already-localized shared navbar labels.
 - Do not change database models, Prisma schema, public content visibility rules, slugs, or route URLs.
-- Do not redesign the public home, docs, comments, blog, or videos pages beyond the layout adjustments needed to host the shared navbar cleanly.
+- Do not complete full public route coverage in this slice; Home, Comments, and any cleanup of Blog/Videos layouts belong to a follow-up rollout.
+- Do not redesign the public home, docs, comments, blog, or videos pages beyond the layout adjustments needed for the Docs pilot.
 
 ## Capabilities
 
@@ -26,13 +30,14 @@ Visitors should see the same public navigation shell across the main public cont
 
 ### Modified Capabilities
 
-- `public-navigation`: Add route coverage requirements for the shared public navbar across the primary public content surfaces.
+- `public-navigation`: Add route coverage preparation requirements, a reusable shared public navbar shell, and pilot coverage for the Docs route family.
 
 ## Impact
 
-- Affected public routes: `/`, `/blog`, `/blog/[slug]`, `/docs`, `/docs/[slug]`, `/videos`, `/videos/[id]`, and `/comments`.
-- Affected public surfaces: shared public navbar, public layout boundaries, home page, docs listing/detail pages, comments placeholder page, and existing blog/video public layouts.
-- Affected code: likely `app/page.tsx`, `app/docs/page.tsx`, `app/docs/[slug]/page.tsx`, `app/comments/page.tsx`, relevant public layouts, and shared navbar/localization provider wiring as needed.
+- Affected public routes in this slice: `/docs` and `/docs/[slug]`.
+- Affected public routes documented for follow-up: `/`, `/comments`, `/blog`, `/blog/[slug]`, `/videos`, and `/videos/[id]`.
+- Affected public surfaces: public navigation route coverage documentation, shared public navbar shell, Docs listing/detail pages, and existing blog/video public layouts only as reference points.
+- Affected code: likely a new or adjusted shared public navbar shell/wrapper, `app/docs/page.tsx`, `app/docs/[slug]/page.tsx`, and shared navbar/localization provider wiring as needed.
 - Data models: no Prisma schema or data changes.
 - Admin surfaces: no admin UI or authorization behavior changes.
 - Dependencies: no new dependencies expected.
