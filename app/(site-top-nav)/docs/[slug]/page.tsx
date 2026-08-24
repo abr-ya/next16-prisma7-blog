@@ -1,8 +1,9 @@
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+
 import { getMdDocBySlug } from "@/app/_data/getMdDocs";
 import { PageLayout, PostArticle } from "@/components/index";
 import { buildPageMetadata, getMarkdownMetadataDescription } from "@/lib/site-metadata";
-import type { Metadata } from "next";
-import { notFound } from "next/navigation";
 
 type MdDocPageProps = {
   params: Promise<{ slug: string }>;
@@ -40,7 +41,7 @@ const MdDocPage = async ({ params }: MdDocPageProps) => {
   if (!post) notFound();
 
   return (
-    <PageLayout title={post.title}>
+    <PageLayout title={post.title} className="pt-6" showBackLink={false}>
       <PostArticle data={post} />
     </PageLayout>
   );

@@ -4,7 +4,7 @@ The shared public navbar currently lives in `components/blog-pages/navbar.tsx` a
 
 The route groups that must remain outside this public shell are admin routes, auth routes, API routes, UploadThing routes, and framework/static internals.
 
-This change is intentionally split from the full rollout. It creates the shared public navbar shell, documents the intended route coverage, and applies the shell to Docs as the pilot route family. Home, Comments, and Blog/Videos cleanup remain follow-up work.
+This change is intentionally split from the full rollout. It creates the shared public navbar shell, documents the intended route coverage, and applies the shell to Docs as the pilot route family under a URL-neutral `(site-top-nav)` route group. Home, Comments, and Blog/Videos cleanup remain follow-up work.
 
 ## Goals / Non-Goals
 
@@ -39,9 +39,15 @@ Mount the shared navbar through a route layout or small server wrapper that can 
 
 Alternative considered: add `Navbar` directly to `app/page.tsx`, `app/docs/page.tsx`, `app/docs/[slug]/page.tsx`, and `app/comments/page.tsx`. That would be fast but would duplicate server session wiring and make the next route coverage change easier to miss.
 
+### Decision: Use `(site-top-nav)` as the route group for this shared top-nav layout
+
+Place the Docs pilot under `app/(site-top-nav)` with the shared public navbar shell in `app/(site-top-nav)/layout.tsx`. The route group name is intentionally specific to the top navigation layout: it does not affect URLs, and future screen layouts can use separate route groups when they need different shared chrome.
+
+Alternative considered: use a broad `(site)` or `(public)` route group. Those names are more flexible, but less explicit about this layout's current contract: pages in the group receive the shared site top navigation.
+
 ### Decision: Pilot the shell on Docs only
 
-Apply the new shell to `/docs` and `/docs/[slug]` first. Docs is a useful pilot because it includes both listing and detail routes, is currently missing the shared navbar, and exercises the same public content surface shape that future slices need.
+Apply the new shell to `/docs` and `/docs/[slug]` first by moving the Docs route files under `app/(site-top-nav)/docs`. Docs is a useful pilot because it includes both listing and detail routes, is currently missing the shared navbar, and exercises the same public content surface shape that future slices need.
 
 Alternative considered: add the shell to every missing public route immediately. That would complete the original route coverage goal faster, but it mixes the architectural setup with a broad route rollout and makes layout regressions harder to isolate.
 
@@ -59,7 +65,7 @@ Alternative considered: polish navbar copy or search behavior while touching cov
 
 ## Risks / Trade-offs
 
-- Public layout boundary accidentally wraps admin/auth pages -> Keep the implementation scoped to Docs route files or a reusable wrapper imported only by public routes.
+- Public layout boundary accidentally wraps admin/auth pages -> Keep the `(site-top-nav)` group scoped to public page routes and leave `app/admin` and `app/(auth)` outside it.
 - Docs pages gain extra vertical spacing or duplicated back navigation -> Check Docs listing/detail manually after implementation and adjust page spacing only where needed.
 - Docs detail route misses coverage because only listing page is wrapped -> Validate both `/docs` and `/docs/[slug]`.
 - Signed-in account state regresses on newly covered pages -> Use the same server-side `authSession()` lookup and navbar props already used by Blog and Videos layouts.
@@ -67,4 +73,4 @@ Alternative considered: polish navbar copy or search behavior while touching cov
 
 ## Migration Plan
 
-No data migration is required. Deploy as documentation plus route/layout/component wiring changes. Rollback is limited to removing the new public shell usage from Docs and reverting the affected documentation.
+No data migration is required. Deploy as documentation plus route/layout/component wiring changes. Rollback is limited to moving Docs routes back out of `app/(site-top-nav)`, removing the group layout, and reverting the affected documentation.
