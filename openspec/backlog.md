@@ -28,7 +28,6 @@ Backlog candidates stay unnumbered until they are promoted into implementation. 
 
 | Status | Candidate | Area | Summary |
 | --- | --- | --- | --- |
-| In Progress | feature-040-navigation-public-navbar-route-coverage | navigation/public | Document public navbar route coverage, add a reusable public navbar shell, and pilot it on docs listing/detail routes while leaving the full rollout to a follow-up slice. |
 
 ## P1 Soon
 

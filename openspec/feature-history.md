@@ -49,6 +49,7 @@ Cancelled or deferred candidates do not reserve feature numbers.
 | feature-037 | feature-037-video-comments-link-rendering | video/comments | Render safe clickable links for plain URLs in public video comment text using the accepted comment link handling structure. |
 | feature-038 | feature-038-home-page-content-hub-header-links | home/public | Add a public home page content hub with prioritized section links, comments work-in-progress status, secondary admin access, and compact supporting sections. |
 | feature-039 | feature-039-public-navbar-language-switcher | localization/public | Add the public navbar language switcher, select the project localization package, and translate the first shared navigation labels. |
+| feature-040 | feature-040-navigation-public-navbar-route-coverage | navigation/public | Document public navbar route coverage, add a reusable site top-nav shell, and pilot it on docs listing/detail routes while leaving the full rollout to a follow-up slice. |
 
 ## Cancelled Candidate Notes
 
