@@ -28,7 +28,6 @@ Backlog candidates stay unnumbered until they are promoted into implementation. 
 
 | Status | Candidate | Area | Summary |
 | --- | --- | --- | --- |
-| Candidate | public-navbar-route-coverage | navigation/public | Decide and implement where the shared public navbar should be mounted beyond the current blog and videos layouts, including home, docs, docs detail, comments, and any public layout boundaries while preserving auth-aware account access. |
 
 ## P1 Soon
 
@@ -36,6 +35,7 @@ Backlog candidates stay unnumbered until they are promoted into implementation. 
 | --- | --- | --- | --- |
 | Ready | content-tags-admin-management-ui | content/tags | Build the admin UI for content-wide shared tag management on top of the backend foundation, including all-tags listing, usage inspection, dialogs, and management controls. |
 | Ready | admin-sidebar-role-sections | navigation/admin | Split the admin sidebar into explicit signed-in workspace and admin-only control sections while keeping server-side role checks as the authorization boundary. |
+| Ready | public-navbar-route-coverage-rollout | navigation/public | Move remaining primary public routes into the shared top-nav layout after the docs pilot, including home and comments, then consolidate blog/videos layout wiring and remove duplicated legacy back navigation or oversized page spacing where needed without changing public URLs or auth boundaries. |
 | Candidate | public-localization-page-scope-audit | localization/public | Inventory public pages and shared components before deeper localization work, grouping pages into small slices and identifying pages that need component-level translation planning. |
 | Candidate | public-home-page-localization | localization/home | Localize the public home page copy using the established app locale resource structure while preserving existing database-backed content behavior. |
 | Candidate | public-docs-comments-localization | localization/public | Localize static UI copy for the public Docs listing/detail surfaces and the placeholder Comments page as a small paired slice, without translating markdown document content or comment records. |

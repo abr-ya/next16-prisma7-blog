@@ -3,7 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { I18nProvider } from "next-i18next/client";
 import { getResources, getT, initServerI18next } from "next-i18next/server";
 import { Toaster } from "sonner";
-import { fallbackLanguage, navigationNamespace } from "@/app/i18n/settings";
+import { navigationNamespace, supportedLanguages } from "@/app/i18n/settings";
 import i18nConfig from "@/i18n.config";
 import { buildPageMetadata, siteUrl } from "@/lib/site-metadata";
 import "./globals.css";
@@ -31,8 +31,7 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const { i18n, lng } = await getT(navigationNamespace);
-  const resourceLanguages = lng === fallbackLanguage ? [lng] : [lng, fallbackLanguage];
-  const resources = getResources(i18n, [navigationNamespace], resourceLanguages);
+  const resources = getResources(i18n, [navigationNamespace], [...supportedLanguages]);
 
   return (
     <html lang={lng}>

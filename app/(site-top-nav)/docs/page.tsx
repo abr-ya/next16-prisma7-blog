@@ -1,10 +1,11 @@
-import type { MdDoc } from "@/generated/prisma/client";
-import { PageLayout } from "@/components/layout/page-layout";
+import type { Metadata } from "next";
+
+import { getLatestMdDocs } from "@/app/_data/getMdDocs";
 import { DocsList } from "@/components/index";
+import { PageLayout } from "@/components/layout/page-layout";
+import type { MdDoc } from "@/generated/prisma/client";
 import { getMdDocsLoadErrorMessage } from "@/lib/prisma-md-docs-load-error-message";
 import { buildPageMetadata } from "@/lib/site-metadata";
-import type { Metadata } from "next";
-import { getLatestMdDocs } from "../_data/getMdDocs";
 
 export const metadata: Metadata = buildPageMetadata({
   title: "Docs",
@@ -24,7 +25,7 @@ const DocsPage = async () => {
   }
 
   return (
-    <PageLayout title="Markdown Blog Page">
+    <PageLayout title="Markdown Blog Page" className="pt-6" showBackLink={false}>
       <DocsList docs={docs} loadError={loadError} />
     </PageLayout>
   );
