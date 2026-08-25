@@ -2,7 +2,7 @@
 
 This backlog tracks live project candidates. Completed and cancelled feature history lives in [feature-history.md](./feature-history.md).
 
-Backlog candidates stay unnumbered until they are promoted into implementation. Promotion assigns the lowest unused `feature-XXX` number from the shared project sequence.
+Backlog candidates stay unnumbered until they are promoted into implementation. Promotion assigns the lowest unused `feature-XXX` number from the shared project sequence. When a large candidate is deliberately split, immediately sequential follow-up slices may be numbered together so their implementation order stays explicit.
 
 ## Status Values
 
@@ -21,6 +21,7 @@ Backlog candidates stay unnumbered until they are promoted into implementation. 
 
 - `Done` numbered features live in [feature-history.md](./feature-history.md).
 - Unnumbered candidates can use any free number when promoted.
+- Numbered follow-up slices stay in this backlog until completed, then move to [feature-history.md](./feature-history.md).
 - To promote a candidate, assign the lowest unused `feature-XXX` number after checking this file and [feature-history.md](./feature-history.md).
 - Cancelled or deferred candidates do not reserve numbers; keep or move them as unnumbered history notes when useful.
 
@@ -33,7 +34,9 @@ Backlog candidates stay unnumbered until they are promoted into implementation. 
 
 | Status | Candidate | Area | Summary |
 | --- | --- | --- | --- |
-| Ready | content-tags-admin-management-ui | content/tags | Build the admin UI for content-wide shared tag management on top of the backend foundation, including all-tags listing, usage inspection, dialogs, and management controls. |
+| Ready | feature-041-content-tags-admin-inventory-page | content/tags | Build the first admin management UI slice for shared content tags: load all tags through the existing management query, show active vs needs-review counts, total post assignment counts, slug/status metadata, and grouped post usage in a read-oriented page. Keep rename, merge, delete, replace, and selected-assignment mutations out of this slice except for preserving the existing review workflow. |
+| Ready | feature-042-content-tags-admin-tag-actions | content/tags | Add focused tag-level management controls to the shared content tag admin page, including rename, mark active/needs-review, merge into another tag, and delete unused tag. Reuse the existing admin server actions and app-styled confirmation dialogs, and keep direct deletion blocked for tags that still have assignments. |
+| Ready | feature-043-content-tags-admin-assignment-actions | content/tags | Add assignment-level controls for shared content tags after the inventory and tag-level actions are proven: select linked post assignments, remove selected assignments, and replace selected assignments with another shared tag without deleting posts or affecting unrelated tag assignments. |
 | Ready | admin-sidebar-role-sections | navigation/admin | Split the admin sidebar into explicit signed-in workspace and admin-only control sections while keeping server-side role checks as the authorization boundary. |
 | Ready | public-navbar-route-coverage-rollout | navigation/public | Move remaining primary public routes into the shared top-nav layout after the docs pilot, including home and comments, then consolidate blog/videos layout wiring and remove duplicated legacy back navigation or oversized page spacing where needed without changing public URLs or auth boundaries. |
 | Candidate | public-localization-page-scope-audit | localization/public | Inventory public pages and shared components before deeper localization work, grouping pages into small slices and identifying pages that need component-level translation planning. |
