@@ -50,6 +50,7 @@ Cancelled or deferred candidates do not reserve feature numbers.
 | feature-038 | feature-038-home-page-content-hub-header-links | home/public | Add a public home page content hub with prioritized section links, comments work-in-progress status, secondary admin access, and compact supporting sections. |
 | feature-039 | feature-039-public-navbar-language-switcher | localization/public | Add the public navbar language switcher, select the project localization package, and translate the first shared navigation labels. |
 | feature-040 | feature-040-navigation-public-navbar-route-coverage | navigation/public | Document public navbar route coverage, add a reusable site top-nav shell, and pilot it on docs listing/detail routes while leaving the full rollout to a follow-up slice. |
+| feature-041 | feature-041-content-tags-admin-inventory-page | content/tags | Add a read-oriented admin inventory page for all shared content tags with status counts, post assignment totals, and grouped post usage while preserving existing migration and review workflows. |
 
 ## Cancelled Candidate Notes
 
