@@ -1,7 +1,8 @@
 import { ContentTagStatus } from "@/generated/prisma/client";
 
-import { getAdminContentTagsByStatus } from "@/app/_data/content-tags";
+import { getAdminContentTagManagementItems, getAdminContentTagsByStatus } from "@/app/_data/content-tags";
 import { getLegacyPostTagInventory } from "@/app/_data/content-tags-legacy-migration";
+import { ContentTagsInventory } from "@/components/admin-pages/content-tags-inventory";
 import { ContentTagsReview } from "@/components/admin-pages/content-tags-review";
 import { TagsLegacyMigrationPanel } from "@/components/admin-pages/tags-legacy-migration-panel";
 import { AdminPageLayout } from "@/components/layout/admin-page-layout";
@@ -15,10 +16,18 @@ const breadcrumbs = [
 const AdminContentTagsPage = async () => {
   await requireAdmin();
 
-  const [needsReviewTags, legacyInventory] = await Promise.all([
+  const [managementItems, needsReviewTags, legacyInventory] = await Promise.all([
+    getAdminContentTagManagementItems(),
     getAdminContentTagsByStatus(ContentTagStatus.NEEDS_REVIEW),
     getLegacyPostTagInventory(),
   ]);
+
+  const inventorySummary = {
+    totalTags: managementItems.length,
+    activeTags: managementItems.filter((tag) => tag.status === ContentTagStatus.ACTIVE).length,
+    needsReviewTags: managementItems.filter((tag) => tag.status === ContentTagStatus.NEEDS_REVIEW).length,
+    postAssignments: managementItems.reduce((total, tag) => total + tag.usage.posts.length, 0),
+  };
 
   return (
     <AdminPageLayout breadcrumbs={breadcrumbs}>
@@ -30,6 +39,7 @@ const AdminContentTagsPage = async () => {
             attention.
           </p>
         </div>
+        <ContentTagsInventory tags={managementItems} summary={inventorySummary} />
         <TagsLegacyMigrationPanel inventory={legacyInventory} />
         <ContentTagsReview tags={needsReviewTags} />
       </div>
