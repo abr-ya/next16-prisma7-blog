@@ -23,4 +23,4 @@
 - [x] 4.2 Run `npm run tsc`.
 - [x] 4.3 Run `npm run lint`.
 - [x] 4.4 Ask the user to run `npm run build` locally before completion because this changes user-facing admin behavior.
-- [ ] 4.5 Manually verify `/admin/content-tags` with admin access: rename, status changes, merge confirmation/cancel, unused delete confirmation/cancel, used delete rejection, inventory refresh, legacy migration panel, and needs-review workflow.
+- [x] 4.5 Manually verify `/admin/content-tags` with admin access: rename, status changes, merge confirmation/cancel, unused delete confirmation/cancel, used delete rejection, inventory refresh, legacy migration panel, and needs-review workflow.
