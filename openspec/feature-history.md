@@ -51,6 +51,7 @@ Cancelled or deferred candidates do not reserve feature numbers.
 | feature-039 | feature-039-public-navbar-language-switcher | localization/public | Add the public navbar language switcher, select the project localization package, and translate the first shared navigation labels. |
 | feature-040 | feature-040-navigation-public-navbar-route-coverage | navigation/public | Document public navbar route coverage, add a reusable site top-nav shell, and pilot it on docs listing/detail routes while leaving the full rollout to a follow-up slice. |
 | feature-041 | feature-041-content-tags-admin-inventory-page | content/tags | Add a read-oriented admin inventory page for all shared content tags with status counts, post assignment totals, and grouped post usage while preserving existing migration and review workflows. |
+| feature-042 | feature-042-content-tags-admin-tag-actions | content/tags | Add focused tag-level management controls to the shared content tag admin page, including rename, mark active/needs-review, merge into another tag, and delete unused tag with confirmation and used-tag deletion safeguards. |
 
 ## Cancelled Candidate Notes
 

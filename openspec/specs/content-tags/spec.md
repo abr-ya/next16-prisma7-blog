@@ -233,7 +233,7 @@ The system SHALL provide admin-only data and mutation behavior for managing shar
 
 ### Requirement: Admin Content Tag Inventory Page
 
-The system SHALL provide an admin-only inventory view for all shared content tags and their currently supported usage without adding broad tag-management mutations in this slice.
+The system SHALL provide an admin-only inventory and focused tag-level management view for all shared content tags and their currently supported usage.
 
 #### Scenario: Admin sees all shared tags in the inventory
 
@@ -263,7 +263,8 @@ The system SHALL provide an admin-only inventory view for all shared content tag
 #### Scenario: Inventory slice does not add broad mutation controls
 
 - **WHEN** the inventory page is delivered in this slice
-- **THEN** it SHALL NOT add broad rename, merge, delete, replace, or selected-assignment mutation controls for all tags
+- **THEN** it SHALL add only tag-level rename, status, merge, and unused-delete controls for all tags
+- **AND** it SHALL NOT add selected-assignment removal or replacement controls for all tags
 - **AND** any mutation controls already present in the existing needs-review workflow SHALL keep their existing scope
 
 #### Scenario: Public tag behavior is unchanged
@@ -271,6 +272,45 @@ The system SHALL provide an admin-only inventory view for all shared content tag
 - **WHEN** the inventory page is delivered
 - **THEN** public tag display and public tag links SHALL keep their existing visibility behavior
 - **AND** tag review status SHALL NOT change public content visibility
+
+#### Scenario: Admin renames a shared tag from inventory
+
+- **WHEN** an authenticated admin submits a new name for a shared content tag from the inventory
+- **THEN** the system SHALL rename that tag using the shared tag identity normalization rules
+- **AND** the tag SHALL keep its existing assignments
+- **AND** the admin SHALL receive an error when the normalized slug conflicts with another tag
+
+#### Scenario: Admin changes tag review status from inventory
+
+- **WHEN** an authenticated admin marks a shared content tag active or needing review from the inventory
+- **THEN** the system SHALL update only the tag review status
+- **AND** the tag SHALL keep its existing assignments
+- **AND** the inventory SHALL reflect the updated status after the action completes
+
+#### Scenario: Admin merges a shared tag from inventory
+
+- **WHEN** an authenticated admin merges a source shared content tag into a target tag from the inventory
+- **THEN** supported assignments from the source tag SHALL move to the target tag
+- **AND** duplicate target assignments SHALL be deduplicated safely
+- **AND** the source tag SHALL no longer appear in the inventory after the action completes
+
+#### Scenario: Admin deletes an unused shared tag from inventory
+
+- **WHEN** an authenticated admin deletes a shared content tag with no supported assignments from the inventory
+- **THEN** the system SHALL delete the unused tag record
+- **AND** the inventory SHALL no longer list that tag after the action completes
+
+#### Scenario: Admin cannot directly delete a used shared tag from inventory
+
+- **WHEN** an authenticated admin attempts to delete a shared content tag that still has supported assignments from the inventory
+- **THEN** the system SHALL reject direct deletion
+- **AND** the admin SHALL be told to remove assignments or merge the tag first
+
+#### Scenario: Sensitive tag actions use app confirmation
+
+- **WHEN** an authenticated admin starts a merge or delete action from the tag inventory
+- **THEN** the page SHALL show an app-styled confirmation dialog before the action runs
+- **AND** canceling or closing the dialog SHALL leave tag data unchanged
 
 ### Requirement: Implementation Slice Boundaries
 
