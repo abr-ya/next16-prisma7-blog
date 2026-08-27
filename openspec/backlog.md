@@ -25,6 +25,28 @@ Backlog candidates stay unnumbered until they are promoted into implementation. 
 - To promote a candidate, assign the lowest unused `feature-XXX` number after checking this file and [feature-history.md](./feature-history.md).
 - Cancelled or deferred candidates do not reserve numbers; keep or move them as unnumbered history notes when useful.
 
+## Outdoor Content High-Priority Roadmap
+
+These candidates track the hikes/tracks/photos initiative as small increments. They stay unnumbered until promoted; the first promoted slice should take the next available feature number from the shared sequence.
+
+| Order | Status | Candidate | Area | Summary |
+| --- | --- | --- | --- | --- |
+| 1 | Ready | outdoor-hikes-data-admin-public-foundation | outdoor/hikes | Add the first `Hike` entity with title, slug, description, date range, type, visibility/status, data actions, admin create/edit/list page, and a minimal public listing/detail surface. |
+| 2 | Candidate | outdoor-tracks-file-data-foundation | outdoor/tracks | Add the first `Track` entity backed by a GPX `FileAsset`, upload validation, stored metadata shell, data actions, and admin create/edit/list page without map rendering. |
+| 3 | Candidate | outdoor-tracks-public-download-preview | outdoor/tracks | Add public track listing/detail pages with visibility-safe metadata and controlled access to public GPX files. |
+| 4 | Candidate | outdoor-photos-file-data-foundation | outdoor/photos | Add the first `Photo` entity backed by image `FileAsset` records, 1-3 file upload batch support, data actions, and admin create/edit/list page. |
+| 5 | Candidate | outdoor-photos-exif-capture | outdoor/photos | Extract and store photo captured-at, camera/lens basics, dimensions, orientation, and raw safe EXIF metadata where available. |
+| 6 | Candidate | outdoor-photos-public-gallery | outdoor/photos | Add public photo listing/detail pages with visibility-safe previews, captured-at display, and selected EXIF metadata. |
+| 7 | Candidate | outdoor-hike-track-association | outdoor/hikes-tracks | Let admins attach/detach tracks to hikes and show linked tracks in both hike and track admin/public views. |
+| 8 | Candidate | outdoor-hike-photo-association | outdoor/hikes-photos | Let admins attach/detach photos to hikes and show linked photos in both hike and photo admin/public views. |
+| 9 | Candidate | outdoor-track-gpx-parsing-summary | outdoor/maps | Parse GPX geometry and summary stats such as distance, bounds, elevation range, and time range into a reusable stored/read model. |
+| 10 | Candidate | outdoor-track-map-component | outdoor/maps | Add a public map component for rendering one GPX track with OSM-compatible tiles and graceful fallback when geometry is unavailable. |
+| 11 | Candidate | outdoor-hike-combined-track-map | outdoor/maps | Add one map on hike detail pages that renders all linked visible tracks together and frames the combined bounds. |
+| 12 | Candidate | outdoor-photo-gps-map-markers | outdoor/maps-photos | Use direct GPS EXIF coordinates to place linked hike photos on the hike map when coordinates exist. |
+| 13 | Candidate | outdoor-photo-manual-ordering | outdoor/photos | Add simple manual ordering for hike photos so later album/gallery work has a stable foundation. |
+| 14 | Candidate | outdoor-photo-track-time-matching-spike | outdoor/maps-photos | Investigate and plan timestamp-based photo-to-track matching before implementing interpolation, timezone, and confidence rules. |
+| 15 | Candidate | outdoor-photo-albums-structure | outdoor/photos | Define and add album/grouping structure for photos after basic hike association and ordering are proven. |
+
 ## P0 Now
 
 | Status | Candidate | Area | Summary |
