@@ -36,6 +36,7 @@ model User {
   videos         Video[]
   videoBookmarks VideoBookmark[]
   fileAssets     FileAsset[]
+  hikes          Hike[]
 
   @@unique([email])
   @@map("user")
@@ -197,6 +198,42 @@ enum ContentTagStatus {
 }
 
 // Updated Posts model - finish
+
+// Outdoor content - start
+enum HikeStatus {
+  DRAFT
+  PUBLISHED
+}
+
+enum HikeType {
+  HIKING
+  MOUNTAIN
+  WATER
+  SKI
+  BIKE
+  OTHER
+}
+
+model Hike {
+  id          String     @id @default(uuid())
+  title       String
+  slug        String     @unique
+  description String?
+  startDate   DateTime
+  endDate     DateTime
+  type        HikeType
+  status      HikeStatus @default(DRAFT)
+  userId      String
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @default(now()) @updatedAt
+
+  @@index([status])
+  @@index([startDate, endDate])
+  @@index([userId])
+}
+
+// Outdoor content - finish
 
 // File assets - start
 enum FileAssetProvider {
