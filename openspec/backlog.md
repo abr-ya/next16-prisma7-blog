@@ -31,7 +31,6 @@ These candidates track the hikes/tracks/photos initiative as small increments. T
 
 | Order | Status | Candidate | Area | Summary |
 | --- | --- | --- | --- | --- |
-| 1 | In Progress | feature-045-outdoor-hikes-data-admin-public-foundation | outdoor/hikes | Add the first `Hike` entity with title, slug, description, date range, type, visibility/status, data actions, admin create/edit/list page, and a minimal public listing/detail surface. |
 | 2 | Candidate | outdoor-tracks-file-data-foundation | outdoor/tracks | Add the first `Track` entity backed by a GPX `FileAsset`, upload validation, stored metadata shell, data actions, and admin create/edit/list page without map rendering. |
 | 3 | Candidate | outdoor-tracks-public-download-preview | outdoor/tracks | Add public track listing/detail pages with visibility-safe metadata and controlled access to public GPX files. |
 | 4 | Candidate | outdoor-photos-file-data-foundation | outdoor/photos | Add the first `Photo` entity backed by image `FileAsset` records, 1-3 file upload batch support, data actions, and admin create/edit/list page. |
