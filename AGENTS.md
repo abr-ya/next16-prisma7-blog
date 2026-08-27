@@ -16,6 +16,7 @@ For non-trivial feature work, behavior changes, schema changes, route changes, o
 - Inspect `openspec/config.yaml` first.
 - Check active OpenSpec changes/specs when they exist.
 - Create or update OpenSpec proposal/design/tasks/spec artifacts before implementation when the scope is not already explicitly approved.
+- After preparing OpenSpec artifacts, explicitly tell the user that the spec is ready before starting implementation.
 - Keep code changes aligned with the accepted OpenSpec tasks.
 - Update docs/checklists together with behavior changes when the project already tracks the feature in docs.
 

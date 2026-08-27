@@ -50,7 +50,8 @@ These candidates track the hikes/tracks/photos initiative as small increments. T
 
 | Status | Candidate | Area | Summary |
 | --- | --- | --- | --- |
-| Ready | feature-044-content-tags-selective-legacy-post-import | content/tags | Add high-priority selective legacy post tag import so admins can choose specific legacy-only posts, dry-run the selected set, and import all valid legacy tags for each selected post into shared content tags without partial per-post migration. |
+| Ready | feature-044-content-tags-selective-legacy-post-import | content/tags | Add high-priority selective legacy post tag planning so admins can choose specific legacy-only posts and dry-run the selected set without writing shared content tags yet. |
+| Ready | feature-046-content-tags-selected-legacy-post-import-apply | content/tags | Apply the selected legacy post tag import after the dry-run slice, with confirmation, eligibility re-checks, idempotent shared tag assignments, logging, and revalidation. |
 
 ## P1 Soon
 
