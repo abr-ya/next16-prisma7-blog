@@ -41,6 +41,7 @@ export { MdDocsTable } from "./admin-pages/md-docs-table";
 export { MdDocForm } from "./admin-pages/md-doc-form";
 export type { MdDocFormValues } from "./admin-pages/md-doc-form";
 export { ImageUploader } from "./admin-pages/image-uploader";
+export { HikesAdminPanel } from "./admin-pages/hikes-admin-panel";
 
 // Home Page Components
 export { AboutSection } from "./home-page/about-section";

@@ -8,6 +8,7 @@ import {
   House,
   Inbox,
   ListVideo,
+  Map,
   Search,
   Tags,
   Video,
@@ -61,6 +62,11 @@ const items = [
     title: "Files",
     url: "/admin/files",
     icon: File,
+  },
+  {
+    title: "Hikes",
+    url: "/admin/hikes",
+    icon: Map,
   },
   {
     title: "Content Tags",
