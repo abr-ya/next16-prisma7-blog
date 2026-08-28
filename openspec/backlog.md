@@ -39,7 +39,7 @@ These candidates track the hikes/tracks/photos initiative as small increments. T
 
 | Order | Status | Candidate | Area | Summary |
 | --- | --- | --- | --- | --- |
-| 3 | Candidate | outdoor-tracks-public-download-preview | outdoor/tracks | Add public track listing/detail pages with visibility-safe metadata and controlled access to public GPX files. |
+| 3 | In Progress | feature-048-outdoor-tracks-public-download-preview | outdoor/tracks | Add public track listing/detail pages with visibility-safe metadata and controlled access to public GPX files. |
 | 4 | Candidate | outdoor-photos-file-data-foundation | outdoor/photos | Add the first `Photo` entity backed by image `FileAsset` records, 1-3 file upload batch support, data actions, and admin create/edit/list page. |
 | 5 | Candidate | outdoor-photos-exif-capture | outdoor/photos | Extract and store photo captured-at, camera/lens basics, dimensions, orientation, and raw safe EXIF metadata where available. |
 | 6 | Candidate | outdoor-photos-public-gallery | outdoor/photos | Add public photo listing/detail pages with visibility-safe previews, captured-at display, and selected EXIF metadata. |
