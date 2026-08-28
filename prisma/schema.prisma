@@ -37,6 +37,7 @@ model User {
   videoBookmarks VideoBookmark[]
   fileAssets     FileAsset[]
   hikes          Hike[]
+  tracks         Track[]
 
   @@unique([email])
   @@map("user")
@@ -205,6 +206,11 @@ enum HikeStatus {
   PUBLISHED
 }
 
+enum TrackStatus {
+  DRAFT
+  PUBLISHED
+}
+
 enum HikeType {
   HIKING
   MOUNTAIN
@@ -233,6 +239,24 @@ model Hike {
   @@index([userId])
 }
 
+model Track {
+  id          String      @id @default(uuid())
+  title       String
+  slug        String      @unique
+  description String?
+  status      TrackStatus @default(DRAFT)
+  fileAssetId String      @unique
+  fileAsset   FileAsset   @relation(fields: [fileAssetId], references: [id], onDelete: Restrict)
+  metadata    Json?
+  userId      String
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @default(now()) @updatedAt
+
+  @@index([status])
+  @@index([userId])
+}
+
 // Outdoor content - finish
 
 // File assets - start
@@ -247,6 +271,7 @@ enum FileAssetPurpose {
   PREVIEW_IMAGE
   RICH_TEXT_IMAGE
   STANDALONE_SHARED_FILE
+  TRACK_GPX
 }
 
 enum FileAssetVisibility {
@@ -276,6 +301,7 @@ model FileAsset {
   status       FileAssetStatus     @default(ACTIVE)
   ownerUserId  String
   owner        User                @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
+  track        Track?
   uploadedAt   DateTime            @default(now())
   updatedAt    DateTime            @default(now()) @updatedAt
   deletedAt    DateTime?
