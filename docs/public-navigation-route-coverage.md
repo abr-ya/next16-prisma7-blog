@@ -13,6 +13,8 @@ This inventory tracks where the shared public navbar is currently mounted, where
 | `/docs/[slug]` | Covered by `app/(site-top-nav)/layout.tsx` | Covered by shared public shell | Covered as pilot | Docs detail validates the reusable shell on a public detail route. |
 | `/videos` | Covered by `app/videos/layout.tsx` | Covered by shared public shell | Existing layout preserved | Consolidation is deferred to the rollout slice. |
 | `/videos/[id]` | Covered by `app/videos/layout.tsx` | Covered by shared public shell | Existing layout preserved | Consolidation is deferred to the rollout slice. |
+| `/tracks` | Covered by `app/(site-top-nav)/layout.tsx` | Covered by shared public shell | Covered in feature 048 | Public tracks listing uses the shared shell. |
+| `/tracks/[slug]` | Covered by `app/(site-top-nav)/layout.tsx` | Covered by shared public shell | Covered in feature 048 | Public track detail uses the shared shell. |
 | `/comments` | Not covered | Covered by shared public shell | Deferred | Comments remains unchanged until the rollout slice. |
 
 ## Excluded Route Families

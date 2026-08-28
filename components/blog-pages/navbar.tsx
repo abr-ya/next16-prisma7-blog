@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useChangeLanguage, useT } from "next-i18next/client";
 import { Button, NavigationMenu, NavigationMenuItem, NavigationMenuLink, NavigationMenuList } from "@/components/index";
 import { useRouter } from "next/navigation";
+import { useSyncExternalStore } from "react";
 import { navigationNamespace, supportedLanguages } from "@/app/i18n/settings";
 
 import { NavbarUserMenu } from "./navbar-user-menu";
@@ -20,13 +21,19 @@ const publicNavItems = [
   { href: "/blog", labelKey: "blog" },
   { href: "/docs", labelKey: "docs" },
   { href: "/videos", labelKey: "videos" },
+  { href: "/tracks", labelKey: "tracks" },
   { href: "/comments", labelKey: "comments" },
 ];
+
+const subscribeToHydration = () => () => {};
+const getHydratedSnapshot = () => true;
+const getServerSnapshot = () => false;
 
 export const Navbar = ({ userId, userName, userImage }: INavbarProps) => {
   const router = useRouter();
   const changeLanguage = useChangeLanguage();
   const { i18n, t } = useT(navigationNamespace);
+  const isHydrated = useSyncExternalStore(subscribeToHydration, getHydratedSnapshot, getServerSnapshot);
 
   const goBack = () => {
     router.back();
@@ -59,7 +66,7 @@ export const Navbar = ({ userId, userName, userImage }: INavbarProps) => {
           <NavigationMenuItem>
             <div className="flex items-center gap-1 rounded-md border px-1 py-1" aria-label={t("languageLabel")}>
               {supportedLanguages.map((language) => {
-                const isActive = activeLanguage === language;
+                const isActive = isHydrated && activeLanguage === language;
 
                 return (
                   <Button
