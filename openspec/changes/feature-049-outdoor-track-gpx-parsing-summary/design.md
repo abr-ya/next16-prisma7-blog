@@ -68,6 +68,7 @@ See proposal.md for motivation. The project already has `Track` records with a r
 - [Risk] Very large GPX files can make parsing slow. -> Mitigation: parse in an authenticated admin action, store a failed state on controlled errors, and avoid parsing during public page requests.
 - [Risk] JSON metadata can become awkward if geometry grows large or needs spatial queries. -> Mitigation: keep the JSON schema versioned and allow a later migration to a dedicated geometry table if hike combined maps need stronger querying.
 - [Risk] Simplification can remove useful route detail. -> Mitigation: preserve start/end/bounds, record source and simplified point counts, and make simplification deterministic so tracks can be reparsed with a new version if needed.
+- [Risk] Hike maps with 5-6 visible tracks may still render too many coordinates at once. -> Mitigation: validate map performance during the combined hike map slice and lower the per-track simplification cap below 1000 points if real devices struggle.
 - [Risk] Parser errors could leak provider internals or file URLs. -> Mitigation: store safe admin-facing error categories/messages and keep raw provider details out of UI.
 - [Risk] Existing tracks may remain unparsed after deploy. -> Mitigation: show a clear admin parse-needed state and include a manual parse/retry action.
 

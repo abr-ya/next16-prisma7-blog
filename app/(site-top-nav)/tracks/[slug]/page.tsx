@@ -8,6 +8,13 @@ import { Badge, Button } from "@/components/index";
 import { PageLayout } from "@/components/layout/page-layout";
 import { formatFileSize } from "@/lib/file-upload-limits";
 import { buildPageMetadata, getTextMetadataDescription } from "@/lib/site-metadata";
+import {
+  formatTrackDistance,
+  formatTrackDuration,
+  formatTrackElevationGainLoss,
+  formatTrackElevationRange,
+  formatTrackPointCount,
+} from "@/lib/track-gpx-metadata";
 
 type TrackPageProps = {
   params: Promise<{ slug: string }>;
@@ -65,6 +72,40 @@ const TrackPage = async ({ params }: TrackPageProps) => {
         ) : (
           <p className="text-sm text-muted-foreground">No description yet.</p>
         )}
+
+        {track.parsed ? (
+          <section className="grid gap-3 rounded-md border p-4">
+            <h2 className="text-base font-semibold">GPX summary</h2>
+            <div className="grid gap-3 text-sm sm:grid-cols-2">
+              <div>
+                <div className="text-muted-foreground">Distance</div>
+                <div className="font-medium">{formatTrackDistance(track.parsed.summary.distanceMeters)}</div>
+              </div>
+              <div>
+                <div className="text-muted-foreground">Points</div>
+                <div className="font-medium">{formatTrackPointCount(track.parsed.summary.points)}</div>
+              </div>
+              {track.parsed.summary.elevation ? (
+                <>
+                  <div>
+                    <div className="text-muted-foreground">Elevation range</div>
+                    <div className="font-medium">{formatTrackElevationRange(track.parsed.summary.elevation)}</div>
+                  </div>
+                  <div>
+                    <div className="text-muted-foreground">Gain / loss</div>
+                    <div className="font-medium">{formatTrackElevationGainLoss(track.parsed.summary.elevation)}</div>
+                  </div>
+                </>
+              ) : null}
+              {track.parsed.summary.time ? (
+                <div>
+                  <div className="text-muted-foreground">Duration</div>
+                  <div className="font-medium">{formatTrackDuration(track.parsed.summary.time.durationSeconds)}</div>
+                </div>
+              ) : null}
+            </div>
+          </section>
+        ) : null}
 
         <section className="grid gap-4 rounded-md border p-4">
           <div className="flex flex-wrap items-center gap-2">

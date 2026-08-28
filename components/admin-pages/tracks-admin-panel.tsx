@@ -2,13 +2,14 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { ColumnDef } from "@tanstack/react-table";
-import { ArrowUpDown, Edit, FileUp, Plus, Trash2 } from "lucide-react";
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { ArrowUpDown, Edit, FileUp, Plus, RefreshCw, Trash2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 import z from "zod";
 
-import { createTrack, deleteTrack, updateTrack, type TrackListItem } from "@/app/_data/tracks";
+import { createTrack, deleteTrack, parseTrackGpx, updateTrack, type TrackListItem } from "@/app/_data/tracks";
 import {
   Badge,
   Button,
@@ -36,6 +37,12 @@ import { formatFileSize, TRACK_GPX_UPLOAD_MAX_SIZE } from "@/lib/file-upload-lim
 import { UploadDropzone } from "@/lib/uploadthing";
 import { createSlug } from "@/lib/slug-generator";
 import { formatTrackStatus, trackStatusOptions } from "@/lib/tracks";
+import {
+  formatTrackDistance,
+  formatTrackPointCount,
+  getTrackGpxMetadataState,
+  type TrackGpxMetadataState,
+} from "@/lib/track-gpx-metadata";
 
 const formSchema = z.object({
   title: z.string().min(1, { message: "Title is required" }),
@@ -64,14 +71,61 @@ const formatDate = (value: Date | string) =>
     day: "numeric",
   }).format(new Date(value));
 
+const getTrackParseState = (track: TrackListItem): TrackGpxMetadataState =>
+  getTrackGpxMetadataState(track.metadata, {
+    fileAssetId: track.fileAsset.id,
+    fileKey: track.fileAsset.fileKey,
+  });
+
+const getParseStatusLabel = (state: TrackGpxMetadataState) => {
+  if (state.status === "SUCCESS") return "Parsed";
+  if (state.status === "FAILED") return "Failed";
+  if (state.status === "STALE") return "Needs reparse";
+
+  return "Not parsed";
+};
+
+const getParseStatusVariant = (state: TrackGpxMetadataState) => {
+  if (state.status === "SUCCESS") return "default";
+  if (state.status === "FAILED") return "destructive";
+
+  return "outline";
+};
+
+const TrackParseStatus = ({ track }: { track: TrackListItem }) => {
+  const state = getTrackParseState(track);
+  const distance = state.status === "SUCCESS" ? formatTrackDistance(state.summary.distanceMeters) : null;
+  const points = state.status === "SUCCESS" ? formatTrackPointCount(state.summary.points) : null;
+
+  return (
+    <div className="flex max-w-56 flex-col gap-1">
+      <div>
+        <Badge variant={getParseStatusVariant(state)}>{getParseStatusLabel(state)}</Badge>
+      </div>
+      {state.status === "SUCCESS" ? (
+        <div className="text-xs text-muted-foreground">{[distance, points].filter(Boolean).join(" · ")}</div>
+      ) : null}
+      {state.status === "FAILED" || state.status === "STALE" ? (
+        <div className="line-clamp-2 text-xs text-muted-foreground">{state.errorMessage}</div>
+      ) : null}
+    </div>
+  );
+};
+
 const TrackFormDialog = ({
   track,
   open,
   onOpenChange,
+  onParse,
+  parsingTrackId,
+  onSaved,
 }: {
   track: TrackListItem | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onParse: (track: TrackListItem) => void;
+  parsingTrackId: string | null;
+  onSaved: () => void;
 }) => {
   const form = useForm<TrackFormValues>({
     resolver: zodResolver(formSchema),
@@ -79,6 +133,8 @@ const TrackFormDialog = ({
     mode: "onBlur",
   });
   const isEditing = Boolean(track);
+  const parseState = track ? getTrackParseState(track) : null;
+  const isParsing = Boolean(track && parsingTrackId === track.id);
   const fileAssetId = useWatch({ control: form.control, name: "fileAssetId" });
   const fileAssetName = useWatch({ control: form.control, name: "fileAssetName" });
 
@@ -132,6 +188,7 @@ const TrackFormDialog = ({
 
       onOpenChange(false);
       form.reset(defaultValues);
+      onSaved();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to save track");
     }
@@ -263,6 +320,41 @@ const TrackFormDialog = ({
                 toast.success("GPX uploaded");
               }}
             />
+            {track && parseState ? (
+              <div className="grid gap-3 rounded-md border p-3 text-sm">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">GPX parsing</span>
+                    <Badge variant={getParseStatusVariant(parseState)}>{getParseStatusLabel(parseState)}</Badge>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={isParsing || form.formState.isDirty}
+                    onClick={() => onParse(track)}
+                  >
+                    <RefreshCw className={isParsing ? "animate-spin" : undefined} />
+                    {isParsing ? "Parsing..." : parseState.status === "SUCCESS" ? "Reparse" : "Parse GPX"}
+                  </Button>
+                </div>
+                {parseState.status === "SUCCESS" ? (
+                  <div className="flex flex-wrap gap-3 text-muted-foreground">
+                    <span>{formatTrackDistance(parseState.summary.distanceMeters)}</span>
+                    <span>{formatTrackPointCount(parseState.summary.points)}</span>
+                    <span>Parsed {formatDate(parseState.metadata.gpxParse.parsedAt)}</span>
+                  </div>
+                ) : null}
+                {parseState.status === "FAILED" || parseState.status === "STALE" ? (
+                  <div className="text-muted-foreground">{parseState.errorMessage}</div>
+                ) : null}
+                {form.formState.isDirty ? (
+                  <div className="text-xs text-muted-foreground">
+                    Save track changes before parsing the current GPX file.
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
             <div className="flex justify-end">
               <Button type="submit" disabled={form.formState.isSubmitting || !fileAssetId}>
                 {form.formState.isSubmitting ? "Saving..." : "Save track"}
@@ -276,10 +368,38 @@ const TrackFormDialog = ({
 };
 
 export const TracksAdminPanel = ({ tracks }: { tracks: TrackListItem[] }) => {
+  const router = useRouter();
   const [formOpen, setFormOpen] = useState(false);
   const [editingTrack, setEditingTrack] = useState<TrackListItem | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<TrackListItem | null>(null);
+  const [parsingTrackId, setParsingTrackId] = useState<string | null>(null);
   const [isDeleting, startDeleting] = useTransition();
+  const [, startParsing] = useTransition();
+
+  const handleParse = useCallback(
+    (track: TrackListItem) => {
+      setParsingTrackId(track.id);
+
+      startParsing(async () => {
+        try {
+          const metadata = await parseTrackGpx(track.id);
+
+          if (metadata.gpxParse.status === "SUCCESS") {
+            toast.success("GPX parsed");
+          } else {
+            toast.error(metadata.gpxParse.errorMessage ?? "GPX parsing failed");
+          }
+
+          router.refresh();
+        } catch (error) {
+          toast.error(error instanceof Error ? error.message : "Failed to parse GPX");
+        } finally {
+          setParsingTrackId(null);
+        }
+      });
+    },
+    [router],
+  );
 
   const columns = useMemo<ColumnDef<TrackListItem>[]>(
     () => [
@@ -315,6 +435,11 @@ export const TracksAdminPanel = ({ tracks }: { tracks: TrackListItem[] }) => {
         ),
       },
       {
+        id: "parse",
+        header: "GPX summary",
+        cell: ({ row }) => <TrackParseStatus track={row.original} />,
+      },
+      {
         accessorKey: "updatedAt",
         header: "Updated",
         cell: ({ row }) => formatDate(row.original.updatedAt),
@@ -323,6 +448,16 @@ export const TracksAdminPanel = ({ tracks }: { tracks: TrackListItem[] }) => {
         id: "actions",
         cell: ({ row }) => (
           <div className="flex justify-end gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              title="Parse GPX"
+              disabled={parsingTrackId === row.original.id}
+              onClick={() => handleParse(row.original)}
+            >
+              <RefreshCw className={`size-4 ${parsingTrackId === row.original.id ? "animate-spin" : ""}`} />
+            </Button>
             <Button
               type="button"
               variant="ghost"
@@ -348,7 +483,7 @@ export const TracksAdminPanel = ({ tracks }: { tracks: TrackListItem[] }) => {
         ),
       },
     ],
-    [],
+    [handleParse, parsingTrackId],
   );
 
   const handleCreateClick = () => {
@@ -369,6 +504,7 @@ export const TracksAdminPanel = ({ tracks }: { tracks: TrackListItem[] }) => {
       }
 
       setDeleteTarget(null);
+      router.refresh();
     });
   };
 
@@ -384,6 +520,9 @@ export const TracksAdminPanel = ({ tracks }: { tracks: TrackListItem[] }) => {
       <TrackFormDialog
         track={editingTrack}
         open={formOpen}
+        onParse={handleParse}
+        parsingTrackId={parsingTrackId}
+        onSaved={() => router.refresh()}
         onOpenChange={(open) => {
           setFormOpen(open);
           if (!open) setEditingTrack(null);

@@ -6,6 +6,13 @@ import type { Prisma } from "@/generated/prisma/client";
 import type { FileAssetStatus, FileAssetVisibility, TrackStatus } from "@/generated/prisma/enums";
 import { authSession } from "@/lib/auth-utils";
 import { createSlug } from "@/lib/slug-generator";
+import { parseTrackGpxMetadata } from "@/lib/track-gpx-parser";
+import {
+  getTrackGpxMetadataState,
+  markTrackGpxMetadataStale,
+  type TrackGpxCoordinate,
+  type TrackGpxSummary,
+} from "@/lib/track-gpx-metadata";
 
 export type TrackActionValues = {
   id?: string;
@@ -41,6 +48,7 @@ type PublicTrackRecord = Prisma.TrackGetPayload<{
       select: {
         id: true;
         name: true;
+        fileKey: true;
         sizeBytes: true;
         status: true;
         visibility: true;
@@ -48,6 +56,7 @@ type PublicTrackRecord = Prisma.TrackGetPayload<{
         updatedAt: true;
       };
     };
+    metadata: true;
   };
 }>;
 
@@ -67,6 +76,10 @@ export type PublicTrack = {
     downloadUrl: string | null;
     downloadAvailable: boolean;
   };
+  parsed: {
+    summary: TrackGpxSummary;
+    mapGeometry: TrackGpxCoordinate[] | null;
+  } | null;
 };
 
 const DEFAULT_TRACK_STATUS: TrackStatus = "DRAFT";
@@ -157,6 +170,8 @@ const ensureEligibleTrackFileAsset = async ({
     },
     select: {
       id: true,
+      fileKey: true,
+      url: true,
       track: {
         select: {
           id: true,
@@ -172,6 +187,8 @@ const ensureEligibleTrackFileAsset = async ({
   if (fileAsset.track && fileAsset.track.id !== trackId) {
     throw new Error("Selected GPX file is already linked to another track");
   }
+
+  return fileAsset;
 };
 
 const trackListInclude = {
@@ -192,10 +209,12 @@ const publicTrackSelect = {
   description: true,
   updatedAt: true,
   createdAt: true,
+  metadata: true,
   fileAsset: {
     select: {
       id: true,
       name: true,
+      fileKey: true,
       sizeBytes: true,
       status: true,
       visibility: true,
@@ -205,9 +224,16 @@ const publicTrackSelect = {
   },
 } satisfies Prisma.TrackSelect;
 
-const toPublicTrack = (track: PublicTrackRecord): PublicTrack => {
+const toPublicTrack = (
+  track: PublicTrackRecord,
+  { includeMapGeometry }: { includeMapGeometry: boolean },
+): PublicTrack => {
   const downloadAvailable =
     track.fileAsset.status === ACTIVE_FILE_STATUS && PUBLIC_DOWNLOAD_VISIBILITIES.has(track.fileAsset.visibility);
+  const parsedState = getTrackGpxMetadataState(track.metadata, {
+    fileAssetId: track.fileAsset.id,
+    fileKey: track.fileAsset.fileKey,
+  });
 
   return {
     id: track.id,
@@ -225,12 +251,40 @@ const toPublicTrack = (track: PublicTrackRecord): PublicTrack => {
       downloadUrl: downloadAvailable ? `/files/${track.fileAsset.id}/download` : null,
       downloadAvailable,
     },
+    parsed:
+      parsedState.status === "SUCCESS"
+        ? {
+            summary: parsedState.summary,
+            mapGeometry: includeMapGeometry ? parsedState.mapGeometry : null,
+          }
+        : null,
   };
+};
+
+const fetchTrackGpxContent = async (url: string) => {
+  try {
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      throw new Error("Unable to read GPX file from storage");
+    }
+
+    return response.text();
+  } catch {
+    throw new Error("Unable to read GPX file from storage");
+  }
 };
 
 const revalidateTrackPaths = () => {
   revalidatePath("/admin/tracks");
   revalidatePath("/admin/files");
+  revalidatePath("/tracks");
+};
+
+const revalidateTrackDetailPaths = (slug?: string | null) => {
+  revalidateTrackPaths();
+
+  if (slug) revalidatePath(`/tracks/${slug}`);
 };
 
 export const getAllTracks = async (): Promise<TrackListItem[]> => {
@@ -256,23 +310,23 @@ export const getTrackById = async (id: string): Promise<TrackListItem | null> =>
 
 export const getPublicTracks = async (): Promise<PublicTrack[]> => {
   const { default: prisma } = await import("@/lib/prisma");
-  const tracks = await prisma.track.findMany({
+  const tracks = (await prisma.track.findMany({
     where: { status: "PUBLISHED" },
     select: publicTrackSelect,
     orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
-  });
+  })) as PublicTrackRecord[];
 
-  return tracks.map(toPublicTrack);
+  return tracks.map((track) => toPublicTrack(track, { includeMapGeometry: false }));
 };
 
 export const getPublicTrackBySlug = async (slug: string): Promise<PublicTrack | null> => {
   const { default: prisma } = await import("@/lib/prisma");
-  const track = await prisma.track.findFirst({
+  const track = (await prisma.track.findFirst({
     where: { slug, status: "PUBLISHED" },
     select: publicTrackSelect,
-  });
+  })) as PublicTrackRecord | null;
 
-  return track ? toPublicTrack(track) : null;
+  return track ? toPublicTrack(track, { includeMapGeometry: true }) : null;
 };
 
 export const createTrack = async (values: TrackActionValues) => {
@@ -306,7 +360,16 @@ export const updateTrack = async (values: TrackActionValues) => {
   const { default: prisma } = await import("@/lib/prisma");
   const existingTrack = await prisma.track.findFirst({
     where: { id: values.id, userId },
-    select: { id: true },
+    select: {
+      id: true,
+      metadata: true,
+      fileAssetId: true,
+      fileAsset: {
+        select: {
+          fileKey: true,
+        },
+      },
+    },
   });
 
   if (!existingTrack) {
@@ -314,17 +377,83 @@ export const updateTrack = async (values: TrackActionValues) => {
   }
 
   await ensureSlugAvailable({ slug: data.slug, id: existingTrack.id });
-  await ensureEligibleTrackFileAsset({ fileAssetId: data.fileAssetId, userId, trackId: existingTrack.id });
+  const fileAsset = await ensureEligibleTrackFileAsset({
+    fileAssetId: data.fileAssetId,
+    userId,
+    trackId: existingTrack.id,
+  });
+  const staleMetadata =
+    existingTrack.fileAssetId !== data.fileAssetId || existingTrack.fileAsset.fileKey !== fileAsset.fileKey
+      ? markTrackGpxMetadataStale(existingTrack.metadata, fileAsset.id, fileAsset.fileKey)
+      : null;
 
   const track = await prisma.track.update({
     where: { id: existingTrack.id },
-    data,
+    data: {
+      ...data,
+      ...(staleMetadata ? { metadata: staleMetadata as Prisma.InputJsonValue } : {}),
+    },
     include: trackListInclude,
   });
 
-  revalidateTrackPaths();
+  revalidateTrackDetailPaths(track.slug);
 
   return track;
+};
+
+export const parseTrackGpx = async (id: string) => {
+  const userId = await getRequiredUserId();
+  const { default: prisma } = await import("@/lib/prisma");
+  const track = await prisma.track.findFirst({
+    where: { id, userId },
+    select: {
+      id: true,
+      slug: true,
+      fileAsset: {
+        select: {
+          id: true,
+          fileKey: true,
+          url: true,
+          purpose: true,
+          status: true,
+        },
+      },
+    },
+  });
+
+  if (!track) {
+    throw new Error("Track not found");
+  }
+
+  if (track.fileAsset.purpose !== "TRACK_GPX" || track.fileAsset.status !== ACTIVE_FILE_STATUS) {
+    throw new Error("Selected GPX file is not eligible for tracks");
+  }
+
+  const content = await fetchTrackGpxContent(track.fileAsset.url).catch(() => "");
+  const metadata = parseTrackGpxMetadata({
+    content,
+    sourceFileAssetId: track.fileAsset.id,
+    sourceFileKey: track.fileAsset.fileKey,
+  });
+  const metadataToPersist =
+    content.length > 0
+      ? metadata
+      : {
+          ...metadata,
+          gpxParse: {
+            ...metadata.gpxParse,
+            errorMessage: "Unable to read GPX file from storage",
+          },
+        };
+
+  await prisma.track.update({
+    where: { id: track.id },
+    data: { metadata: metadataToPersist as Prisma.InputJsonValue },
+  });
+
+  revalidateTrackDetailPaths(track.slug);
+
+  return metadataToPersist;
 };
 
 export const deleteTrack = async (id: string) => {
