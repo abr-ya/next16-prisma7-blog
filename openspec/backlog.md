@@ -58,7 +58,6 @@ These candidates track the hikes/tracks/photos initiative as small increments. T
 
 | Status | Candidate | Area | Summary |
 | --- | --- | --- | --- |
-| In Progress | feature-046-content-tags-selected-legacy-post-import-apply | content/tags | Apply the selected legacy post tag import after the dry-run slice, with confirmation, eligibility re-checks, idempotent shared tag assignments, logging, and revalidation. |
 
 ## P1 Soon
 

@@ -54,6 +54,7 @@ Cancelled or deferred candidates do not reserve feature numbers.
 | feature-042 | feature-042-content-tags-admin-tag-actions | content/tags | Add focused tag-level management controls to the shared content tag admin page, including rename, mark active/needs-review, merge into another tag, and delete unused tag with confirmation and used-tag deletion safeguards. |
 | feature-044 | feature-044-content-tags-selective-legacy-post-import | content/tags | Add selective legacy post tag planning so admins can choose specific legacy-only posts and dry-run the selected set without writing shared content tags yet. |
 | feature-045 | feature-045-outdoor-hikes-data-admin-public-foundation | outdoor/hikes | Add the first hike entity with admin create/edit/delete management and minimal published-only public listing/detail pages. |
+| feature-046 | feature-046-content-tags-selected-legacy-post-import-apply | content/tags | Apply the selected legacy post tag import after the dry-run slice, with confirmation, eligibility re-checks, idempotent shared tag assignments, logging, and revalidation. |
 
 ## Cancelled Candidate Notes
 

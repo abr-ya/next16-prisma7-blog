@@ -96,7 +96,7 @@ The system SHALL keep compatibility boundaries for existing tag implementations 
 
 ### Requirement: Admin Legacy Post Tag Import
 
-The system SHALL provide an admin-only import path that turns legacy post string tags into shared content-tag assignments without changing public visibility, and SHALL provide selected-post planning before selected import is applied.
+The system SHALL provide an admin-only import path that turns selected legacy post string tags into shared content-tag assignments without changing public visibility.
 
 #### Scenario: Admin inspects legacy-only post tags
 
@@ -128,22 +128,24 @@ The system SHALL provide an admin-only import path that turns legacy post string
 
 #### Scenario: Admin imports legacy post tags for review
 
-- **WHEN** an admin applies the legacy post-tag import
-- **THEN** eligible posts SHALL receive shared content-tag assignments based on normalized legacy `Post.tags` values
+- **WHEN** an admin applies the legacy post-tag import for selected eligible posts
+- **THEN** selected eligible posts SHALL receive shared content-tag assignments based on all valid normalized legacy `Post.tags` values on each selected post
 - **AND** imported tag records SHALL be marked `NEEDS_REVIEW`
 - **AND** public tag display SHALL remain unchanged except that imported posts may now resolve tags through shared assignments instead of legacy fallback
+- **AND** posts outside the selected set SHALL NOT be imported
 
 #### Scenario: Import rejects empty selected post set
 
-- **WHEN** an admin runs dry-run without selecting any eligible posts
+- **WHEN** an admin runs dry-run or import without selecting any eligible posts
 - **THEN** the system SHALL reject the action
 - **AND** the admin SHALL be told to select at least one post
 
 #### Scenario: Import remains idempotent
 
-- **WHEN** the legacy post-tag import is applied more than once
+- **WHEN** the selected legacy post-tag import is applied more than once
 - **THEN** posts that already have shared content-tag assignments SHALL NOT receive duplicate assignments
 - **AND** reusable tag records SHALL remain unique by slug
+- **AND** posts that are no longer eligible SHALL be skipped safely
 
 #### Scenario: Selected dry-run remains read-only
 
@@ -163,6 +165,12 @@ The system SHALL provide an admin-only import path that turns legacy post string
 - **WHEN** the selective import workflow is delivered
 - **THEN** the existing raw-value legacy tag inventory summary SHALL remain available for migration planning context
 - **AND** it SHALL NOT replace the selected-post import decision surface
+
+#### Scenario: Broad all-post import is replaced by selected import
+
+- **WHEN** the selected import workflow is delivered
+- **THEN** the legacy migration panel SHALL provide selected-post import instead of an all-or-nothing import for every eligible post
+- **AND** admins SHALL confirm selected import through the app-styled confirmation dialog before writes occur
 
 ### Requirement: Admin Content Tag Review Workflow
 
