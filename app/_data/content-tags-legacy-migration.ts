@@ -9,6 +9,7 @@ import {
   buildEligiblePostRows,
   buildLegacyTagInventory,
   planLegacyPostTags,
+  selectEligibleLegacyPosts,
   summarizeLegacyMigrationPlan,
   summarizeSelectedLegacyMigrationPlan,
   type LegacyEligiblePostRow,
@@ -29,10 +30,58 @@ export type LegacyPostTagMigrationResult = {
   summary: LegacyPostTagMigrationSummary;
 };
 
-const revalidateLegacyMigrationPaths = () => {
+const revalidateLegacyMigrationPaths = (postSlugs: string[] = []) => {
   revalidatePath("/admin/content-tags");
   revalidatePath("/admin/posts");
   revalidatePath("/blog");
+
+  Array.from(new Set(postSlugs.filter(Boolean))).forEach((slug) => {
+    revalidatePath(`/blog/${slug}`);
+  });
+};
+
+const migrateLegacyPosts = async (posts: LegacyOnlyPostSnapshot[]): Promise<number> => {
+  let postsMigrated = 0;
+
+  for (const post of posts) {
+    const { planned } = planLegacyPostTags(post.tags);
+
+    if (planned.length === 0) {
+      continue;
+    }
+
+    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      const persisted = await Promise.all(
+        planned.map((tag) =>
+          tx.contentTag.upsert({
+            where: { slug: tag.slug },
+            create: {
+              name: tag.name,
+              slug: tag.slug,
+              status: ContentTagStatus.NEEDS_REVIEW,
+            },
+            update: {
+              name: tag.name,
+              status: ContentTagStatus.NEEDS_REVIEW,
+            },
+            select: { id: true },
+          }),
+        ),
+      );
+
+      await tx.postsToContentTags.createMany({
+        data: persisted.map((tag) => ({
+          postId: post.id,
+          tagId: tag.id,
+        })),
+        skipDuplicates: true,
+      });
+    });
+
+    postsMigrated += 1;
+  }
+
+  return postsMigrated;
 };
 
 const loadLegacyOnlyPosts = async (): Promise<LegacyOnlyPostSnapshot[]> => {
@@ -101,52 +150,14 @@ export const dryRunSelectedLegacyPostTagMigration = async (
   return { summary };
 };
 
-export const applyLegacyPostTagMigration = async (): Promise<LegacyPostTagMigrationResult> => {
+export const applySelectedLegacyPostTagMigration = async (postIds: string[]): Promise<LegacyPostTagMigrationResult> => {
   await requireAdmin();
 
   const posts = await loadLegacyOnlyPosts();
   const existingSlugs = await loadExistingContentTagSlugs();
-  const summary = summarizeLegacyMigrationPlan(posts, existingSlugs, "apply");
-
-  let postsMigrated = 0;
-
-  for (const post of posts) {
-    const { planned } = planLegacyPostTags(post.tags);
-
-    if (planned.length === 0) {
-      continue;
-    }
-
-    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      const persisted = await Promise.all(
-        planned.map((tag) =>
-          tx.contentTag.upsert({
-            where: { slug: tag.slug },
-            create: {
-              name: tag.name,
-              slug: tag.slug,
-              status: ContentTagStatus.NEEDS_REVIEW,
-            },
-            update: {
-              name: tag.name,
-              status: ContentTagStatus.NEEDS_REVIEW,
-            },
-            select: { id: true },
-          }),
-        ),
-      );
-
-      await tx.postsToContentTags.createMany({
-        data: persisted.map((tag) => ({
-          postId: post.id,
-          tagId: tag.id,
-        })),
-        skipDuplicates: true,
-      });
-    });
-
-    postsMigrated += 1;
-  }
+  const summary = summarizeSelectedLegacyMigrationPlan(posts, existingSlugs, postIds, "apply");
+  const { eligiblePosts } = selectEligibleLegacyPosts(posts, postIds);
+  const postsMigrated = await migrateLegacyPosts(eligiblePosts);
 
   const finalSummary: LegacyPostTagMigrationSummary = {
     ...summary,
@@ -154,11 +165,11 @@ export const applyLegacyPostTagMigration = async (): Promise<LegacyPostTagMigrat
   };
 
   await createLogEvent(
-    "legacyPostTagMigrate",
-    `migrated=${postsMigrated}; eligible=${summary.eligiblePosts}; assignments=${summary.plannedAssignments}; create=${summary.tagsToCreate}; reuse=${summary.tagsToReuse}; skipped=${summary.valuesSkipped}`,
+    "legacyPostTagSelectedMigrate",
+    `selected=${summary.selectedPosts}; migrated=${postsMigrated}; eligible=${summary.eligiblePosts}; skippedIneligible=${summary.postsSkippedIneligible}; assignments=${summary.plannedAssignments}; create=${summary.tagsToCreate}; reuse=${summary.tagsToReuse}; skipped=${summary.valuesSkipped}; noValidTags=${summary.postsSkippedNoValidTags}`,
   );
 
-  revalidateLegacyMigrationPaths();
+  revalidateLegacyMigrationPaths(eligiblePosts.map((post) => post.slug));
 
   return { summary: finalSummary };
 };

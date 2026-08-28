@@ -58,7 +58,7 @@ These candidates track the hikes/tracks/photos initiative as small increments. T
 
 | Status | Candidate | Area | Summary |
 | --- | --- | --- | --- |
-| Ready | feature-046-content-tags-selected-legacy-post-import-apply | content/tags | Apply the selected legacy post tag import after the dry-run slice, with confirmation, eligibility re-checks, idempotent shared tag assignments, logging, and revalidation. |
+| In Progress | feature-046-content-tags-selected-legacy-post-import-apply | content/tags | Apply the selected legacy post tag import after the dry-run slice, with confirmation, eligibility re-checks, idempotent shared tag assignments, logging, and revalidation. |
 
 ## P1 Soon
 
@@ -77,6 +77,7 @@ These candidates track the hikes/tracks/photos initiative as small increments. T
 | Candidate | image-upload-tracking-migration | files/migration | Migrate legacy `imageUploader` route to create `FileAsset` records and count toward user storage quota, or create new tracked image route and deprecate legacy route. |
 | Candidate | email-password-account-flow | auth/email | Finish first-party email/password account creation and login with form UX, mailbox-backed email verification, and password reset boundaries. |
 | Candidate | dependency-upgrade-audit | dependencies | Audit and upgrade important framework/runtime packages such as Prisma, Next, React, better-auth, UploadThing, Tiptap, Radix, and ESLint in isolated groups with compatibility fixes and validation after each group. |
+| Candidate | product-documentation-strategy | docs/workflow | Plan human-readable product documentation beyond OpenSpec: choose README vs repo `docs/` vs optional in-app admin help, define update rules for user-facing/admin behavior changes, and pilot the format on one area such as Content Tags legacy import (`Dry Run Selected` vs `Import Selected`). |
 
 ## P2 Later
 
