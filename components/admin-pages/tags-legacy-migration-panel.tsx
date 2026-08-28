@@ -6,7 +6,7 @@ import { useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import {
-  applyLegacyPostTagMigration,
+  applySelectedLegacyPostTagMigration,
   dryRunLegacyPostTagMigration,
   dryRunSelectedLegacyPostTagMigration,
   type LegacyPostTagInventoryResult,
@@ -133,17 +133,18 @@ export const TagsLegacyMigrationPanel = ({ inventory }: TagsLegacyMigrationPanel
     });
   };
 
-  const runApply = () => {
+  const runSelectedApply = () => {
     setIsConfirmOpen(false);
     startTransition(async () => {
       try {
-        const result = await applyLegacyPostTagMigration();
+        const result = await applySelectedLegacyPostTagMigration(visibleSelectedIds);
         setSummary(result.summary);
-        toast.success("Legacy tags imported for review");
+        toast.success("Selected legacy tags imported for review");
+        clearSelection();
         router.refresh();
       } catch (err) {
         console.error(err);
-        toast.error(err instanceof Error ? err.message : "Import failed");
+        toast.error(err instanceof Error ? err.message : "Selected import failed");
       }
     });
   };
@@ -183,6 +184,10 @@ export const TagsLegacyMigrationPanel = ({ inventory }: TagsLegacyMigrationPanel
               <Button type="button" disabled={isPending || selectedCount === 0} onClick={runSelectedDryRun}>
                 <Play className="size-4" />
                 Dry Run Selected
+              </Button>
+              <Button type="button" disabled={isPending || selectedCount === 0} onClick={() => setIsConfirmOpen(true)}>
+                <UploadCloud className="size-4" />
+                Import Selected
               </Button>
             </div>
           </div>
@@ -348,18 +353,13 @@ export const TagsLegacyMigrationPanel = ({ inventory }: TagsLegacyMigrationPanel
           <div className="space-y-1">
             <div className="text-sm font-medium">All eligible posts</div>
             <p className="text-sm text-muted-foreground">
-              These buttons still dry-run or import every eligible post. Selected import will replace this in a
-              follow-up.
+              Optional broad dry-run for every eligible post. Import always applies only to the selected posts above.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
             <Button type="button" variant="outline" disabled={isPending || !hasEligible} onClick={runDryRun}>
               <Play className="size-4" />
-              Dry Run
-            </Button>
-            <Button type="button" disabled={isPending || !hasEligible} onClick={() => setIsConfirmOpen(true)}>
-              <UploadCloud className="size-4" />
-              Import
+              Dry Run All
             </Button>
           </div>
         </div>
@@ -373,11 +373,11 @@ export const TagsLegacyMigrationPanel = ({ inventory }: TagsLegacyMigrationPanel
       <ConfirmDialog
         open={isConfirmOpen}
         onOpenChange={setIsConfirmOpen}
-        title="Import legacy post tags?"
-        description="Eligible legacy post tags will become shared tags that need review. Public tag display will remain unchanged."
-        confirmLabel="Import Tags"
+        title="Import selected legacy post tags?"
+        description={`${selectedCount} selected post(s) will receive shared tags marked as needs review. Public tag display will remain unchanged.`}
+        confirmLabel="Import Selected"
         isPending={isPending}
-        onConfirm={runApply}
+        onConfirm={runSelectedApply}
       />
     </Card>
   );

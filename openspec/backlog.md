@@ -25,6 +25,14 @@ Backlog candidates stay unnumbered until they are promoted into implementation. 
 - To promote a candidate, assign the lowest unused `feature-XXX` number after checking this file and [feature-history.md](./feature-history.md).
 - Cancelled or deferred candidates do not reserve numbers; keep or move them as unnumbered history notes when useful.
 
+## Unconfirmed Bugs
+
+Observed issues that may be real bugs but have not been reproduced reliably enough to promote into implementation yet. Keep notes in English. Remove or promote entries once confirmed, fixed, or ruled out.
+
+| Status | ID | Area | Summary | Notes |
+| --- | --- | --- | --- | --- |
+| Observed once | admin-post-save-disabled-until-interaction | posts/admin | Admin post create/edit **Save changes** stayed disabled on first load, then became enabled after scrolling through the form and opening the browser console. | Reported on `/admin/posts/new` while creating a post. Initial save looked blocked; later interaction made the button active and saving appeared to work. Suspect client-side validation timing in `PostForm` (`mode: "onBlur"` plus `disabled={!form.formState.isValid}`), but not confirmed. Needs a clean repro before fixing. |
+
 ## Outdoor Content High-Priority Roadmap
 
 These candidates track the hikes/tracks/photos initiative as small increments. They stay unnumbered until promoted; the first promoted slice should take the next available feature number from the shared sequence.
@@ -50,7 +58,6 @@ These candidates track the hikes/tracks/photos initiative as small increments. T
 
 | Status | Candidate | Area | Summary |
 | --- | --- | --- | --- |
-| Ready | feature-046-content-tags-selected-legacy-post-import-apply | content/tags | Apply the selected legacy post tag import after the dry-run slice, with confirmation, eligibility re-checks, idempotent shared tag assignments, logging, and revalidation. |
 
 ## P1 Soon
 
@@ -69,6 +76,7 @@ These candidates track the hikes/tracks/photos initiative as small increments. T
 | Candidate | image-upload-tracking-migration | files/migration | Migrate legacy `imageUploader` route to create `FileAsset` records and count toward user storage quota, or create new tracked image route and deprecate legacy route. |
 | Candidate | email-password-account-flow | auth/email | Finish first-party email/password account creation and login with form UX, mailbox-backed email verification, and password reset boundaries. |
 | Candidate | dependency-upgrade-audit | dependencies | Audit and upgrade important framework/runtime packages such as Prisma, Next, React, better-auth, UploadThing, Tiptap, Radix, and ESLint in isolated groups with compatibility fixes and validation after each group. |
+| Candidate | product-documentation-strategy | docs/workflow | Plan human-readable product documentation beyond OpenSpec: choose README vs repo `docs/` vs optional in-app admin help, define update rules for user-facing/admin behavior changes, and pilot the format on one area such as Content Tags legacy import (`Dry Run Selected` vs `Import Selected`). |
 
 ## P2 Later
 
