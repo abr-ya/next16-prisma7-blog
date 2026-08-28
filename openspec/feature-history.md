@@ -56,6 +56,7 @@ Cancelled or deferred candidates do not reserve feature numbers.
 | feature-045 | feature-045-outdoor-hikes-data-admin-public-foundation | outdoor/hikes | Add the first hike entity with admin create/edit/delete management and minimal published-only public listing/detail pages. |
 | feature-046 | feature-046-content-tags-selected-legacy-post-import-apply | content/tags | Apply the selected legacy post tag import after the dry-run slice, with confirmation, eligibility re-checks, idempotent shared tag assignments, logging, and revalidation. |
 | feature-047 | feature-047-outdoor-tracks-file-data-foundation | outdoor/tracks | Add the first GPX-backed track entity with upload validation, file asset binding, server actions, and admin create/edit/list management without public track pages or map rendering. |
+| feature-048 | feature-048-outdoor-tracks-public-download-preview | outdoor/tracks | Add public track listing/detail pages for published tracks with visibility-safe metadata and controlled GPX download availability. |
 
 ## Cancelled Candidate Notes
 

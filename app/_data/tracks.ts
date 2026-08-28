@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import type { Prisma } from "@/generated/prisma/client";
-import type { FileAssetStatus, TrackStatus } from "@/generated/prisma/enums";
+import type { FileAssetStatus, FileAssetVisibility, TrackStatus } from "@/generated/prisma/enums";
 import { authSession } from "@/lib/auth-utils";
 import { createSlug } from "@/lib/slug-generator";
 
@@ -29,9 +29,50 @@ export type TrackListItem = Prisma.TrackGetPayload<{
   };
 }>;
 
+type PublicTrackRecord = Prisma.TrackGetPayload<{
+  select: {
+    id: true;
+    title: true;
+    slug: true;
+    description: true;
+    updatedAt: true;
+    createdAt: true;
+    fileAsset: {
+      select: {
+        id: true;
+        name: true;
+        sizeBytes: true;
+        status: true;
+        visibility: true;
+        uploadedAt: true;
+        updatedAt: true;
+      };
+    };
+  };
+}>;
+
+export type PublicTrack = {
+  id: string;
+  title: string;
+  slug: string;
+  description: string | null;
+  updatedAt: Date;
+  createdAt: Date;
+  file: {
+    id: string;
+    name: string;
+    sizeBytes: number;
+    uploadedAt: Date;
+    updatedAt: Date;
+    downloadUrl: string | null;
+    downloadAvailable: boolean;
+  };
+};
+
 const DEFAULT_TRACK_STATUS: TrackStatus = "DRAFT";
 const TRACK_STATUSES = new Set<TrackStatus>(["DRAFT", "PUBLISHED"]);
 const ACTIVE_FILE_STATUS: FileAssetStatus = "ACTIVE";
+const PUBLIC_DOWNLOAD_VISIBILITIES = new Set<FileAssetVisibility>(["PUBLIC", "UNLISTED"]);
 
 const getRequiredUserId = async () => {
   const session = await authSession();
@@ -144,6 +185,49 @@ const trackListInclude = {
   },
 } satisfies Prisma.TrackInclude;
 
+const publicTrackSelect = {
+  id: true,
+  title: true,
+  slug: true,
+  description: true,
+  updatedAt: true,
+  createdAt: true,
+  fileAsset: {
+    select: {
+      id: true,
+      name: true,
+      sizeBytes: true,
+      status: true,
+      visibility: true,
+      uploadedAt: true,
+      updatedAt: true,
+    },
+  },
+} satisfies Prisma.TrackSelect;
+
+const toPublicTrack = (track: PublicTrackRecord): PublicTrack => {
+  const downloadAvailable =
+    track.fileAsset.status === ACTIVE_FILE_STATUS && PUBLIC_DOWNLOAD_VISIBILITIES.has(track.fileAsset.visibility);
+
+  return {
+    id: track.id,
+    title: track.title,
+    slug: track.slug,
+    description: track.description,
+    updatedAt: track.updatedAt,
+    createdAt: track.createdAt,
+    file: {
+      id: track.fileAsset.id,
+      name: track.fileAsset.name,
+      sizeBytes: track.fileAsset.sizeBytes,
+      uploadedAt: track.fileAsset.uploadedAt,
+      updatedAt: track.fileAsset.updatedAt,
+      downloadUrl: downloadAvailable ? `/files/${track.fileAsset.id}/download` : null,
+      downloadAvailable,
+    },
+  };
+};
+
 const revalidateTrackPaths = () => {
   revalidatePath("/admin/tracks");
   revalidatePath("/admin/files");
@@ -168,6 +252,27 @@ export const getTrackById = async (id: string): Promise<TrackListItem | null> =>
     where: { id, userId },
     include: trackListInclude,
   });
+};
+
+export const getPublicTracks = async (): Promise<PublicTrack[]> => {
+  const { default: prisma } = await import("@/lib/prisma");
+  const tracks = await prisma.track.findMany({
+    where: { status: "PUBLISHED" },
+    select: publicTrackSelect,
+    orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
+  });
+
+  return tracks.map(toPublicTrack);
+};
+
+export const getPublicTrackBySlug = async (slug: string): Promise<PublicTrack | null> => {
+  const { default: prisma } = await import("@/lib/prisma");
+  const track = await prisma.track.findFirst({
+    where: { slug, status: "PUBLISHED" },
+    select: publicTrackSelect,
+  });
+
+  return track ? toPublicTrack(track) : null;
 };
 
 export const createTrack = async (values: TrackActionValues) => {
