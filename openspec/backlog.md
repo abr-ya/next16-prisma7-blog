@@ -44,7 +44,7 @@ These candidates track the hikes/tracks/photos initiative as small increments. T
 | 6 | Candidate | outdoor-photos-public-gallery | outdoor/photos | Add public photo listing/detail pages with visibility-safe previews, captured-at display, and selected EXIF metadata. |
 | 7 | Candidate | outdoor-hike-track-association | outdoor/hikes-tracks | Let admins attach/detach tracks to hikes and show linked tracks in both hike and track admin/public views. |
 | 8 | Candidate | outdoor-hike-photo-association | outdoor/hikes-photos | Let admins attach/detach photos to hikes and show linked photos in both hike and photo admin/public views. |
-| 10 | Candidate | outdoor-track-map-component | outdoor/maps | Add a public map component for rendering one GPX track with OSM-compatible tiles and graceful fallback when geometry is unavailable. |
+| 10 | In Progress | feature-050-outdoor-track-map-component | outdoor/maps | Add a public map component for rendering one GPX track with OSM-compatible tiles, stored simplified geometry, start/end markers, bounds fitting, and graceful fallback when geometry is unavailable. |
 | 11 | Candidate | outdoor-hike-combined-track-map | outdoor/maps | Add one map on hike detail pages that renders all linked visible tracks together and frames the combined bounds. |
 | 12 | Candidate | outdoor-photo-gps-map-markers | outdoor/maps-photos | Use direct GPS EXIF coordinates to place linked hike photos on the hike map when coordinates exist. |
 | 13 | Candidate | outdoor-photo-manual-ordering | outdoor/photos | Add simple manual ordering for hike photos so later album/gallery work has a stable foundation. |
