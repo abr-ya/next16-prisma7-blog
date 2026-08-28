@@ -125,6 +125,13 @@ export const getUploadThingUsagePoints = (): UploadThingUsagePoint[] => [
     notes: "New first-party FileAsset flow for admin uploads.",
   },
   {
+    label: "Track GPX files",
+    route: "trackGpxUploader",
+    surface: "/admin/tracks",
+    status: "tracked",
+    notes: "Dedicated authenticated GPX upload flow that records TRACK_GPX file assets.",
+  },
+  {
     label: "Rich-text post images",
     route: "imageUploader",
     surface: "components/common/rich-text-editor.tsx",
