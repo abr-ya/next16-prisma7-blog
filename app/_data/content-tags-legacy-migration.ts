@@ -6,9 +6,12 @@ import { createLogEvent } from "@/app/_data/log";
 import { ContentTagStatus, type Prisma } from "@/generated/prisma/client";
 import { requireAdmin } from "@/lib/auth-utils";
 import {
+  buildEligiblePostRows,
   buildLegacyTagInventory,
   planLegacyPostTags,
   summarizeLegacyMigrationPlan,
+  summarizeSelectedLegacyMigrationPlan,
+  type LegacyEligiblePostRow,
   type LegacyPostTagInventoryRow,
   type LegacyPostTagMigrationSummary,
   type LegacyOnlyPostSnapshot,
@@ -19,6 +22,7 @@ export type LegacyPostTagInventoryResult = {
   eligiblePosts: number;
   uniqueRawValues: number;
   rows: LegacyPostTagInventoryRow[];
+  eligiblePostRows: LegacyEligiblePostRow[];
 };
 
 export type LegacyPostTagMigrationResult = {
@@ -57,7 +61,12 @@ export const getLegacyPostTagInventory = async (): Promise<LegacyPostTagInventor
   await requireAdmin();
 
   const posts = await loadLegacyOnlyPosts();
-  return buildLegacyTagInventory(posts);
+  const inventory = buildLegacyTagInventory(posts);
+
+  return {
+    ...inventory,
+    eligiblePostRows: buildEligiblePostRows(posts),
+  };
 };
 
 export const dryRunLegacyPostTagMigration = async (): Promise<LegacyPostTagMigrationResult> => {
@@ -70,6 +79,23 @@ export const dryRunLegacyPostTagMigration = async (): Promise<LegacyPostTagMigra
   await createLogEvent(
     "legacyPostTagDryRun",
     `eligible=${summary.eligiblePosts}; assignments=${summary.plannedAssignments}; create=${summary.tagsToCreate}; reuse=${summary.tagsToReuse}; skipped=${summary.valuesSkipped}; noValidTags=${summary.postsSkippedNoValidTags}`,
+  );
+
+  return { summary };
+};
+
+export const dryRunSelectedLegacyPostTagMigration = async (
+  postIds: string[],
+): Promise<LegacyPostTagMigrationResult> => {
+  await requireAdmin();
+
+  const posts = await loadLegacyOnlyPosts();
+  const existingSlugs = await loadExistingContentTagSlugs();
+  const summary = summarizeSelectedLegacyMigrationPlan(posts, existingSlugs, postIds, "dry-run");
+
+  await createLogEvent(
+    "legacyPostTagSelectedDryRun",
+    `selected=${summary.selectedPosts}; eligible=${summary.eligiblePosts}; skippedIneligible=${summary.postsSkippedIneligible}; assignments=${summary.plannedAssignments}; create=${summary.tagsToCreate}; reuse=${summary.tagsToReuse}; skipped=${summary.valuesSkipped}; noValidTags=${summary.postsSkippedNoValidTags}`,
   );
 
   return { summary };

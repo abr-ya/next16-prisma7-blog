@@ -1,5 +1,7 @@
 import { createContentTagSlug, normalizeContentTagName, type NormalizedContentTag } from "@/lib/content-tags";
 
+export const EMPTY_LEGACY_POST_SELECTION_MESSAGE = "Select at least one post";
+
 export type LegacyPostTagInventorySample = {
   id: string;
   slug: string;
@@ -13,6 +15,15 @@ export type LegacyPostTagInventoryRow = {
   samplePosts: LegacyPostTagInventorySample[];
 };
 
+export type LegacyEligiblePostRow = {
+  id: string;
+  slug: string;
+  title: string;
+  rawValues: string[];
+  plannedTags: NormalizedContentTag[];
+  skippedValues: string[];
+};
+
 export type LegacyPostTagMigrationSummary = {
   mode: "dry-run" | "apply";
   eligiblePosts: number;
@@ -23,6 +34,8 @@ export type LegacyPostTagMigrationSummary = {
   tagsToCreate: number;
   tagsToReuse: number;
   valuesSkipped: number;
+  selectedPosts?: number;
+  postsSkippedIneligible?: number;
   postsMigrated?: number;
 };
 
@@ -35,10 +48,41 @@ export type LegacyOnlyPostSnapshot = {
 
 const SAMPLE_POST_LIMIT = 5;
 
+export const normalizeSelectedPostIds = (postIds: string[] = []): string[] =>
+  Array.from(new Set(postIds.map((id) => id.trim()).filter((id) => id.length > 0)));
+
+export const selectEligibleLegacyPosts = (
+  posts: LegacyOnlyPostSnapshot[],
+  postIds: string[],
+): {
+  selectedPostIds: string[];
+  eligiblePosts: LegacyOnlyPostSnapshot[];
+  postsSkippedIneligible: number;
+} => {
+  const selectedPostIds = normalizeSelectedPostIds(postIds);
+
+  if (selectedPostIds.length === 0) {
+    throw new Error(EMPTY_LEGACY_POST_SELECTION_MESSAGE);
+  }
+
+  const eligibleById = new Map(posts.map((post) => [post.id, post]));
+  const eligiblePosts = selectedPostIds.flatMap((id) => {
+    const post = eligibleById.get(id);
+    return post ? [post] : [];
+  });
+
+  return {
+    selectedPostIds,
+    eligiblePosts,
+    postsSkippedIneligible: selectedPostIds.length - eligiblePosts.length,
+  };
+};
+
 export const planLegacyPostTags = (
   rawTags: string[] = [],
-): { planned: NormalizedContentTag[]; skippedCount: number } => {
+): { planned: NormalizedContentTag[]; skippedCount: number; skippedValues: string[] } => {
   const planned = new Map<string, NormalizedContentTag>();
+  const skippedValues: string[] = [];
   let skippedCount = 0;
 
   rawTags.forEach((raw) => {
@@ -47,6 +91,10 @@ export const planLegacyPostTags = (
 
     if (!name || !slug) {
       skippedCount += 1;
+      const skipped = name || raw.trim() || raw;
+      if (skipped && !skippedValues.includes(skipped)) {
+        skippedValues.push(skipped);
+      }
       return;
     }
 
@@ -58,8 +106,23 @@ export const planLegacyPostTags = (
   return {
     planned: Array.from(planned.values()).sort((first, second) => first.name.localeCompare(second.name)),
     skippedCount,
+    skippedValues,
   };
 };
+
+export const buildEligiblePostRows = (posts: LegacyOnlyPostSnapshot[]): LegacyEligiblePostRow[] =>
+  posts.map((post) => {
+    const { planned, skippedValues } = planLegacyPostTags(post.tags);
+
+    return {
+      id: post.id,
+      slug: post.slug,
+      title: post.title,
+      rawValues: post.tags.map((tag) => tag.trim()).filter((tag) => tag.length > 0),
+      plannedTags: planned,
+      skippedValues,
+    };
+  });
 
 export const buildLegacyTagInventory = (
   posts: LegacyOnlyPostSnapshot[],
@@ -158,5 +221,20 @@ export const summarizeLegacyMigrationPlan = (
     tagsToCreate: tagsToCreate.size,
     tagsToReuse: tagsToReuse.size,
     valuesSkipped,
+  };
+};
+
+export const summarizeSelectedLegacyMigrationPlan = (
+  posts: LegacyOnlyPostSnapshot[],
+  existingSlugs: Set<string>,
+  postIds: string[],
+  mode: "dry-run" | "apply",
+): LegacyPostTagMigrationSummary => {
+  const { selectedPostIds, eligiblePosts, postsSkippedIneligible } = selectEligibleLegacyPosts(posts, postIds);
+
+  return {
+    ...summarizeLegacyMigrationPlan(eligiblePosts, existingSlugs, mode),
+    selectedPosts: selectedPostIds.length,
+    postsSkippedIneligible,
   };
 };
