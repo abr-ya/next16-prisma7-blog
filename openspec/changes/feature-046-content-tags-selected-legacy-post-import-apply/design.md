@@ -1,6 +1,6 @@
 ## Context
 
-`feature-044-content-tags-selective-legacy-post-import` narrows the admin migration surface to selected eligible-post inspection and selected dry-run. This follow-up adds the write path that applies the selected plan by creating shared content tags and post/tag assignments for selected eligible posts.
+`feature-044-content-tags-selective-legacy-post-import` is complete and archived. The legacy migration panel on `/admin/content-tags` now exposes eligible-post selection, planned tag previews, and selected dry-run. This follow-up adds the write path that applies the selected plan by creating shared content tags and post/tag assignments for selected eligible posts, and replaces the broad all-post import control.
 
 ## Goals / Non-Goals
 
@@ -13,10 +13,11 @@
 
 **Non-Goals:**
 
-- Do not clear `Post.tags` after import.
+- Do not clear legacy `Post.tags` after import.
 - Do not support raw-value-only partial import.
 - Do not change public tag resolution or post editor behavior.
 - Do not add schema changes or migrate other content types.
+- Do not keep the broad all-post import action once selected import ships.
 
 ## Decisions
 
@@ -34,6 +35,9 @@
 
 - Do not clear legacy `Post.tags`.
   Rationale: this preserves source data and keeps rollback/data audit simpler. Public display already prefers shared assignments once they exist.
+
+- Replace broad all-post import with selected import.
+  Rationale: the selective workflow is now proven in feature-044, so the write path should match the same post-selection boundary instead of keeping a surprising all-or-nothing import action.
 
 ## Risks / Trade-offs
 

@@ -25,6 +25,14 @@ Backlog candidates stay unnumbered until they are promoted into implementation. 
 - To promote a candidate, assign the lowest unused `feature-XXX` number after checking this file and [feature-history.md](./feature-history.md).
 - Cancelled or deferred candidates do not reserve numbers; keep or move them as unnumbered history notes when useful.
 
+## Unconfirmed Bugs
+
+Observed issues that may be real bugs but have not been reproduced reliably enough to promote into implementation yet. Keep notes in English. Remove or promote entries once confirmed, fixed, or ruled out.
+
+| Status | ID | Area | Summary | Notes |
+| --- | --- | --- | --- | --- |
+| Observed once | admin-post-save-disabled-until-interaction | posts/admin | Admin post create/edit **Save changes** stayed disabled on first load, then became enabled after scrolling through the form and opening the browser console. | Reported on `/admin/posts/new` while creating a post. Initial save looked blocked; later interaction made the button active and saving appeared to work. Suspect client-side validation timing in `PostForm` (`mode: "onBlur"` plus `disabled={!form.formState.isValid}`), but not confirmed. Needs a clean repro before fixing. |
+
 ## Outdoor Content High-Priority Roadmap
 
 These candidates track the hikes/tracks/photos initiative as small increments. They stay unnumbered until promoted; the first promoted slice should take the next available feature number from the shared sequence.

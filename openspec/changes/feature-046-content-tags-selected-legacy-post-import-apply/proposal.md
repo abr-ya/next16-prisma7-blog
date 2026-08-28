@@ -10,6 +10,7 @@ Admins need to turn a reviewed selected dry-run into an actual legacy post tag i
 - Re-check eligibility server-side at import time and skip posts that no longer qualify.
 - Add app-styled confirmation before the selected import is applied.
 - Show selected import result feedback, including imported posts, assignments, reused/new tags, skipped values, and no-longer-eligible skips.
+- Replace the broad all-post import control with selected import after confirmation.
 - Keep migration post-scoped: selected posts are imported as whole posts, not one raw tag value at a time.
 - Non-goals: clearing or deleting legacy `Post.tags`, changing public tag filtering/display rules, adding raw-value-only partial migration, changing the post editor tag model, migrating videos/docs/files, and adding automatic scheduled migration.
 

@@ -18,7 +18,7 @@ The system SHALL provide an admin-only import path that turns selected legacy po
 - **AND** each eligible post row SHALL show the legacy values and planned normalized shared tags for that post
 - **AND** invalid or skipped legacy values SHALL be visible before import
 
-#### Scenario: Admin selects posts for legacy import
+#### Scenario: Admin selects posts for legacy import planning
 
 - **WHEN** an admin selects eligible posts for migration
 - **THEN** the migration selection SHALL be based on post identity
@@ -53,6 +53,13 @@ The system SHALL provide an admin-only import path that turns selected legacy po
 - **AND** reusable tag records SHALL remain unique by slug
 - **AND** posts that are no longer eligible SHALL be skipped safely
 
+#### Scenario: Selected dry-run remains read-only
+
+- **WHEN** an admin dry-runs the same selected legacy posts more than once
+- **THEN** no content tags or post/tag assignments SHALL be created
+- **AND** reusable tag records SHALL remain unchanged
+- **AND** posts that are no longer eligible SHALL be skipped safely from the dry-run summary
+
 #### Scenario: Imported tags enter existing review workflow
 
 - **WHEN** legacy tags are imported as `NEEDS_REVIEW`
@@ -64,3 +71,9 @@ The system SHALL provide an admin-only import path that turns selected legacy po
 - **WHEN** the selective import workflow is delivered
 - **THEN** the existing raw-value legacy tag inventory summary SHALL remain available for migration planning context
 - **AND** it SHALL NOT replace the selected-post import decision surface
+
+#### Scenario: Broad all-post import is replaced by selected import
+
+- **WHEN** the selected import workflow is delivered
+- **THEN** the legacy migration panel SHALL provide selected-post import instead of an all-or-nothing import for every eligible post
+- **AND** admins SHALL confirm selected import through the app-styled confirmation dialog before writes occur

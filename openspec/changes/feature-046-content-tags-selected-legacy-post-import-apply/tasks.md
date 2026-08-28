@@ -1,6 +1,6 @@
 ## 1. Write Path Review
 
-- [ ] 1.1 Review the selected dry-run implementation from `feature-044-content-tags-selective-legacy-post-import` and confirm the existing broad all-post import controls/actions can be replaced cleanly.
+- [ ] 1.1 Review the shipped selected dry-run implementation from archived `feature-044-content-tags-selective-legacy-post-import` and confirm the existing broad all-post import controls/actions can be replaced cleanly by selected import.
 
 ## 2. Selected Import Server Path
 
@@ -16,7 +16,7 @@
 
 ## 5. Import UI
 
-- [ ] 5.1 Add `Import Selected` to the `Legacy Post Tags` panel with an app-styled confirmation dialog and selected import result feedback.
+- [ ] 5.1 Add `Import Selected` to the `Legacy Post Tags` panel with an app-styled confirmation dialog and selected import result feedback, replacing the broad all-post import control.
 
 ## 6. Boundaries
 
