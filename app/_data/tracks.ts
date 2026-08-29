@@ -80,6 +80,11 @@ export type PublicTrack = {
     summary: TrackGpxSummary;
     mapGeometry: TrackGpxCoordinate[] | null;
   } | null;
+  map: {
+    title: string;
+    bounds: TrackGpxSummary["bounds"];
+    geometry: TrackGpxCoordinate[];
+  } | null;
 };
 
 const DEFAULT_TRACK_STATUS: TrackStatus = "DRAFT";
@@ -256,6 +261,14 @@ const toPublicTrack = (
         ? {
             summary: parsedState.summary,
             mapGeometry: includeMapGeometry ? parsedState.mapGeometry : null,
+          }
+        : null,
+    map:
+      includeMapGeometry && parsedState.status === "SUCCESS" && parsedState.mapGeometry.length > 0
+        ? {
+            title: track.title,
+            bounds: parsedState.summary.bounds,
+            geometry: parsedState.mapGeometry,
           }
         : null,
   };

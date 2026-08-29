@@ -6,6 +6,7 @@ import { notFound } from "next/navigation";
 import { getPublicTrackBySlug } from "@/app/_data/tracks";
 import { Badge, Button } from "@/components/index";
 import { PageLayout } from "@/components/layout/page-layout";
+import { TrackMap } from "@/components/track-pages/track-map";
 import { formatFileSize } from "@/lib/file-upload-limits";
 import { buildPageMetadata, getTextMetadataDescription } from "@/lib/site-metadata";
 import {
@@ -72,6 +73,17 @@ const TrackPage = async ({ params }: TrackPageProps) => {
         ) : (
           <p className="text-sm text-muted-foreground">No description yet.</p>
         )}
+
+        <section className="grid gap-3">
+          <h2 className="text-base font-semibold">Route map</h2>
+          {track.map ? (
+            <TrackMap track={track.map} />
+          ) : (
+            <div className="flex h-48 min-h-48 items-center justify-center rounded-md border bg-muted p-4 text-center text-sm text-muted-foreground">
+              Map preview is unavailable until this track has parsed route geometry.
+            </div>
+          )}
+        </section>
 
         {track.parsed ? (
           <section className="grid gap-3 rounded-md border p-4">

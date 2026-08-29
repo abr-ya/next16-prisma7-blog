@@ -58,6 +58,7 @@ Cancelled or deferred candidates do not reserve feature numbers.
 | feature-047 | feature-047-outdoor-tracks-file-data-foundation | outdoor/tracks | Add the first GPX-backed track entity with upload validation, file asset binding, server actions, and admin create/edit/list management without public track pages or map rendering. |
 | feature-048 | feature-048-outdoor-tracks-public-download-preview | outdoor/tracks | Add public track listing/detail pages for published tracks with visibility-safe metadata and controlled GPX download availability. |
 | feature-049 | feature-049-outdoor-track-gpx-parsing-summary | outdoor/maps | Parse GPX geometry into stored track metadata with distance, bounds, elevation/time ranges, point counts, admin parse lifecycle, public summaries, and simplified map-ready geometry. |
+| feature-050 | feature-050-outdoor-track-map-component | outdoor/maps | Add a public map component for rendering one GPX track with OSM-compatible tiles, stored simplified geometry, start/end markers, bounds fitting, and graceful fallback when geometry is unavailable. |
 
 ## Cancelled Candidate Notes
 

@@ -6,6 +6,7 @@ import { Toaster } from "sonner";
 import { navigationNamespace, supportedLanguages } from "@/app/i18n/settings";
 import i18nConfig from "@/i18n.config";
 import { buildPageMetadata, siteUrl } from "@/lib/site-metadata";
+import "leaflet/dist/leaflet.css";
 import "./globals.css";
 
 initServerI18next(i18nConfig);
