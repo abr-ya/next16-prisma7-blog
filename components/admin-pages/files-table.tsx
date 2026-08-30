@@ -55,6 +55,7 @@ const formatPurpose = (purpose: FileAssetWithOwner["purpose"]) => {
     RICH_TEXT_IMAGE: "Rich Text Image",
     STANDALONE_SHARED_FILE: "Standalone Shared File",
     TRACK_GPX: "Track GPX",
+    OUTDOOR_PHOTO_IMAGE: "Outdoor Photo Image",
   };
   return purposeLabels[purpose];
 };

@@ -38,6 +38,7 @@ model User {
   fileAssets     FileAsset[]
   hikes          Hike[]
   tracks         Track[]
+  photos         Photo[]
 
   @@unique([email])
   @@map("user")
@@ -211,6 +212,11 @@ enum TrackStatus {
   PUBLISHED
 }
 
+enum PhotoStatus {
+  DRAFT
+  PUBLISHED
+}
+
 enum HikeType {
   HIKING
   MOUNTAIN
@@ -257,6 +263,35 @@ model Track {
   @@index([userId])
 }
 
+model Photo {
+  id          String       @id @default(uuid())
+  title       String
+  description String?
+  status      PhotoStatus  @default(DRAFT)
+  userId      String
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  images      PhotoImage[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @default(now()) @updatedAt
+
+  @@index([status])
+  @@index([userId])
+  @@index([updatedAt])
+}
+
+model PhotoImage {
+  id          String    @id @default(uuid())
+  photoId     String
+  photo       Photo     @relation(fields: [photoId], references: [id], onDelete: Cascade)
+  fileAssetId String    @unique
+  fileAsset   FileAsset @relation(fields: [fileAssetId], references: [id], onDelete: Restrict)
+  sortOrder   Int
+  createdAt   DateTime  @default(now())
+
+  @@unique([photoId, sortOrder])
+  @@index([photoId])
+}
+
 // Outdoor content - finish
 
 // File assets - start
@@ -272,6 +307,7 @@ enum FileAssetPurpose {
   RICH_TEXT_IMAGE
   STANDALONE_SHARED_FILE
   TRACK_GPX
+  OUTDOOR_PHOTO_IMAGE
 }
 
 enum FileAssetVisibility {
@@ -302,6 +338,7 @@ model FileAsset {
   ownerUserId  String
   owner        User                @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
   track        Track?
+  photoImages  PhotoImage[]
   uploadedAt   DateTime            @default(now())
   updatedAt    DateTime            @default(now()) @updatedAt
   deletedAt    DateTime?

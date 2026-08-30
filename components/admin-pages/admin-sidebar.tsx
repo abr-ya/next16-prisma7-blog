@@ -9,6 +9,7 @@ import {
   Inbox,
   ListVideo,
   Map,
+  Images,
   Route,
   Search,
   Tags,
@@ -73,6 +74,11 @@ const items = [
     title: "Tracks",
     url: "/admin/tracks",
     icon: Route,
+  },
+  {
+    title: "Photos",
+    url: "/admin/photos",
+    icon: Images,
   },
   {
     title: "Content Tags",

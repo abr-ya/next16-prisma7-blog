@@ -6,6 +6,8 @@ import { auth } from "@/lib/auth";
 import {
   GENERAL_FILE_UPLOAD_MAX_COUNT,
   GENERAL_FILE_UPLOAD_MAX_SIZE,
+  OUTDOOR_PHOTO_IMAGE_UPLOAD_MAX_COUNT,
+  OUTDOOR_PHOTO_IMAGE_UPLOAD_MAX_SIZE,
   TRACK_GPX_UPLOAD_MAX_SIZE,
 } from "@/lib/file-upload-limits";
 import { validateGpxContent, validateGpxUploadMetadata } from "@/lib/gpx-validation";
@@ -169,6 +171,44 @@ export const ourFileRouter = {
       } catch (err) {
         console.error("Failed to record GPX track file asset:", err);
         throw new UploadThingError(err instanceof Error ? err.message : "Failed to record GPX track file");
+      }
+    }),
+  outdoorPhotoImageUploader: f({
+    image: {
+      maxFileSize: OUTDOOR_PHOTO_IMAGE_UPLOAD_MAX_SIZE,
+      maxFileCount: OUTDOOR_PHOTO_IMAGE_UPLOAD_MAX_COUNT,
+      contentDisposition: "attachment",
+    },
+  })
+    .middleware(async ({ req, files }) => {
+      const session = await getUploadSession(req);
+      const incomingBytes = files.reduce((sum, file) => sum + file.size, 0);
+      const allowed = await canUserUploadGeneralFiles(session.user.id, incomingBytes);
+
+      if (!allowed) {
+        throw new UploadThingError("File storage limit reached");
+      }
+
+      return { userId: session.user.id };
+    })
+    .onUploadComplete(async ({ metadata, file }) => {
+      try {
+        const fileAsset = await recordUploadThingFileAsset({
+          userId: metadata.userId,
+          fileKey: file.key,
+          customId: file.customId,
+          url: file.ufsUrl,
+          name: file.name,
+          mimeType: file.type,
+          sizeBytes: file.size,
+          purpose: "OUTDOOR_PHOTO_IMAGE",
+          visibility: "PRIVATE",
+        });
+
+        return { fileAssetId: fileAsset.id };
+      } catch (err) {
+        console.error("Failed to record outdoor photo image file asset:", err);
+        throw new UploadThingError("Failed to record outdoor photo image");
       }
     }),
 } satisfies FileRouter;
