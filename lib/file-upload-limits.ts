@@ -4,6 +4,10 @@ export const GENERAL_FILE_UPLOAD_MAX_COUNT = 1;
 export const GENERAL_FILE_USER_STORAGE_LIMIT_BYTES = 512 * 1024 * 1024;
 export const TRACK_GPX_UPLOAD_MAX_BYTES = 16 * 1024 * 1024;
 export const TRACK_GPX_UPLOAD_MAX_SIZE = "16MB";
+export const OUTDOOR_PHOTO_IMAGE_UPLOAD_MAX_BYTES = 8 * 1024 * 1024;
+export const OUTDOOR_PHOTO_IMAGE_UPLOAD_MAX_SIZE = "8MB";
+export const OUTDOOR_PHOTO_IMAGE_UPLOAD_MIN_COUNT = 1;
+export const OUTDOOR_PHOTO_IMAGE_UPLOAD_MAX_COUNT = 3;
 
 export const formatFileSize = (bytes: number) => {
   if (bytes < 1024) return `${bytes} B`;

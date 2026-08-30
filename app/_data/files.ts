@@ -132,6 +132,13 @@ export const getUploadThingUsagePoints = (): UploadThingUsagePoint[] => [
     notes: "Dedicated authenticated GPX upload flow that records TRACK_GPX file assets.",
   },
   {
+    label: "Outdoor photo images",
+    route: "outdoorPhotoImageUploader",
+    surface: "/admin/photos",
+    status: "tracked",
+    notes: "Dedicated authenticated image upload flow that records OUTDOOR_PHOTO_IMAGE file assets.",
+  },
+  {
     label: "Rich-text post images",
     route: "imageUploader",
     surface: "components/common/rich-text-editor.tsx",
