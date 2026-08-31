@@ -39,7 +39,7 @@ These candidates track the hikes/tracks/photos initiative as small increments. T
 
 | Order | Status | Candidate | Area | Summary |
 | --- | --- | --- | --- | --- |
-| 5 | Candidate | outdoor-photos-exif-capture | outdoor/photos | Extract and store photo captured-at, camera/lens basics, dimensions, orientation, and raw safe EXIF metadata where available. |
+| 5 | In Progress | feature-052-outdoor-photos-exif-gps-capture | outdoor/photos | Extract and store photo captured-at, camera/lens basics, dimensions, orientation, raw safe EXIF metadata, and best-effort GPS coordinates where available. |
 | 6 | Candidate | outdoor-photos-public-gallery | outdoor/photos | Add public photo listing/detail pages with visibility-safe previews, captured-at display, and selected EXIF metadata. |
 | 7 | Candidate | outdoor-hike-track-association | outdoor/hikes-tracks | Let admins attach/detach tracks to hikes and show linked tracks in both hike and track admin/public views. |
 | 8 | Candidate | outdoor-hike-photo-association | outdoor/hikes-photos | Let admins attach/detach photos to hikes and show linked photos in both hike and photo admin/public views. |
