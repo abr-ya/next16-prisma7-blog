@@ -35,6 +35,8 @@ Photos can become map markers in two ways:
 
 Leaflet handles marker display, popups, and layer toggles. The EXIF extraction and time-to-track matching logic belongs to the application domain, not the map package.
 
+As of `feature-052-outdoor-photos-exif-gps-capture`, outdoor photos store versioned admin-only EXIF/GPS metadata on `Photo.metadata` (`photo-exif-metadata/v1`), including normalized `summary.gps` and `summary.gpsSourceFileAssetId` when coordinates exist. Public gallery pages and public coordinate display remain later slices; hike map markers should read the stored admin metadata rather than reparsing image files at request time.
+
 ### Manual Points
 
 Later admin or frontend editing can let users click the map, capture a `lat/lng`, and save manual points such as camps, viewpoints, notes, or custom points of interest. Leaflet supports the click interaction and marker rendering needed for this workflow.
