@@ -87,6 +87,7 @@ These candidates track the hikes/tracks/photos initiative as small increments. T
 | Candidate | public-comments-unified-feed | comments/public | Implement the standalone `/comments` page as a unified public comments feed across supported visible targets, replacing the current placeholder. |
 | Candidate | video-duration-api-extraction | video/metadata | Add API-backed video duration extraction while preserving failure-tolerant video saves. |
 | Candidate | public-video-tag-filtering | video/tags | Add public `/videos` filtering by video tag once tag foundation behavior is proven, with tag UI visually distinct from channel badges. |
+| Candidate | content-tags-migration-verification-pass | content/tags | Run a real admin content-tag migration and cleanup verification pass after assignment actions ship: exercise legacy import, shared tag inventory cleanup, selected assignment remove/replace, and document any data/UI follow-ups. |
 | Candidate | video-comments-edit-delete-expiry | video/comments | Prevent editing and deleting own comments after they are more than 24 hours old. |
 | Candidate | github-oauth-credentials-validation | auth/github | Create environment-specific GitHub OAuth credentials, document required callback URLs, and manually verify the live GitHub sign-in/sign-up integration after the code-level flow is complete. |
 
