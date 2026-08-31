@@ -60,7 +60,6 @@ These candidates track the hikes/tracks/photos initiative as small increments. T
 
 | Status | Candidate | Area | Summary |
 | --- | --- | --- | --- |
-| In Progress | feature-043-content-tags-admin-assignment-actions | content/tags | Add assignment-level controls for shared content tags after the inventory and tag-level actions are proven: select linked post assignments, remove selected assignments, and replace selected assignments with another shared tag without deleting posts or affecting unrelated tag assignments. |
 | Ready | admin-sidebar-role-sections | navigation/admin | Split the admin sidebar into explicit signed-in workspace and admin-only control sections while keeping server-side role checks as the authorization boundary. |
 | Ready | public-navbar-route-coverage-rollout | navigation/public | Move remaining primary public routes into the shared top-nav layout after the docs pilot, including home and comments, then consolidate blog/videos layout wiring and remove duplicated legacy back navigation or oversized page spacing where needed without changing public URLs or auth boundaries. |
 | Candidate | public-localization-page-scope-audit | localization/public | Inventory public pages and shared components before deeper localization work, grouping pages into small slices and identifying pages that need component-level translation planning. |
