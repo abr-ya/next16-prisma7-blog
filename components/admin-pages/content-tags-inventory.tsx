@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, GitMerge, MoreHorizontal, Pencil, RotateCcw, Trash2 } from "lucide-react";
+import { Check, GitMerge, MoreHorizontal, Pencil, RotateCcw, Tag, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { FormEvent } from "react";
@@ -13,6 +13,8 @@ import {
   markContentTagReviewed,
   mergeContentTag,
   renameContentTag,
+  removeContentTagAssignments,
+  replaceContentTagAssignments,
 } from "@/app/_actions/content-tags";
 import type { ContentTagManagementItem } from "@/app/_data/content-tags";
 import { ConfirmDialog } from "@/components/common/confirm-dialog";
@@ -55,12 +57,14 @@ type TagActionResult = {
   message: string;
 };
 
-type PendingAction = "rename" | "mark-active" | "mark-review" | "merge" | "delete";
+type PendingAction = "rename" | "mark-active" | "mark-review" | "merge" | "delete" | "remove" | "replace";
 
 type DialogState =
   | { type: "rename"; tag: ContentTagManagementItem }
   | { type: "merge"; tag: ContentTagManagementItem }
   | { type: "delete"; tag: ContentTagManagementItem }
+  | { type: "remove"; tag: ContentTagManagementItem }
+  | { type: "replace"; tag: ContentTagManagementItem }
   | null;
 
 const formatDate = (date: Date) =>
@@ -82,12 +86,17 @@ const formatStatus = (status: ContentTagManagementItem["status"]) => {
 const getStatusBadgeVariant = (status: ContentTagManagementItem["status"]) =>
   status === "ACTIVE" ? "default" : "secondary";
 
+const getSelectedPostIds = (selectedByTag: Record<string, Set<string>>, tagId: string) =>
+  Array.from(selectedByTag[tagId] ?? []);
+
 export const ContentTagsInventory = ({ tags, summary }: ContentTagsInventoryProps) => {
   const router = useRouter();
   const [dialog, setDialog] = useState<DialogState>(null);
   const [mergeConfirmTag, setMergeConfirmTag] = useState<ContentTagManagementItem | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const [mergeTargetValue, setMergeTargetValue] = useState("");
+  const [selectedByTag, setSelectedByTag] = useState<Record<string, Set<string>>>({});
+  const [replacementByTag, setReplacementByTag] = useState<Record<string, string>>({});
   const [pendingKey, setPendingKey] = useState<string | null>(null);
   const isPending = pendingKey !== null;
 
@@ -105,6 +114,7 @@ export const ContentTagsInventory = ({ tags, summary }: ContentTagsInventoryProp
     tag: ContentTagManagementItem,
     action: PendingAction,
     callback: () => Promise<TagActionResult>,
+    onSuccess?: () => void,
   ) => {
     setPendingKey(`${tag.id}:${action}`);
 
@@ -115,6 +125,7 @@ export const ContentTagsInventory = ({ tags, summary }: ContentTagsInventoryProp
         toast.success(result.message);
         setDialog(null);
         setMergeConfirmTag(null);
+        onSuccess?.();
       } else {
         toast.error(result.message);
       }
@@ -143,6 +154,38 @@ export const ContentTagsInventory = ({ tags, summary }: ContentTagsInventoryProp
     setMergeConfirmTag(tag);
   };
 
+  const togglePost = (tagId: string, postId: string) => {
+    setSelectedByTag((current) => {
+      const next = { ...current };
+      const selected = new Set(next[tagId] ?? []);
+
+      if (selected.has(postId)) {
+        selected.delete(postId);
+      } else {
+        selected.add(postId);
+      }
+
+      next[tagId] = selected;
+      return next;
+    });
+  };
+
+  const toggleAllPosts = (tag: ContentTagManagementItem) => {
+    setSelectedByTag((current) => {
+      const next = { ...current };
+      const selected = next[tag.id];
+      const posts = tag.usage.posts;
+
+      next[tag.id] = selected && selected.size === posts.length ? new Set() : new Set(posts.map((post) => post.id));
+
+      return next;
+    });
+  };
+
+  const clearTagSelection = (tagId: string) => {
+    setSelectedByTag((current) => ({ ...current, [tagId]: new Set() }));
+  };
+
   const isDialogOpen = dialog !== null;
 
   return (
@@ -150,7 +193,7 @@ export const ContentTagsInventory = ({ tags, summary }: ContentTagsInventoryProp
       <div className="space-y-1">
         <h2 className="text-xl font-semibold">Tag Inventory</h2>
         <p className="max-w-3xl text-sm text-muted-foreground">
-          All shared content tags and their current post usage. Broad management actions are handled in later slices.
+          All shared content tags, their current post usage, and focused cleanup actions for selected assignments.
         </p>
       </div>
 
@@ -218,6 +261,11 @@ export const ContentTagsInventory = ({ tags, summary }: ContentTagsInventoryProp
                 <TableBody>
                   {tags.map((tag) => {
                     const posts = tag.usage.posts;
+                    const selectedPostIds = getSelectedPostIds(selectedByTag, tag.id);
+                    const selectedCount = selectedPostIds.length;
+                    const replacementName = replacementByTag[tag.id] ?? "";
+                    const hasPosts = posts.length > 0;
+                    const allPostsSelected = hasPosts && selectedCount === posts.length;
 
                     return (
                       <TableRow key={tag.id}>
@@ -235,27 +283,95 @@ export const ContentTagsInventory = ({ tags, summary }: ContentTagsInventoryProp
                           {posts.length === 0 ? (
                             <span className="text-sm text-muted-foreground">No post assignments</span>
                           ) : (
-                            <div className="flex max-w-xl flex-col gap-2">
+                            <div className="flex max-w-xl flex-col gap-3">
+                              <div className="flex flex-wrap items-center justify-between gap-2">
+                                <span className="text-xs text-muted-foreground">
+                                  {selectedCount === 0
+                                    ? `${posts.length} post assignment${posts.length === 1 ? "" : "s"}`
+                                    : `${selectedCount} selected`}
+                                </span>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="outline"
+                                  disabled={isPending || !hasPosts}
+                                  onClick={() => toggleAllPosts(tag)}
+                                >
+                                  {allPostsSelected ? "Clear Selection" : "Select All"}
+                                </Button>
+                              </div>
                               {posts.map((post) => (
-                                <div key={post.id} className="flex min-w-0 flex-col gap-1">
-                                  <div className="flex min-w-0 flex-wrap items-center gap-2">
-                                    <Link
-                                      href={`/admin/posts/${post.id}`}
-                                      className="max-w-80 truncate font-medium underline-offset-4 hover:underline"
-                                      title={post.title}
-                                    >
-                                      {post.title}
-                                    </Link>
-                                    <Badge variant={post.status === "published" ? "default" : "outline"}>
-                                      {post.status}
-                                    </Badge>
+                                <label
+                                  key={post.id}
+                                  className="flex min-w-0 cursor-pointer items-start gap-3 rounded-md border p-2"
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={selectedPostIds.includes(post.id)}
+                                    disabled={isPending}
+                                    onChange={() => togglePost(tag.id, post.id)}
+                                    className="mt-1 size-4 accent-primary"
+                                    aria-label={`Select ${post.title}`}
+                                  />
+                                  <div className="min-w-0 flex-1 space-y-1">
+                                    <div className="flex min-w-0 flex-wrap items-center gap-2">
+                                      <Link
+                                        href={`/admin/posts/${post.id}`}
+                                        className="max-w-80 truncate font-medium underline-offset-4 hover:underline"
+                                        title={post.title}
+                                      >
+                                        {post.title}
+                                      </Link>
+                                      <Badge variant={post.status === "published" ? "default" : "outline"}>
+                                        {post.status}
+                                      </Badge>
+                                    </div>
+                                    <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                                      <span className="font-mono">/{post.slug}</span>
+                                      <span>{formatDate(post.updatedAt)}</span>
+                                    </div>
                                   </div>
-                                  <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-                                    <span className="font-mono">/{post.slug}</span>
-                                    <span>{formatDate(post.updatedAt)}</span>
-                                  </div>
-                                </div>
+                                </label>
                               ))}
+                              <div className="grid gap-2 border-t pt-3 lg:grid-cols-[auto_1fr_auto] lg:items-end">
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  disabled={isPending || selectedCount === 0}
+                                  onClick={() => setDialog({ type: "remove", tag })}
+                                >
+                                  <Trash2 className="size-4" />
+                                  Remove Selected
+                                </Button>
+                                <div className="space-y-1">
+                                  <Label htmlFor={`inventory-replace-${tag.id}`} className="text-xs">
+                                    Replacement tag
+                                  </Label>
+                                  <Input
+                                    id={`inventory-replace-${tag.id}`}
+                                    value={replacementName}
+                                    disabled={isPending}
+                                    placeholder="Replacement tag"
+                                    onChange={(event) =>
+                                      setReplacementByTag((current) => ({
+                                        ...current,
+                                        [tag.id]: event.target.value,
+                                      }))
+                                    }
+                                  />
+                                </div>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  disabled={isPending || selectedCount === 0 || replacementName.trim().length === 0}
+                                  onClick={() => setDialog({ type: "replace", tag })}
+                                >
+                                  <Tag className="size-4" />
+                                  Replace
+                                </Button>
+                              </div>
                             </div>
                           )}
                         </TableCell>
@@ -440,6 +556,71 @@ export const ContentTagsInventory = ({ tags, summary }: ContentTagsInventoryProp
         onConfirm={() => {
           if (dialog?.type !== "delete") return;
           return runAction(dialog.tag, "delete", () => deleteUnusedContentTag(dialog.tag.id));
+        }}
+      />
+
+      <ConfirmDialog
+        open={dialog?.type === "remove"}
+        onOpenChange={(open) => {
+          if (!open) setDialog(null);
+        }}
+        title={dialog?.type === "remove" ? `Remove "${dialog.tag.name}" from selected posts?` : "Remove assignments?"}
+        description={
+          dialog?.type === "remove"
+            ? `This will remove ${getSelectedPostIds(selectedByTag, dialog.tag.id).length} selected assignment${
+                getSelectedPostIds(selectedByTag, dialog.tag.id).length === 1 ? "" : "s"
+              } without deleting posts.`
+            : "Selected assignments will be removed without deleting posts."
+        }
+        confirmLabel="Remove Selected"
+        confirmVariant="destructive"
+        isPending={dialog?.type === "remove" && pendingKey === `${dialog.tag.id}:remove`}
+        onConfirm={() => {
+          if (dialog?.type !== "remove") return;
+
+          const tag = dialog.tag;
+          const selectedPostIds = getSelectedPostIds(selectedByTag, tag.id);
+
+          return runAction(
+            tag,
+            "remove",
+            () => removeContentTagAssignments(tag.id, selectedPostIds),
+            () => clearTagSelection(tag.id),
+          );
+        }}
+      />
+
+      <ConfirmDialog
+        open={dialog?.type === "replace"}
+        onOpenChange={(open) => {
+          if (!open) setDialog(null);
+        }}
+        title={dialog?.type === "replace" ? `Replace "${dialog.tag.name}" on selected posts?` : "Replace assignments?"}
+        description={
+          dialog?.type === "replace"
+            ? `This will assign "${(replacementByTag[dialog.tag.id] ?? "").trim()}" to ${
+                getSelectedPostIds(selectedByTag, dialog.tag.id).length
+              } selected post${getSelectedPostIds(selectedByTag, dialog.tag.id).length === 1 ? "" : "s"} and remove the original assignments.`
+            : "Selected assignments will be replaced with the chosen tag."
+        }
+        confirmLabel="Replace Selected"
+        isPending={dialog?.type === "replace" && pendingKey === `${dialog.tag.id}:replace`}
+        onConfirm={() => {
+          if (dialog?.type !== "replace") return;
+
+          const tag = dialog.tag;
+          const selectedPostIds = getSelectedPostIds(selectedByTag, tag.id);
+          const replacementName = replacementByTag[tag.id] ?? "";
+
+          return runAction(
+            tag,
+            "replace",
+            () => replaceContentTagAssignments(tag.id, selectedPostIds, replacementName),
+            () => {
+              clearTagSelection(tag.id);
+              setReplacementByTag((current) => ({ ...current, [tag.id]: "" }));
+            },
+          );
         }}
       />
     </section>

@@ -12,6 +12,13 @@ type ContentTagActionResult = {
   message: string;
 };
 
+type SelectedContentTagPostAssignment = {
+  postId: string;
+  post: {
+    slug: string;
+  };
+};
+
 const revalidateContentTagPaths = () => {
   revalidatePath("/admin/content-tags");
   revalidatePath("/admin/posts");
@@ -41,6 +48,30 @@ const getContentTagPostSlugs = async (tagIds: string[]) => {
   });
 
   return assignments.map((assignment: { post: { slug: string } }) => assignment.post.slug);
+};
+
+const getSelectedContentTagPostAssignments = async (
+  tagId: string,
+  postIds: string[],
+): Promise<SelectedContentTagPostAssignment[]> => {
+  const selectedPostIds = Array.from(new Set(postIds.filter(Boolean)));
+
+  if (selectedPostIds.length === 0) return [];
+
+  return prisma.postsToContentTags.findMany({
+    where: {
+      tagId,
+      postId: { in: selectedPostIds },
+    },
+    select: {
+      postId: true,
+      post: {
+        select: {
+          slug: true,
+        },
+      },
+    },
+  });
 };
 
 const normalizeTargetTag = (value: string): NormalizedContentTag | null => {
@@ -191,6 +222,13 @@ export const replaceContentTagAssignments = async (
     };
   }
 
+  if (!normalizeTargetTag(targetName)) {
+    return {
+      success: false,
+      message: "A replacement tag name is required.",
+    };
+  }
+
   const target = await getOrCreateTargetTag(targetName);
 
   if (target.id === sourceTagId) {
@@ -200,11 +238,24 @@ export const replaceContentTagAssignments = async (
     };
   }
 
-  const postSlugs = await getContentTagPostSlugs([sourceTagId, target.id]);
+  const selectedAssignments = await getSelectedContentTagPostAssignments(sourceTagId, selectedPostIds);
+  const selectedAssignmentPostIds = selectedAssignments.map((assignment) => assignment.postId);
+
+  if (selectedAssignmentPostIds.length === 0) {
+    return {
+      success: false,
+      message: "No matching assignments were found for that tag.",
+    };
+  }
+
+  const postSlugs = [
+    ...selectedAssignments.map((assignment) => assignment.post.slug),
+    ...(await getContentTagPostSlugs([target.id])),
+  ];
 
   await prisma.$transaction([
     prisma.postsToContentTags.createMany({
-      data: selectedPostIds.map((postId) => ({
+      data: selectedAssignmentPostIds.map((postId) => ({
         postId,
         tagId: target.id,
       })),
@@ -213,7 +264,7 @@ export const replaceContentTagAssignments = async (
     prisma.postsToContentTags.deleteMany({
       where: {
         tagId: sourceTagId,
-        postId: { in: selectedPostIds },
+        postId: { in: selectedAssignmentPostIds },
       },
     }),
   ]);
