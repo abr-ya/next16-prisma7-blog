@@ -39,7 +39,6 @@ These candidates track the hikes/tracks/photos initiative as small increments. T
 
 | Order | Status | Candidate | Area | Summary |
 | --- | --- | --- | --- | --- |
-| 5 | Candidate | outdoor-photos-exif-capture | outdoor/photos | Extract and store photo captured-at, camera/lens basics, dimensions, orientation, and raw safe EXIF metadata where available. |
 | 6 | Candidate | outdoor-photos-public-gallery | outdoor/photos | Add public photo listing/detail pages with visibility-safe previews, captured-at display, and selected EXIF metadata. |
 | 7 | Candidate | outdoor-hike-track-association | outdoor/hikes-tracks | Let admins attach/detach tracks to hikes and show linked tracks in both hike and track admin/public views. |
 | 8 | Candidate | outdoor-hike-photo-association | outdoor/hikes-photos | Let admins attach/detach photos to hikes and show linked photos in both hike and photo admin/public views. |
@@ -78,6 +77,7 @@ These candidates track the hikes/tracks/photos initiative as small increments. T
 
 | Status | Candidate | Area | Summary |
 | --- | --- | --- | --- |
+| Candidate | outdoor-photo-multi-image-vs-single-row-model | outdoor/photos | Decide whether a Photo should keep 1-3 bundled image files with aggregated EXIF summary, or whether multi-file uploads should create one Photo row per image so each row owns its own EXIF/GPS. Revisit before albums/gallery/map-marker slices lean harder on the current multi-image Photo shape. |
 | Candidate | video-search | video/search | Add broader video search across title, URL, channel, tags, notes, bookmarks, comments, and extracted metadata. |
 | Candidate | video-import-export | video/tools | Add import and export workflows for saved video links. |
 | Candidate | video-admin-bulk-actions | video/admin | Add bulk actions to the admin video table. |

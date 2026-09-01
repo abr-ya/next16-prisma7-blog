@@ -268,6 +268,7 @@ model Photo {
   title       String
   description String?
   status      PhotoStatus  @default(DRAFT)
+  metadata    Json?
   userId      String
   user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   images      PhotoImage[]

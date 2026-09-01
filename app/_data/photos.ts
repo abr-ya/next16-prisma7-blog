@@ -5,6 +5,8 @@ import { revalidatePath } from "next/cache";
 import type { Prisma } from "@/generated/prisma/client";
 import type { FileAssetStatus, PhotoStatus } from "@/generated/prisma/enums";
 import { requireAdmin } from "@/lib/auth-utils";
+import { markPhotoExifMetadataStale, type PhotoExifSourceImage } from "@/lib/photo-exif-metadata";
+import { parsePhotoExifMetadata } from "@/lib/photo-exif-parser";
 import { normalizePhotoInput } from "@/lib/photos";
 
 export type PhotoActionValues = {
@@ -19,6 +21,7 @@ const ACTIVE_FILE_STATUS: FileAssetStatus = "ACTIVE";
 
 type EligiblePhotoFileAsset = {
   id: string;
+  fileKey: string;
   photoImages: {
     photoId: string;
   }[];
@@ -78,6 +81,7 @@ const ensureEligiblePhotoFileAssets = async ({
     },
     select: {
       id: true,
+      fileKey: true,
       photoImages: {
         select: {
           photoId: true,
@@ -99,6 +103,20 @@ const ensureEligiblePhotoFileAssets = async ({
   if (alreadyBound) {
     throw new Error("Selected image file is already linked to another photo");
   }
+
+  return fileAssetIds.map((fileAssetId, index) => {
+    const fileAsset = fileAssetsById.get(fileAssetId);
+
+    if (!fileAsset) {
+      throw new Error("Selected image file is not eligible for photos");
+    }
+
+    return {
+      fileAssetId: fileAsset.id,
+      fileKey: fileAsset.fileKey,
+      sortOrder: index,
+    } satisfies PhotoExifSourceImage;
+  });
 };
 
 const getPhotoImageCreateData = (fileAssetIds: string[]) =>
@@ -162,18 +180,34 @@ export const updatePhoto = async (values: PhotoActionValues) => {
   const { default: prisma } = await import("@/lib/prisma");
   const existingPhoto = await prisma.photo.findUnique({
     where: { id: values.id },
-    select: { id: true },
+    select: {
+      id: true,
+      metadata: true,
+      images: {
+        orderBy: { sortOrder: "asc" },
+        select: {
+          fileAssetId: true,
+          sortOrder: true,
+          fileAsset: {
+            select: {
+              fileKey: true,
+            },
+          },
+        },
+      },
+    },
   });
 
   if (!existingPhoto) {
     throw new Error("Photo not found");
   }
 
-  await ensureEligiblePhotoFileAssets({
+  const nextSourceImages = await ensureEligiblePhotoFileAssets({
     fileAssetIds: data.fileAssetIds,
     userId,
     photoId: existingPhoto.id,
   });
+  const staleMetadata = markPhotoExifMetadataStale(existingPhoto.metadata, nextSourceImages);
 
   const photo = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     await tx.photoImage.deleteMany({
@@ -188,6 +222,7 @@ export const updatePhoto = async (values: PhotoActionValues) => {
         title: data.title,
         description: data.description,
         status: data.status,
+        ...(staleMetadata ? { metadata: staleMetadata as Prisma.InputJsonValue } : {}),
         images: {
           create: getPhotoImageCreateData(data.fileAssetIds),
         },
@@ -199,6 +234,73 @@ export const updatePhoto = async (values: PhotoActionValues) => {
   revalidatePhotoPaths();
 
   return photo;
+};
+
+type PhotoRefreshImage = {
+  sortOrder: number;
+  fileAsset: {
+    id: string;
+    fileKey: string;
+    url: string;
+    purpose: string;
+    status: FileAssetStatus;
+  };
+};
+
+export const refreshPhotoExifMetadata = async (id: string) => {
+  await getRequiredAdminUserId();
+  const { default: prisma } = await import("@/lib/prisma");
+  const photo = (await prisma.photo.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      images: {
+        orderBy: { sortOrder: "asc" },
+        select: {
+          sortOrder: true,
+          fileAsset: {
+            select: {
+              id: true,
+              fileKey: true,
+              url: true,
+              purpose: true,
+              status: true,
+            },
+          },
+        },
+      },
+    },
+  })) as { id: string; images: PhotoRefreshImage[] } | null;
+
+  if (!photo) {
+    throw new Error("Photo not found");
+  }
+
+  const ineligibleImage = photo.images.find(
+    (image) => image.fileAsset.purpose !== "OUTDOOR_PHOTO_IMAGE" || image.fileAsset.status !== ACTIVE_FILE_STATUS,
+  );
+
+  if (ineligibleImage) {
+    throw new Error("Selected image file is not eligible for photos");
+  }
+
+  const metadata = await parsePhotoExifMetadata({
+    images: photo.images.map((image) => ({
+      fileAssetId: image.fileAsset.id,
+      fileKey: image.fileAsset.fileKey,
+      sortOrder: image.sortOrder,
+      url: image.fileAsset.url,
+    })),
+  });
+
+  await prisma.photo.update({
+    where: { id: photo.id },
+    data: { metadata: metadata as Prisma.InputJsonValue },
+  });
+
+  revalidatePhotoPaths();
+
+  return metadata;
 };
 
 export const deletePhoto = async (id: string) => {
