@@ -74,20 +74,21 @@ The system SHALL expose the photo admin page through the admin navigation for au
 - **WHEN** an authenticated admin opens the admin area
 - **THEN** the admin navigation includes a Photos link that points to `/admin/photos`
 
-### Requirement: Photo publication status is stored without public gallery exposure
+### Requirement: Photo publication status is stored without standalone public gallery exposure
 
-The system SHALL store whether a photo is draft or published while keeping public photo browsing out of this slice.
+The system SHALL store whether a photo is draft or published while keeping standalone public photo browsing out of the immediate outdoor roadmap.
 
 #### Scenario: Admin marks photo as published
 
 - **WHEN** an authenticated admin saves a photo with `PUBLISHED` status
-- **THEN** the system stores the status for future public gallery slices
-- **AND** it does not add public photo listing or detail pages in this slice
+- **THEN** the system stores the status for future public exposure
+- **AND** the photo becomes eligible for future hike-linked public rendering only when associated with a published hike
 
-#### Scenario: Visitor cannot browse photos publicly
+#### Scenario: Visitor cannot browse photos through standalone photo routes
 
 - **WHEN** a visitor uses existing public navigation or known outdoor routes
-- **THEN** the system does not expose a new public `/photos` or `/photos/[slug]` experience from this slice
+- **THEN** the system does not expose a standalone public `/photos` or `/photos/[slug]` experience from this slice
+- **AND** public photo exposure is planned first through hike detail pages rather than a global photo gallery
 
 ### Requirement: Photos store extracted EXIF metadata
 

@@ -62,6 +62,7 @@ Cancelled or deferred candidates do not reserve feature numbers.
 | feature-050 | feature-050-outdoor-track-map-component | outdoor/maps | Add a public map component for rendering one GPX track with OSM-compatible tiles, stored simplified geometry, start/end markers, bounds fitting, and graceful fallback when geometry is unavailable. |
 | feature-051 | feature-051-outdoor-photos-file-data-foundation | outdoor/photos | Add the first `Photo` entity backed by image `FileAsset` records, 1-3 file upload batch support, data actions, and admin create/edit/list page. |
 | feature-052 | feature-052-outdoor-photos-exif-gps-capture | outdoor/photos | Extract and store versioned photo EXIF/GPS metadata with admin refresh controls, without public EXIF or coordinate display. |
+| feature-053 | feature-053-outdoor-hike-media-map-planning | outdoor/hikes-maps | Plan the hike-centered public outdoor experience, sync hike media/map specs, and order the next implementation slices around hike-track and hike-photo associations first. |
 
 ## Cancelled Candidate Notes
 
