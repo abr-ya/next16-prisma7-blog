@@ -237,6 +237,7 @@ model Hike {
   status      HikeStatus @default(DRAFT)
   userId      String
   user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tracks      HikesToTracks[]
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @default(now()) @updatedAt
 
@@ -256,11 +257,23 @@ model Track {
   metadata    Json?
   userId      String
   user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  hikes       HikesToTracks[]
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @default(now()) @updatedAt
 
   @@index([status])
   @@index([userId])
+}
+
+model HikesToTracks {
+  hike       Hike     @relation(fields: [hikeId], references: [id], onDelete: Cascade)
+  hikeId     String
+  track      Track    @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  trackId    String
+  assignedAt DateTime @default(now())
+
+  @@id([hikeId, trackId])
+  @@index([trackId])
 }
 
 model Photo {

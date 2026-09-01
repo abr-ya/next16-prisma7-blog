@@ -3,8 +3,8 @@
 import { revalidatePath } from "next/cache";
 
 import type { Prisma } from "@/generated/prisma/client";
-import type { HikeStatus, HikeType } from "@/generated/prisma/enums";
-import { authSession } from "@/lib/auth-utils";
+import type { HikeStatus, HikeType, TrackStatus } from "@/generated/prisma/enums";
+import { authSession, requireAdmin } from "@/lib/auth-utils";
 import { createSlug } from "@/lib/slug-generator";
 
 export type HikeActionValues = {
@@ -18,17 +18,12 @@ export type HikeActionValues = {
   status?: HikeStatus;
 };
 
-export type HikeListItem = Prisma.HikeGetPayload<{
-  include: {
-    user: {
-      select: {
-        id: true;
-        name: true;
-        image: true;
-      };
-    };
-  };
-}>;
+export type HikeTrackOption = {
+  id: string;
+  title: string;
+  slug: string;
+  status: TrackStatus;
+};
 
 const DEFAULT_HIKE_STATUS: HikeStatus = "DRAFT";
 const HIKE_TYPES = new Set<HikeType>(["HIKING", "MOUNTAIN", "WATER", "SKI", "BIKE", "OTHER"]);
@@ -38,6 +33,12 @@ const getRequiredUserId = async () => {
   const session = await authSession();
 
   if (!session) throw new Error("Unauthorized: User Id not found");
+
+  return session.user.id;
+};
+
+const getRequiredAdminUserId = async () => {
+  const session = await requireAdmin();
 
   return session.user.id;
 };
@@ -128,14 +129,85 @@ const hikeListInclude = {
       image: true,
     },
   },
+  tracks: {
+    orderBy: {
+      assignedAt: "desc",
+    },
+    include: {
+      track: {
+        select: {
+          id: true,
+          title: true,
+          slug: true,
+          status: true,
+        },
+      },
+    },
+  },
 } satisfies Prisma.HikeInclude;
 
-const revalidateHikePaths = (slug?: string) => {
+const publicHikeInclude = {
+  user: {
+    select: {
+      id: true,
+      name: true,
+      image: true,
+    },
+  },
+  tracks: {
+    where: {
+      track: {
+        status: "PUBLISHED",
+      },
+    },
+    orderBy: {
+      assignedAt: "desc",
+    },
+    include: {
+      track: {
+        select: {
+          id: true,
+          title: true,
+          slug: true,
+          description: true,
+          status: true,
+          updatedAt: true,
+        },
+      },
+    },
+  },
+} satisfies Prisma.HikeInclude;
+
+export type HikeListItem = Prisma.HikeGetPayload<{
+  include: typeof hikeListInclude;
+}>;
+
+export type PublicHike = Prisma.HikeGetPayload<{
+  include: typeof publicHikeInclude;
+}>;
+
+const revalidateHikePaths = (slug?: string | null) => {
   revalidatePath("/admin/hikes");
   revalidatePath("/hikes");
 
   if (slug) {
     revalidatePath(`/hikes/${slug}`);
+  }
+};
+
+const revalidateHikeTrackAssociationPaths = ({
+  hikeSlug,
+  trackSlug,
+}: {
+  hikeSlug?: string | null;
+  trackSlug?: string | null;
+}) => {
+  revalidateHikePaths(hikeSlug);
+  revalidatePath("/admin/tracks");
+  revalidatePath("/tracks");
+
+  if (trackSlug) {
+    revalidatePath(`/tracks/${trackSlug}`);
   }
 };
 
@@ -170,13 +242,96 @@ export const getPublicHikes = async (): Promise<HikeListItem[]> => {
   });
 };
 
-export const getPublicHikeBySlug = async (slug: string): Promise<HikeListItem | null> => {
+export const getPublicHikeBySlug = async (slug: string): Promise<PublicHike | null> => {
   const { default: prisma } = await import("@/lib/prisma");
 
   return prisma.hike.findFirst({
     where: { slug, status: "PUBLISHED" },
-    include: hikeListInclude,
+    include: publicHikeInclude,
   });
+};
+
+export const attachTrackToHike = async ({ hikeId, trackId }: { hikeId: string; trackId: string }) => {
+  await getRequiredAdminUserId();
+  const { default: prisma } = await import("@/lib/prisma");
+  const [hike, track] = await Promise.all([
+    prisma.hike.findUnique({
+      where: { id: hikeId },
+      select: { id: true, slug: true },
+    }),
+    prisma.track.findUnique({
+      where: { id: trackId },
+      select: { id: true, slug: true },
+    }),
+  ]);
+
+  if (!hike) {
+    throw new Error("Hike not found");
+  }
+
+  if (!track) {
+    throw new Error("Track not found");
+  }
+
+  await prisma.hikesToTracks.upsert({
+    where: {
+      hikeId_trackId: {
+        hikeId: hike.id,
+        trackId: track.id,
+      },
+    },
+    create: {
+      hikeId: hike.id,
+      trackId: track.id,
+    },
+    update: {},
+  });
+
+  revalidateHikeTrackAssociationPaths({ hikeSlug: hike.slug, trackSlug: track.slug });
+
+  return { success: true };
+};
+
+export const detachTrackFromHike = async ({ hikeId, trackId }: { hikeId: string; trackId: string }) => {
+  await getRequiredAdminUserId();
+  const { default: prisma } = await import("@/lib/prisma");
+  const association = await prisma.hikesToTracks.findUnique({
+    where: {
+      hikeId_trackId: {
+        hikeId,
+        trackId,
+      },
+    },
+    select: {
+      hike: {
+        select: {
+          slug: true,
+        },
+      },
+      track: {
+        select: {
+          slug: true,
+        },
+      },
+    },
+  });
+
+  if (!association) {
+    return { success: false };
+  }
+
+  await prisma.hikesToTracks.delete({
+    where: {
+      hikeId_trackId: {
+        hikeId,
+        trackId,
+      },
+    },
+  });
+
+  revalidateHikeTrackAssociationPaths({ hikeSlug: association.hike.slug, trackSlug: association.track.slug });
+
+  return { success: true };
 };
 
 export const createHike = async (values: HikeActionValues) => {

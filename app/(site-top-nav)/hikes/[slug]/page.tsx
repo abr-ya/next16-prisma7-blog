@@ -1,9 +1,10 @@
-import { CalendarDays } from "lucide-react";
+import { CalendarDays, Route } from "lucide-react";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { getPublicHikeBySlug } from "@/app/_data/hikes";
-import { Badge } from "@/components/index";
+import { Badge, Button } from "@/components/index";
 import { PageLayout } from "@/components/layout/page-layout";
 import { formatHikeDateRange, formatHikeType } from "@/lib/hikes";
 import { buildPageMetadata, getTextMetadataDescription } from "@/lib/site-metadata";
@@ -53,6 +54,31 @@ const HikePage = async ({ params }: HikePageProps) => {
         ) : (
           <p className="text-sm text-muted-foreground">No description yet.</p>
         )}
+        {hike.tracks.length > 0 ? (
+          <section className="grid gap-3">
+            <h2 className="text-base font-semibold">Linked tracks</h2>
+            <div className="grid gap-3">
+              {hike.tracks.map(({ track }) => (
+                <div key={track.id} className="rounded-md border p-4">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="grid gap-1">
+                      <div className="font-medium">{track.title}</div>
+                      {track.description ? (
+                        <p className="line-clamp-2 text-sm text-muted-foreground">{track.description}</p>
+                      ) : null}
+                    </div>
+                    <Button asChild size="sm" variant="outline">
+                      <Link href={`/tracks/${track.slug}`}>
+                        <Route />
+                        Open track
+                      </Link>
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        ) : null}
       </article>
     </PageLayout>
   );
