@@ -39,7 +39,6 @@ These candidates track the hikes/tracks/photos initiative as small increments. T
 
 | Order | Status | Candidate | Area | Summary |
 | --- | --- | --- | --- | --- |
-| 6 | In Progress | feature-053-outdoor-hike-media-map-planning | outdoor/hikes-maps | Plan the hike-centered public outdoor experience: participants, hike-page uploads, linked tracks, linked photos, combined hike maps, and direct/time-inferred photo map coordinates before implementing the next slices. |
 | 7 | Candidate | outdoor-hike-track-association | outdoor/hikes-tracks | Let admins attach/detach tracks to hikes using join-table associations, preserve independent track records and GPX file assets, and show linked published tracks through hike-centered public views. |
 | 8 | Candidate | outdoor-hike-photo-association | outdoor/hikes-photos | Let admins attach/detach photos to hikes using join-table associations with per-hike ordering foundations, preserve independent photo records and image assets, and show linked published photos through hike-centered public views. |
 | 9 | Candidate | outdoor-hike-participants | outdoor/hikes-users | Let hike creators manage participants for a hike, preserving admin override and using membership as the permission base for public contribution controls. |
