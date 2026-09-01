@@ -76,16 +76,20 @@ Alternative considered: store one global order on the photo record. That does no
 
 ## Proposed Slice Order
 
-1. `feature-054-outdoor-hike-participants`
-2. `feature-055-outdoor-hike-public-photo-upload`
-3. `feature-056-outdoor-hike-owner-track-upload`
-4. `feature-057-outdoor-hike-combined-track-map`
-5. `feature-058-outdoor-photo-gps-map-markers`
-6. `feature-059-outdoor-photo-track-time-matching-spike`
-7. `feature-060-outdoor-photo-track-time-inferred-coordinates`
-8. `feature-061-outdoor-photo-manual-ordering`
-9. `feature-062-outdoor-photo-albums-structure`
-10. `outdoor-photos-public-gallery` remains a later candidate only if standalone browsing still adds value.
+The next numbered implementation sequence should start by creating explicit hike-media associations, then build contributor permissions and uploads on top of those associations:
+
+1. `outdoor-hike-track-association`
+2. `outdoor-hike-photo-association`
+3. `outdoor-hike-participants`
+4. `outdoor-hike-public-photo-upload`
+5. `outdoor-hike-owner-track-upload`
+6. `outdoor-hike-combined-track-map`
+7. `outdoor-photo-gps-map-markers`
+8. `outdoor-photo-track-time-matching-spike`
+9. `outdoor-photo-track-time-inferred-coordinates`
+10. `outdoor-photo-manual-ordering`
+11. `outdoor-photo-albums-structure`
+12. `outdoor-photos-public-gallery` remains a later candidate only if standalone browsing still adds value.
 
 ## Risks / Trade-offs
 
