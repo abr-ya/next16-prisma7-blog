@@ -1,4 +1,4 @@
-import { CalendarDays, Download, FileText, Route, Upload } from "lucide-react";
+import { CalendarDays, Download, FileText, Map, Route, Upload } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -8,6 +8,7 @@ import { Badge, Button } from "@/components/index";
 import { PageLayout } from "@/components/layout/page-layout";
 import { TrackMap } from "@/components/track-pages/track-map";
 import { formatFileSize } from "@/lib/file-upload-limits";
+import { formatHikeDateRange, formatHikeType } from "@/lib/hikes";
 import { buildPageMetadata, getTextMetadataDescription } from "@/lib/site-metadata";
 import {
   formatTrackDistance,
@@ -115,6 +116,36 @@ const TrackPage = async ({ params }: TrackPageProps) => {
                   <div className="font-medium">{formatTrackDuration(track.parsed.summary.time.durationSeconds)}</div>
                 </div>
               ) : null}
+            </div>
+          </section>
+        ) : null}
+
+        {track.hikes.length > 0 ? (
+          <section className="grid gap-3">
+            <h2 className="text-base font-semibold">Linked hikes</h2>
+            <div className="grid gap-3">
+              {track.hikes.map((hike) => (
+                <div key={hike.id} className="rounded-md border p-4">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="grid gap-2">
+                      <div className="font-medium">{hike.title}</div>
+                      <div className="flex flex-wrap gap-2">
+                        <Badge variant="secondary">{formatHikeType(hike.type)}</Badge>
+                        <Badge variant="outline">
+                          <CalendarDays className="size-3.5" />
+                          {formatHikeDateRange(hike)}
+                        </Badge>
+                      </div>
+                    </div>
+                    <Button asChild size="sm" variant="outline">
+                      <Link href={`/hikes/${hike.slug}`}>
+                        <Map />
+                        Open hike
+                      </Link>
+                    </Button>
+                  </div>
+                </div>
+              ))}
             </div>
           </section>
         ) : null}

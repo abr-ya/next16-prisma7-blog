@@ -2,13 +2,22 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { ColumnDef } from "@tanstack/react-table";
-import { ArrowUpDown, Edit, Plus, Trash2 } from "lucide-react";
+import { ArrowUpDown, Edit, Link2, Plus, Route, Trash2, Unlink } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 import z from "zod";
 
-import { createHike, deleteHike, updateHike, type HikeListItem } from "@/app/_data/hikes";
+import {
+  attachTrackToHike,
+  createHike,
+  deleteHike,
+  detachTrackFromHike,
+  updateHike,
+  type HikeListItem,
+  type HikeTrackOption,
+} from "@/app/_data/hikes";
 import {
   Badge,
   Button,
@@ -34,6 +43,7 @@ import {
 import type { HikeStatus, HikeType } from "@/generated/prisma/enums";
 import { formatHikeStatus, formatHikeType, hikeStatusOptions, hikeTypeOptions } from "@/lib/hikes";
 import { createSlug } from "@/lib/slug-generator";
+import { formatTrackStatus } from "@/lib/tracks";
 
 const formSchema = z
   .object({
@@ -292,9 +302,158 @@ const HikeFormDialog = ({
   );
 };
 
-export const HikesAdminPanel = ({ hikes }: { hikes: HikeListItem[] }) => {
+const HikeTracksDialog = ({
+  hike,
+  tracks,
+  open,
+  onOpenChange,
+  onChanged,
+}: {
+  hike: HikeListItem | null;
+  tracks: HikeTrackOption[];
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onChanged: () => void;
+}) => {
+  const [pendingTrackId, setPendingTrackId] = useState<string | null>(null);
+  const [attachedTrackIds, setAttachedTrackIds] = useState<string[]>([]);
+  const [, startChanging] = useTransition();
+  const associatedTrackIds = useMemo(() => new Set(attachedTrackIds), [attachedTrackIds]);
+  const attachedTracks = tracks.filter((track) => associatedTrackIds.has(track.id));
+  const availableTracks = tracks.filter((track) => !associatedTrackIds.has(track.id));
+
+  useEffect(() => {
+    if (!open) return;
+
+    setAttachedTrackIds(hike?.tracks.map(({ track }) => track.id) ?? []);
+  }, [hike, open]);
+
+  const handleAttach = (trackId: string) => {
+    if (!hike) return;
+
+    setPendingTrackId(trackId);
+    startChanging(async () => {
+      try {
+        await attachTrackToHike({ hikeId: hike.id, trackId });
+        setAttachedTrackIds((current) => (current.includes(trackId) ? current : [trackId, ...current]));
+        toast.success("Track attached");
+        onChanged();
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Failed to attach track");
+      } finally {
+        setPendingTrackId(null);
+      }
+    });
+  };
+
+  const handleDetach = (trackId: string) => {
+    if (!hike) return;
+
+    setPendingTrackId(trackId);
+    startChanging(async () => {
+      try {
+        const result = await detachTrackFromHike({ hikeId: hike.id, trackId });
+
+        if (result.success) {
+          setAttachedTrackIds((current) => current.filter((id) => id !== trackId));
+          toast.success("Track detached");
+        } else {
+          toast.error("Track association not found");
+        }
+
+        onChanged();
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Failed to detach track");
+      } finally {
+        setPendingTrackId(null);
+      }
+    });
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-3xl">
+        <DialogHeader>
+          <DialogTitle>{hike ? `Manage tracks for ${hike.title}` : "Manage tracks"}</DialogTitle>
+        </DialogHeader>
+        <div className="grid max-h-[70vh] gap-6 overflow-y-auto pr-1">
+          <section className="grid gap-3">
+            <h3 className="text-sm font-medium">Attached tracks</h3>
+            {attachedTracks.length > 0 ? (
+              <div className="grid gap-2">
+                {attachedTracks.map((track) => (
+                  <div
+                    key={track.id}
+                    className="flex flex-wrap items-center justify-between gap-3 rounded-md border p-3"
+                  >
+                    <div className="min-w-0">
+                      <div className="truncate font-medium">{track.title}</div>
+                      <Badge variant={track.status === "PUBLISHED" ? "default" : "secondary"}>
+                        {formatTrackStatus(track.status)}
+                      </Badge>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={pendingTrackId === track.id}
+                      onClick={() => handleDetach(track.id)}
+                    >
+                      <Unlink />
+                      Detach
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="rounded-md border p-4 text-sm text-muted-foreground">No tracks attached.</div>
+            )}
+          </section>
+          <section className="grid gap-3">
+            <h3 className="text-sm font-medium">Available tracks</h3>
+            {availableTracks.length > 0 ? (
+              <div className="grid gap-2">
+                {availableTracks.map((track) => (
+                  <div
+                    key={track.id}
+                    className="flex flex-wrap items-center justify-between gap-3 rounded-md border p-3"
+                  >
+                    <div className="min-w-0">
+                      <div className="truncate font-medium">{track.title}</div>
+                      <Badge variant={track.status === "PUBLISHED" ? "default" : "secondary"}>
+                        {formatTrackStatus(track.status)}
+                      </Badge>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={pendingTrackId === track.id}
+                      onClick={() => handleAttach(track.id)}
+                    >
+                      <Link2 />
+                      Attach
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="rounded-md border p-4 text-sm text-muted-foreground">
+                Every available track is already attached.
+              </div>
+            )}
+          </section>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+export const HikesAdminPanel = ({ hikes, tracks }: { hikes: HikeListItem[]; tracks: HikeTrackOption[] }) => {
+  const router = useRouter();
   const [formOpen, setFormOpen] = useState(false);
   const [editingHike, setEditingHike] = useState<HikeListItem | null>(null);
+  const [managingTracksHike, setManagingTracksHike] = useState<HikeListItem | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<HikeListItem | null>(null);
   const [isDeleting, startDeleting] = useTransition();
 
@@ -330,6 +489,24 @@ export const HikesAdminPanel = ({ hikes }: { hikes: HikeListItem[] }) => {
         ),
       },
       {
+        id: "tracks",
+        header: "Tracks",
+        cell: ({ row }) => (
+          <div className="flex max-w-48 flex-wrap gap-1">
+            {row.original.tracks.length > 0 ? (
+              row.original.tracks.slice(0, 3).map(({ track }) => (
+                <Badge key={track.id} variant={track.status === "PUBLISHED" ? "default" : "secondary"}>
+                  {track.title}
+                </Badge>
+              ))
+            ) : (
+              <span className="text-sm text-muted-foreground">None</span>
+            )}
+            {row.original.tracks.length > 3 ? <Badge variant="outline">+{row.original.tracks.length - 3}</Badge> : null}
+          </div>
+        ),
+      },
+      {
         accessorKey: "updatedAt",
         header: "Updated",
         cell: ({ row }) => formatDate(row.original.updatedAt),
@@ -338,6 +515,15 @@ export const HikesAdminPanel = ({ hikes }: { hikes: HikeListItem[] }) => {
         id: "actions",
         cell: ({ row }) => (
           <div className="flex justify-end gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              title="Manage tracks"
+              onClick={() => setManagingTracksHike(row.original)}
+            >
+              <Route className="size-4" />
+            </Button>
             <Button
               type="button"
               variant="ghost"
@@ -384,6 +570,7 @@ export const HikesAdminPanel = ({ hikes }: { hikes: HikeListItem[] }) => {
       }
 
       setDeleteTarget(null);
+      router.refresh();
     });
   };
 
@@ -402,6 +589,15 @@ export const HikesAdminPanel = ({ hikes }: { hikes: HikeListItem[] }) => {
         onOpenChange={(open) => {
           setFormOpen(open);
           if (!open) setEditingHike(null);
+        }}
+      />
+      <HikeTracksDialog
+        hike={managingTracksHike}
+        tracks={tracks}
+        open={Boolean(managingTracksHike)}
+        onChanged={() => router.refresh()}
+        onOpenChange={(open) => {
+          if (!open) setManagingTracksHike(null);
         }}
       />
       <ConfirmDialog

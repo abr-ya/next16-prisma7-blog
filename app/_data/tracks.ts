@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import type { Prisma } from "@/generated/prisma/client";
-import type { FileAssetStatus, FileAssetVisibility, TrackStatus } from "@/generated/prisma/enums";
+import type { FileAssetStatus, FileAssetVisibility, HikeType, TrackStatus } from "@/generated/prisma/enums";
 import { authSession } from "@/lib/auth-utils";
 import { createSlug } from "@/lib/slug-generator";
 import { parseTrackGpxMetadata } from "@/lib/track-gpx-parser";
@@ -22,19 +22,6 @@ export type TrackActionValues = {
   status?: TrackStatus;
   fileAssetId?: string | null;
 };
-
-export type TrackListItem = Prisma.TrackGetPayload<{
-  include: {
-    fileAsset: true;
-    user: {
-      select: {
-        id: true;
-        name: true;
-        image: true;
-      };
-    };
-  };
-}>;
 
 type PublicTrackRecord = Prisma.TrackGetPayload<{
   select: {
@@ -57,6 +44,22 @@ type PublicTrackRecord = Prisma.TrackGetPayload<{
       };
     };
     metadata: true;
+    hikes: {
+      select: {
+        assignedAt: true;
+        hike: {
+          select: {
+            id: true;
+            title: true;
+            slug: true;
+            startDate: true;
+            endDate: true;
+            type: true;
+            status: true;
+          };
+        };
+      };
+    };
   };
 }>;
 
@@ -85,6 +88,15 @@ export type PublicTrack = {
     bounds: TrackGpxSummary["bounds"];
     geometry: TrackGpxCoordinate[];
   } | null;
+  hikes: {
+    id: string;
+    title: string;
+    slug: string;
+    startDate: Date;
+    endDate: Date;
+    type: HikeType;
+    assignedAt: Date;
+  }[];
 };
 
 const DEFAULT_TRACK_STATUS: TrackStatus = "DRAFT";
@@ -205,7 +217,29 @@ const trackListInclude = {
       image: true,
     },
   },
+  hikes: {
+    orderBy: {
+      assignedAt: "desc",
+    },
+    include: {
+      hike: {
+        select: {
+          id: true,
+          title: true,
+          slug: true,
+          startDate: true,
+          endDate: true,
+          type: true,
+          status: true,
+        },
+      },
+    },
+  },
 } satisfies Prisma.TrackInclude;
+
+export type TrackListItem = Prisma.TrackGetPayload<{
+  include: typeof trackListInclude;
+}>;
 
 const publicTrackSelect = {
   id: true,
@@ -215,6 +249,30 @@ const publicTrackSelect = {
   updatedAt: true,
   createdAt: true,
   metadata: true,
+  hikes: {
+    where: {
+      hike: {
+        status: "PUBLISHED",
+      },
+    },
+    orderBy: {
+      assignedAt: "desc",
+    },
+    select: {
+      assignedAt: true,
+      hike: {
+        select: {
+          id: true,
+          title: true,
+          slug: true,
+          startDate: true,
+          endDate: true,
+          type: true,
+          status: true,
+        },
+      },
+    },
+  },
   fileAsset: {
     select: {
       id: true,
@@ -271,6 +329,15 @@ const toPublicTrack = (
             geometry: parsedState.mapGeometry,
           }
         : null,
+    hikes: track.hikes.map((association) => ({
+      id: association.hike.id,
+      title: association.hike.title,
+      slug: association.hike.slug,
+      startDate: association.hike.startDate,
+      endDate: association.hike.endDate,
+      type: association.hike.type,
+      assignedAt: association.assignedAt,
+    })),
   };
 };
 
