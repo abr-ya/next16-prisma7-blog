@@ -40,6 +40,7 @@ import {
 } from "@/components/index";
 import type { PhotoStatus } from "@/generated/prisma/enums";
 import { OUTDOOR_PHOTO_IMAGE_UPLOAD_MAX_COUNT, OUTDOOR_PHOTO_IMAGE_UPLOAD_MAX_SIZE } from "@/lib/file-upload-limits";
+import { formatHikeDateRange, formatHikeStatus, formatHikeType } from "@/lib/hikes";
 import {
   formatPhotoCapturedAt,
   formatPhotoDimensions,
@@ -522,6 +523,33 @@ export const PhotosAdminPanel = ({ photos }: { photos: PhotoListItem[] }) => {
         id: "metadata",
         header: "EXIF summary",
         cell: ({ row }) => <PhotoMetadataStatus photo={row.original} />,
+      },
+      {
+        id: "hikes",
+        header: "Hikes",
+        cell: ({ row }) => (
+          <div className="flex max-w-56 flex-col gap-1">
+            {row.original.hikes.length > 0 ? (
+              row.original.hikes.slice(0, 2).map(({ hike }) => (
+                <div key={hike.id} className="grid gap-1">
+                  <div className="truncate text-sm font-medium" title={hike.title}>
+                    {hike.title}
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    <Badge variant={hike.status === "PUBLISHED" ? "default" : "secondary"}>
+                      {formatHikeStatus(hike.status)}
+                    </Badge>
+                    <Badge variant="outline">{formatHikeType(hike.type)}</Badge>
+                  </div>
+                  <div className="text-xs text-muted-foreground">{formatHikeDateRange(hike)}</div>
+                </div>
+              ))
+            ) : (
+              <span className="text-sm text-muted-foreground">None</span>
+            )}
+            {row.original.hikes.length > 2 ? <Badge variant="outline">+{row.original.hikes.length - 2}</Badge> : null}
+          </div>
+        ),
       },
       {
         accessorKey: "updatedAt",

@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { ColumnDef } from "@tanstack/react-table";
-import { ArrowUpDown, Edit, Link2, Plus, Route, Trash2, Unlink } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, Edit, ImageIcon, Link2, Plus, Route, Trash2, Unlink } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useForm, useWatch } from "react-hook-form";
@@ -11,11 +11,15 @@ import z from "zod";
 
 import {
   attachTrackToHike,
+  attachPhotoToHike,
   createHike,
   deleteHike,
+  detachPhotoFromHike,
   detachTrackFromHike,
+  reorderHikePhotos,
   updateHike,
   type HikeListItem,
+  type HikePhotoOption,
   type HikeTrackOption,
 } from "@/app/_data/hikes";
 import {
@@ -42,6 +46,7 @@ import {
 } from "@/components/index";
 import type { HikeStatus, HikeType } from "@/generated/prisma/enums";
 import { formatHikeStatus, formatHikeType, hikeStatusOptions, hikeTypeOptions } from "@/lib/hikes";
+import { formatPhotoStatus } from "@/lib/photos";
 import { createSlug } from "@/lib/slug-generator";
 import { formatTrackStatus } from "@/lib/tracks";
 
@@ -449,11 +454,226 @@ const HikeTracksDialog = ({
   );
 };
 
-export const HikesAdminPanel = ({ hikes, tracks }: { hikes: HikeListItem[]; tracks: HikeTrackOption[] }) => {
+const HikePhotosDialog = ({
+  hike,
+  photos,
+  open,
+  onOpenChange,
+  onChanged,
+}: {
+  hike: HikeListItem | null;
+  photos: HikePhotoOption[];
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onChanged: () => void;
+}) => {
+  const [pendingPhotoId, setPendingPhotoId] = useState<string | null>(null);
+  const [attachedPhotoIds, setAttachedPhotoIds] = useState<string[]>([]);
+  const [, startChanging] = useTransition();
+  const photosById = useMemo(() => new Map(photos.map((photo) => [photo.id, photo])), [photos]);
+  const associatedPhotoIds = useMemo(() => new Set(attachedPhotoIds), [attachedPhotoIds]);
+  const attachedPhotos = attachedPhotoIds.flatMap((photoId) => {
+    const photo = photosById.get(photoId);
+
+    return photo ? [photo] : [];
+  });
+  const availablePhotos = photos.filter((photo) => !associatedPhotoIds.has(photo.id));
+
+  useEffect(() => {
+    if (!open) return;
+
+    setAttachedPhotoIds(hike?.photos.map(({ photo }) => photo.id) ?? []);
+  }, [hike, open]);
+
+  const handleAttach = (photoId: string) => {
+    if (!hike) return;
+
+    setPendingPhotoId(photoId);
+    startChanging(async () => {
+      try {
+        await attachPhotoToHike({ hikeId: hike.id, photoId });
+        setAttachedPhotoIds((current) => (current.includes(photoId) ? current : [...current, photoId]));
+        toast.success("Photo attached");
+        onChanged();
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Failed to attach photo");
+      } finally {
+        setPendingPhotoId(null);
+      }
+    });
+  };
+
+  const handleDetach = (photoId: string) => {
+    if (!hike) return;
+
+    setPendingPhotoId(photoId);
+    startChanging(async () => {
+      try {
+        const result = await detachPhotoFromHike({ hikeId: hike.id, photoId });
+
+        if (result.success) {
+          setAttachedPhotoIds((current) => current.filter((id) => id !== photoId));
+          toast.success("Photo detached");
+        } else {
+          toast.error("Photo association not found");
+        }
+
+        onChanged();
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Failed to detach photo");
+      } finally {
+        setPendingPhotoId(null);
+      }
+    });
+  };
+
+  const handleMove = (photoId: string, direction: -1 | 1) => {
+    if (!hike) return;
+
+    const currentIndex = attachedPhotoIds.indexOf(photoId);
+    const nextIndex = currentIndex + direction;
+
+    if (currentIndex < 0 || nextIndex < 0 || nextIndex >= attachedPhotoIds.length) return;
+
+    const nextPhotoIds = [...attachedPhotoIds];
+    const [movedPhotoId] = nextPhotoIds.splice(currentIndex, 1);
+    nextPhotoIds.splice(nextIndex, 0, movedPhotoId);
+    setPendingPhotoId(photoId);
+
+    startChanging(async () => {
+      try {
+        await reorderHikePhotos({ hikeId: hike.id, photoIds: nextPhotoIds });
+        setAttachedPhotoIds(nextPhotoIds);
+        toast.success("Photo order updated");
+        onChanged();
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Failed to reorder photos");
+      } finally {
+        setPendingPhotoId(null);
+      }
+    });
+  };
+
+  const PhotoRow = ({ photo, index }: { photo: HikePhotoOption; index?: number }) => (
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border p-3">
+      <div className="flex min-w-0 items-center gap-3">
+        <div className="flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-md border bg-muted">
+          {photo.previewImage ? (
+            <img src={photo.previewImage.url} alt={photo.previewImage.name} className="size-full object-cover" />
+          ) : (
+            <ImageIcon className="size-5 text-muted-foreground" />
+          )}
+        </div>
+        <div className="min-w-0">
+          <div className="truncate font-medium" title={photo.title}>
+            {photo.title}
+          </div>
+          <Badge variant={photo.status === "PUBLISHED" ? "default" : "secondary"}>
+            {formatPhotoStatus(photo.status)}
+          </Badge>
+        </div>
+      </div>
+      {typeof index === "number" ? (
+        <div className="flex gap-1">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            title="Move photo up"
+            disabled={pendingPhotoId === photo.id || index === 0}
+            onClick={() => handleMove(photo.id, -1)}
+          >
+            <ArrowUp className="size-4" />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            title="Move photo down"
+            disabled={pendingPhotoId === photo.id || index === attachedPhotos.length - 1}
+            onClick={() => handleMove(photo.id, 1)}
+          >
+            <ArrowDown className="size-4" />
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={pendingPhotoId === photo.id}
+            onClick={() => handleDetach(photo.id)}
+          >
+            <Unlink />
+            Detach
+          </Button>
+        </div>
+      ) : (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={pendingPhotoId === photo.id}
+          onClick={() => handleAttach(photo.id)}
+        >
+          <Link2 />
+          Attach
+        </Button>
+      )}
+    </div>
+  );
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-3xl">
+        <DialogHeader>
+          <DialogTitle>{hike ? `Manage photos for ${hike.title}` : "Manage photos"}</DialogTitle>
+        </DialogHeader>
+        <div className="grid max-h-[70vh] gap-6 overflow-y-auto pr-1">
+          <section className="grid gap-3">
+            <h3 className="text-sm font-medium">Attached photos</h3>
+            {attachedPhotos.length > 0 ? (
+              <div className="grid gap-2">
+                {attachedPhotos.map((photo, index) => (
+                  <PhotoRow key={photo.id} photo={photo} index={index} />
+                ))}
+              </div>
+            ) : (
+              <div className="rounded-md border p-4 text-sm text-muted-foreground">No photos attached.</div>
+            )}
+          </section>
+          <section className="grid gap-3">
+            <h3 className="text-sm font-medium">Available photos</h3>
+            {availablePhotos.length > 0 ? (
+              <div className="grid gap-2">
+                {availablePhotos.map((photo) => (
+                  <PhotoRow key={photo.id} photo={photo} />
+                ))}
+              </div>
+            ) : (
+              <div className="rounded-md border p-4 text-sm text-muted-foreground">
+                Every available photo is already attached.
+              </div>
+            )}
+          </section>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+export const HikesAdminPanel = ({
+  hikes,
+  tracks,
+  photos,
+}: {
+  hikes: HikeListItem[];
+  tracks: HikeTrackOption[];
+  photos: HikePhotoOption[];
+}) => {
   const router = useRouter();
   const [formOpen, setFormOpen] = useState(false);
   const [editingHike, setEditingHike] = useState<HikeListItem | null>(null);
   const [managingTracksHike, setManagingTracksHike] = useState<HikeListItem | null>(null);
+  const [managingPhotosHike, setManagingPhotosHike] = useState<HikeListItem | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<HikeListItem | null>(null);
   const [isDeleting, startDeleting] = useTransition();
 
@@ -507,6 +727,24 @@ export const HikesAdminPanel = ({ hikes, tracks }: { hikes: HikeListItem[]; trac
         ),
       },
       {
+        id: "photos",
+        header: "Photos",
+        cell: ({ row }) => (
+          <div className="flex max-w-48 flex-wrap gap-1">
+            {row.original.photos.length > 0 ? (
+              row.original.photos.slice(0, 3).map(({ photo }) => (
+                <Badge key={photo.id} variant={photo.status === "PUBLISHED" ? "default" : "secondary"}>
+                  {photo.title}
+                </Badge>
+              ))
+            ) : (
+              <span className="text-sm text-muted-foreground">None</span>
+            )}
+            {row.original.photos.length > 3 ? <Badge variant="outline">+{row.original.photos.length - 3}</Badge> : null}
+          </div>
+        ),
+      },
+      {
         accessorKey: "updatedAt",
         header: "Updated",
         cell: ({ row }) => formatDate(row.original.updatedAt),
@@ -523,6 +761,15 @@ export const HikesAdminPanel = ({ hikes, tracks }: { hikes: HikeListItem[]; trac
               onClick={() => setManagingTracksHike(row.original)}
             >
               <Route className="size-4" />
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              title="Manage photos"
+              onClick={() => setManagingPhotosHike(row.original)}
+            >
+              <ImageIcon className="size-4" />
             </Button>
             <Button
               type="button"
@@ -598,6 +845,15 @@ export const HikesAdminPanel = ({ hikes, tracks }: { hikes: HikeListItem[]; trac
         onChanged={() => router.refresh()}
         onOpenChange={(open) => {
           if (!open) setManagingTracksHike(null);
+        }}
+      />
+      <HikePhotosDialog
+        hike={managingPhotosHike}
+        photos={photos}
+        open={Boolean(managingPhotosHike)}
+        onChanged={() => router.refresh()}
+        onOpenChange={(open) => {
+          if (!open) setManagingPhotosHike(null);
         }}
       />
       <ConfirmDialog

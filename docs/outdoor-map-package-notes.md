@@ -37,6 +37,8 @@ Leaflet handles marker display, popups, and layer toggles. The EXIF extraction a
 
 As of `feature-052-outdoor-photos-exif-gps-capture`, outdoor photos store versioned admin-only EXIF/GPS metadata on `Photo.metadata` (`photo-exif-metadata/v1`), including normalized `summary.gps` and `summary.gpsSourceFileAssetId` when coordinates exist. Public gallery pages and public coordinate display remain later slices; hike map markers should read the stored admin metadata rather than reparsing image files at request time.
 
+As of `feature-055-outdoor-hike-photo-association`, hike detail pages can show linked published photos in hike-specific order using public-display-eligible image assets. Photo map markers still belong to later slices that explicitly decide coordinate display, marker popups, and fallback behavior.
+
 ### Manual Points
 
 Later admin or frontend editing can let users click the map, capture a `lat/lng`, and save manual points such as camps, viewpoints, notes, or custom points of interest. Leaflet supports the click interaction and marker rendering needed for this workflow.

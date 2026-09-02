@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import type { Prisma } from "@/generated/prisma/client";
-import type { HikeStatus, HikeType, TrackStatus } from "@/generated/prisma/enums";
+import type { FileAssetStatus, HikeStatus, HikeType, PhotoStatus, TrackStatus } from "@/generated/prisma/enums";
 import { authSession, requireAdmin } from "@/lib/auth-utils";
 import { createSlug } from "@/lib/slug-generator";
 
@@ -25,9 +25,31 @@ export type HikeTrackOption = {
   status: TrackStatus;
 };
 
+export type HikePhotoOption = {
+  id: string;
+  title: string;
+  status: PhotoStatus;
+  previewImage: {
+    id: string;
+    name: string;
+    url: string;
+  } | null;
+};
+
+type HikePhotoOptionRecord = HikePhotoOption & {
+  images: {
+    fileAsset: NonNullable<HikePhotoOption["previewImage"]>;
+  }[];
+};
+
+type HikePhotoIdAssociation = {
+  photoId: string;
+};
+
 const DEFAULT_HIKE_STATUS: HikeStatus = "DRAFT";
 const HIKE_TYPES = new Set<HikeType>(["HIKING", "MOUNTAIN", "WATER", "SKI", "BIKE", "OTHER"]);
 const HIKE_STATUSES = new Set<HikeStatus>(["DRAFT", "PUBLISHED"]);
+const ACTIVE_FILE_STATUS: FileAssetStatus = "ACTIVE";
 
 const getRequiredUserId = async () => {
   const session = await authSession();
@@ -144,6 +166,33 @@ const hikeListInclude = {
       },
     },
   },
+  photos: {
+    orderBy: [{ position: "asc" }, { assignedAt: "desc" }],
+    include: {
+      photo: {
+        select: {
+          id: true,
+          title: true,
+          status: true,
+          images: {
+            orderBy: {
+              sortOrder: "asc",
+            },
+            take: 1,
+            select: {
+              fileAsset: {
+                select: {
+                  id: true,
+                  name: true,
+                  url: true,
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
 } satisfies Prisma.HikeInclude;
 
 const publicHikeInclude = {
@@ -172,6 +221,45 @@ const publicHikeInclude = {
           description: true,
           status: true,
           updatedAt: true,
+        },
+      },
+    },
+  },
+  photos: {
+    where: {
+      photo: {
+        status: "PUBLISHED",
+      },
+    },
+    orderBy: [{ position: "asc" }, { assignedAt: "desc" }],
+    include: {
+      photo: {
+        select: {
+          id: true,
+          title: true,
+          description: true,
+          status: true,
+          images: {
+            where: {
+              fileAsset: {
+                status: ACTIVE_FILE_STATUS,
+              },
+            },
+            orderBy: {
+              sortOrder: "asc",
+            },
+            select: {
+              sortOrder: true,
+              fileAsset: {
+                select: {
+                  id: true,
+                  name: true,
+                  mimeType: true,
+                  sizeBytes: true,
+                },
+              },
+            },
+          },
         },
       },
     },
@@ -211,6 +299,70 @@ const revalidateHikeTrackAssociationPaths = ({
   }
 };
 
+const revalidateHikePhotoAssociationPaths = (hikeSlug?: string | null) => {
+  revalidateHikePaths(hikeSlug);
+  revalidatePath("/admin/photos");
+};
+
+const normalizeHikePhotoPositions = async (
+  tx: Prisma.TransactionClient,
+  hikeId: string,
+  orderedPhotoIds?: string[],
+) => {
+  const associations = await tx.hikesToPhotos.findMany({
+    where: { hikeId },
+    orderBy: [{ position: "asc" }, { assignedAt: "asc" }],
+    select: {
+      photoId: true,
+      position: true,
+    },
+  });
+  const associationsByPhotoId = new Map(associations.map((association) => [association.photoId, association]));
+  const nextPhotoIds = orderedPhotoIds
+    ? [
+        ...orderedPhotoIds,
+        ...associations
+          .map((association) => association.photoId)
+          .filter((photoId) => !orderedPhotoIds.includes(photoId)),
+      ]
+    : associations.map((association) => association.photoId);
+
+  await Promise.all(
+    nextPhotoIds.map((photoId, index) =>
+      tx.hikesToPhotos.update({
+        where: {
+          hikeId_photoId: {
+            hikeId,
+            photoId,
+          },
+        },
+        data: {
+          position: -index - 1,
+        },
+      }),
+    ),
+  );
+
+  await Promise.all(
+    nextPhotoIds.map((photoId, index) => {
+      const association = associationsByPhotoId.get(photoId);
+
+      return tx.hikesToPhotos.update({
+        where: {
+          hikeId_photoId: {
+            hikeId,
+            photoId,
+          },
+        },
+        data: {
+          position: index,
+          updatedAt: association?.position === index ? undefined : new Date(),
+        },
+      });
+    }),
+  );
+};
+
 export const getAllHikes = async (): Promise<HikeListItem[]> => {
   const userId = await getRequiredUserId();
   const { default: prisma } = await import("@/lib/prisma");
@@ -220,6 +372,41 @@ export const getAllHikes = async (): Promise<HikeListItem[]> => {
     include: hikeListInclude,
     orderBy: [{ startDate: "desc" }, { createdAt: "desc" }],
   });
+};
+
+export const getHikePhotoOptions = async (): Promise<HikePhotoOption[]> => {
+  await getRequiredAdminUserId();
+  const { default: prisma } = await import("@/lib/prisma");
+  const photos = (await prisma.photo.findMany({
+    select: {
+      id: true,
+      title: true,
+      status: true,
+      images: {
+        orderBy: {
+          sortOrder: "asc",
+        },
+        take: 1,
+        select: {
+          fileAsset: {
+            select: {
+              id: true,
+              name: true,
+              url: true,
+            },
+          },
+        },
+      },
+    },
+    orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
+  })) as HikePhotoOptionRecord[];
+
+  return photos.map((photo) => ({
+    id: photo.id,
+    title: photo.title,
+    status: photo.status,
+    previewImage: photo.images.at(0)?.fileAsset ?? null,
+  }));
 };
 
 export const getHikeById = async (id: string): Promise<HikeListItem | null> => {
@@ -330,6 +517,148 @@ export const detachTrackFromHike = async ({ hikeId, trackId }: { hikeId: string;
   });
 
   revalidateHikeTrackAssociationPaths({ hikeSlug: association.hike.slug, trackSlug: association.track.slug });
+
+  return { success: true };
+};
+
+export const attachPhotoToHike = async ({ hikeId, photoId }: { hikeId: string; photoId: string }) => {
+  await getRequiredAdminUserId();
+  const { default: prisma } = await import("@/lib/prisma");
+  const [hike, photo] = await Promise.all([
+    prisma.hike.findUnique({
+      where: { id: hikeId },
+      select: { id: true, slug: true },
+    }),
+    prisma.photo.findUnique({
+      where: { id: photoId },
+      select: { id: true },
+    }),
+  ]);
+
+  if (!hike) {
+    throw new Error("Hike not found");
+  }
+
+  if (!photo) {
+    throw new Error("Photo not found");
+  }
+
+  await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+    const existingAssociation = await tx.hikesToPhotos.findUnique({
+      where: {
+        hikeId_photoId: {
+          hikeId: hike.id,
+          photoId: photo.id,
+        },
+      },
+      select: {
+        photoId: true,
+      },
+    });
+
+    if (existingAssociation) return;
+
+    const lastAssociation = await tx.hikesToPhotos.findFirst({
+      where: { hikeId: hike.id },
+      orderBy: {
+        position: "desc",
+      },
+      select: {
+        position: true,
+      },
+    });
+
+    await tx.hikesToPhotos.create({
+      data: {
+        hikeId: hike.id,
+        photoId: photo.id,
+        position: (lastAssociation?.position ?? -1) + 1,
+      },
+    });
+  });
+
+  revalidateHikePhotoAssociationPaths(hike.slug);
+
+  return { success: true };
+};
+
+export const detachPhotoFromHike = async ({ hikeId, photoId }: { hikeId: string; photoId: string }) => {
+  await getRequiredAdminUserId();
+  const { default: prisma } = await import("@/lib/prisma");
+  const association = await prisma.hikesToPhotos.findUnique({
+    where: {
+      hikeId_photoId: {
+        hikeId,
+        photoId,
+      },
+    },
+    select: {
+      hike: {
+        select: {
+          id: true,
+          slug: true,
+        },
+      },
+    },
+  });
+
+  if (!association) {
+    return { success: false };
+  }
+
+  await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+    await tx.hikesToPhotos.delete({
+      where: {
+        hikeId_photoId: {
+          hikeId,
+          photoId,
+        },
+      },
+    });
+    await normalizeHikePhotoPositions(tx, association.hike.id);
+  });
+
+  revalidateHikePhotoAssociationPaths(association.hike.slug);
+
+  return { success: true };
+};
+
+export const reorderHikePhotos = async ({ hikeId, photoIds }: { hikeId: string; photoIds: string[] }) => {
+  await getRequiredAdminUserId();
+  const uniquePhotoIds = Array.from(new Set(photoIds));
+
+  if (uniquePhotoIds.length !== photoIds.length) {
+    throw new Error("Photo order contains duplicate photos");
+  }
+
+  const { default: prisma } = await import("@/lib/prisma");
+  const hike = await prisma.hike.findUnique({
+    where: { id: hikeId },
+    select: {
+      id: true,
+      slug: true,
+      photos: {
+        select: {
+          photoId: true,
+        },
+      },
+    },
+  });
+
+  if (!hike) {
+    throw new Error("Hike not found");
+  }
+
+  const currentPhotoIds = new Set((hike.photos as HikePhotoIdAssociation[]).map((association) => association.photoId));
+  const unknownPhotoId = uniquePhotoIds.find((photoId) => !currentPhotoIds.has(photoId));
+
+  if (unknownPhotoId) {
+    throw new Error("Photo is not attached to this hike");
+  }
+
+  await prisma.$transaction((tx: Prisma.TransactionClient) => normalizeHikePhotoPositions(tx, hike.id, uniquePhotoIds));
+
+  revalidateHikePhotoAssociationPaths(hike.slug);
 
   return { success: true };
 };

@@ -238,6 +238,7 @@ model Hike {
   userId      String
   user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   tracks      HikesToTracks[]
+  photos      HikesToPhotos[]
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @default(now()) @updatedAt
 
@@ -285,12 +286,27 @@ model Photo {
   userId      String
   user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   images      PhotoImage[]
+  hikes       HikesToPhotos[]
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @default(now()) @updatedAt
 
   @@index([status])
   @@index([userId])
   @@index([updatedAt])
+}
+
+model HikesToPhotos {
+  hike       Hike     @relation(fields: [hikeId], references: [id], onDelete: Cascade)
+  hikeId     String
+  photo      Photo    @relation(fields: [photoId], references: [id], onDelete: Cascade)
+  photoId    String
+  position   Int
+  assignedAt DateTime @default(now())
+  updatedAt  DateTime @default(now()) @updatedAt
+
+  @@id([hikeId, photoId])
+  @@unique([hikeId, position])
+  @@index([photoId])
 }
 
 model PhotoImage {
