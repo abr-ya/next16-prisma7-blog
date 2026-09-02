@@ -39,8 +39,7 @@ These candidates track the hikes/tracks/photos initiative as small increments. T
 
 | Order | Status | Candidate | Area | Summary |
 | --- | --- | --- | --- | --- |
-| 7 | In Progress | feature-054-outdoor-hike-track-association | outdoor/hikes-tracks | Let admins attach/detach tracks to hikes using join-table associations, preserve independent track records and GPX file assets, and show linked published tracks through hike-centered public views. |
-| 8 | Candidate | outdoor-hike-photo-association | outdoor/hikes-photos | Let admins attach/detach photos to hikes using join-table associations with per-hike ordering foundations, preserve independent photo records and image assets, and show linked published photos through hike-centered public views. |
+| 8 | In Progress | feature-055-outdoor-hike-photo-association | outdoor/hikes-photos | Let admins attach/detach photos to hikes using join-table associations with per-hike ordering foundations, preserve independent photo records and image assets, and show linked published photos through hike-centered public views. |
 | 9 | Candidate | outdoor-hike-participants | outdoor/hikes-users | Let hike creators manage participants for a hike, preserving admin override and using membership as the permission base for public contribution controls. |
 | 10 | Candidate | outdoor-hike-public-photo-upload | outdoor/hikes-photos | Let hike creators and participants upload photos directly from a public hike detail page and attach those photos to the hike. |
 | 11 | Candidate | outdoor-hike-owner-track-upload | outdoor/hikes-tracks | Let hike creators upload GPX tracks directly from a public hike detail page and attach those tracks to the hike, without participant track uploads yet. |
