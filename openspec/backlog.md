@@ -62,7 +62,6 @@ These candidates track the hikes/tracks/photos initiative as small increments. T
 
 | Status | Candidate | Area | Summary |
 | --- | --- | --- | --- |
-| In Progress | feature-056-public-trips-navigation-labels | navigation/public | Add Trips links to the public home page and shared top navigation using the new public label while temporarily pointing to the existing `/hikes` route until the full trip domain rename lands. |
 
 ## P1 Soon
 
