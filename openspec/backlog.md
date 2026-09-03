@@ -46,20 +46,22 @@ These candidates track the hikes/tracks/photos initiative as small increments. T
 | 12 | Candidate | outdoor-hike-participants | outdoor/hikes-users | Let hike creators manage participants for a hike, preserving admin override and using membership as the permission base for public contribution controls. |
 | 13 | Candidate | outdoor-hike-public-photo-upload | outdoor/hikes-photos | Let hike creators and participants upload photos directly from a public hike detail page and attach those photos to the hike. |
 | 14 | Candidate | outdoor-hike-owner-track-upload | outdoor/hikes-tracks | Let hike creators upload GPX tracks directly from a public hike detail page and attach those tracks to the hike, without participant track uploads yet. |
-| 15 | Candidate | outdoor-track-recording-summary | outdoor/tracks | Show GPX recording start/end date-time and parse/store the GPX `creator` value so public/admin track summaries can display when the route was recorded and which app recorded it when available. |
-| 16 | Candidate | outdoor-track-device-metadata-extraction | outdoor/tracks | Investigate and extract recording device details from real GPX creator metadata and vendor-specific extensions after collecting examples from Garmin, Strava, OsmAnd, Komoot, and similar sources. |
-| 17 | Candidate | outdoor-hike-combined-track-map | outdoor/maps | Add one map on hike detail pages that renders all linked visible tracks together and frames the combined bounds. |
-| 18 | Candidate | outdoor-photo-gps-map-markers | outdoor/maps-photos | Use direct GPS EXIF coordinates to place linked hike photos on the hike map when coordinates exist. |
-| 19 | Candidate | outdoor-photo-track-time-matching-spike | outdoor/maps-photos | Investigate and plan timestamp-based photo-to-track matching before implementing interpolation, timezone, and confidence rules. |
-| 20 | Candidate | outdoor-photo-track-time-inferred-coordinates | outdoor/maps-photos | Infer candidate photo coordinates from capture timestamps and linked GPX track timelines, with provenance, confidence, and admin approval before public map display. |
-| 21 | Candidate | outdoor-photo-manual-ordering | outdoor/photos | Improve manual ordering UX for hike photos after basic association order is proven, considering drag-and-drop, grid ordering, bulk reorder, and mobile behavior. |
-| 22 | Candidate | outdoor-photo-albums-structure | outdoor/photos | Define and add album/grouping structure for photos after basic hike association and ordering are proven. |
-| 23 | Candidate | outdoor-photos-public-gallery | outdoor/photos | Consider a standalone public photo listing/detail experience only after hike-linked photos, ordering, and album/grouping behavior prove useful. |
+| 15 | Candidate | outdoor-trip-categories-admin | outdoor/trips | Evaluate and add admin-managed trip categories or types after the hike-to-trip direction is accepted, including support for city walks or similar non-hiking trips, category add/rename behavior, migration from the current fixed hike type enum, and public/admin labeling rules. |
+| 16 | Candidate | outdoor-track-recording-summary | outdoor/tracks | Show GPX recording start/end date-time and parse/store the GPX `creator` value so public/admin track summaries can display when the route was recorded and which app recorded it when available. |
+| 17 | Candidate | outdoor-track-device-metadata-extraction | outdoor/tracks | Investigate and extract recording device details from real GPX creator metadata and vendor-specific extensions after collecting examples from Garmin, Strava, OsmAnd, Komoot, and similar sources. |
+| 18 | Candidate | outdoor-hike-combined-track-map | outdoor/maps | Add one map on hike detail pages that renders all linked visible tracks together and frames the combined bounds. |
+| 19 | Candidate | outdoor-photo-gps-map-markers | outdoor/maps-photos | Use direct GPS EXIF coordinates to place linked hike photos on the hike map when coordinates exist. |
+| 20 | Candidate | outdoor-photo-track-time-matching-spike | outdoor/maps-photos | Investigate and plan timestamp-based photo-to-track matching before implementing interpolation, timezone, and confidence rules. |
+| 21 | Candidate | outdoor-photo-track-time-inferred-coordinates | outdoor/maps-photos | Infer candidate photo coordinates from capture timestamps and linked GPX track timelines, with provenance, confidence, and admin approval before public map display. |
+| 22 | Candidate | outdoor-photo-manual-ordering | outdoor/photos | Improve manual ordering UX for hike photos after basic association order is proven, considering drag-and-drop, grid ordering, bulk reorder, and mobile behavior. |
+| 23 | Candidate | outdoor-photo-albums-structure | outdoor/photos | Define and add album/grouping structure for photos after basic hike association and ordering are proven. |
+| 24 | Candidate | outdoor-photos-public-gallery | outdoor/photos | Consider a standalone public photo listing/detail experience only after hike-linked photos, ordering, and album/grouping behavior prove useful. |
 
 ## P0 Now
 
 | Status | Candidate | Area | Summary |
 | --- | --- | --- | --- |
+| In Progress | feature-056-public-trips-navigation-labels | navigation/public | Add Trips links to the public home page and shared top navigation using the new public label while temporarily pointing to the existing `/hikes` route until the full trip domain rename lands. |
 
 ## P1 Soon
 
