@@ -1,4 +1,4 @@
-import { CalendarDays, Route } from "lucide-react";
+import { CalendarDays, ImageIcon, Route } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -76,6 +76,40 @@ const HikePage = async ({ params }: HikePageProps) => {
                   </div>
                 </div>
               ))}
+            </div>
+          </section>
+        ) : null}
+        {hike.photos.length > 0 ? (
+          <section className="grid gap-3">
+            <h2 className="text-base font-semibold">Photos</h2>
+            <div className="grid gap-4 sm:grid-cols-2">
+              {hike.photos.map(({ photo }) => {
+                const preview = photo.images.at(0)?.fileAsset;
+
+                return (
+                  <div key={photo.id} className="overflow-hidden rounded-md border">
+                    <div className="aspect-[4/3] bg-muted">
+                      {preview ? (
+                        <img
+                          src={`/files/${preview.id}/download?disposition=inline`}
+                          alt={preview.name || photo.title}
+                          className="size-full object-cover"
+                        />
+                      ) : (
+                        <div className="flex size-full items-center justify-center text-muted-foreground">
+                          <ImageIcon className="size-6" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="grid gap-1 p-3">
+                      <div className="font-medium">{photo.title}</div>
+                      {photo.description ? (
+                        <p className="line-clamp-2 text-sm text-muted-foreground">{photo.description}</p>
+                      ) : null}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </section>
         ) : null}

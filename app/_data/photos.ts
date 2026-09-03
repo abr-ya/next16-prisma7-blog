@@ -27,6 +27,12 @@ type EligiblePhotoFileAsset = {
   }[];
 };
 
+type LinkedHikeSlug = {
+  hike: {
+    slug: string;
+  };
+};
+
 const getRequiredAdminUserId = async () => {
   const session = await requireAdmin();
 
@@ -49,6 +55,24 @@ const photoListInclude = {
       image: true,
     },
   },
+  hikes: {
+    orderBy: {
+      assignedAt: "desc",
+    },
+    include: {
+      hike: {
+        select: {
+          id: true,
+          title: true,
+          slug: true,
+          startDate: true,
+          endDate: true,
+          type: true,
+          status: true,
+        },
+      },
+    },
+  },
 } satisfies Prisma.PhotoInclude;
 
 export type PhotoListItem = Prisma.PhotoGetPayload<{
@@ -58,6 +82,15 @@ export type PhotoListItem = Prisma.PhotoGetPayload<{
 const revalidatePhotoPaths = () => {
   revalidatePath("/admin/photos");
   revalidatePath("/admin/files");
+};
+
+const revalidateLinkedHikePaths = (slugs: string[]) => {
+  revalidatePhotoPaths();
+  revalidatePath("/admin/hikes");
+
+  slugs.forEach((slug) => {
+    revalidatePath(`/hikes/${slug}`);
+  });
 };
 
 const ensureEligiblePhotoFileAssets = async ({
@@ -183,6 +216,15 @@ export const updatePhoto = async (values: PhotoActionValues) => {
     select: {
       id: true,
       metadata: true,
+      hikes: {
+        select: {
+          hike: {
+            select: {
+              slug: true,
+            },
+          },
+        },
+      },
       images: {
         orderBy: { sortOrder: "asc" },
         select: {
@@ -231,7 +273,7 @@ export const updatePhoto = async (values: PhotoActionValues) => {
     });
   });
 
-  revalidatePhotoPaths();
+  revalidateLinkedHikePaths((existingPhoto.hikes as LinkedHikeSlug[]).map(({ hike }) => hike.slug));
 
   return photo;
 };
@@ -308,7 +350,18 @@ export const deletePhoto = async (id: string) => {
   const { default: prisma } = await import("@/lib/prisma");
   const existingPhoto = await prisma.photo.findUnique({
     where: { id },
-    select: { id: true },
+    select: {
+      id: true,
+      hikes: {
+        select: {
+          hike: {
+            select: {
+              slug: true,
+            },
+          },
+        },
+      },
+    },
   });
 
   if (!existingPhoto) {
@@ -319,7 +372,7 @@ export const deletePhoto = async (id: string) => {
     where: { id: existingPhoto.id },
   });
 
-  revalidatePhotoPaths();
+  revalidateLinkedHikePaths((existingPhoto.hikes as LinkedHikeSlug[]).map(({ hike }) => hike.slug));
 
   return { success: true };
 };

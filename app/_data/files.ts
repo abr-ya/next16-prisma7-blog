@@ -10,6 +10,15 @@ import prisma from "@/lib/prisma";
 
 const ACTIVE_FILE_STATUS: FileAssetStatus = "ACTIVE";
 
+type FileAssetPhotoImageAccess = {
+  photo: {
+    status: string;
+    hikes: {
+      hikeId: string;
+    }[];
+  };
+};
+
 export type UserFileStats = {
   count: number;
   storageUsedBytes: number;
@@ -226,10 +235,42 @@ export const getFileAssetForDownload = async (fileId: string, userId?: string) =
     where: {
       id: fileId,
     },
+    include: {
+      photoImages: {
+        select: {
+          photo: {
+            select: {
+              status: true,
+              hikes: {
+                where: {
+                  hike: {
+                    status: "PUBLISHED",
+                  },
+                },
+                select: {
+                  hikeId: true,
+                },
+                take: 1,
+              },
+            },
+          },
+        },
+      },
+    },
   });
 
   if (!fileAsset || fileAsset.status !== ACTIVE_FILE_STATUS) {
     throw new Error("File not found");
+  }
+
+  const isPublishedHikePhotoImage =
+    fileAsset.purpose === "OUTDOOR_PHOTO_IMAGE" &&
+    (fileAsset.photoImages as FileAssetPhotoImageAccess[]).some(
+      (photoImage) => photoImage.photo.status === "PUBLISHED" && photoImage.photo.hikes.length > 0,
+    );
+
+  if (isPublishedHikePhotoImage) {
+    return fileAsset;
   }
 
   // Check access based on visibility
