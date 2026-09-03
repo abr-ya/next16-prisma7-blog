@@ -300,10 +300,12 @@ export const getFileAssetForDownload = async (fileId: string, userId?: string) =
 
 export const logFileDownload = async (fileId: string, userId?: string, ipAddress?: string) => {
   try {
+    if (!userId) return;
+
     await prisma.log.create({
       data: {
         action: "downloadFile",
-        userId: userId ?? "anonymous",
+        userId,
         details: JSON.stringify({
           fileId,
           ipAddress,
