@@ -167,6 +167,30 @@ export const getTrackGpxMetadataState = (
   return { status: "STALE", metadata, errorMessage: "Parsed GPX metadata is incomplete" };
 };
 
+export type TrackMapViewModel = {
+  title: string;
+  bounds: TrackGpxBounds;
+  geometry: TrackGpxCoordinate[];
+};
+
+export const toTrackMapViewModel = (
+  title: string,
+  metadata: Prisma.JsonValue | null | undefined,
+  source?: { fileAssetId: string; fileKey: string },
+): TrackMapViewModel | null => {
+  const parsedState = getTrackGpxMetadataState(metadata, source);
+
+  if (parsedState.status !== "SUCCESS" || parsedState.mapGeometry.length === 0) {
+    return null;
+  }
+
+  return {
+    title,
+    bounds: parsedState.summary.bounds,
+    geometry: parsedState.mapGeometry,
+  };
+};
+
 export const createSuccessfulTrackGpxMetadata = ({
   parsedAt = new Date(),
   sourceFileAssetId,

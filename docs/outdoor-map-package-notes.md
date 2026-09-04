@@ -24,7 +24,7 @@ A track detail page can render one GPX-backed polyline, fit the map to its bound
 
 ### Hike Detail Map
 
-A hike detail page can render all linked visible tracks together, such as 3-10 GPX tracks for one trip. The map should fit combined bounds across all rendered tracks. Photo markers can be shown at the same time for an initial target of 20-30 photos.
+As of `feature-059-outdoor-hike-combined-track-map`, a published hike detail page renders all linked published tracks with current map-ready geometry in one map under the title and description. The viewport fits the combined stored bounds. A single mapped track keeps start/end markers; multiple tracks render as distinct polylines without per-track start/end markers. Photo markers remain a later slice.
 
 ### Photo Markers
 
@@ -37,7 +37,7 @@ Leaflet handles marker display, popups, and layer toggles. The EXIF extraction a
 
 As of `feature-052-outdoor-photos-exif-gps-capture`, outdoor photos store versioned admin-only EXIF/GPS metadata on `Photo.metadata` (`photo-exif-metadata/v1`), including normalized `summary.gps` and `summary.gpsSourceFileAssetId` when coordinates exist. Public gallery pages and public coordinate display remain later slices; hike map markers should read the stored admin metadata rather than reparsing image files at request time.
 
-As of `feature-055-outdoor-hike-photo-association`, hike detail pages can show linked published photos in hike-specific order using public-display-eligible image assets. Photo map markers still belong to later slices that explicitly decide coordinate display, marker popups, and fallback behavior.
+As of `feature-055-outdoor-hike-photo-association`, hike detail pages can show linked published photos in hike-specific order using public-display-eligible image assets. As of `feature-059-outdoor-hike-combined-track-map`, the hike map shows linked tracks only; photo map markers still belong to later slices that explicitly decide coordinate display, marker popups, and fallback behavior.
 
 ### Manual Points
 
@@ -50,9 +50,9 @@ The main performance risk is not the number of tracks, but the number of coordin
 Recommended rendering approach:
 
 - Track detail: render one track with richer metadata.
-- Hike detail: render multiple polylines, start/end markers, and optional photo markers.
+- Hike detail: render multiple polylines, with start/end markers only when a single mapped track is shown. Photo markers remain a later slice.
 - Dense mode: simplify polylines, hide intermediate point markers, and keep photo markers optional when the map gets crowded.
-- Fallback: if parsed geometry is unavailable, show track metadata and GPX download without a map.
+- Fallback: if parsed geometry is unavailable, omit the hike map and keep the linked-track list; track detail still shows metadata and GPX download without a map.
 
 ## Alternative
 

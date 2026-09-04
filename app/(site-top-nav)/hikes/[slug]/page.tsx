@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { getPublicHikeBySlug } from "@/app/_data/hikes";
+import { HikeTrackMap } from "@/components/hike-pages/hike-track-map";
 import { Badge, Button } from "@/components/index";
 import { PageLayout } from "@/components/layout/page-layout";
 import { formatHikeDateRange, formatHikeType } from "@/lib/hikes";
@@ -39,6 +40,8 @@ const HikePage = async ({ params }: HikePageProps) => {
 
   if (!hike) notFound();
 
+  const mappedTracks = hike.tracks.flatMap(({ track }) => (track.map ? [track.map] : []));
+
   return (
     <PageLayout title={hike.title} className="pt-6" showBackLink={false}>
       <article className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 pb-10">
@@ -54,6 +57,12 @@ const HikePage = async ({ params }: HikePageProps) => {
         ) : (
           <p className="text-sm text-muted-foreground">No description yet.</p>
         )}
+        {mappedTracks.length > 0 ? (
+          <section className="grid gap-3">
+            <h2 className="text-base font-semibold">Route map</h2>
+            <HikeTrackMap tracks={mappedTracks} />
+          </section>
+        ) : null}
         {hike.tracks.length > 0 ? (
           <section className="grid gap-3">
             <h2 className="text-base font-semibold">Linked tracks</h2>

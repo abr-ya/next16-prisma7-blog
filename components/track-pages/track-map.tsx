@@ -2,13 +2,9 @@
 
 import dynamic from "next/dynamic";
 
-import type { TrackGpxBounds, TrackGpxCoordinate } from "@/lib/track-gpx-metadata";
+import type { TrackMapViewModel } from "@/lib/track-gpx-metadata";
 
-export type TrackMapViewModel = {
-  title: string;
-  bounds: TrackGpxBounds;
-  geometry: TrackGpxCoordinate[];
-};
+export type { TrackMapViewModel };
 
 const TrackMapLeaflet = dynamic(() => import("@/components/track-pages/track-map-leaflet"), {
   ssr: false,
@@ -19,4 +15,10 @@ const TrackMapLeaflet = dynamic(() => import("@/components/track-pages/track-map
   ),
 });
 
-export const TrackMap = ({ track }: { track: TrackMapViewModel }) => <TrackMapLeaflet track={track} />;
+export const TrackMap = ({ track }: { track: TrackMapViewModel }) => (
+  <TrackMapLeaflet ariaLabel={`${track.title} route map`} tracks={[track]} />
+);
+
+export const CombinedTrackMap = ({ tracks, ariaLabel }: { tracks: TrackMapViewModel[]; ariaLabel: string }) => (
+  <TrackMapLeaflet ariaLabel={ariaLabel} tracks={tracks} />
+);
