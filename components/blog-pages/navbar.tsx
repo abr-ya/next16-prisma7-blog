@@ -21,6 +21,7 @@ const publicNavItems = [
   { href: "/blog", labelKey: "blog" },
   { href: "/docs", labelKey: "docs" },
   { href: "/videos", labelKey: "videos" },
+  { href: "/hikes", labelKey: "trips" },
   { href: "/tracks", labelKey: "tracks" },
   { href: "/comments", labelKey: "comments" },
 ];

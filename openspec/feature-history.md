@@ -64,6 +64,7 @@ Cancelled or deferred candidates do not reserve feature numbers.
 | feature-052 | feature-052-outdoor-photos-exif-gps-capture | outdoor/photos | Extract and store versioned photo EXIF/GPS metadata with admin refresh controls, without public EXIF or coordinate display. |
 | feature-053 | feature-053-outdoor-hike-media-map-planning | outdoor/hikes-maps | Plan the hike-centered public outdoor experience, sync hike media/map specs, and order the next implementation slices around hike-track and hike-photo associations first. |
 | feature-054 | feature-054-outdoor-hike-track-association | outdoor/hikes-tracks | Let admins attach and detach tracks to hikes through join-table associations while preserving independent track records, GPX file assets, public visibility boundaries, and linked hike/track public views. |
+| feature-056 | feature-056-public-trips-navigation-labels | navigation/public | Add Trips links to the public home page and shared top navigation while temporarily pointing to the existing `/hikes` route until the full trip domain rename lands. |
 
 ## Cancelled Candidate Notes
 

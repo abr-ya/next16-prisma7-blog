@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Badge, Button } from "..";
-import { ArrowRight, FileText, MessageCircle, PenLine, PieChart, Video } from "lucide-react";
+import { ArrowRight, FileText, Map, MessageCircle, PenLine, PieChart, Video } from "lucide-react";
 
 const contentSections = [
   {
@@ -20,6 +20,12 @@ const contentSections = [
     title: "Markdown Documents",
     description: "Structured docs, references, and technical write-ups.",
     icon: FileText,
+  },
+  {
+    href: "/hikes",
+    title: "Trips",
+    description: "Outdoor routes, trip notes, tracks, and linked photo stories.",
+    icon: Map,
   },
   {
     href: "/comments",
