@@ -6,6 +6,7 @@ import type { Prisma } from "@/generated/prisma/client";
 import type { FileAssetStatus, HikeStatus, HikeType, PhotoStatus, TrackStatus } from "@/generated/prisma/enums";
 import { authSession, requireAdmin } from "@/lib/auth-utils";
 import { createSlug } from "@/lib/slug-generator";
+import { toTrackMapViewModel, type TrackMapViewModel } from "@/lib/track-gpx-metadata";
 
 export type HikeActionValues = {
   id?: string;
@@ -221,6 +222,13 @@ const publicHikeInclude = {
           description: true,
           status: true,
           updatedAt: true,
+          metadata: true,
+          fileAsset: {
+            select: {
+              id: true,
+              fileKey: true,
+            },
+          },
         },
       },
     },
@@ -270,9 +278,44 @@ export type HikeListItem = Prisma.HikeGetPayload<{
   include: typeof hikeListInclude;
 }>;
 
-export type PublicHike = Prisma.HikeGetPayload<{
+type PublicHikeRecord = Prisma.HikeGetPayload<{
   include: typeof publicHikeInclude;
 }>;
+
+export type PublicHike = Omit<PublicHikeRecord, "tracks"> & {
+  tracks: {
+    hikeId: string;
+    trackId: string;
+    assignedAt: Date;
+    track: {
+      id: string;
+      title: string;
+      slug: string;
+      description: string | null;
+      status: TrackStatus;
+      updatedAt: Date;
+      map: TrackMapViewModel | null;
+    };
+  }[];
+};
+
+const toPublicHike = (hike: PublicHikeRecord): PublicHike => ({
+  ...hike,
+  tracks: hike.tracks.map((association) => {
+    const { metadata, fileAsset, ...track } = association.track;
+
+    return {
+      ...association,
+      track: {
+        ...track,
+        map: toTrackMapViewModel(track.title, metadata, {
+          fileAssetId: fileAsset.id,
+          fileKey: fileAsset.fileKey,
+        }),
+      },
+    };
+  }),
+});
 
 const revalidateHikePaths = (slug?: string | null) => {
   revalidatePath("/admin/hikes");
@@ -432,10 +475,12 @@ export const getPublicHikes = async (): Promise<HikeListItem[]> => {
 export const getPublicHikeBySlug = async (slug: string): Promise<PublicHike | null> => {
   const { default: prisma } = await import("@/lib/prisma");
 
-  return prisma.hike.findFirst({
+  const hike = await prisma.hike.findFirst({
     where: { slug, status: "PUBLISHED" },
     include: publicHikeInclude,
   });
+
+  return hike ? toPublicHike(hike) : null;
 };
 
 export const attachTrackToHike = async ({ hikeId, trackId }: { hikeId: string; trackId: string }) => {

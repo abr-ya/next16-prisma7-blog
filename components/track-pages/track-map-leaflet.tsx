@@ -2,11 +2,11 @@
 
 import L, { type LatLngBoundsExpression, type LatLngExpression } from "leaflet";
 import { useEffect } from "react";
-import { CircleMarker, MapContainer, Marker, Polyline, TileLayer, useMap } from "react-leaflet";
+import { CircleMarker, MapContainer, Marker, Polyline, TileLayer, Tooltip, useMap } from "react-leaflet";
 
-import type { TrackMapViewModel } from "@/components/track-pages/track-map";
+import type { TrackMapViewModel } from "@/lib/track-gpx-metadata";
 
-const TRACK_LINE_COLOR = "#0f766e";
+const TRACK_LINE_COLORS = ["#0f766e", "#0369a1", "#7c3aed", "#c2410c", "#15803d", "#a21caf", "#b45309", "#0e7490"];
 const START_COLOR = "#16a34a";
 const END_COLOR = "#dc2626";
 
@@ -23,38 +23,47 @@ const endIcon = createEndpointIcon("E", END_COLOR);
 
 const toLatLng = (point: TrackMapViewModel["geometry"][number]): LatLngExpression => [point.lat, point.lng];
 
-const toBounds = (track: TrackMapViewModel): LatLngBoundsExpression => [
-  [track.bounds.south, track.bounds.west],
-  [track.bounds.north, track.bounds.east],
+const toCombinedBounds = (tracks: TrackMapViewModel[]): LatLngBoundsExpression => [
+  [Math.min(...tracks.map((track) => track.bounds.south)), Math.min(...tracks.map((track) => track.bounds.west))],
+  [Math.max(...tracks.map((track) => track.bounds.north)), Math.max(...tracks.map((track) => track.bounds.east))],
 ];
 
-const FitTrackBounds = ({ track }: { track: TrackMapViewModel }) => {
+const FitTrackBounds = ({ tracks }: { tracks: TrackMapViewModel[] }) => {
   const map = useMap();
 
   useEffect(() => {
-    if (track.geometry.length === 1) {
-      map.setView(toLatLng(track.geometry[0]), 13);
-    } else {
-      map.fitBounds(toBounds(track), { padding: [28, 28], maxZoom: 15 });
+    const points = tracks.flatMap((track) => track.geometry);
+
+    if (points.length === 1) {
+      map.setView(toLatLng(points[0]), 13);
+      return;
     }
-  }, [map, track]);
+
+    map.fitBounds(toCombinedBounds(tracks), { padding: [28, 28], maxZoom: 15 });
+  }, [map, tracks]);
 
   return null;
 };
 
-const TrackMapLeaflet = ({ track }: { track: TrackMapViewModel }) => {
-  const positions = track.geometry.map(toLatLng);
-  const first = track.geometry[0];
-  const last = track.geometry[track.geometry.length - 1];
-  const hasRoute = positions.length >= 2;
+const TrackMapLeaflet = ({ ariaLabel, tracks }: { ariaLabel: string; tracks: TrackMapViewModel[] }) => {
+  if (tracks.length === 0) return null;
+
+  const points = tracks.flatMap((track) => track.geometry);
+  const first = points[0];
+  const hasExtent = points.length >= 2;
+  const singleTrack = tracks.length === 1 ? tracks[0] : null;
+  const singleTrackPositions = singleTrack?.geometry.map(toLatLng) ?? [];
+  const singleHasRoute = singleTrackPositions.length >= 2;
+  const singleFirst = singleTrack?.geometry[0];
+  const singleLast = singleTrack?.geometry.at(-1);
 
   return (
     <div className="h-90 min-h-90 overflow-hidden rounded-md border bg-muted sm:h-110 sm:min-h-110">
       <MapContainer
-        aria-label={`${track.title} route map`}
-        bounds={hasRoute ? toBounds(track) : undefined}
-        center={!hasRoute ? toLatLng(first) : undefined}
-        zoom={!hasRoute ? 13 : undefined}
+        aria-label={ariaLabel}
+        bounds={hasExtent ? toCombinedBounds(tracks) : undefined}
+        center={!hasExtent && first ? toLatLng(first) : undefined}
+        zoom={!hasExtent && first ? 13 : undefined}
         className="h-full w-full"
         scrollWheelZoom
       >
@@ -62,13 +71,29 @@ const TrackMapLeaflet = ({ track }: { track: TrackMapViewModel }) => {
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        <FitTrackBounds track={track} />
-        {hasRoute ? <Polyline pathOptions={{ color: TRACK_LINE_COLOR, weight: 4 }} positions={positions} /> : null}
-        {first ? <Marker icon={startIcon} position={toLatLng(first)} title="Start" /> : null}
-        {hasRoute && last ? <Marker icon={endIcon} position={toLatLng(last)} title="End" /> : null}
-        {!hasRoute && first ? (
+        <FitTrackBounds tracks={tracks} />
+        {tracks.map((track, index) => {
+          const positions = track.geometry.map(toLatLng);
+
+          if (positions.length < 2) return null;
+
+          return (
+            <Polyline
+              key={`${track.title}-${index}`}
+              pathOptions={{ color: TRACK_LINE_COLORS[index % TRACK_LINE_COLORS.length], weight: 4 }}
+              positions={positions}
+            >
+              {tracks.length > 1 ? <Tooltip sticky>{track.title}</Tooltip> : null}
+            </Polyline>
+          );
+        })}
+        {singleTrack && singleFirst ? <Marker icon={startIcon} position={toLatLng(singleFirst)} title="Start" /> : null}
+        {singleTrack && singleHasRoute && singleLast ? (
+          <Marker icon={endIcon} position={toLatLng(singleLast)} title="End" />
+        ) : null}
+        {singleTrack && !singleHasRoute && singleFirst ? (
           <CircleMarker
-            center={toLatLng(first)}
+            center={toLatLng(singleFirst)}
             pathOptions={{ color: START_COLOR, fillColor: START_COLOR, fillOpacity: 0.8 }}
             radius={8}
           />

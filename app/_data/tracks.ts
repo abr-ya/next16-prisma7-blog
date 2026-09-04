@@ -10,8 +10,10 @@ import { parseTrackGpxMetadata } from "@/lib/track-gpx-parser";
 import {
   getTrackGpxMetadataState,
   markTrackGpxMetadataStale,
+  toTrackMapViewModel,
   type TrackGpxCoordinate,
   type TrackGpxSummary,
+  type TrackMapViewModel,
 } from "@/lib/track-gpx-metadata";
 
 export type TrackActionValues = {
@@ -83,11 +85,7 @@ export type PublicTrack = {
     summary: TrackGpxSummary;
     mapGeometry: TrackGpxCoordinate[] | null;
   } | null;
-  map: {
-    title: string;
-    bounds: TrackGpxSummary["bounds"];
-    geometry: TrackGpxCoordinate[];
-  } | null;
+  map: TrackMapViewModel | null;
   hikes: {
     id: string;
     title: string;
@@ -321,14 +319,12 @@ const toPublicTrack = (
             mapGeometry: includeMapGeometry ? parsedState.mapGeometry : null,
           }
         : null,
-    map:
-      includeMapGeometry && parsedState.status === "SUCCESS" && parsedState.mapGeometry.length > 0
-        ? {
-            title: track.title,
-            bounds: parsedState.summary.bounds,
-            geometry: parsedState.mapGeometry,
-          }
-        : null,
+    map: includeMapGeometry
+      ? toTrackMapViewModel(track.title, track.metadata, {
+          fileAssetId: track.fileAsset.id,
+          fileKey: track.fileAsset.fileKey,
+        })
+      : null,
     hikes: track.hikes.map((association) => ({
       id: association.hike.id,
       title: association.hike.title,

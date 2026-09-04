@@ -64,8 +64,10 @@ Cancelled or deferred candidates do not reserve feature numbers.
 | feature-052 | feature-052-outdoor-photos-exif-gps-capture | outdoor/photos | Extract and store versioned photo EXIF/GPS metadata with admin refresh controls, without public EXIF or coordinate display. |
 | feature-053 | feature-053-outdoor-hike-media-map-planning | outdoor/hikes-maps | Plan the hike-centered public outdoor experience, sync hike media/map specs, and order the next implementation slices around hike-track and hike-photo associations first. |
 | feature-054 | feature-054-outdoor-hike-track-association | outdoor/hikes-tracks | Let admins attach and detach tracks to hikes through join-table associations while preserving independent track records, GPX file assets, public visibility boundaries, and linked hike/track public views. |
+| feature-055 | feature-055-outdoor-hike-photo-association | outdoor/hikes-photos | Let admins attach/detach photos to hikes using join-table associations with per-hike ordering foundations, preserve independent photo records and image assets, and show linked published photos through hike-centered public views. |
 | feature-056 | feature-056-public-trips-navigation-labels | navigation/public | Add Trips links to the public home page and shared top navigation while temporarily pointing to the existing `/hikes` route until the full trip domain rename lands. |
 | feature-058 | feature-058-outdoor-hike-map-coordinate-planning | outdoor/maps | Plan the hike detail map roadmap across combined linked tracks, direct GPS photo markers, timestamp-based inferred coordinates, manual correction, all-days/single-day filtering, and future notes before implementation slices begin. |
+| feature-059 | feature-059-outdoor-hike-combined-track-map | outdoor/maps | Add one map under the hike detail title/description that renders all linked visible tracks together and frames the combined bounds, without photo markers or day filtering yet. |
 
 ## Cancelled Candidate Notes
 
