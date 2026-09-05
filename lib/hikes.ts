@@ -1,5 +1,13 @@
 import type { HikeStatus, HikeType } from "@/generated/prisma/enums";
 
+export type HikePhotoMapMarker = {
+  photoId: string;
+  title: string;
+  lat: number;
+  lng: number;
+  thumbnailUrl: string | null;
+};
+
 export const hikeTypeOptions = [
   { value: "HIKING", label: "Hiking" },
   { value: "MOUNTAIN", label: "Mountain" },

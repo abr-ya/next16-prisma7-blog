@@ -63,6 +63,7 @@ These candidates track the hikes/tracks/photos initiative as small increments. T
 
 | Status | Candidate | Area | Summary |
 | --- | --- | --- | --- |
+| Ready | outdoor-photo-thumbnail-vercel-500 | outdoor/photos-media | Fix production `GET /files/[fileId]/thumbnail` returning **500** on Vercel (e.g. `https://next-blog-26.vercel.app/files/.../thumbnail`) after feature-057 on-demand `sharp` thumbnails. Local may work while hosted hike photo previews break. Investigate sharp/native binary on Vercel serverless, provider fetch, memory/timeouts, and response handling; restore guest-safe hike photo previews. |
 | Ready | admin-post-save-disabled-until-interaction | posts/admin | Analyze and fix admin post create/edit **Save changes** staying disabled until blur/scroll/console interaction. Reproduced more than once on `/admin/posts/new`. Likely `PostForm` validation gating (`mode: "onBlur"` + `disabled={!form.formState.isValid}`); confirm repro, then make save enable when required fields are valid without needing extra UI noise. |
 
 ## P1 Soon
