@@ -55,3 +55,10 @@ Alternative considered: invent lat/lng by linear distance fraction across simpli
 None for data. After spike learnings, update the inferred-coordinates proposal/tasks before persistence work.
 
 Rollback: remove admin spike UI/helpers; public map and EXIF markers unchanged.
+
+## Spike Implementation Learnings
+
+- Existing photo EXIF metadata is enough to identify eligible photos with `summary.capturedAt` and no direct `summary.gps`.
+- Existing track GPX metadata is enough for inside-window and simple between-track candidates using `summary.time.start` / `summary.time.end` plus simplified geometry endpoints.
+- Current metadata still cannot support precise along-route interpolation because simplified `mapGeometry` does not retain per-point timestamps.
+- The follow-up persistence slice should decide a real timezone policy and whether to retain timestamped trackpoint timelines before storing inferred coordinates.

@@ -77,3 +77,9 @@ Cancelled or deferred candidates do not reserve feature numbers.
 | --- | --- | --- |
 | video-tag-management | video/tags | Superseded by `content-tags-admin-management` so tag management is content-wide instead of video-only. |
 | video-tag-confirm-dialog | video/tags | Superseded by `admin-confirm-dialogs`, which covers reusable app-styled confirmation dialogs across admin flows. |
+
+## Completed Fix Notes
+
+| Candidate | Area | Note |
+| --- | --- | --- |
+| outdoor-photo-thumbnail-vercel-500 | outdoor/photos-media | Fixed production `GET /files/[fileId]/thumbnail` 500s on Vercel after feature-057 on-demand `sharp` thumbnails. Kept as an unnumbered hotfix rather than a numbered OpenSpec feature. |
