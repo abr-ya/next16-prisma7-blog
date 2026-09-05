@@ -73,6 +73,7 @@ Cancelled or deferred candidates do not reserve feature numbers.
 | feature-061 | feature-061-outdoor-photo-track-time-matching-spike | outdoor/maps-photos | Add an admin-only spike for hike-linked photos without EXIF GPS: propose track-time match candidates from linked track recording windows or nearby adjacent tracks and log accepted choices without persisting inferred coordinates or public markers. |
 | feature-062 | feature-062-admin-track-modal-dirty-close-guard | admin/tracks-files | Guard the admin track modal against accidental dismissal when unsaved edits or newly uploaded GPX files exist, confirming discard and moving unsaved uploaded GPX file assets into the pending-delete lifecycle. |
 | feature-063 | feature-063-outdoor-track-recording-time-summary | outdoor/tracks | Show GPX recording start/finish times and timezone evidence on admin/public track summaries and hike linked-track cards without adding manual timezone correction or inferred photo coordinate persistence. |
+| feature-064 | feature-064-outdoor-photo-track-time-inferred-coordinates | outdoor/maps-photos | Persist admin-reviewed inferred photo map coordinates from capture time vs track timelines, between-track gaps, and previous-day finish placement; show approved markers when direct EXIF GPS is absent. |
 
 ## Cancelled Candidate Notes
 

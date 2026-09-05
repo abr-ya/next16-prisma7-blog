@@ -30,5 +30,5 @@
 - [x] 5.1 Run `openspec validate feature-064-outdoor-photo-track-time-inferred-coordinates --strict`.
 - [x] 5.2 Run `npm run tsc`.
 - [x] 5.3 Run `npm run lint` plus targeted ESLint for changed non-`app` files if needed.
-- [ ] 5.4 Ask the user to run `npm run build` locally if routes/metadata/public map behavior changed.
-- [ ] 5.5 Manually verify: inside-window approve→marker, between-tracks approve→marker, reject→no marker, direct GPS precedence, track without timeline cannot fake along-route coords, guest cannot access review controls.
+- [x] 5.4 Ask the user to run `npm run build` locally if routes/metadata/public map behavior changed.
+- [x] 5.5 Manually verified adding inferred coordinates, including previous-day / between-days finish placement. Remaining edge cases (reject, EXIF GPS precedence, missing timeline, guest review access) deferred to backlog `outdoor-inferred-photo-coordinate-edge-case-qa`.

@@ -333,8 +333,8 @@ The system SHALL render one public hike map on published hike detail pages when 
 #### Scenario: Combined hike map excludes later map layers
 
 - **WHEN** a visitor opens a published hike with linked published photos or future hike notes
-- **THEN** the hike map may render direct GPS photo markers from this slice
-- **AND** it does not render inferred coordinates, day filters, or notes
+- **THEN** the hike map may render direct GPS photo markers and approved inferred or manually corrected photo markers from this slice
+- **AND** it does not render day filters or notes
 - **AND** linked published photos may still appear in the existing hike photo section
 
 #### Scenario: Hike has GPS photo markers but no mapped tracks
@@ -369,36 +369,44 @@ The system SHALL display linked published photos on the public hike map when tho
 #### Scenario: Linked photo GPS comes from failed or stale extraction
 
 - **WHEN** a linked published photo has missing, failed, or stale EXIF extraction, or its stored GPS summary is absent or invalid
-- **THEN** the public hike map does not show a marker for that photo
+- **THEN** the public hike map does not show a direct-GPS marker for that photo
 - **AND** the hike page remains usable
+- **AND** an approved inferred or manually corrected coordinate may still provide a marker when present
 
 ### Requirement: Photo coordinate inference from track time is planned separately
 
-The system SHALL treat timestamp-based photo-to-track coordinate inference as an explicit capability with reviewable assumptions. Before persistence, an admin-only spike MAY propose match candidates and log an accepted suggestion without writing inferred coordinates or showing public map markers.
+The system SHALL treat timestamp-based photo-to-track coordinate inference as an explicit reviewed capability. Admins can propose and approve durable inferred or manually corrected coordinates; only approved coordinates without superseding direct EXIF GPS become public hike map markers.
 
 #### Scenario: Photo capture time overlaps track time
 
-- **WHEN** a linked published photo has a stored capture timestamp and a linked published track has a usable recording time range
-- **THEN** an admin spike may propose a candidate such as matching that track's recording window
-- **AND** accepting the candidate in this spike SHALL NOT persist an inferred coordinate or public map marker
+- **WHEN** a linked published photo has a stored capture timestamp and a linked published track has a usable recording time range plus a compact timed trackpoint timeline
+- **THEN** an admin review flow may propose an inside-track candidate with an interpolated latitude and longitude
+- **AND** approving that candidate persists the inferred coordinate for later public use when review status is approved
 
 #### Scenario: Photo capture time falls between nearby tracks
 
-- **WHEN** a linked published photo has a stored capture timestamp that falls between the end of one linked track and the start of another, and those endpoints are within an accepted nearness threshold for the spike
-- **THEN** an admin spike may propose a between-tracks candidate
-- **AND** accepting the candidate in this spike only logs the suggestion for evaluation
+- **WHEN** a linked published photo has a stored capture timestamp that falls between the end of one linked track and the start of another, and those endpoints are within an accepted nearness threshold
+- **THEN** an admin review flow may propose a between-tracks candidate with a resolvable coordinate such as an endpoint midpoint
+- **AND** approving that candidate persists the inferred coordinate rather than only logging it
+
+#### Scenario: Photo is after previous-day track finish before today's first track
+
+- **WHEN** a linked published photo has a stored capture timestamp on a later calendar day than a linked track's finish, and no later attached track has started yet (or the first track of the photo's capture day has not started)
+- **THEN** an admin review flow may propose an after-finish candidate using that previous track's finish point
+- **AND** the candidate and persisted provenance explicitly identify the placement as yesterday's / previous-day finish
+- **AND** approving that candidate persists the inferred finish coordinate for later public use when review status is approved
 
 #### Scenario: Time data is missing or ambiguous
 
-- **WHEN** a linked photo or linked track lacks usable timestamp data, timezone context, or confidence needed for inference
-- **THEN** the system SHALL avoid presenting an inferred coordinate as fact
-- **AND** the photo remains without a track-time map marker from this spike
+- **WHEN** a linked photo or linked track lacks usable timestamp data, timed points needed for a resolvable coordinate, timezone context, or confidence needed for a proposal
+- **THEN** the system SHALL avoid presenting an inferred coordinate as public fact
+- **AND** the photo remains without a track-time map marker until a later approved coordinate exists
 
 #### Scenario: Guest or non-admin does not see spike controls
 
 - **WHEN** an anonymous visitor or non-admin signed-in user opens a hike surface
-- **THEN** the system does not expose the track-time matching spike controls
-- **AND** it does not show inferred coordinates from this spike on the public hike map
+- **THEN** the system does not expose inferred-coordinate review controls
+- **AND** it does not show unapproved inferred coordinates on the public hike map
 
 ### Requirement: Hike media visibility boundaries are explicit
 
@@ -434,8 +442,9 @@ The system SHALL track the hike detail map experience as multiple ordered implem
 
 #### Scenario: Planning identifies coordinate inference as a later slice
 
-- **WHEN** linked published photos lack direct GPS coordinates but have capture timestamps
-- **THEN** timestamp-based coordinate inference remains a later slice with explicit confidence, provenance, admin review, and manual correction behavior
+- **WHEN** linked published photos lack direct GPS coordinates but have capture timestamps and linked tracks provide usable time context
+- **THEN** timestamp-based coordinate inference is implemented as the reviewed persistence slice with provenance, admin approval or manual correction, and public markers only after approval
+- **AND** day filtering and notes remain later slices
 
 #### Scenario: Planning defers hike notes
 
