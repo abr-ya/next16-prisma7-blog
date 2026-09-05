@@ -9,6 +9,7 @@ import { useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 import z from "zod";
 
+import { markDiscardedTrackGpxFileAssetsPendingDelete } from "@/app/_actions/files";
 import { createTrack, deleteTrack, parseTrackGpx, updateTrack, type TrackListItem } from "@/app/_data/tracks";
 import {
   Badge,
@@ -93,6 +94,8 @@ const getParseStatusVariant = (state: TrackGpxMetadataState) => {
   return "outline";
 };
 
+const uniqueIds = (ids: string[]) => Array.from(new Set(ids));
+
 const TrackParseStatus = ({ track }: { track: TrackListItem }) => {
   const state = getTrackParseState(track);
   const distance = state.status === "SUCCESS" ? formatTrackDistance(state.summary.distanceMeters) : null;
@@ -136,8 +139,18 @@ const TrackFormDialog = ({
   const isEditing = Boolean(track);
   const parseState = track ? getTrackParseState(track) : null;
   const isParsing = Boolean(track && parsingTrackId === track.id);
+  const savedFileAssetId = track?.fileAssetId ?? null;
   const fileAssetId = useWatch({ control: form.control, name: "fileAssetId" });
   const fileAssetName = useWatch({ control: form.control, name: "fileAssetName" });
+  const [uploadedFileAssetIds, setUploadedFileAssetIds] = useState<string[]>([]);
+  const [discardConfirmOpen, setDiscardConfirmOpen] = useState(false);
+  const [isDiscarding, startDiscarding] = useTransition();
+  const discardFileAssetIds = useMemo(
+    () => uploadedFileAssetIds.filter((uploadedFileAssetId) => uploadedFileAssetId !== savedFileAssetId),
+    [savedFileAssetId, uploadedFileAssetIds],
+  );
+  const hasUnsavedUploads = discardFileAssetIds.length > 0;
+  const hasGuardedChanges = form.formState.isDirty || hasUnsavedUploads;
 
   useEffect(() => {
     if (!open) return;
@@ -166,6 +179,60 @@ const TrackFormDialog = ({
     }
   };
 
+  const closeWithoutGuard = () => {
+    setDiscardConfirmOpen(false);
+    setUploadedFileAssetIds([]);
+    form.reset(defaultValues);
+    onOpenChange(false);
+  };
+
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (nextOpen) {
+      onOpenChange(true);
+      return;
+    }
+
+    if (hasGuardedChanges) {
+      setDiscardConfirmOpen(true);
+      return;
+    }
+
+    closeWithoutGuard();
+  };
+
+  const handleConfirmDiscard = () => {
+    const fileIdsToDiscard = discardFileAssetIds;
+
+    if (fileIdsToDiscard.length === 0) {
+      closeWithoutGuard();
+      return;
+    }
+
+    startDiscarding(async () => {
+      const result = await markDiscardedTrackGpxFileAssetsPendingDelete(fileIdsToDiscard);
+
+      if (!result.success) {
+        toast.error(result.message || "Uploaded GPX file could not be removed");
+        return;
+      }
+
+      toast.success("Uploaded GPX file discarded");
+      closeWithoutGuard();
+    });
+  };
+
+  const cleanupSupersededUploads = async (savedFileId: string) => {
+    const supersededFileIds = discardFileAssetIds.filter((uploadedFileAssetId) => uploadedFileAssetId !== savedFileId);
+
+    if (supersededFileIds.length === 0) return;
+
+    const result = await markDiscardedTrackGpxFileAssetsPendingDelete(supersededFileIds);
+
+    if (!result.success) {
+      toast.error(result.message || "Earlier uploaded GPX file could not be removed");
+    }
+  };
+
   const onSubmit = async (values: TrackFormValues) => {
     const trackPayload = {
       title: values.title,
@@ -187,8 +254,8 @@ const TrackFormDialog = ({
         toast.success("Track created");
       }
 
-      onOpenChange(false);
-      form.reset(defaultValues);
+      await cleanupSupersededUploads(values.fileAssetId);
+      closeWithoutGuard();
       onSaved();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to save track");
@@ -196,175 +263,192 @@ const TrackFormDialog = ({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>{isEditing ? "Edit track" : "Create track"}</DialogTitle>
-        </DialogHeader>
-        <Form {...form}>
-          <form className="grid gap-4" onSubmit={form.handleSubmit(onSubmit)}>
-            <div className="grid gap-4 md:grid-cols-2">
+    <>
+      <Dialog open={open} onOpenChange={handleOpenChange}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{isEditing ? "Edit track" : "Create track"}</DialogTitle>
+          </DialogHeader>
+          <Form {...form}>
+            <form className="grid gap-4" onSubmit={form.handleSubmit(onSubmit)}>
+              <div className="grid gap-4 md:grid-cols-2">
+                <FormField
+                  control={form.control}
+                  name="title"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Title</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="slug"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Slug</FormLabel>
+                      <div className="flex gap-2">
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                        <Button type="button" variant="outline" onClick={handleGenerateSlug}>
+                          Generate
+                        </Button>
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
               <FormField
                 control={form.control}
-                name="title"
+                name="description"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Title</FormLabel>
+                    <FormLabel>Description</FormLabel>
                     <FormControl>
-                      <Input {...field} />
+                      <textarea
+                        {...field}
+                        className="border-input focus-visible:border-ring focus-visible:ring-ring/50 min-h-28 w-full rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="slug"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Slug</FormLabel>
-                    <div className="flex gap-2">
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <Button type="button" variant="outline" onClick={handleGenerateSlug}>
-                        Generate
-                      </Button>
-                    </div>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Description</FormLabel>
-                  <FormControl>
-                    <textarea
-                      {...field}
-                      className="border-input focus-visible:border-ring focus-visible:ring-ring/50 min-h-28 w-full rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <div className="grid gap-4 md:grid-cols-2">
-              <FormField
-                control={form.control}
-                name="status"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Status</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger className="w-full">
-                          <SelectValue />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {trackStatusOptions.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="fileAssetId"
-                render={() => (
-                  <FormItem>
-                    <FormLabel>GPX file</FormLabel>
-                    <div className="rounded-md border p-3 text-sm">
-                      <div className="flex min-h-5 items-center gap-2">
-                        <FileUp className="size-4 text-muted-foreground" />
-                        <span className="truncate">{fileAssetName || "No GPX file uploaded"}</span>
+              <div className="grid gap-4 md:grid-cols-2">
+                <FormField
+                  control={form.control}
+                  name="status"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Status</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger className="w-full">
+                            <SelectValue />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {trackStatusOptions.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="fileAssetId"
+                  render={() => (
+                    <FormItem>
+                      <FormLabel>GPX file</FormLabel>
+                      <div className="rounded-md border p-3 text-sm">
+                        <div className="flex min-h-5 items-center gap-2">
+                          <FileUp className="size-4 text-muted-foreground" />
+                          <span className="truncate">{fileAssetName || "No GPX file uploaded"}</span>
+                        </div>
                       </div>
-                    </div>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            <UploadDropzone
-              endpoint="trackGpxUploader"
-              content={{
-                label: isEditing ? "Drop or click to replace the GPX file" : "Drop or click to upload a GPX file",
-                allowedContent: `One .gpx file up to ${TRACK_GPX_UPLOAD_MAX_SIZE}.`,
-              }}
-              appearance={{
-                button: "rounded-lg",
-                container: "rounded-lg border",
-              }}
-              onUploadError={(error) => {
-                toast.error(error.message || "Uploading GPX failed");
-              }}
-              onClientUploadComplete={(files) => {
-                const uploaded = files.at(0);
-                const fileAssetId = uploaded?.serverData?.fileAssetId;
-
-                if (!fileAssetId) {
-                  toast.error("Uploaded GPX was not recorded");
-                  return;
-                }
-
-                form.setValue("fileAssetId", fileAssetId, { shouldDirty: true, shouldValidate: true });
-                form.setValue("fileAssetName", uploaded.name, { shouldDirty: true, shouldValidate: true });
-                toast.success("GPX uploaded");
-              }}
-            />
-            {track && parseState ? (
-              <div className="grid gap-3 rounded-md border p-3 text-sm">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">GPX parsing</span>
-                    <Badge variant={getParseStatusVariant(parseState)}>{getParseStatusLabel(parseState)}</Badge>
-                  </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    disabled={isParsing || form.formState.isDirty}
-                    onClick={() => onParse(track)}
-                  >
-                    <RefreshCw className={isParsing ? "animate-spin" : undefined} />
-                    {isParsing ? "Parsing..." : parseState.status === "SUCCESS" ? "Reparse" : "Parse GPX"}
-                  </Button>
-                </div>
-                {parseState.status === "SUCCESS" ? (
-                  <div className="flex flex-wrap gap-3 text-muted-foreground">
-                    <span>{formatTrackDistance(parseState.summary.distanceMeters)}</span>
-                    <span>{formatTrackPointCount(parseState.summary.points)}</span>
-                    <span>Parsed {formatDate(parseState.metadata.gpxParse.parsedAt)}</span>
-                  </div>
-                ) : null}
-                {parseState.status === "FAILED" || parseState.status === "STALE" ? (
-                  <div className="text-muted-foreground">{parseState.errorMessage}</div>
-                ) : null}
-                {form.formState.isDirty ? (
-                  <div className="text-xs text-muted-foreground">
-                    Save track changes before parsing the current GPX file.
-                  </div>
-                ) : null}
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
-            ) : null}
-            <div className="flex justify-end">
-              <Button type="submit" disabled={form.formState.isSubmitting || !fileAssetId}>
-                {form.formState.isSubmitting ? "Saving..." : "Save track"}
-              </Button>
-            </div>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
+              <UploadDropzone
+                endpoint="trackGpxUploader"
+                content={{
+                  label: isEditing ? "Drop or click to replace the GPX file" : "Drop or click to upload a GPX file",
+                  allowedContent: `One .gpx file up to ${TRACK_GPX_UPLOAD_MAX_SIZE}.`,
+                }}
+                appearance={{
+                  button: "rounded-lg",
+                  container: "rounded-lg border",
+                }}
+                onUploadError={(error) => {
+                  toast.error(error.message || "Uploading GPX failed");
+                }}
+                onClientUploadComplete={(files) => {
+                  const uploaded = files.at(0);
+                  const fileAssetId = uploaded?.serverData?.fileAssetId;
+
+                  if (!fileAssetId) {
+                    toast.error("Uploaded GPX was not recorded");
+                    return;
+                  }
+
+                  form.setValue("fileAssetId", fileAssetId, { shouldDirty: true, shouldValidate: true });
+                  form.setValue("fileAssetName", uploaded.name, { shouldDirty: true, shouldValidate: true });
+                  setUploadedFileAssetIds((current) => uniqueIds([...current, fileAssetId]));
+                  toast.success("GPX uploaded");
+                }}
+              />
+              {track && parseState ? (
+                <div className="grid gap-3 rounded-md border p-3 text-sm">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">GPX parsing</span>
+                      <Badge variant={getParseStatusVariant(parseState)}>{getParseStatusLabel(parseState)}</Badge>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={isParsing || form.formState.isDirty}
+                      onClick={() => onParse(track)}
+                    >
+                      <RefreshCw className={isParsing ? "animate-spin" : undefined} />
+                      {isParsing ? "Parsing..." : parseState.status === "SUCCESS" ? "Reparse" : "Parse GPX"}
+                    </Button>
+                  </div>
+                  {parseState.status === "SUCCESS" ? (
+                    <div className="flex flex-wrap gap-3 text-muted-foreground">
+                      <span>{formatTrackDistance(parseState.summary.distanceMeters)}</span>
+                      <span>{formatTrackPointCount(parseState.summary.points)}</span>
+                      <span>Parsed {formatDate(parseState.metadata.gpxParse.parsedAt)}</span>
+                    </div>
+                  ) : null}
+                  {parseState.status === "FAILED" || parseState.status === "STALE" ? (
+                    <div className="text-muted-foreground">{parseState.errorMessage}</div>
+                  ) : null}
+                  {form.formState.isDirty ? (
+                    <div className="text-xs text-muted-foreground">
+                      Save track changes before parsing the current GPX file.
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+              <div className="flex justify-end">
+                <Button type="submit" disabled={form.formState.isSubmitting || !fileAssetId}>
+                  {form.formState.isSubmitting ? "Saving..." : "Save track"}
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+      <ConfirmDialog
+        open={discardConfirmOpen}
+        onOpenChange={setDiscardConfirmOpen}
+        title={hasUnsavedUploads ? "Discard track and uploaded GPX?" : "Discard track changes?"}
+        description={
+          hasUnsavedUploads
+            ? "This form has unsaved changes and an uploaded GPX file. Discarding will mark the unsaved uploaded GPX file for deletion before closing."
+            : "This form has unsaved changes. Discarding will close the modal without saving them."
+        }
+        confirmLabel={hasUnsavedUploads ? "Discard and remove file" : "Discard changes"}
+        confirmVariant="destructive"
+        isPending={isDiscarding}
+        onConfirm={handleConfirmDiscard}
+      />
+    </>
   );
 };
 
