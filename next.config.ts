@@ -2,14 +2,14 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   // Prisma uses Node/WASM at runtime; do not bundle it into Server Components / Route Handlers.
-  // sharp ships native libvips binaries; keep it external and force-trace them into the thumbnail
-  // serverless function so Vercel does not 500 with ERR_DLOPEN_FAILED after sharp 0.35+.
+  // sharp ships native libvips binaries; keep it external and force-trace them into serverless functions.
   serverExternalPackages: ["@prisma/client", "@prisma/adapter-pg", "sharp"],
   outputFileTracingIncludes: {
-    "/files/[fileId]/thumbnail": [
+    "/*": [
       "./node_modules/sharp/**/*",
-      "./node_modules/@img/sharp-linux-*/**/*",
-      "./node_modules/@img/sharp-libvips-linux-*/**/*",
+      "./node_modules/@img/sharp*/**/*",
+      "./node_modules/next/node_modules/sharp/**/*",
+      "./node_modules/next/node_modules/@img/sharp*/**/*",
     ],
   },
   async redirects() {

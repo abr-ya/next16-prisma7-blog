@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import sharp from "sharp";
 
 import { getFileAssetForThumbnail } from "@/app/_data/files";
 
@@ -9,10 +8,17 @@ const THUMBNAIL_MAX_EDGE_PX = 640;
 const THUMBNAIL_CACHE_CONTROL = "public, max-age=604800, stale-while-revalidate=86400";
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ fileId: string }> }) {
+  let stage = "start";
+  let fileId: string | null = null;
+
   try {
-    const { fileId } = await params;
+    stage = "params";
+    ({ fileId } = await params);
+
+    stage = "file-access";
     const fileAsset = await getFileAssetForThumbnail(fileId);
 
+    stage = "provider-fetch";
     const providerResponse = await fetch(fileAsset.url);
 
     if (!providerResponse.ok) {
@@ -20,7 +26,13 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       return NextResponse.json({ error: "Failed to retrieve file from storage" }, { status: 500 });
     }
 
+    stage = "provider-bytes";
     const sourceBytes = Buffer.from(await providerResponse.arrayBuffer());
+
+    stage = "sharp-import";
+    const { default: sharp } = await import("sharp");
+
+    stage = "sharp-transform";
     const thumbnailBytes = await sharp(sourceBytes)
       .rotate()
       .resize({
@@ -32,6 +44,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       .webp({ quality: 72 })
       .toBuffer();
 
+    stage = "response";
     const headers = new Headers();
     headers.set("Content-Type", "image/webp");
     headers.set("Content-Length", String(thumbnailBytes.byteLength));
@@ -53,7 +66,13 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       return NextResponse.json({ error: errorMessage }, { status: 403 });
     }
 
-    console.error("Thumbnail route error:", error);
+    console.error("Thumbnail route error:", {
+      stage,
+      fileId,
+      name: error instanceof Error ? error.name : "UnknownError",
+      message: errorMessage,
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
