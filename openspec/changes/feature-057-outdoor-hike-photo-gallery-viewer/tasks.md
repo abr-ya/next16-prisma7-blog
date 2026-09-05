@@ -23,7 +23,7 @@
 
 ## 4. Documentation And Validation
 
-- [ ] 4.1 Update backlog notes or implementation docs that mention hike photo public exposure and the future persistent-thumbnail derivative decision.
+- [x] 4.1 Update backlog notes for feature-057 In Progress plus P1 follow-ups for on-demand thumbnails (`outdoor-photo-persistent-thumbnail-derivatives`) and any-signed-in full-viewer audience (`outdoor-hike-full-photo-viewer-audience`).
 - [ ] 4.2 Run `openspec validate feature-057-outdoor-hike-photo-gallery-viewer --strict`.
 - [ ] 4.3 Run `npm run tsc`.
 - [ ] 4.4 Run `npm run lint` plus targeted ESLint for changed non-`app` files if needed.
