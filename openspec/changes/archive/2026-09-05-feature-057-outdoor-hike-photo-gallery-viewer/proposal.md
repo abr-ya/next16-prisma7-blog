@@ -9,11 +9,11 @@ The current hike photo section renders the original uploaded image file in a sma
 - Add a hike photo gallery viewer for signed-in site users on published hike detail pages.
 - Restrict large/full hike photo image access to authenticated site users while preserving admin access.
 - Replace guest-visible hike photo card images with true technical thumbnails or a server-generated thumbnail-sized response before allowing guests to see image previews.
-- Generate thumbnails on demand in this slice, with cache headers, instead of storing persistent thumbnail derivatives yet.
+- Generate thumbnails on demand in this slice, with cache headers, instead of storing persistent thumbnail derivatives yet (follow-up: `outdoor-photo-persistent-thumbnail-derivatives` in P1 Soon).
+- Allow any authenticated site user to use the large-photo viewer and full-image download in this slice; tighten to creator/participants/admin later (follow-up: `outdoor-hike-full-photo-viewer-audience` in P1 Soon).
 - Preserve guest access to published hike pages and non-sensitive photo titles/descriptions when allowed by the public hike read model.
 - Make the UI distinguish guest preview cards from signed-in full photo viewing without adding standalone public `/photos` routes.
 - Keep draft photos, photos linked only to draft hikes, inactive image files, provider URLs, EXIF/GPS metadata, and extraction errors hidden from public surfaces.
-- Track persistent thumbnail storage as a deliberate follow-up once photo volume, gallery usage, or album workflows justify derivative lifecycle work.
 
 ## Capabilities
 

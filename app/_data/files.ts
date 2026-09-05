@@ -230,70 +230,106 @@ export const recordUploadThingFileAsset = async ({
   return fileAsset;
 };
 
+const publishedHikePhotoImageInclude = {
+  photoImages: {
+    select: {
+      photo: {
+        select: {
+          status: true,
+          hikes: {
+            where: {
+              hike: {
+                status: "PUBLISHED",
+              },
+            },
+            select: {
+              hikeId: true,
+            },
+            take: 1,
+          },
+        },
+      },
+    },
+  },
+} as const;
+
+const isPublishedHikePhotoImageAsset = (fileAsset: {
+  purpose: FileAssetPurpose;
+  photoImages: FileAssetPhotoImageAccess[];
+}) =>
+  fileAsset.purpose === "OUTDOOR_PHOTO_IMAGE" &&
+  fileAsset.photoImages.some(
+    (photoImage) => photoImage.photo.status === "PUBLISHED" && photoImage.photo.hikes.length > 0,
+  );
+
+const assertOwnerOrAdminAccess = async (fileAsset: FileAsset, userId?: string) => {
+  if (!userId) {
+    throw new Error("Authentication required");
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true, role: true },
+  });
+
+  const isOwner = fileAsset.ownerUserId === userId;
+  const isAdmin = user?.role === "admin";
+
+  if (!isOwner && !isAdmin) {
+    throw new Error("Access denied");
+  }
+};
+
 export const getFileAssetForDownload = async (fileId: string, userId?: string) => {
   const fileAsset = await prisma.fileAsset.findUnique({
     where: {
       id: fileId,
     },
-    include: {
-      photoImages: {
-        select: {
-          photo: {
-            select: {
-              status: true,
-              hikes: {
-                where: {
-                  hike: {
-                    status: "PUBLISHED",
-                  },
-                },
-                select: {
-                  hikeId: true,
-                },
-                take: 1,
-              },
-            },
-          },
-        },
-      },
-    },
+    include: publishedHikePhotoImageInclude,
   });
 
   if (!fileAsset || fileAsset.status !== ACTIVE_FILE_STATUS) {
     throw new Error("File not found");
   }
 
-  const isPublishedHikePhotoImage =
-    fileAsset.purpose === "OUTDOOR_PHOTO_IMAGE" &&
-    (fileAsset.photoImages as FileAssetPhotoImageAccess[]).some(
-      (photoImage) => photoImage.photo.status === "PUBLISHED" && photoImage.photo.hikes.length > 0,
-    );
+  if (isPublishedHikePhotoImageAsset(fileAsset)) {
+    if (!userId) {
+      throw new Error("Authentication required");
+    }
 
-  if (isPublishedHikePhotoImage) {
     return fileAsset;
   }
 
   // Check access based on visibility
   if (fileAsset.visibility === "PRIVATE") {
-    if (!userId) {
-      throw new Error("Authentication required");
-    }
-
-    // Allow owner or admin
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { id: true, role: true },
-    });
-
-    const isOwner = fileAsset.ownerUserId === userId;
-    const isAdmin = user?.role === "admin";
-
-    if (!isOwner && !isAdmin) {
-      throw new Error("Access denied");
-    }
+    await assertOwnerOrAdminAccess(fileAsset, userId);
   }
 
   // PUBLIC and UNLISTED files are accessible to anyone with the link
+
+  return fileAsset;
+};
+
+/** Guest-safe thumbnail access for published hike-linked outdoor photo images only. */
+export const getFileAssetForThumbnail = async (fileId: string) => {
+  const fileAsset = await prisma.fileAsset.findUnique({
+    where: {
+      id: fileId,
+    },
+    include: publishedHikePhotoImageInclude,
+  });
+
+  if (!fileAsset || fileAsset.status !== ACTIVE_FILE_STATUS) {
+    throw new Error("File not found");
+  }
+
+  if (!isPublishedHikePhotoImageAsset(fileAsset)) {
+    throw new Error("Access denied");
+  }
+
+  if (!fileAsset.mimeType.startsWith("image/")) {
+    throw new Error("Access denied");
+  }
 
   return fileAsset;
 };

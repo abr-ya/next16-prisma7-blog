@@ -76,7 +76,7 @@ The system SHALL expose the photo admin page through the admin navigation for au
 
 ### Requirement: Photo publication status is stored without standalone public gallery exposure
 
-The system SHALL store whether a photo is draft or published while exposing published photos publicly only through accepted hike-linked surfaces until a standalone public photo gallery is explicitly added.
+The system SHALL store whether a photo is draft or published while exposing published photos publicly only through accepted hike-linked surfaces until a standalone public photo gallery is explicitly added. Hike-linked guest image exposure SHALL be limited to true technical thumbnails, and full-size photo image access SHALL require an authenticated site user.
 
 #### Scenario: Admin marks photo as published
 
@@ -88,6 +88,8 @@ The system SHALL store whether a photo is draft or published while exposing publ
 
 - **WHEN** a published photo is associated with a published hike
 - **THEN** the photo becomes eligible to appear on that hike's public detail page
+- **AND** anonymous visitors may receive only thumbnail-sized image responses for that photo
+- **AND** authenticated site users may access the large-photo viewing experience for that photo
 - **AND** it does not create a standalone public photo detail route or global public photo listing
 
 #### Scenario: Visitor cannot browse photos through standalone photo routes

@@ -3,7 +3,15 @@ export { Avatar, AvatarImage, AvatarFallback } from "./ui/avatar";
 export { Badge } from "./ui/badge";
 export { Button } from "./ui/button";
 export { Card, CardContent, CardHeader, CardTitle, CardDescription } from "./ui/card";
-export { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
+export {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "./ui/dialog";
 export { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "./ui/form";
 export { Input } from "./ui/input";
 export * from "./ui/navigation-menu";

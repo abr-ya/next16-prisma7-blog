@@ -1,12 +1,14 @@
-import { CalendarDays, ImageIcon, Route } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { CalendarDays, Route } from "lucide-react";
 
 import { getPublicHikeBySlug } from "@/app/_data/hikes";
+import { HikePhotoGallery, type HikePhotoGalleryItem } from "@/components/hike-pages/hike-photo-gallery";
 import { HikeTrackMap } from "@/components/hike-pages/hike-track-map";
 import { Badge, Button } from "@/components/index";
 import { PageLayout } from "@/components/layout/page-layout";
+import { authSession } from "@/lib/auth-utils";
 import { formatHikeDateRange, formatHikeType } from "@/lib/hikes";
 import { buildPageMetadata, getTextMetadataDescription } from "@/lib/site-metadata";
 
@@ -36,11 +38,24 @@ export const generateMetadata = async ({ params }: HikePageProps): Promise<Metad
 
 const HikePage = async ({ params }: HikePageProps) => {
   const { slug } = await params;
-  const hike = await getPublicHikeBySlug(slug);
+  const [hike, session] = await Promise.all([getPublicHikeBySlug(slug), authSession()]);
 
   if (!hike) notFound();
 
+  const canViewFullPhotos = Boolean(session?.user?.id);
   const mappedTracks = hike.tracks.flatMap(({ track }) => (track.map ? [track.map] : []));
+  const galleryPhotos: HikePhotoGalleryItem[] = hike.photos.map(({ photo }) => {
+    const preview = photo.images.at(0)?.fileAsset;
+
+    return {
+      id: photo.id,
+      title: photo.title,
+      description: photo.description,
+      alt: preview?.name || photo.title,
+      thumbnailUrl: preview ? `/files/${preview.id}/thumbnail` : null,
+      fullUrl: canViewFullPhotos && preview ? `/files/${preview.id}/download?disposition=inline` : null,
+    };
+  });
 
   return (
     <PageLayout title={hike.title} className="pt-6" showBackLink={false}>
@@ -88,40 +103,7 @@ const HikePage = async ({ params }: HikePageProps) => {
             </div>
           </section>
         ) : null}
-        {hike.photos.length > 0 ? (
-          <section className="grid gap-3">
-            <h2 className="text-base font-semibold">Photos</h2>
-            <div className="grid gap-4 sm:grid-cols-2">
-              {hike.photos.map(({ photo }) => {
-                const preview = photo.images.at(0)?.fileAsset;
-
-                return (
-                  <div key={photo.id} className="overflow-hidden rounded-md border">
-                    <div className="aspect-[4/3] bg-muted">
-                      {preview ? (
-                        <img
-                          src={`/files/${preview.id}/download?disposition=inline`}
-                          alt={preview.name || photo.title}
-                          className="size-full object-cover"
-                        />
-                      ) : (
-                        <div className="flex size-full items-center justify-center text-muted-foreground">
-                          <ImageIcon className="size-6" />
-                        </div>
-                      )}
-                    </div>
-                    <div className="grid gap-1 p-3">
-                      <div className="font-medium">{photo.title}</div>
-                      {photo.description ? (
-                        <p className="line-clamp-2 text-sm text-muted-foreground">{photo.description}</p>
-                      ) : null}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </section>
-        ) : null}
+        <HikePhotoGallery photos={galleryPhotos} canViewFullPhotos={canViewFullPhotos} />
       </article>
     </PageLayout>
   );

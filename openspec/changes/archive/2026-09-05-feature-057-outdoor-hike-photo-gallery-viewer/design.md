@@ -20,6 +20,16 @@ See `proposal.md` for motivation. The current public hike photo section renders 
 - No participant-only policy yet; any signed-in site user may use the full viewer in this slice.
 - No comments, reactions, albums, map markers, or photo upload-from-hike workflow.
 - No bulk migration that rewrites existing original image assets.
+- No persistent thumbnail derivative storage, cleanup, or multi-size catalog in this slice.
+
+## Deferred Simplifications (tracked in backlog)
+
+These are intentional short-cuts for this slice. Each has a P1 Soon backlog follow-up so the simplification is not forgotten.
+
+| Simplification in feature-057 | Why simplified now | Backlog follow-up (P1 Soon) |
+| --- | --- | --- |
+| On-demand thumbnail bytes with cache headers; no stored derivatives | Prove guest thumbnail vs authenticated full-image boundaries without derivative lifecycle, UploadThing storage, cleanup, or migration scope | `outdoor-photo-persistent-thumbnail-derivatives` |
+| Any authenticated site user may open the large viewer and fetch full hike photo images | Participants membership is not shipped yet; this slice only needs anonymous vs signed-in | `outdoor-hike-full-photo-viewer-audience` (depends on `outdoor-hike-participants`) |
 
 ## Decisions
 
@@ -41,7 +51,7 @@ Alternative considered: rely on provider-side transformations. The current Uploa
 
 This slice should generate thumbnail bytes on request and rely on bounded dimensions plus aggressive cache headers. It should not store thumbnail derivatives in the database, UploadThing, or local filesystem yet.
 
-This is an explicit short-term decision, not the final media architecture. Persistent thumbnail derivatives should be revisited after the large-photo viewer is proven, especially if photo counts grow, repeated thumbnail generation becomes expensive, galleries/albums need multiple sizes, or cleanup/regeneration workflows become necessary.
+This is an explicit short-term decision, not the final media architecture. Persistent thumbnail derivatives are tracked as P1 Soon follow-up `outdoor-photo-persistent-thumbnail-derivatives` and should be revisited after the large-photo viewer is proven, especially if photo counts grow, repeated thumbnail generation becomes expensive, galleries/albums need multiple sizes, or cleanup/regeneration workflows become necessary.
 
 Alternative considered: create and store derivative `FileAsset` rows immediately. That would improve repeat performance and make thumbnail URLs more stable, but it adds derivative lifecycle, cleanup, regeneration, and migration scope before the access boundary itself has been proven.
 
@@ -61,9 +71,9 @@ Alternative considered: fetch full photo data from the client when opening the v
 
 - Thumbnail generation can add response cost -> Mitigation: cache generated thumbnail responses aggressively and keep dimensions bounded.
 - First request for a thumbnail fetches the original provider asset server-side -> Mitigation: no provider URL is exposed to clients and metadata is stripped from the returned derivative.
-- On-demand thumbnails may not scale indefinitely -> Mitigation: track persistent derivative storage as a follow-up decision after real usage and gallery needs are clearer.
+- On-demand thumbnails may not scale indefinitely -> Mitigation: P1 follow-up `outdoor-photo-persistent-thumbnail-derivatives` after real usage and gallery needs are clearer.
 - Adding `sharp` can affect install/build behavior -> Mitigation: pin it as a normal dependency and include build validation.
-- Any signed-in user can view full photos in this slice -> Mitigation: document it explicitly and leave creator/participant restrictions to the later participants feature.
+- Any signed-in user can view full photos in this slice -> Mitigation: documented explicitly; P1 follow-up `outdoor-hike-full-photo-viewer-audience` after `outdoor-hike-participants`.
 - Existing image URLs may be cached by browsers during development -> Mitigation: change public hike image `src` to the new thumbnail URL so behavior is easy to verify.
 
 ## Migration Plan
