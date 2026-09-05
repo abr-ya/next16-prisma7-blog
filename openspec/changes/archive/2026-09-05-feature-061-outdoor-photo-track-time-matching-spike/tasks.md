@@ -20,4 +20,4 @@
 - [x] 3.3 Run `npm run tsc`.
 - [x] 3.4 Run `npm run lint` plus targeted ESLint for changed non-`app` files if needed.
 - [x] 3.5 Ask the user to run `npm run build` locally if UI/routes changed.
-- [ ] 3.6 Manually verify admin-only access and accept→log behavior with inside-window, between-tracks, and missing-time cases.
+- [x] 3.6 Manually verify admin-only access and accept→log behavior with inside-window, between-tracks, and missing-time cases.

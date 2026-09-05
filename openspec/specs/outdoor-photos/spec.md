@@ -200,7 +200,19 @@ The system SHALL distinguish photo coordinates by source so direct EXIF GPS, inf
 
 ### Requirement: Inferred photo coordinates require confidence and review
 
-The system SHALL require timestamp-inferred photo coordinates to carry enough provenance and confidence information for admin review before public hike map display.
+The system SHALL require timestamp-inferred photo coordinates to carry enough provenance and confidence information for admin review before public hike map display. An admin-only matching spike may present non-persistent candidates and log an accepted suggestion before that persistence/review model exists.
+
+#### Scenario: Spike proposes a track-time candidate
+
+- **WHEN** an authenticated admin opens the track-time matching spike for a hike-linked photo that lacks direct EXIF GPS but has a usable capture timestamp
+- **THEN** the system may show zero or more candidate explanations based on linked track recording windows and simple between-track gaps
+- **AND** it does not write inferred coordinates to the photo record in this spike
+
+#### Scenario: Admin accepts a spike candidate
+
+- **WHEN** an authenticated admin accepts one spike candidate
+- **THEN** the system logs the accepted candidate details for evaluation
+- **AND** the public hike map does not gain an inferred marker from that acceptance
 
 #### Scenario: Inference creates a candidate coordinate
 

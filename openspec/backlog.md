@@ -40,7 +40,6 @@ These candidates track the hikes/tracks/photos initiative as small increments. T
 
 | Order | Status | Candidate | Area | Summary |
 | --- | --- | --- | --- | --- |
-| 8 | Ready | feature-061-outdoor-photo-track-time-matching-spike | outdoor/maps-photos | Admin-only spike after feature-060: for hike-linked photos without EXIF GPS, propose track-time match candidates (inside a track recording window, or between nearby adjacent tracks), show them in a modal, and on accept only log the choice — no persistence and no public inferred markers. |
 | 9 | Candidate | outdoor-photo-track-time-inferred-coordinates | outdoor/maps-photos | After feature-061 spike learnings: persist inferred photo coordinates from capture timestamps and track timelines, with provenance, confidence, admin approval, and manual correction before public map display. May also require retaining timestamped trackpoint context beyond start/end summaries. |
 | 10 | Candidate | outdoor-hike-map-day-filter | outdoor/maps | Add an all-days/single-day map filter for linked track geometry and photo markers after temporal semantics and coordinate sources are accepted. |
 | 11 | Candidate | outdoor-hike-map-notes-layer | outdoor/maps-notes | Add hike notes as a future map layer after the hike note entity is designed, including coordinate/date visibility and public/private boundaries. |
