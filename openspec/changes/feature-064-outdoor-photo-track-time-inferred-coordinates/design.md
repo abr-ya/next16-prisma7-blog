@@ -47,9 +47,9 @@ Rationale: camera GPS is stronger evidence than track-time inference. Inference 
 
 On GPX parse/refresh, when enough `<trkpt>` values include usable times, store a downsampled `timeline` (or equivalent) of `{ time, lat, lng }` points under track metadata, keeping existing `mapGeometry` for polylines.
 
-Use that timeline to interpolate lat/lng for **inside track window** accepts. For **between adjacent tracks**, continue using endpoint midpoint when endpoints are within the existing nearness threshold.
+Use that timeline to interpolate lat/lng for **inside track window** accepts. For **between adjacent tracks**, continue using endpoint midpoint when endpoints are within the existing nearness threshold. For **after track finish**, use the finished track's end point: same-day gaps stay within the short gap budget; when the photo falls on a later calendar day than the finish, allow the window until the first track of the photo's capture day starts and label the placement as yesterday's / previous-day finish in the review modal and persisted explanation.
 
-If a track has time start/end but no usable timed points after parse, do not invent along-route coordinates from start/end alone; the admin UI may still show an explanatory candidate, but persistence requires a resolvable lat/lng strategy (timeline interpolation or between-track midpoint / manual lat/lng).
+If a track has time start/end but no usable timed points after parse, do not invent along-route coordinates from start/end alone; the admin UI may still show an explanatory candidate, but persistence requires a resolvable lat/lng strategy (timeline interpolation, between-track midpoint, finish endpoint, or manual lat/lng).
 
 Alternative considered: re-parse GPX on every approve. Rejected because public/admin pages should keep reading stored metadata, and re-fetching private GPX on each review is fragile.
 

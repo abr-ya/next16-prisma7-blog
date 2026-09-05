@@ -44,6 +44,7 @@ import {
   formatTrackPointCount,
   formatTrackRecordingTimeRange,
   formatTrackTimezoneEvidence,
+  formatTrackTimelinePresence,
   getTrackGpxMetadataState,
   type TrackGpxMetadataState,
 } from "@/lib/track-gpx-metadata";
@@ -102,6 +103,7 @@ const TrackParseStatus = ({ track }: { track: TrackListItem }) => {
   const state = getTrackParseState(track);
   const distance = state.status === "SUCCESS" ? formatTrackDistance(state.summary.distanceMeters) : null;
   const points = state.status === "SUCCESS" ? formatTrackPointCount(state.summary.points) : null;
+  const timeline = state.status === "SUCCESS" ? formatTrackTimelinePresence(state.timeline) : null;
   const recordingTime = state.status === "SUCCESS" ? formatTrackRecordingTimeRange(state.summary.time) : null;
 
   return (
@@ -112,6 +114,9 @@ const TrackParseStatus = ({ track }: { track: TrackListItem }) => {
           <Badge variant={state.summary.time.timezoneEvidence === "UTC_OR_OFFSET" ? "secondary" : "outline"}>
             {formatTrackTimezoneEvidence(state.summary.time.timezoneEvidence)}
           </Badge>
+        ) : null}
+        {state.status === "SUCCESS" ? (
+          <Badge variant={state.timeline && state.timeline.length > 0 ? "secondary" : "outline"}>{timeline}</Badge>
         ) : null}
       </div>
       {state.status === "SUCCESS" ? (
@@ -428,6 +433,7 @@ const TrackFormDialog = ({
                       <div className="flex flex-wrap gap-3">
                         <span>{formatTrackDistance(parseState.summary.distanceMeters)}</span>
                         <span>{formatTrackPointCount(parseState.summary.points)}</span>
+                        <span>{formatTrackTimelinePresence(parseState.timeline)}</span>
                         <span>Parsed {formatDate(parseState.metadata.gpxParse.parsedAt)}</span>
                       </div>
                       {parseState.summary.time ? (

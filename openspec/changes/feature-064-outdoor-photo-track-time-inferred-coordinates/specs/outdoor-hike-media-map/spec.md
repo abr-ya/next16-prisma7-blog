@@ -39,6 +39,13 @@ The system SHALL treat timestamp-based photo-to-track coordinate inference as an
 - **THEN** an admin review flow may propose a between-tracks candidate with a resolvable coordinate such as an endpoint midpoint
 - **AND** approving that candidate persists the inferred coordinate rather than only logging it
 
+#### Scenario: Photo is after previous-day track finish before today's first track
+
+- **WHEN** a linked published photo has a stored capture timestamp on a later calendar day than a linked track's finish, and no later attached track has started yet (or the first track of the photo's capture day has not started)
+- **THEN** an admin review flow may propose an after-finish candidate using that previous track's finish point
+- **AND** the candidate and persisted provenance explicitly identify the placement as yesterday's / previous-day finish
+- **AND** approving that candidate persists the inferred finish coordinate for later public use when review status is approved
+
 #### Scenario: Time data is missing or ambiguous
 
 - **WHEN** a linked photo or linked track lacks usable timestamp data, timed points needed for a resolvable coordinate, timezone context, or confidence needed for a proposal

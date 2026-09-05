@@ -50,6 +50,34 @@ export type PhotoExifSummary = {
 
 export type PhotoExifSafeRaw = Record<string, string | number | boolean | null>;
 
+export type PhotoMapCoordinateSource = "INFERRED_TRACK_TIME" | "MANUALLY_CORRECTED";
+export type PhotoMapCoordinateStatus = "PENDING_REVIEW" | "APPROVED" | "REJECTED";
+export type PhotoMapCoordinatePlacementMethod =
+  | "TIMELINE_INTERPOLATION"
+  | "ENDPOINT_MIDPOINT"
+  | "TRACK_FINISH_ENDPOINT"
+  | "PREVIOUS_DAY_FINISH_ENDPOINT"
+  | "MANUAL_OVERRIDE"
+  | "UNRESOLVED";
+
+export type PhotoMapCoordinateCandidateType = "INSIDE_TRACK_WINDOW" | "BETWEEN_ADJACENT_TRACKS" | "AFTER_TRACK_FINISH";
+
+export type PhotoMapCoordinate = {
+  lat: number | null;
+  lng: number | null;
+  source: PhotoMapCoordinateSource;
+  status: PhotoMapCoordinateStatus;
+  candidateId: string | null;
+  candidateType: PhotoMapCoordinateCandidateType | null;
+  placementMethod: PhotoMapCoordinatePlacementMethod;
+  trackIds: string[];
+  capturedAt: string | null;
+  confidence: "HIGH" | "MEDIUM" | "LOW" | null;
+  explanation: string | null;
+  reviewedAt: string | null;
+  reviewedByUserId: string | null;
+};
+
 export type PhotoExifMetadata = {
   exifParse: {
     status: PhotoExifParseStatus;
@@ -61,6 +89,7 @@ export type PhotoExifMetadata = {
   summary: PhotoExifSummary | null;
   images: PhotoExifImageSummary[] | null;
   raw: PhotoExifSafeRaw | null;
+  mapCoordinate?: PhotoMapCoordinate | null;
 };
 
 export type PhotoExifMetadataState =
@@ -184,6 +213,70 @@ const isSafeRaw = (value: unknown): value is PhotoExifSafeRaw => {
   );
 };
 
+const isPhotoMapCoordinateSource = (value: unknown): value is PhotoMapCoordinateSource =>
+  value === "INFERRED_TRACK_TIME" || value === "MANUALLY_CORRECTED";
+
+const isPhotoMapCoordinateStatus = (value: unknown): value is PhotoMapCoordinateStatus =>
+  value === "PENDING_REVIEW" || value === "APPROVED" || value === "REJECTED";
+
+const isPhotoMapCoordinatePlacementMethod = (value: unknown): value is PhotoMapCoordinatePlacementMethod =>
+  value === "TIMELINE_INTERPOLATION" ||
+  value === "ENDPOINT_MIDPOINT" ||
+  value === "TRACK_FINISH_ENDPOINT" ||
+  value === "PREVIOUS_DAY_FINISH_ENDPOINT" ||
+  value === "MANUAL_OVERRIDE" ||
+  value === "UNRESOLVED";
+
+const isPhotoMapCoordinateCandidateType = (value: unknown): value is PhotoMapCoordinateCandidateType =>
+  value === "INSIDE_TRACK_WINDOW" || value === "BETWEEN_ADJACENT_TRACKS" || value === "AFTER_TRACK_FINISH";
+
+const normalizeMapCoordinate = (value: unknown): PhotoMapCoordinate | null => {
+  if (value === null || value === undefined) return null;
+  if (!isRecord(value)) return null;
+  if (!isPhotoMapCoordinateSource(value.source) || !isPhotoMapCoordinateStatus(value.status)) return null;
+  if (!isPhotoMapCoordinatePlacementMethod(value.placementMethod)) return null;
+  if (!isOptionalNullableFiniteNumber(value.lat) || !isOptionalNullableFiniteNumber(value.lng)) return null;
+  if (value.candidateId !== null && typeof value.candidateId !== "string") return null;
+  if (value.candidateType !== null && !isPhotoMapCoordinateCandidateType(value.candidateType)) {
+    return null;
+  }
+  if (!Array.isArray(value.trackIds) || !value.trackIds.every((id) => typeof id === "string")) return null;
+  if (value.capturedAt !== null && !isIsoDateString(value.capturedAt)) return null;
+  if (
+    value.confidence !== null &&
+    value.confidence !== "HIGH" &&
+    value.confidence !== "MEDIUM" &&
+    value.confidence !== "LOW"
+  ) {
+    return null;
+  }
+  if (value.explanation !== null && typeof value.explanation !== "string") return null;
+  if (value.reviewedAt !== null && !isIsoDateString(value.reviewedAt)) return null;
+  if (value.reviewedByUserId !== null && typeof value.reviewedByUserId !== "string") return null;
+
+  const lat = readOptionalNullableNumber(value.lat);
+  const lng = readOptionalNullableNumber(value.lng);
+
+  if ((lat === null) !== (lng === null)) return null;
+  if (lat !== null && lng !== null && !isValidGps(lat, lng)) return null;
+
+  return {
+    lat,
+    lng,
+    source: value.source,
+    status: value.status,
+    candidateId: value.candidateId,
+    candidateType: value.candidateType,
+    placementMethod: value.placementMethod,
+    trackIds: value.trackIds,
+    capturedAt: value.capturedAt,
+    confidence: value.confidence,
+    explanation: value.explanation,
+    reviewedAt: value.reviewedAt,
+    reviewedByUserId: value.reviewedByUserId,
+  };
+};
+
 const sourceImagesFingerprint = (images: PhotoExifSourceImage[]) =>
   images
     .slice()
@@ -237,6 +330,7 @@ export const readPhotoExifMetadata = (value: Prisma.JsonValue | null | undefined
           })()
         : null;
   const raw = value.raw === null ? null : isSafeRaw(value.raw) ? value.raw : null;
+  const mapCoordinate = value.mapCoordinate === undefined ? undefined : normalizeMapCoordinate(value.mapCoordinate);
 
   return {
     exifParse: {
@@ -253,6 +347,7 @@ export const readPhotoExifMetadata = (value: Prisma.JsonValue | null | undefined
     summary,
     images,
     raw,
+    ...(mapCoordinate !== undefined ? { mapCoordinate } : {}),
   };
 };
 
@@ -292,12 +387,14 @@ export const createSuccessfulPhotoExifMetadata = ({
   summary,
   images,
   raw = null,
+  mapCoordinate,
 }: {
   parsedAt?: Date;
   sourceImages: PhotoExifSourceImage[];
   summary: PhotoExifSummary;
   images: PhotoExifImageSummary[];
   raw?: PhotoExifSafeRaw | null;
+  mapCoordinate?: PhotoMapCoordinate | null;
 }): PhotoExifMetadata => ({
   exifParse: {
     status: "SUCCESS",
@@ -308,16 +405,19 @@ export const createSuccessfulPhotoExifMetadata = ({
   summary,
   images,
   raw,
+  ...(mapCoordinate !== undefined ? { mapCoordinate } : {}),
 });
 
 export const createFailedPhotoExifMetadata = ({
   parsedAt = new Date(),
   sourceImages,
   errorMessage,
+  mapCoordinate,
 }: {
   parsedAt?: Date;
   sourceImages: PhotoExifSourceImage[];
   errorMessage: string;
+  mapCoordinate?: PhotoMapCoordinate | null;
 }): PhotoExifMetadata => ({
   exifParse: {
     status: "FAILED",
@@ -329,7 +429,30 @@ export const createFailedPhotoExifMetadata = ({
   summary: null,
   images: null,
   raw: null,
+  ...(mapCoordinate !== undefined ? { mapCoordinate } : {}),
 });
+
+export const withPhotoMapCoordinate = (
+  metadata: PhotoExifMetadata,
+  mapCoordinate: PhotoMapCoordinate | null,
+): PhotoExifMetadata => ({
+  ...metadata,
+  mapCoordinate,
+});
+
+export const getPhotoMapCoordinate = (value: Prisma.JsonValue | null | undefined): PhotoMapCoordinate | null => {
+  const metadata = readPhotoExifMetadata(value);
+
+  return metadata?.mapCoordinate ?? null;
+};
+
+export const formatPhotoMapCoordinateStatus = (status?: PhotoMapCoordinateStatus | null) => {
+  if (status === "APPROVED") return "Approved map coord";
+  if (status === "REJECTED") return "Rejected map coord";
+  if (status === "PENDING_REVIEW") return "Pending map coord";
+
+  return null;
+};
 
 export const markPhotoExifMetadataStale = (
   value: Prisma.JsonValue | null | undefined,

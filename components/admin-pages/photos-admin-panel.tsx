@@ -119,15 +119,15 @@ const getMetadataStatusVariant = (state: PhotoExifMetadataState) => {
 
 const PhotoMetadataStatus = ({ photo }: { photo: PhotoListItem }) => {
   const state = getPhotoMetadataState(photo);
-  const summaryLines =
-    state.status === "SUCCESS"
-      ? (
-          [
-            ["capturedAt", formatPhotoCapturedAt(state.summary.capturedAt)],
-            ["camera", state.summary.cameraLabel],
-          ] as const
-        ).filter((entry): entry is readonly [string, string] => Boolean(entry[1]))
-      : [];
+  const summaryLines: Array<readonly [string, string]> = [];
+
+  if (state.status === "SUCCESS") {
+    const capturedAt = formatPhotoCapturedAt(state.summary.capturedAt);
+    const camera = state.summary.cameraLabel;
+
+    if (capturedAt) summaryLines.push(["capturedAt", capturedAt]);
+    if (camera) summaryLines.push(["camera", camera]);
+  }
 
   return (
     <div className="flex max-w-44 flex-col gap-1">
@@ -157,20 +157,18 @@ const PhotoExifTechDetails = ({ photo }: { photo: PhotoListItem }) => {
     return <span className="text-sm text-muted-foreground">—</span>;
   }
 
-  const techLines = (
-    [
-      ["dimensions", formatPhotoDimensions(state.summary.width, state.summary.height)],
-      [
-        "exposure",
-        formatPhotoExposureTriplet({
-          exposureTime: state.summary.exposureTime,
-          fNumber: state.summary.fNumber,
-          focalLength: state.summary.focalLength,
-        }),
-      ],
-      ["gps", formatPhotoGpsPresence(state.summary.gps)],
-    ] as const
-  ).filter((entry): entry is readonly [string, string] => Boolean(entry[1]));
+  const techLines: Array<readonly [string, string]> = [];
+  const dimensions = formatPhotoDimensions(state.summary.width, state.summary.height);
+  const exposure = formatPhotoExposureTriplet({
+    exposureTime: state.summary.exposureTime,
+    fNumber: state.summary.fNumber,
+    focalLength: state.summary.focalLength,
+  });
+  const gps = formatPhotoGpsPresence(state.summary.gps);
+
+  if (dimensions) techLines.push(["dimensions", dimensions]);
+  if (exposure) techLines.push(["exposure", exposure]);
+  if (gps) techLines.push(["gps", gps]);
 
   if (techLines.length === 0) {
     return <span className="text-sm text-muted-foreground">—</span>;

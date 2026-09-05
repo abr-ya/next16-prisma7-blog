@@ -17,6 +17,10 @@ export type TrackGpxCoordinate = {
   lng: number;
 };
 
+export type TrackGpxTimedPoint = TrackGpxCoordinate & {
+  time: string;
+};
+
 export type TrackGpxElevationSummary = {
   minMeters: number;
   maxMeters: number;
@@ -55,11 +59,19 @@ export type TrackGpxMetadata = {
   };
   summary: TrackGpxSummary | null;
   mapGeometry: TrackGpxCoordinate[] | null;
+  /** Compact timed points for photo inference; null/absent on older parses. */
+  timeline: TrackGpxTimedPoint[] | null;
 };
 
 export type TrackGpxMetadataState =
   | { status: "MISSING"; metadata: null }
-  | { status: "SUCCESS"; metadata: TrackGpxMetadata; summary: TrackGpxSummary; mapGeometry: TrackGpxCoordinate[] }
+  | {
+      status: "SUCCESS";
+      metadata: TrackGpxMetadata;
+      summary: TrackGpxSummary;
+      mapGeometry: TrackGpxCoordinate[];
+      timeline: TrackGpxTimedPoint[] | null;
+    }
   | { status: "FAILED"; metadata: TrackGpxMetadata; errorMessage: string }
   | { status: "STALE"; metadata: TrackGpxMetadata; errorMessage: string | null };
 
@@ -80,6 +92,9 @@ const isBounds = (value: unknown): value is TrackGpxBounds =>
 
 const isCoordinate = (value: unknown): value is TrackGpxCoordinate =>
   isRecord(value) && isFiniteNumber(value.lat) && isFiniteNumber(value.lng);
+
+const isTimedPoint = (value: unknown): value is TrackGpxTimedPoint =>
+  isRecord(value) && isFiniteNumber(value.lat) && isFiniteNumber(value.lng) && isIsoDateString(value.time);
 
 const isPointSummary = (value: unknown): value is TrackGpxPointSummary =>
   isRecord(value) && isFiniteNumber(value.source) && isFiniteNumber(value.simplified);
@@ -146,6 +161,12 @@ export const readTrackGpxMetadata = (value: Prisma.JsonValue | null | undefined)
         : null;
   const mapGeometry =
     Array.isArray(value.mapGeometry) && value.mapGeometry.every(isCoordinate) ? value.mapGeometry : null;
+  const timeline =
+    value.timeline === undefined || value.timeline === null
+      ? null
+      : Array.isArray(value.timeline) && value.timeline.every(isTimedPoint)
+        ? value.timeline
+        : null;
 
   return {
     gpxParse: {
@@ -158,6 +179,7 @@ export const readTrackGpxMetadata = (value: Prisma.JsonValue | null | undefined)
     },
     summary,
     mapGeometry,
+    timeline,
   };
 };
 
@@ -182,7 +204,13 @@ export const getTrackGpxMetadataState = (
   }
 
   if (metadata.summary && metadata.mapGeometry) {
-    return { status: "SUCCESS", metadata, summary: metadata.summary, mapGeometry: metadata.mapGeometry };
+    return {
+      status: "SUCCESS",
+      metadata,
+      summary: metadata.summary,
+      mapGeometry: metadata.mapGeometry,
+      timeline: metadata.timeline,
+    };
   }
 
   return { status: "STALE", metadata, errorMessage: "Parsed GPX metadata is incomplete" };
@@ -218,12 +246,14 @@ export const createSuccessfulTrackGpxMetadata = ({
   sourceFileKey,
   summary,
   mapGeometry,
+  timeline = null,
 }: {
   parsedAt?: Date;
   sourceFileAssetId: string;
   sourceFileKey: string;
   summary: TrackGpxSummary;
   mapGeometry: TrackGpxCoordinate[];
+  timeline?: TrackGpxTimedPoint[] | null;
 }): TrackGpxMetadata => ({
   gpxParse: {
     status: "SUCCESS",
@@ -234,6 +264,7 @@ export const createSuccessfulTrackGpxMetadata = ({
   },
   summary,
   mapGeometry,
+  timeline,
 });
 
 export const createFailedTrackGpxMetadata = ({
@@ -257,6 +288,7 @@ export const createFailedTrackGpxMetadata = ({
   },
   summary: null,
   mapGeometry: null,
+  timeline: null,
 });
 
 export const markTrackGpxMetadataStale = (
@@ -285,6 +317,7 @@ export const markTrackGpxMetadataStale = (
     },
     summary: null,
     mapGeometry: null,
+    timeline: null,
   };
 };
 
@@ -359,3 +392,12 @@ export const formatTrackPointCount = (points?: TrackGpxPointSummary | null) => {
 
   return `${integerFormat.format(points.simplified)} / ${integerFormat.format(points.source)} points`;
 };
+
+export const formatTrackTimelinePresence = (timeline?: TrackGpxTimedPoint[] | null) => {
+  if (!timeline || timeline.length === 0) return "No timed timeline";
+
+  return `Timeline ${integerFormat.format(timeline.length)} pts`;
+};
+
+export const hasTrackTimedTimeline = (timeline?: TrackGpxTimedPoint[] | null) =>
+  Array.isArray(timeline) && timeline.length > 0;
