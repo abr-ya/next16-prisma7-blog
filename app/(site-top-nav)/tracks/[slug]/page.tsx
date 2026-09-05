@@ -16,6 +16,8 @@ import {
   formatTrackElevationGainLoss,
   formatTrackElevationRange,
   formatTrackPointCount,
+  formatTrackRecordingDateTime,
+  formatTrackTimezoneEvidence,
 } from "@/lib/track-gpx-metadata";
 
 type TrackPageProps = {
@@ -111,10 +113,26 @@ const TrackPage = async ({ params }: TrackPageProps) => {
                 </>
               ) : null}
               {track.parsed.summary.time ? (
-                <div>
-                  <div className="text-muted-foreground">Duration</div>
-                  <div className="font-medium">{formatTrackDuration(track.parsed.summary.time.durationSeconds)}</div>
-                </div>
+                <>
+                  <div>
+                    <div className="text-muted-foreground">Recording start</div>
+                    <div className="font-medium">{formatTrackRecordingDateTime(track.parsed.summary.time.start)}</div>
+                  </div>
+                  <div>
+                    <div className="text-muted-foreground">Recording finish</div>
+                    <div className="font-medium">{formatTrackRecordingDateTime(track.parsed.summary.time.end)}</div>
+                  </div>
+                  <div>
+                    <div className="text-muted-foreground">Duration</div>
+                    <div className="font-medium">{formatTrackDuration(track.parsed.summary.time.durationSeconds)}</div>
+                  </div>
+                  <div>
+                    <div className="text-muted-foreground">Timezone evidence</div>
+                    <div className="font-medium">
+                      {formatTrackTimezoneEvidence(track.parsed.summary.time.timezoneEvidence)}
+                    </div>
+                  </div>
+                </>
               ) : null}
             </div>
           </section>

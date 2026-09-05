@@ -71,6 +71,8 @@ Cancelled or deferred candidates do not reserve feature numbers.
 | feature-059 | feature-059-outdoor-hike-combined-track-map | outdoor/maps | Add one map under the hike detail title/description that renders all linked visible tracks together and frames the combined bounds, without photo markers or day filtering yet. |
 | feature-060 | feature-060-outdoor-photo-gps-map-markers | outdoor/maps-photos | Place linked published hike photos with stored direct EXIF GPS on the public hike map as visibility-safe markers with title/thumbnail tooltips, including marker-only maps when no tracks are present. |
 | feature-061 | feature-061-outdoor-photo-track-time-matching-spike | outdoor/maps-photos | Add an admin-only spike for hike-linked photos without EXIF GPS: propose track-time match candidates from linked track recording windows or nearby adjacent tracks and log accepted choices without persisting inferred coordinates or public markers. |
+| feature-062 | feature-062-admin-track-modal-dirty-close-guard | admin/tracks-files | Guard the admin track modal against accidental dismissal when unsaved edits or newly uploaded GPX files exist, confirming discard and moving unsaved uploaded GPX file assets into the pending-delete lifecycle. |
+| feature-063 | feature-063-outdoor-track-recording-time-summary | outdoor/tracks | Show GPX recording start/finish times and timezone evidence on admin/public track summaries and hike linked-track cards without adding manual timezone correction or inferred photo coordinate persistence. |
 
 ## Cancelled Candidate Notes
 

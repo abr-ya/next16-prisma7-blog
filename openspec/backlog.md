@@ -51,7 +51,6 @@ These candidates track the hikes/tracks/photos initiative as small increments. T
 | 17 | Candidate | outdoor-hike-owner-track-upload | outdoor/hikes-tracks | Let hike creators upload GPX tracks directly from a public hike detail page and attach those tracks to the hike, without participant track uploads yet. |
 | 18 | Candidate | outdoor-trip-categories-admin | outdoor/trips | Evaluate and add admin-managed trip categories or types after the hike-to-trip direction is accepted, including support for city walks or similar non-hiking trips, category add/rename behavior, migration from the current fixed hike type enum, and public/admin labeling rules. |
 | 19 | Candidate | outdoor-photo-persistent-thumbnail-derivatives | outdoor/photos-media | Follow-up to feature-057: replace on-demand thumbnail generation with stored derivatives (lifecycle, cleanup, regeneration, multi-size). Also tracked under P1 Soon. |
-| 20 | Ready | feature-063-outdoor-track-recording-time-summary | outdoor/tracks | Show compact GPX recording start/finish date-times and timezone evidence from stored parsed metadata on admin/public track summaries and linked-track cards, omitting unavailable values and leaving manual timezone override to a follow-up. |
 | 21 | Candidate | outdoor-track-device-metadata-extraction | outdoor/tracks | Investigate and extract recording device details from real GPX creator metadata and vendor-specific extensions after collecting examples from Garmin, Strava, OsmAnd, Komoot, and similar sources. |
 | 22 | Candidate | outdoor-photo-manual-ordering | outdoor/photos | Improve manual ordering UX for hike photos after basic association order is proven, considering drag-and-drop, grid ordering, bulk reorder, and mobile behavior. |
 | 23 | Candidate | outdoor-photo-albums-structure | outdoor/photos | Define and add album/grouping structure for photos after basic hike association and ordering are proven. |
@@ -61,8 +60,6 @@ These candidates track the hikes/tracks/photos initiative as small increments. T
 
 | Status | Candidate | Area | Summary |
 | --- | --- | --- | --- |
-| Ready | feature-062-admin-track-modal-dirty-close-guard | admin/tracks-files | Guard the `/admin/tracks` create/edit modal so dirty forms or newly uploaded unsaved GPX files do not close on a casual outside click; confirm discard and mark unsaved uploaded GPX file assets pending delete before closing. |
-| Ready | feature-063-outdoor-track-recording-time-summary | outdoor/tracks | Show recording start/finish and timezone evidence on track summaries so photo/track time mismatches are visible before inferred coordinate persistence. |
 | Ready | admin-post-save-disabled-until-interaction | posts/admin | Analyze and fix admin post create/edit **Save changes** staying disabled until blur/scroll/console interaction. Reproduced more than once on `/admin/posts/new`. Likely `PostForm` validation gating (`mode: "onBlur"` + `disabled={!form.formState.isValid}`); confirm repro, then make save enable when required fields are valid without needing extra UI noise. |
 
 ## P1 Soon

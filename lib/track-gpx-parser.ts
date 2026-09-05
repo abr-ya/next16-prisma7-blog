@@ -7,11 +7,13 @@ import {
   type TrackGpxMetadata,
   type TrackGpxSummary,
   type TrackGpxTimeSummary,
+  type TrackGpxTimezoneEvidence,
 } from "@/lib/track-gpx-metadata";
 
 type ParsedGpxPoint = TrackGpxCoordinate & {
   ele?: number;
   time?: string;
+  timeTimezoneEvidence?: Exclude<TrackGpxTimezoneEvidence, "MIXED" | "UNKNOWN">;
 };
 
 type ParseTrackGpxInput = {
@@ -49,6 +51,11 @@ const readChildText = (content: string, name: string) => {
 const isFiniteCoordinate = (lat: number, lng: number) =>
   Number.isFinite(lat) && Number.isFinite(lng) && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180;
 
+const TIMEZONE_OFFSET_PATTERN = /(?:z|[+-]\d{2}:?\d{2})$/i;
+
+const getTimeTimezoneEvidence = (value: string): Exclude<TrackGpxTimezoneEvidence, "MIXED" | "UNKNOWN"> =>
+  TIMEZONE_OFFSET_PATTERN.test(value.trim()) ? "UTC_OR_OFFSET" : "MISSING";
+
 const parseGpxPoints = (content: string): ParsedGpxPoint[] => {
   const points: ParsedGpxPoint[] = [];
   const pointPattern =
@@ -66,12 +73,14 @@ const parseGpxPoints = (content: string): ParsedGpxPoint[] => {
     const timeValue = readChildText(match[2] ?? "", "time");
     const ele = eleValue === null ? undefined : Number(eleValue);
     const time = timeValue && !Number.isNaN(Date.parse(timeValue)) ? new Date(timeValue).toISOString() : undefined;
+    const timeTimezoneEvidence = time && timeValue ? getTimeTimezoneEvidence(timeValue) : undefined;
 
     points.push({
       lat,
       lng,
       ...(Number.isFinite(ele) ? { ele } : {}),
       ...(time ? { time } : {}),
+      ...(timeTimezoneEvidence ? { timeTimezoneEvidence } : {}),
     });
   }
 
@@ -150,21 +159,29 @@ const computeElevation = (points: ParsedGpxPoint[]): TrackGpxElevationSummary | 
 
 const computeTime = (points: ParsedGpxPoint[]): TrackGpxTimeSummary | null => {
   const times = points
-    .map((point) => point.time)
-    .filter((value): value is string => Boolean(value))
-    .map((value) => new Date(value).getTime())
-    .filter((value) => Number.isFinite(value))
-    .sort((a, b) => a - b);
+    .map((point) => ({
+      timestamp: point.time ? new Date(point.time).getTime() : Number.NaN,
+      timezoneEvidence: point.timeTimezoneEvidence,
+    }))
+    .filter(
+      (
+        value,
+      ): value is { timestamp: number; timezoneEvidence: Exclude<TrackGpxTimezoneEvidence, "MIXED" | "UNKNOWN"> } =>
+        Number.isFinite(value.timestamp) && Boolean(value.timezoneEvidence),
+    )
+    .sort((a, b) => a.timestamp - b.timestamp);
 
   if (times.length === 0) return null;
 
-  const start = times[0];
-  const end = times[times.length - 1];
+  const start = times[0].timestamp;
+  const end = times[times.length - 1].timestamp;
+  const evidenceValues = new Set(times.map((time) => time.timezoneEvidence));
 
   return {
     start: new Date(start).toISOString(),
     end: new Date(end).toISOString(),
     durationSeconds: Math.max(0, Math.round((end - start) / 1000)),
+    timezoneEvidence: evidenceValues.size === 1 ? times[0].timezoneEvidence : "MIXED",
   };
 };
 

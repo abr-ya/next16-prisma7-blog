@@ -42,6 +42,8 @@ import { formatTrackStatus, trackStatusOptions } from "@/lib/tracks";
 import {
   formatTrackDistance,
   formatTrackPointCount,
+  formatTrackRecordingTimeRange,
+  formatTrackTimezoneEvidence,
   getTrackGpxMetadataState,
   type TrackGpxMetadataState,
 } from "@/lib/track-gpx-metadata";
@@ -100,14 +102,27 @@ const TrackParseStatus = ({ track }: { track: TrackListItem }) => {
   const state = getTrackParseState(track);
   const distance = state.status === "SUCCESS" ? formatTrackDistance(state.summary.distanceMeters) : null;
   const points = state.status === "SUCCESS" ? formatTrackPointCount(state.summary.points) : null;
+  const recordingTime = state.status === "SUCCESS" ? formatTrackRecordingTimeRange(state.summary.time) : null;
 
   return (
-    <div className="flex max-w-56 flex-col gap-1">
-      <div>
+    <div className="flex max-w-72 flex-wrap items-center gap-1.5">
+      <div className="flex basis-full flex-wrap items-center gap-1.5">
         <Badge variant={getParseStatusVariant(state)}>{getParseStatusLabel(state)}</Badge>
+        {state.status === "SUCCESS" && state.summary.time ? (
+          <Badge variant={state.summary.time.timezoneEvidence === "UTC_OR_OFFSET" ? "secondary" : "outline"}>
+            {formatTrackTimezoneEvidence(state.summary.time.timezoneEvidence)}
+          </Badge>
+        ) : null}
       </div>
       {state.status === "SUCCESS" ? (
-        <div className="text-xs text-muted-foreground">{[distance, points].filter(Boolean).join(" · ")}</div>
+        <>
+          {[distance, points].filter(Boolean).map((value) => (
+            <span key={value} className="text-xs text-muted-foreground">
+              {value}
+            </span>
+          ))}
+          {recordingTime ? <span className="text-xs text-muted-foreground">Recording {recordingTime}</span> : null}
+        </>
       ) : null}
       {state.status === "FAILED" || state.status === "STALE" ? (
         <div className="line-clamp-2 text-xs text-muted-foreground">{state.errorMessage}</div>
@@ -409,10 +424,24 @@ const TrackFormDialog = ({
                     </Button>
                   </div>
                   {parseState.status === "SUCCESS" ? (
-                    <div className="flex flex-wrap gap-3 text-muted-foreground">
-                      <span>{formatTrackDistance(parseState.summary.distanceMeters)}</span>
-                      <span>{formatTrackPointCount(parseState.summary.points)}</span>
-                      <span>Parsed {formatDate(parseState.metadata.gpxParse.parsedAt)}</span>
+                    <div className="grid gap-2 text-muted-foreground">
+                      <div className="flex flex-wrap gap-3">
+                        <span>{formatTrackDistance(parseState.summary.distanceMeters)}</span>
+                        <span>{formatTrackPointCount(parseState.summary.points)}</span>
+                        <span>Parsed {formatDate(parseState.metadata.gpxParse.parsedAt)}</span>
+                      </div>
+                      {parseState.summary.time ? (
+                        <div className="flex flex-wrap gap-2">
+                          <span>{formatTrackRecordingTimeRange(parseState.summary.time)}</span>
+                          <Badge
+                            variant={
+                              parseState.summary.time.timezoneEvidence === "UTC_OR_OFFSET" ? "secondary" : "outline"
+                            }
+                          >
+                            {formatTrackTimezoneEvidence(parseState.summary.time.timezoneEvidence)}
+                          </Badge>
+                        </div>
+                      ) : null}
                     </div>
                   ) : null}
                   {parseState.status === "FAILED" || parseState.status === "STALE" ? (
@@ -502,21 +531,17 @@ export const TracksAdminPanel = ({ tracks }: { tracks: TrackListItem[] }) => {
         accessorKey: "fileAsset.name",
         header: "GPX file",
         cell: ({ row }) => (
-          <div className="max-w-64">
+          <div className="grid max-w-64 gap-1">
             <div className="truncate" title={row.original.fileAsset.name}>
               {row.original.fileAsset.name}
             </div>
-            <div className="text-xs text-muted-foreground">{formatFileSize(row.original.fileAsset.sizeBytes)}</div>
+            <div className="flex flex-wrap items-center gap-1.5">
+              <Badge variant={row.original.status === "PUBLISHED" ? "default" : "secondary"}>
+                {formatTrackStatus(row.original.status)}
+              </Badge>
+              <span className="text-xs text-muted-foreground">{formatFileSize(row.original.fileAsset.sizeBytes)}</span>
+            </div>
           </div>
-        ),
-      },
-      {
-        accessorKey: "status",
-        header: "Status",
-        cell: ({ row }) => (
-          <Badge variant={row.original.status === "PUBLISHED" ? "default" : "secondary"}>
-            {formatTrackStatus(row.original.status)}
-          </Badge>
         ),
       },
       {

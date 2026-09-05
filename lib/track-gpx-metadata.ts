@@ -3,6 +3,7 @@ import type { Prisma } from "@/generated/prisma/client";
 export const TRACK_GPX_METADATA_VERSION = "track-gpx-metadata/v1";
 
 export type TrackGpxParseStatus = "SUCCESS" | "FAILED" | "STALE";
+export type TrackGpxTimezoneEvidence = "UTC_OR_OFFSET" | "MISSING" | "MIXED" | "UNKNOWN";
 
 export type TrackGpxBounds = {
   north: number;
@@ -27,6 +28,7 @@ export type TrackGpxTimeSummary = {
   start: string;
   end: string;
   durationSeconds: number;
+  timezoneEvidence: TrackGpxTimezoneEvidence;
 };
 
 export type TrackGpxPointSummary = {
@@ -95,6 +97,12 @@ const isTimeSummary = (value: unknown): value is TrackGpxTimeSummary =>
   isIsoDateString(value.end) &&
   isFiniteNumber(value.durationSeconds);
 
+const readTimezoneEvidence = (value: unknown): TrackGpxTimezoneEvidence => {
+  if (value === "UTC_OR_OFFSET" || value === "MISSING" || value === "MIXED" || value === "UNKNOWN") return value;
+
+  return "UNKNOWN";
+};
+
 const isSummary = (value: unknown): value is TrackGpxSummary =>
   isRecord(value) &&
   isFiniteNumber(value.distanceMeters) &&
@@ -122,7 +130,20 @@ export const readTrackGpxMetadata = (value: Prisma.JsonValue | null | undefined)
   }
 
   const errorMessage = typeof gpxParse.errorMessage === "string" ? gpxParse.errorMessage : undefined;
-  const summary = value.summary === null ? null : isSummary(value.summary) ? value.summary : null;
+  const summary =
+    value.summary === null
+      ? null
+      : isSummary(value.summary)
+        ? {
+            ...value.summary,
+            time: value.summary.time
+              ? {
+                  ...value.summary.time,
+                  timezoneEvidence: readTimezoneEvidence(value.summary.time.timezoneEvidence),
+                }
+              : null,
+          }
+        : null;
   const mapGeometry =
     Array.isArray(value.mapGeometry) && value.mapGeometry.every(isCoordinate) ? value.mapGeometry : null;
 
@@ -300,6 +321,37 @@ export const formatTrackDuration = (seconds?: number | null) => {
   if (hours > 0) return `${hours} h ${minutes} min`;
 
   return `${minutes} min`;
+};
+
+export const formatTrackRecordingDateTime = (value?: string | null) => {
+  if (!value || Number.isNaN(Date.parse(value))) return null;
+
+  return new Intl.DateTimeFormat("en", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(value));
+};
+
+export const formatTrackRecordingTimeRange = (time?: TrackGpxTimeSummary | null) => {
+  if (!time) return null;
+
+  const start = formatTrackRecordingDateTime(time.start);
+  const end = formatTrackRecordingDateTime(time.end);
+
+  if (!start || !end) return null;
+
+  return `${start} - ${end}`;
+};
+
+export const formatTrackTimezoneEvidence = (evidence?: TrackGpxTimezoneEvidence | null) => {
+  if (evidence === "UTC_OR_OFFSET") return "GPX UTC/offset";
+  if (evidence === "MISSING") return "Timezone ambiguous";
+  if (evidence === "MIXED") return "Mixed timezone evidence";
+
+  return "Timezone evidence unknown";
 };
 
 export const formatTrackPointCount = (points?: TrackGpxPointSummary | null) => {

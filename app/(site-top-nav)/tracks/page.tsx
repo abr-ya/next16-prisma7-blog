@@ -7,7 +7,12 @@ import { Badge, Button, Card, CardContent, CardHeader, CardTitle } from "@/compo
 import { PageLayout } from "@/components/layout/page-layout";
 import { formatFileSize } from "@/lib/file-upload-limits";
 import { buildPageMetadata, getTextMetadataDescription } from "@/lib/site-metadata";
-import { formatTrackDistance, formatTrackPointCount } from "@/lib/track-gpx-metadata";
+import {
+  formatTrackDistance,
+  formatTrackPointCount,
+  formatTrackRecordingTimeRange,
+  formatTrackTimezoneEvidence,
+} from "@/lib/track-gpx-metadata";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = buildPageMetadata({
@@ -67,6 +72,18 @@ const TracksPage = async () => {
                     <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
                       <Badge variant="outline">{formatTrackDistance(track.parsed.summary.distanceMeters)}</Badge>
                       <Badge variant="outline">{formatTrackPointCount(track.parsed.summary.points)}</Badge>
+                      {track.parsed.summary.time ? (
+                        <>
+                          <Badge variant="outline">{formatTrackRecordingTimeRange(track.parsed.summary.time)}</Badge>
+                          <Badge
+                            variant={
+                              track.parsed.summary.time.timezoneEvidence === "UTC_OR_OFFSET" ? "secondary" : "outline"
+                            }
+                          >
+                            {formatTrackTimezoneEvidence(track.parsed.summary.time.timezoneEvidence)}
+                          </Badge>
+                        </>
+                      ) : null}
                     </div>
                   ) : null}
                   <div className="flex flex-wrap gap-2">
