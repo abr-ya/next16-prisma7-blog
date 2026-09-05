@@ -11,6 +11,7 @@ import { PageLayout } from "@/components/layout/page-layout";
 import { authSession } from "@/lib/auth-utils";
 import { formatHikeDateRange, formatHikeType } from "@/lib/hikes";
 import { buildPageMetadata, getTextMetadataDescription } from "@/lib/site-metadata";
+import { formatTrackRecordingTimeRange, formatTrackTimezoneEvidence } from "@/lib/track-gpx-metadata";
 
 type HikePageProps = {
   params: Promise<{ slug: string }>;
@@ -91,6 +92,18 @@ const HikePage = async ({ params }: HikePageProps) => {
                       <div className="font-medium">{track.title}</div>
                       {track.description ? (
                         <p className="line-clamp-2 text-sm text-muted-foreground">{track.description}</p>
+                      ) : null}
+                      {track.parsed?.summary.time ? (
+                        <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
+                          <Badge variant="outline">{formatTrackRecordingTimeRange(track.parsed.summary.time)}</Badge>
+                          <Badge
+                            variant={
+                              track.parsed.summary.time.timezoneEvidence === "UTC_OR_OFFSET" ? "secondary" : "outline"
+                            }
+                          >
+                            {formatTrackTimezoneEvidence(track.parsed.summary.time.timezoneEvidence)}
+                          </Badge>
+                        </div>
                       ) : null}
                     </div>
                     <Button asChild size="sm" variant="outline">

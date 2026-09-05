@@ -13,7 +13,7 @@ import {
   type TrackTimeMatchPhotoInput,
   type TrackTimeMatchTrackInput,
 } from "@/lib/outdoor-photo-track-time-matching";
-import { getTrackGpxMetadataState, toTrackMapViewModel, type TrackMapViewModel } from "@/lib/track-gpx-metadata";
+import { getTrackGpxMetadataState, type TrackGpxSummary, type TrackMapViewModel } from "@/lib/track-gpx-metadata";
 
 export type HikeActionValues = {
   id?: string;
@@ -315,6 +315,9 @@ export type PublicHike = Omit<PublicHikeRecord, "tracks" | "photos"> & {
       description: string | null;
       status: TrackStatus;
       updatedAt: Date;
+      parsed: {
+        summary: TrackGpxSummary;
+      } | null;
       map: TrackMapViewModel | null;
     };
   }[];
@@ -415,15 +418,24 @@ const toPublicHike = (hike: PublicHikeRecord): PublicHike => ({
   ...hike,
   tracks: hike.tracks.map((association) => {
     const { metadata, fileAsset, ...track } = association.track;
+    const parsedState = getTrackGpxMetadataState(metadata, {
+      fileAssetId: fileAsset.id,
+      fileKey: fileAsset.fileKey,
+    });
 
     return {
       ...association,
       track: {
         ...track,
-        map: toTrackMapViewModel(track.title, metadata, {
-          fileAssetId: fileAsset.id,
-          fileKey: fileAsset.fileKey,
-        }),
+        parsed: parsedState.status === "SUCCESS" ? { summary: parsedState.summary } : null,
+        map:
+          parsedState.status === "SUCCESS" && parsedState.mapGeometry.length > 0
+            ? {
+                title: track.title,
+                bounds: parsedState.summary.bounds,
+                geometry: parsedState.mapGeometry,
+              }
+            : null,
       },
     };
   }),
