@@ -3,6 +3,8 @@ import sharp from "sharp";
 
 import { getFileAssetForThumbnail } from "@/app/_data/files";
 
+export const runtime = "nodejs";
+
 const THUMBNAIL_MAX_EDGE_PX = 640;
 const THUMBNAIL_CACHE_CONTROL = "public, max-age=604800, stale-while-revalidate=86400";
 
