@@ -32,7 +32,7 @@ Observed issues that may be real bugs but have not been reproduced reliably enou
 
 | Status | ID | Area | Summary | Notes |
 | --- | --- | --- | --- | --- |
-| Observed once | admin-post-save-disabled-until-interaction | posts/admin | Admin post create/edit **Save changes** stayed disabled on first load, then became enabled after scrolling through the form and opening the browser console. | Reported on `/admin/posts/new` while creating a post. Initial save looked blocked; later interaction made the button active and saving appeared to work. Suspect client-side validation timing in `PostForm` (`mode: "onBlur"` plus `disabled={!form.formState.isValid}`), but not confirmed. Needs a clean repro before fixing. |
+| Promoted to P0 | admin-post-save-disabled-until-interaction | posts/admin | Admin post **Save changes** stayed disabled until later interaction. | Reproduced again (2026-09-05) while writing a post. See P0 Now. |
 
 ## Outdoor Content High-Priority Roadmap
 
@@ -40,9 +40,9 @@ These candidates track the hikes/tracks/photos initiative as small increments. T
 
 | Order | Status | Candidate | Area | Summary |
 | --- | --- | --- | --- | --- |
-| 8 | Candidate | outdoor-photo-gps-map-markers | outdoor/maps-photos | Use direct GPS EXIF coordinates to place linked hike photos on the hike map when coordinates exist, with visibility-safe marker tooltips. |
-| 9 | Candidate | outdoor-photo-track-time-matching-spike | outdoor/maps-photos | Investigate and plan timestamp-based photo-to-track matching before implementing interpolation, timezone, confidence, or persistence rules. |
-| 10 | Candidate | outdoor-photo-track-time-inferred-coordinates | outdoor/maps-photos | Infer candidate photo coordinates from capture timestamps and linked GPX track timelines, with provenance, confidence, admin approval, and manual correction before public map display. |
+| 8 | In Progress | feature-060-outdoor-photo-gps-map-markers | outdoor/maps-photos | Use direct GPS EXIF coordinates to place linked hike photos on the hike map when coordinates exist, with visibility-safe marker tooltips. |
+| 9 | Ready | feature-061-outdoor-photo-track-time-matching-spike | outdoor/maps-photos | Admin-only spike after feature-060: for hike-linked photos without EXIF GPS, propose track-time match candidates (inside a track recording window, or between nearby adjacent tracks), show them in a modal, and on accept only log the choice — no persistence and no public inferred markers. |
+| 10 | Candidate | outdoor-photo-track-time-inferred-coordinates | outdoor/maps-photos | After feature-061 spike learnings: persist inferred photo coordinates from capture timestamps and track timelines, with provenance, confidence, admin approval, and manual correction before public map display. May also require retaining timestamped trackpoint context beyond start/end summaries. |
 | 11 | Candidate | outdoor-hike-map-day-filter | outdoor/maps | Add an all-days/single-day map filter for linked track geometry and photo markers after temporal semantics and coordinate sources are accepted. |
 | 12 | Candidate | outdoor-hike-map-notes-layer | outdoor/maps-notes | Add hike notes as a future map layer after the hike note entity is designed, including coordinate/date visibility and public/private boundaries. |
 | 13 | Candidate | outdoor-photo-reaction-model-exploration | outdoor/photos-social | Explore simple likes (preferred over a richer rating model) for hike-linked photos: signed-in identity, duplicate prevention, public counts, and privacy boundaries. Keep text comments out of this slice — see `outdoor-photo-comments`. |
@@ -63,6 +63,7 @@ These candidates track the hikes/tracks/photos initiative as small increments. T
 
 | Status | Candidate | Area | Summary |
 | --- | --- | --- | --- |
+| Ready | admin-post-save-disabled-until-interaction | posts/admin | Analyze and fix admin post create/edit **Save changes** staying disabled until blur/scroll/console interaction. Reproduced more than once on `/admin/posts/new`. Likely `PostForm` validation gating (`mode: "onBlur"` + `disabled={!form.formState.isValid}`); confirm repro, then make save enable when required fields are valid without needing extra UI noise. |
 
 ## P1 Soon
 
