@@ -105,7 +105,7 @@ The system SHALL store versioned extraction metadata for outdoor photos so admin
 #### Scenario: Admin extracts metadata from a photo with EXIF
 
 - **WHEN** an authenticated admin extracts metadata for a photo whose current image files contain readable EXIF data
-- **THEN** the system stores extraction status, parser version, extracted timestamp, source image file identity, capture date when available, image dimensions when available, orientation when available, and camera or lens details when available
+- **THEN** the system stores extraction status, parser version, extracted timestamp, source image file identity, capture date when available, image dimensions when available, orientation when available, camera or lens details when available, and exposure details (shutter speed, aperture, focal length) when available
 - **AND** normal admin photo rendering reads those stored values instead of reparsing the image files
 
 #### Scenario: Photo image has no EXIF
@@ -151,7 +151,7 @@ The system SHALL expose photo metadata extraction state and refresh controls to 
 
 - **WHEN** an authenticated admin opens `/admin/photos`
 - **THEN** the page shows each photo's metadata extraction state
-- **AND** it displays useful extracted summary values such as capture date, dimensions, camera label, and GPS presence when available
+- **AND** it displays useful extracted summary values such as capture date, dimensions, camera label, exposure details, and GPS presence when available
 
 #### Scenario: Admin refreshes photo metadata
 

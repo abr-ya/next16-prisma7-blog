@@ -31,6 +31,9 @@ const SAFE_RAW_KEYS = [
   "DateTimeOriginal",
   "CreateDate",
   "ModifyDate",
+  "OffsetTimeOriginal",
+  "OffsetTimeDigitized",
+  "OffsetTime",
   "Orientation",
   "ExifImageWidth",
   "ExifImageHeight",
@@ -41,6 +44,9 @@ const SAFE_RAW_KEYS = [
   "ExposureTime",
   "FocalLength",
 ] as const;
+
+const EXIF_OFFSET_PATTERN = /^([+-])(\d{2}):?(\d{2})$/;
+const EXIF_DATE_TIME_PATTERN = /^(\d{4})[:-]?(\d{2})[:-]?(\d{2})[ T](\d{2}):(\d{2}):(\d{2})/;
 
 const sanitizeErrorMessage = (error: unknown) => {
   const message = error instanceof Error ? error.message : "Photo metadata extraction failed";
@@ -71,13 +77,69 @@ const toNullableNumber = (value: unknown): number | null => {
   return null;
 };
 
-const toCapturedAt = (value: unknown): string | null => {
-  if (value instanceof Date && !Number.isNaN(value.getTime())) {
-    return value.toISOString();
+const parseExifOffsetMinutes = (value: unknown): number | null => {
+  if (typeof value !== "string") return null;
+
+  const match = value.trim().match(EXIF_OFFSET_PATTERN);
+
+  if (!match) return null;
+
+  const sign = match[1] === "-" ? -1 : 1;
+  const hours = Number(match[2]);
+  const minutes = Number(match[3]);
+
+  if (!Number.isFinite(hours) || !Number.isFinite(minutes) || minutes > 59) return null;
+
+  return sign * (hours * 60 + minutes);
+};
+
+const parseExifDateTimeParts = (value: string) => {
+  const match = value.trim().match(EXIF_DATE_TIME_PATTERN);
+
+  if (!match) return null;
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const hours = Number(match[4]);
+  const minutes = Number(match[5]);
+  const seconds = Number(match[6]);
+
+  if (![year, month, day, hours, minutes, seconds].every((part) => Number.isFinite(part))) return null;
+
+  return { year, month, day, hours, minutes, seconds };
+};
+
+// EXIF DateTime* is a wall-clock value. When OffsetTime* is present, convert with that offset
+// instead of letting exifr/Date treat the wall clock as the Node process timezone (which adds a
+// second shift — e.g. +03 display — on top of an already-offset photo).
+const toCapturedAt = (value: unknown, offsetValue?: unknown): string | null => {
+  if (typeof value === "string") {
+    const parts = parseExifDateTimeParts(value);
+
+    if (parts) {
+      const offsetMinutes = parseExifOffsetMinutes(offsetValue);
+      const utcMillis = Date.UTC(parts.year, parts.month - 1, parts.day, parts.hours, parts.minutes, parts.seconds);
+
+      if (offsetMinutes !== null) {
+        return new Date(utcMillis - offsetMinutes * 60_000).toISOString();
+      }
+
+      // No OffsetTime*: keep prior ambiguous behavior (interpret as process-local wall time).
+      const local = new Date(parts.year, parts.month - 1, parts.day, parts.hours, parts.minutes, parts.seconds);
+
+      return Number.isNaN(local.getTime()) ? null : local.toISOString();
+    }
+
+    if (!Number.isNaN(Date.parse(value))) {
+      return new Date(value).toISOString();
+    }
+
+    return null;
   }
 
-  if (typeof value === "string" && !Number.isNaN(Date.parse(value))) {
-    return new Date(value).toISOString();
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return value.toISOString();
   }
 
   return null;
@@ -133,7 +195,8 @@ const parseOneImage = async (input: PhotoExifParseImageInput): Promise<ParsedIma
   const bytes = await fetchPhotoImageBytes(input.url);
   const parsed = (await exifr.parse(bytes, {
     gps: true,
-    reviveValues: true,
+    // Keep date tags as raw EXIF strings so OffsetTime* can be applied explicitly.
+    reviveValues: false,
     pick: [...SAFE_RAW_KEYS, "latitude", "longitude"],
   })) as Record<string, unknown> | undefined;
 
@@ -143,7 +206,13 @@ const parseOneImage = async (input: PhotoExifParseImageInput): Promise<ParsedIma
   const width = toNullableNumber(parsed?.ExifImageWidth) ?? toNullableNumber(parsed?.ImageWidth);
   const height = toNullableNumber(parsed?.ExifImageHeight) ?? toNullableNumber(parsed?.ImageHeight);
   const orientation = toNullableNumber(parsed?.Orientation);
-  const capturedAt = toCapturedAt(parsed?.DateTimeOriginal) ?? toCapturedAt(parsed?.CreateDate);
+  const originalOffset = parsed?.OffsetTimeOriginal ?? parsed?.OffsetTime;
+  const digitizedOffset = parsed?.OffsetTimeDigitized ?? parsed?.OffsetTime;
+  const capturedAt =
+    toCapturedAt(parsed?.DateTimeOriginal, originalOffset) ?? toCapturedAt(parsed?.CreateDate, digitizedOffset);
+  const exposureTime = toNullableNumber(parsed?.ExposureTime);
+  const fNumber = toNullableNumber(parsed?.FNumber);
+  const focalLength = toNullableNumber(parsed?.FocalLength);
   const gps = toGps(parsed?.latitude, parsed?.longitude);
 
   return {
@@ -158,6 +227,9 @@ const parseOneImage = async (input: PhotoExifParseImageInput): Promise<ParsedIma
       make,
       model,
       lens,
+      exposureTime,
+      fNumber,
+      focalLength,
       gps,
     },
     raw: toSafeRaw(parsed),
@@ -177,6 +249,9 @@ const buildSummary = (images: PhotoExifImageSummary[]): PhotoExifSummary => {
     model: primary?.model ?? null,
     lens: primary?.lens ?? null,
     cameraLabel: buildPhotoExifCameraLabel(primary?.make, primary?.model) ?? null,
+    exposureTime: primary?.exposureTime ?? null,
+    fNumber: primary?.fNumber ?? null,
+    focalLength: primary?.focalLength ?? null,
     gps: gpsImage?.gps ?? null,
     gpsSourceFileAssetId: gpsImage?.fileAssetId ?? null,
   };

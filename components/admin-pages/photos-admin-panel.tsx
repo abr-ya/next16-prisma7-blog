@@ -44,6 +44,7 @@ import { formatHikeDateRange, formatHikeStatus, formatHikeType } from "@/lib/hik
 import {
   formatPhotoCapturedAt,
   formatPhotoDimensions,
+  formatPhotoExposureTriplet,
   formatPhotoGpsPresence,
   getPhotoExifMetadataState,
   type PhotoExifMetadataState,
@@ -118,25 +119,70 @@ const getMetadataStatusVariant = (state: PhotoExifMetadataState) => {
 
 const PhotoMetadataStatus = ({ photo }: { photo: PhotoListItem }) => {
   const state = getPhotoMetadataState(photo);
-  const capturedAt = state.status === "SUCCESS" ? formatPhotoCapturedAt(state.summary.capturedAt) : null;
-  const dimensions =
-    state.status === "SUCCESS" ? formatPhotoDimensions(state.summary.width, state.summary.height) : null;
-  const camera = state.status === "SUCCESS" ? state.summary.cameraLabel : null;
-  const gps = state.status === "SUCCESS" ? formatPhotoGpsPresence(state.summary.gps) : null;
+  const summaryLines =
+    state.status === "SUCCESS"
+      ? (
+          [
+            ["capturedAt", formatPhotoCapturedAt(state.summary.capturedAt)],
+            ["camera", state.summary.cameraLabel],
+          ] as const
+        ).filter((entry): entry is readonly [string, string] => Boolean(entry[1]))
+      : [];
 
   return (
-    <div className="flex max-w-64 flex-col gap-1">
+    <div className="flex max-w-44 flex-col gap-1">
       <div>
         <Badge variant={getMetadataStatusVariant(state)}>{getMetadataStatusLabel(state)}</Badge>
       </div>
-      {state.status === "SUCCESS" ? (
-        <div className="text-xs text-muted-foreground">
-          {[capturedAt, dimensions, camera, gps].filter(Boolean).join(" · ")}
+      {summaryLines.length > 0 ? (
+        <div className="flex flex-col gap-0.5 text-xs text-muted-foreground">
+          {summaryLines.map(([key, line]) => (
+            <div key={key} className="break-words">
+              {line}
+            </div>
+          ))}
         </div>
       ) : null}
       {state.status === "FAILED" || state.status === "STALE" ? (
         <div className="line-clamp-2 text-xs text-muted-foreground">{state.errorMessage}</div>
       ) : null}
+    </div>
+  );
+};
+
+const PhotoExifTechDetails = ({ photo }: { photo: PhotoListItem }) => {
+  const state = getPhotoMetadataState(photo);
+
+  if (state.status !== "SUCCESS") {
+    return <span className="text-sm text-muted-foreground">—</span>;
+  }
+
+  const techLines = (
+    [
+      ["dimensions", formatPhotoDimensions(state.summary.width, state.summary.height)],
+      [
+        "exposure",
+        formatPhotoExposureTriplet({
+          exposureTime: state.summary.exposureTime,
+          fNumber: state.summary.fNumber,
+          focalLength: state.summary.focalLength,
+        }),
+      ],
+      ["gps", formatPhotoGpsPresence(state.summary.gps)],
+    ] as const
+  ).filter((entry): entry is readonly [string, string] => Boolean(entry[1]));
+
+  if (techLines.length === 0) {
+    return <span className="text-sm text-muted-foreground">—</span>;
+  }
+
+  return (
+    <div className="flex max-w-40 flex-col gap-0.5 text-xs text-muted-foreground">
+      {techLines.map(([key, line]) => (
+        <div key={key} className="break-words">
+          {line}
+        </div>
+      ))}
     </div>
   );
 };
@@ -417,6 +463,13 @@ const PhotoFormDialog = ({
                         "No dimensions"}
                     </span>
                     <span>{metadataState.summary.cameraLabel ?? "No camera"}</span>
+                    <span>
+                      {formatPhotoExposureTriplet({
+                        exposureTime: metadataState.summary.exposureTime,
+                        fNumber: metadataState.summary.fNumber,
+                        focalLength: metadataState.summary.focalLength,
+                      }) ?? "No exposure details"}
+                    </span>
                     <span>{formatPhotoGpsPresence(metadataState.summary.gps)}</span>
                     <span>Parsed {formatDate(metadataState.metadata.exifParse.parsedAt)}</span>
                   </div>
@@ -521,8 +574,13 @@ export const PhotosAdminPanel = ({ photos }: { photos: PhotoListItem[] }) => {
       },
       {
         id: "metadata",
-        header: "EXIF summary",
+        header: "EXIF",
         cell: ({ row }) => <PhotoMetadataStatus photo={row.original} />,
+      },
+      {
+        id: "exifTech",
+        header: "EXIF details",
+        cell: ({ row }) => <PhotoExifTechDetails photo={row.original} />,
       },
       {
         id: "hikes",

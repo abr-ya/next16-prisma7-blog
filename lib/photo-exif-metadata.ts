@@ -26,6 +26,9 @@ export type PhotoExifImageSummary = {
   make: string | null;
   model: string | null;
   lens: string | null;
+  exposureTime: number | null;
+  fNumber: number | null;
+  focalLength: number | null;
   gps: PhotoExifGps | null;
 };
 
@@ -38,6 +41,9 @@ export type PhotoExifSummary = {
   model: string | null;
   lens: string | null;
   cameraLabel: string | null;
+  exposureTime: number | null;
+  fNumber: number | null;
+  focalLength: number | null;
   gps: PhotoExifGps | null;
   gpsSourceFileAssetId: string | null;
 };
@@ -81,40 +87,94 @@ const isNullableString = (value: unknown): value is string | null => value === n
 
 const isNullableFiniteNumber = (value: unknown): value is number | null => value === null || isFiniteNumber(value);
 
+const isOptionalNullableFiniteNumber = (value: unknown): boolean =>
+  value === undefined || isNullableFiniteNumber(value);
+
+const readOptionalNullableNumber = (value: unknown): number | null => (isFiniteNumber(value) ? value : null);
+
 const isSourceImage = (value: unknown): value is PhotoExifSourceImage =>
   isRecord(value) &&
   typeof value.fileAssetId === "string" &&
   typeof value.fileKey === "string" &&
   isFiniteNumber(value.sortOrder);
 
-const isImageSummary = (value: unknown): value is PhotoExifImageSummary =>
-  isRecord(value) &&
-  typeof value.fileAssetId === "string" &&
-  typeof value.fileKey === "string" &&
-  isFiniteNumber(value.sortOrder) &&
-  isNullableString(value.capturedAt) &&
-  (value.capturedAt === null || isIsoDateString(value.capturedAt)) &&
-  isNullableFiniteNumber(value.width) &&
-  isNullableFiniteNumber(value.height) &&
-  isNullableFiniteNumber(value.orientation) &&
-  isNullableString(value.make) &&
-  isNullableString(value.model) &&
-  isNullableString(value.lens) &&
-  (value.gps === null || isGps(value.gps));
+const normalizeImageSummary = (value: unknown): PhotoExifImageSummary | null => {
+  if (
+    !isRecord(value) ||
+    typeof value.fileAssetId !== "string" ||
+    typeof value.fileKey !== "string" ||
+    !isFiniteNumber(value.sortOrder) ||
+    !isNullableString(value.capturedAt) ||
+    (value.capturedAt !== null && !isIsoDateString(value.capturedAt)) ||
+    !isNullableFiniteNumber(value.width) ||
+    !isNullableFiniteNumber(value.height) ||
+    !isNullableFiniteNumber(value.orientation) ||
+    !isNullableString(value.make) ||
+    !isNullableString(value.model) ||
+    !isNullableString(value.lens) ||
+    !isOptionalNullableFiniteNumber(value.exposureTime) ||
+    !isOptionalNullableFiniteNumber(value.fNumber) ||
+    !isOptionalNullableFiniteNumber(value.focalLength) ||
+    (value.gps !== null && !isGps(value.gps))
+  ) {
+    return null;
+  }
 
-const isSummary = (value: unknown): value is PhotoExifSummary =>
-  isRecord(value) &&
-  isNullableString(value.capturedAt) &&
-  (value.capturedAt === null || isIsoDateString(value.capturedAt)) &&
-  isNullableFiniteNumber(value.width) &&
-  isNullableFiniteNumber(value.height) &&
-  isNullableFiniteNumber(value.orientation) &&
-  isNullableString(value.make) &&
-  isNullableString(value.model) &&
-  isNullableString(value.lens) &&
-  isNullableString(value.cameraLabel) &&
-  (value.gps === null || isGps(value.gps)) &&
-  isNullableString(value.gpsSourceFileAssetId);
+  return {
+    fileAssetId: value.fileAssetId,
+    fileKey: value.fileKey,
+    sortOrder: value.sortOrder,
+    capturedAt: value.capturedAt,
+    width: value.width,
+    height: value.height,
+    orientation: value.orientation,
+    make: value.make,
+    model: value.model,
+    lens: value.lens,
+    exposureTime: readOptionalNullableNumber(value.exposureTime),
+    fNumber: readOptionalNullableNumber(value.fNumber),
+    focalLength: readOptionalNullableNumber(value.focalLength),
+    gps: value.gps === null ? null : value.gps,
+  };
+};
+
+const normalizeSummary = (value: unknown): PhotoExifSummary | null => {
+  if (
+    !isRecord(value) ||
+    !isNullableString(value.capturedAt) ||
+    (value.capturedAt !== null && !isIsoDateString(value.capturedAt)) ||
+    !isNullableFiniteNumber(value.width) ||
+    !isNullableFiniteNumber(value.height) ||
+    !isNullableFiniteNumber(value.orientation) ||
+    !isNullableString(value.make) ||
+    !isNullableString(value.model) ||
+    !isNullableString(value.lens) ||
+    !isNullableString(value.cameraLabel) ||
+    !isOptionalNullableFiniteNumber(value.exposureTime) ||
+    !isOptionalNullableFiniteNumber(value.fNumber) ||
+    !isOptionalNullableFiniteNumber(value.focalLength) ||
+    (value.gps !== null && !isGps(value.gps)) ||
+    !isNullableString(value.gpsSourceFileAssetId)
+  ) {
+    return null;
+  }
+
+  return {
+    capturedAt: value.capturedAt,
+    width: value.width,
+    height: value.height,
+    orientation: value.orientation,
+    make: value.make,
+    model: value.model,
+    lens: value.lens,
+    cameraLabel: value.cameraLabel,
+    exposureTime: readOptionalNullableNumber(value.exposureTime),
+    fNumber: readOptionalNullableNumber(value.fNumber),
+    focalLength: readOptionalNullableNumber(value.focalLength),
+    gps: value.gps === null ? null : value.gps,
+    gpsSourceFileAssetId: value.gpsSourceFileAssetId,
+  };
+};
 
 const isSafeRaw = (value: unknown): value is PhotoExifSafeRaw => {
   if (!isRecord(value)) return false;
@@ -165,12 +225,16 @@ export const readPhotoExifMetadata = (value: Prisma.JsonValue | null | undefined
   }
 
   const errorMessage = typeof exifParse.errorMessage === "string" ? exifParse.errorMessage : undefined;
-  const summary = value.summary === null ? null : isSummary(value.summary) ? value.summary : null;
+  const summary = value.summary === null ? null : normalizeSummary(value.summary);
   const images =
     value.images === null
       ? null
-      : Array.isArray(value.images) && value.images.every(isImageSummary)
-        ? value.images
+      : Array.isArray(value.images)
+        ? (() => {
+            const normalized = value.images.map(normalizeImageSummary);
+
+            return normalized.every((image): image is PhotoExifImageSummary => image !== null) ? normalized : null;
+          })()
         : null;
   const raw = value.raw === null ? null : isSafeRaw(value.raw) ? value.raw : null;
 
@@ -312,6 +376,52 @@ export const formatPhotoDimensions = (width?: number | null, height?: number | n
   if (!isFiniteNumber(width) || !isFiniteNumber(height)) return null;
 
   return `${Math.round(width)}×${Math.round(height)}`;
+};
+
+export const formatPhotoExposureTime = (value?: number | null) => {
+  if (!isFiniteNumber(value) || value <= 0) return null;
+
+  if (value >= 1) {
+    return Number.isInteger(value) ? `${value}s` : `${Number(value.toFixed(1))}s`;
+  }
+
+  const denominator = Math.round(1 / value);
+
+  if (denominator <= 0) return null;
+
+  return `1/${denominator}`;
+};
+
+export const formatPhotoAperture = (value?: number | null) => {
+  if (!isFiniteNumber(value) || value <= 0) return null;
+
+  const rounded = Number.isInteger(value) ? String(value) : String(Number(value.toFixed(1)));
+
+  return `f/${rounded}`;
+};
+
+export const formatPhotoFocalLength = (value?: number | null) => {
+  if (!isFiniteNumber(value) || value <= 0) return null;
+
+  return `${Number(value.toFixed(1))}mm`;
+};
+
+export const formatPhotoExposureTriplet = ({
+  exposureTime,
+  fNumber,
+  focalLength,
+}: {
+  exposureTime?: number | null;
+  fNumber?: number | null;
+  focalLength?: number | null;
+}) => {
+  const parts = [
+    formatPhotoExposureTime(exposureTime),
+    formatPhotoAperture(fNumber),
+    formatPhotoFocalLength(focalLength),
+  ].filter(Boolean);
+
+  return parts.length > 0 ? parts.join(" · ") : null;
 };
 
 export const formatPhotoGpsPresence = (gps?: PhotoExifGps | null) => (gps ? "GPS yes" : "GPS no");
