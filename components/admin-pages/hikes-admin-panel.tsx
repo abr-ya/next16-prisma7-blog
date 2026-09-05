@@ -2,7 +2,19 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { ColumnDef } from "@tanstack/react-table";
-import { ArrowDown, ArrowUp, ArrowUpDown, Edit, ImageIcon, Link2, Plus, Route, Trash2, Unlink } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
+  Clock3,
+  Edit,
+  ImageIcon,
+  Link2,
+  Plus,
+  Route,
+  Trash2,
+  Unlink,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useForm, useWatch } from "react-hook-form";
@@ -10,6 +22,7 @@ import { toast } from "sonner";
 import z from "zod";
 
 import {
+  acceptHikePhotoTrackTimeMatchCandidate,
   attachTrackToHike,
   attachPhotoToHike,
   createHike,
@@ -29,6 +42,7 @@ import {
   DataTable,
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   Form,
@@ -46,6 +60,11 @@ import {
 } from "@/components/index";
 import type { HikeStatus, HikeType } from "@/generated/prisma/enums";
 import { formatHikeStatus, formatHikeType, hikeStatusOptions, hikeTypeOptions } from "@/lib/hikes";
+import {
+  proposeTrackTimeMatchCandidates,
+  type TrackTimeMatchCandidate,
+  type TrackTimeMatchTrackInput,
+} from "@/lib/outdoor-photo-track-time-matching";
 import { formatPhotoStatus } from "@/lib/photos";
 import { createSlug } from "@/lib/slug-generator";
 import { formatTrackStatus } from "@/lib/tracks";
@@ -93,6 +112,57 @@ const formatDate = (value: Date | string) =>
   }).format(new Date(value));
 
 const getDateRange = (hike: HikeListItem) => `${formatDate(hike.startDate)} - ${formatDate(hike.endDate)}`;
+
+const formatDateTime = (value: string) =>
+  new Intl.DateTimeFormat("en", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(value));
+
+const isCoordinate = (value: unknown): value is { lat: number; lng: number } =>
+  typeof value === "object" &&
+  value !== null &&
+  "lat" in value &&
+  "lng" in value &&
+  typeof value.lat === "number" &&
+  typeof value.lng === "number";
+
+const toTrackTimeMatchTracks = (hike: HikeListItem | null): TrackTimeMatchTrackInput[] =>
+  hike?.tracks
+    .filter(({ track }) => track.status === "PUBLISHED")
+    .map(({ track }) => {
+      const metadata = track.metadata as {
+        summary?: {
+          time?: {
+            start?: unknown;
+            end?: unknown;
+          } | null;
+        } | null;
+        mapGeometry?: unknown;
+      } | null;
+      const time = metadata?.summary?.time;
+      const geometry = Array.isArray(metadata?.mapGeometry) ? metadata.mapGeometry : [];
+      const firstPoint = geometry.at(0);
+      const lastPoint = geometry.at(-1);
+
+      return {
+        id: track.id,
+        title: track.title,
+        slug: track.slug,
+        recordingTime:
+          typeof time?.start === "string" && typeof time?.end === "string"
+            ? {
+                start: time.start,
+                end: time.end,
+              }
+            : null,
+        startPoint: isCoordinate(firstPoint) ? firstPoint : null,
+        endPoint: isCoordinate(lastPoint) ? lastPoint : null,
+      };
+    }) ?? [];
 
 const HikeFormDialog = ({
   hike,
@@ -469,15 +539,22 @@ const HikePhotosDialog = ({
 }) => {
   const [pendingPhotoId, setPendingPhotoId] = useState<string | null>(null);
   const [attachedPhotoIds, setAttachedPhotoIds] = useState<string[]>([]);
+  const [matchingPhoto, setMatchingPhoto] = useState<HikePhotoOption | null>(null);
+  const [pendingCandidateId, setPendingCandidateId] = useState<string | null>(null);
   const [, startChanging] = useTransition();
   const photosById = useMemo(() => new Map(photos.map((photo) => [photo.id, photo])), [photos]);
   const associatedPhotoIds = useMemo(() => new Set(attachedPhotoIds), [attachedPhotoIds]);
+  const matchTracks = useMemo(() => toTrackTimeMatchTracks(hike), [hike]);
   const attachedPhotos = attachedPhotoIds.flatMap((photoId) => {
     const photo = photosById.get(photoId);
 
     return photo ? [photo] : [];
   });
   const availablePhotos = photos.filter((photo) => !associatedPhotoIds.has(photo.id));
+  const matchCandidates = useMemo(
+    () => (matchingPhoto ? proposeTrackTimeMatchCandidates(matchingPhoto.trackTimeMatch, matchTracks) : []),
+    [matchTracks, matchingPhoto],
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -554,6 +631,27 @@ const HikePhotosDialog = ({
     });
   };
 
+  const handleAcceptCandidate = (candidate: TrackTimeMatchCandidate) => {
+    if (!hike || !matchingPhoto) return;
+
+    setPendingCandidateId(candidate.id);
+    startChanging(async () => {
+      try {
+        await acceptHikePhotoTrackTimeMatchCandidate({
+          hikeId: hike.id,
+          photoId: matchingPhoto.id,
+          candidateId: candidate.id,
+        });
+        toast.success("Track-time match logged");
+        setMatchingPhoto(null);
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Failed to log match candidate");
+      } finally {
+        setPendingCandidateId(null);
+      }
+    });
+  };
+
   const PhotoRow = ({ photo, index }: { photo: HikePhotoOption; index?: number }) => (
     <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border p-3">
       <div className="flex min-w-0 items-center gap-3">
@@ -575,6 +673,18 @@ const HikePhotosDialog = ({
       </div>
       {typeof index === "number" ? (
         <div className="flex gap-1">
+          {photo.status === "PUBLISHED" && !photo.trackTimeMatch.hasDirectGps && photo.trackTimeMatch.capturedAt ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              title="Review track-time match"
+              disabled={pendingPhotoId === photo.id}
+              onClick={() => setMatchingPhoto(photo)}
+            >
+              <Clock3 className="size-4" />
+            </Button>
+          ) : null}
           <Button
             type="button"
             variant="ghost"
@@ -622,41 +732,101 @@ const HikePhotosDialog = ({
   );
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-3xl">
-        <DialogHeader>
-          <DialogTitle>{hike ? `Manage photos for ${hike.title}` : "Manage photos"}</DialogTitle>
-        </DialogHeader>
-        <div className="grid max-h-[70vh] gap-6 overflow-y-auto pr-1">
-          <section className="grid gap-3">
-            <h3 className="text-sm font-medium">Attached photos</h3>
-            {attachedPhotos.length > 0 ? (
-              <div className="grid gap-2">
-                {attachedPhotos.map((photo, index) => (
-                  <PhotoRow key={photo.id} photo={photo} index={index} />
-                ))}
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>{hike ? `Manage photos for ${hike.title}` : "Manage photos"}</DialogTitle>
+          </DialogHeader>
+          <div className="grid max-h-[70vh] gap-6 overflow-y-auto pr-1">
+            <section className="grid gap-3">
+              <h3 className="text-sm font-medium">Attached photos</h3>
+              {attachedPhotos.length > 0 ? (
+                <div className="grid gap-2">
+                  {attachedPhotos.map((photo, index) => (
+                    <PhotoRow key={photo.id} photo={photo} index={index} />
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-md border p-4 text-sm text-muted-foreground">No photos attached.</div>
+              )}
+            </section>
+            <section className="grid gap-3">
+              <h3 className="text-sm font-medium">Available photos</h3>
+              {availablePhotos.length > 0 ? (
+                <div className="grid gap-2">
+                  {availablePhotos.map((photo) => (
+                    <PhotoRow key={photo.id} photo={photo} />
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-md border p-4 text-sm text-muted-foreground">
+                  Every available photo is already attached.
+                </div>
+              )}
+            </section>
+          </div>
+        </DialogContent>
+      </Dialog>
+      <Dialog
+        open={Boolean(matchingPhoto)}
+        onOpenChange={(nextOpen) => {
+          if (!nextOpen) setMatchingPhoto(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>
+              {matchingPhoto ? `Track-time match for ${matchingPhoto.title}` : "Track-time match"}
+            </DialogTitle>
+            <DialogDescription>
+              Spike only: timestamps are compared as parseable absolute times. Accepting a candidate logs it for
+              evaluation and does not save coordinates or add a public map marker.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid max-h-[60vh] gap-3 overflow-y-auto pr-1">
+            {matchingPhoto?.trackTimeMatch.capturedAt ? (
+              <div className="text-sm text-muted-foreground">
+                Captured at {formatDateTime(matchingPhoto.trackTimeMatch.capturedAt)}
               </div>
-            ) : (
-              <div className="rounded-md border p-4 text-sm text-muted-foreground">No photos attached.</div>
-            )}
-          </section>
-          <section className="grid gap-3">
-            <h3 className="text-sm font-medium">Available photos</h3>
-            {availablePhotos.length > 0 ? (
-              <div className="grid gap-2">
-                {availablePhotos.map((photo) => (
-                  <PhotoRow key={photo.id} photo={photo} />
-                ))}
-              </div>
+            ) : null}
+            {matchCandidates.length > 0 ? (
+              matchCandidates.map((candidate) => (
+                <div key={candidate.id} className="grid gap-3 rounded-md border p-3">
+                  <div className="grid gap-1">
+                    <Badge variant="outline" className="w-fit">
+                      {candidate.type === "INSIDE_TRACK_WINDOW" ? "Inside track window" : "Between tracks"}
+                    </Badge>
+                    <div className="text-sm">{candidate.explanation}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {candidate.type === "INSIDE_TRACK_WINDOW"
+                        ? `${formatDateTime(candidate.trackStart)} - ${formatDateTime(candidate.trackEnd)}`
+                        : `${formatDateTime(candidate.previousTrackEnd)} - ${formatDateTime(candidate.nextTrackStart)}`}
+                    </div>
+                  </div>
+                  <div className="flex justify-end">
+                    <Button
+                      type="button"
+                      size="sm"
+                      disabled={pendingCandidateId === candidate.id}
+                      onClick={() => handleAcceptCandidate(candidate)}
+                    >
+                      Log choice
+                    </Button>
+                  </div>
+                </div>
+              ))
             ) : (
               <div className="rounded-md border p-4 text-sm text-muted-foreground">
-                Every available photo is already attached.
+                No track-time candidates found from the currently attached published tracks. Tracks need stored
+                recording start/end times; between-track matches also need a short enough gap and nearby endpoints when
+                endpoint geometry is available.
               </div>
             )}
-          </section>
-        </div>
-      </DialogContent>
-    </Dialog>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 

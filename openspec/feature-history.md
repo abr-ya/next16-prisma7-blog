@@ -70,6 +70,7 @@ Cancelled or deferred candidates do not reserve feature numbers.
 | feature-058 | feature-058-outdoor-hike-map-coordinate-planning | outdoor/maps | Plan the hike detail map roadmap across combined linked tracks, direct GPS photo markers, timestamp-based inferred coordinates, manual correction, all-days/single-day filtering, and future notes before implementation slices begin. |
 | feature-059 | feature-059-outdoor-hike-combined-track-map | outdoor/maps | Add one map under the hike detail title/description that renders all linked visible tracks together and frames the combined bounds, without photo markers or day filtering yet. |
 | feature-060 | feature-060-outdoor-photo-gps-map-markers | outdoor/maps-photos | Place linked published hike photos with stored direct EXIF GPS on the public hike map as visibility-safe markers with title/thumbnail tooltips, including marker-only maps when no tracks are present. |
+| feature-061 | feature-061-outdoor-photo-track-time-matching-spike | outdoor/maps-photos | Add an admin-only spike for hike-linked photos without EXIF GPS: propose track-time match candidates from linked track recording windows or nearby adjacent tracks and log accepted choices without persisting inferred coordinates or public markers. |
 
 ## Cancelled Candidate Notes
 
@@ -77,3 +78,9 @@ Cancelled or deferred candidates do not reserve feature numbers.
 | --- | --- | --- |
 | video-tag-management | video/tags | Superseded by `content-tags-admin-management` so tag management is content-wide instead of video-only. |
 | video-tag-confirm-dialog | video/tags | Superseded by `admin-confirm-dialogs`, which covers reusable app-styled confirmation dialogs across admin flows. |
+
+## Completed Fix Notes
+
+| Candidate | Area | Note |
+| --- | --- | --- |
+| outdoor-photo-thumbnail-vercel-500 | outdoor/photos-media | Fixed production `GET /files/[fileId]/thumbnail` 500s on Vercel after feature-057 on-demand `sharp` thumbnails. Kept as an unnumbered hotfix rather than a numbered OpenSpec feature. |

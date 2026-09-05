@@ -8,7 +8,12 @@ import { authSession, requireAdmin } from "@/lib/auth-utils";
 import { createSlug } from "@/lib/slug-generator";
 import { getPhotoExifMetadataState, isValidGps } from "@/lib/photo-exif-metadata";
 import type { HikePhotoMapMarker } from "@/lib/hikes";
-import { toTrackMapViewModel, type TrackMapViewModel } from "@/lib/track-gpx-metadata";
+import {
+  proposeTrackTimeMatchCandidates,
+  type TrackTimeMatchPhotoInput,
+  type TrackTimeMatchTrackInput,
+} from "@/lib/outdoor-photo-track-time-matching";
+import { getTrackGpxMetadataState, toTrackMapViewModel, type TrackMapViewModel } from "@/lib/track-gpx-metadata";
 
 export type HikeActionValues = {
   id?: string;
@@ -32,6 +37,7 @@ export type HikePhotoOption = {
   id: string;
   title: string;
   status: PhotoStatus;
+  trackTimeMatch: TrackTimeMatchPhotoInput;
   previewImage: {
     id: string;
     name: string;
@@ -39,7 +45,11 @@ export type HikePhotoOption = {
   } | null;
 };
 
-type HikePhotoOptionRecord = HikePhotoOption & {
+type HikePhotoOptionRecord = {
+  id: string;
+  title: string;
+  status: PhotoStatus;
+  metadata: Prisma.JsonValue | null;
   images: {
     fileAsset: NonNullable<HikePhotoOption["previewImage"]>;
   }[];
@@ -165,6 +175,13 @@ const hikeListInclude = {
           title: true,
           slug: true,
           status: true,
+          metadata: true,
+          fileAsset: {
+            select: {
+              id: true,
+              fileKey: true,
+            },
+          },
         },
       },
     },
@@ -177,6 +194,7 @@ const hikeListInclude = {
           id: true,
           title: true,
           status: true,
+          metadata: true,
           images: {
             orderBy: {
               sortOrder: "asc",
@@ -329,6 +347,70 @@ const toHikePhotoMapMarker = (photo: PublicHikeRecord["photos"][number]["photo"]
   };
 };
 
+const toTrackTimeMatchPhotoInput = ({
+  id,
+  title,
+  metadata,
+}: {
+  id: string;
+  title: string;
+  metadata: Prisma.JsonValue | null;
+}): TrackTimeMatchPhotoInput => {
+  const state = getPhotoExifMetadataState(metadata);
+
+  return {
+    id,
+    title,
+    capturedAt: state.status === "SUCCESS" ? state.summary.capturedAt : null,
+    hasDirectGps: state.status === "SUCCESS" ? Boolean(state.summary.gps) : false,
+  };
+};
+
+const toTrackTimeMatchTrackInput = ({
+  id,
+  title,
+  slug,
+  metadata,
+  fileAsset,
+}: {
+  id: string;
+  title: string;
+  slug?: string | null;
+  metadata: Prisma.JsonValue | null;
+  fileAsset: {
+    id: string;
+    fileKey: string;
+  };
+}): TrackTimeMatchTrackInput => {
+  const state = getTrackGpxMetadataState(metadata, {
+    fileAssetId: fileAsset.id,
+    fileKey: fileAsset.fileKey,
+  });
+
+  if (state.status !== "SUCCESS" || !state.summary.time) {
+    return {
+      id,
+      title,
+      slug: slug ?? null,
+      recordingTime: null,
+      startPoint: null,
+      endPoint: null,
+    };
+  }
+
+  return {
+    id,
+    title,
+    slug: slug ?? null,
+    recordingTime: {
+      start: state.summary.time.start,
+      end: state.summary.time.end,
+    },
+    startPoint: state.mapGeometry.at(0) ?? null,
+    endPoint: state.mapGeometry.at(-1) ?? null,
+  };
+};
+
 const toPublicHike = (hike: PublicHikeRecord): PublicHike => ({
   ...hike,
   tracks: hike.tracks.map((association) => {
@@ -469,6 +551,7 @@ export const getHikePhotoOptions = async (): Promise<HikePhotoOption[]> => {
       id: true,
       title: true,
       status: true,
+      metadata: true,
       images: {
         orderBy: {
           sortOrder: "asc",
@@ -492,6 +575,7 @@ export const getHikePhotoOptions = async (): Promise<HikePhotoOption[]> => {
     id: photo.id,
     title: photo.title,
     status: photo.status,
+    trackTimeMatch: toTrackTimeMatchPhotoInput(photo),
     previewImage: photo.images.at(0)?.fileAsset ?? null,
   }));
 };
@@ -504,6 +588,99 @@ export const getHikeById = async (id: string): Promise<HikeListItem | null> => {
     where: { id, userId },
     include: hikeListInclude,
   });
+};
+
+export const acceptHikePhotoTrackTimeMatchCandidate = async ({
+  hikeId,
+  photoId,
+  candidateId,
+}: {
+  hikeId: string;
+  photoId: string;
+  candidateId: string;
+}) => {
+  await getRequiredAdminUserId();
+  const { default: prisma } = await import("@/lib/prisma");
+  const hike = await prisma.hike.findUnique({
+    where: { id: hikeId },
+    select: {
+      id: true,
+      title: true,
+      tracks: {
+        where: {
+          track: {
+            status: "PUBLISHED",
+          },
+        },
+        select: {
+          track: {
+            select: {
+              id: true,
+              title: true,
+              slug: true,
+              metadata: true,
+              fileAsset: {
+                select: {
+                  id: true,
+                  fileKey: true,
+                },
+              },
+            },
+          },
+        },
+      },
+      photos: {
+        where: {
+          photoId,
+          photo: {
+            status: "PUBLISHED",
+          },
+        },
+        select: {
+          photo: {
+            select: {
+              id: true,
+              title: true,
+              metadata: true,
+            },
+          },
+        },
+        take: 1,
+      },
+    },
+  });
+
+  if (!hike) {
+    throw new Error("Hike not found");
+  }
+
+  const photo = hike.photos.at(0)?.photo;
+
+  if (!photo) {
+    throw new Error("Published photo is not attached to this hike");
+  }
+
+  const candidates = proposeTrackTimeMatchCandidates(
+    toTrackTimeMatchPhotoInput(photo),
+    hike.tracks.map(({ track }: { track: Parameters<typeof toTrackTimeMatchTrackInput>[0] }) =>
+      toTrackTimeMatchTrackInput(track),
+    ),
+  );
+  const candidate = candidates.find((entry) => entry.id === candidateId);
+
+  if (!candidate) {
+    throw new Error("Track-time match candidate is no longer available");
+  }
+
+  console.info("outdoor-photo-track-time-match-accepted", {
+    hikeId: hike.id,
+    hikeTitle: hike.title,
+    photoId: photo.id,
+    photoTitle: photo.title,
+    candidate,
+  });
+
+  return { success: true };
 };
 
 export const getPublicHikes = async (): Promise<HikeListItem[]> => {

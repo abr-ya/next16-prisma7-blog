@@ -40,7 +40,6 @@ These candidates track the hikes/tracks/photos initiative as small increments. T
 
 | Order | Status | Candidate | Area | Summary |
 | --- | --- | --- | --- | --- |
-| 8 | Ready | feature-061-outdoor-photo-track-time-matching-spike | outdoor/maps-photos | Admin-only spike after feature-060: for hike-linked photos without EXIF GPS, propose track-time match candidates (inside a track recording window, or between nearby adjacent tracks), show them in a modal, and on accept only log the choice — no persistence and no public inferred markers. |
 | 9 | Candidate | outdoor-photo-track-time-inferred-coordinates | outdoor/maps-photos | After feature-061 spike learnings: persist inferred photo coordinates from capture timestamps and track timelines, with provenance, confidence, admin approval, and manual correction before public map display. May also require retaining timestamped trackpoint context beyond start/end summaries. |
 | 10 | Candidate | outdoor-hike-map-day-filter | outdoor/maps | Add an all-days/single-day map filter for linked track geometry and photo markers after temporal semantics and coordinate sources are accepted. |
 | 11 | Candidate | outdoor-hike-map-notes-layer | outdoor/maps-notes | Add hike notes as a future map layer after the hike note entity is designed, including coordinate/date visibility and public/private boundaries. |
@@ -52,7 +51,7 @@ These candidates track the hikes/tracks/photos initiative as small increments. T
 | 17 | Candidate | outdoor-hike-owner-track-upload | outdoor/hikes-tracks | Let hike creators upload GPX tracks directly from a public hike detail page and attach those tracks to the hike, without participant track uploads yet. |
 | 18 | Candidate | outdoor-trip-categories-admin | outdoor/trips | Evaluate and add admin-managed trip categories or types after the hike-to-trip direction is accepted, including support for city walks or similar non-hiking trips, category add/rename behavior, migration from the current fixed hike type enum, and public/admin labeling rules. |
 | 19 | Candidate | outdoor-photo-persistent-thumbnail-derivatives | outdoor/photos-media | Follow-up to feature-057: replace on-demand thumbnail generation with stored derivatives (lifecycle, cleanup, regeneration, multi-size). Also tracked under P1 Soon. |
-| 20 | Candidate | outdoor-track-recording-summary | outdoor/tracks | Show compact GPX recording stats from stored parsed metadata: distance plus recording start/end date-time, and parse/store the GPX `creator` value. Use the same visibility-safe fields on public track detail summaries, admin track summaries, and the linked-track cards on `/hikes/[slug]` under the combined hike map, omitting fields when time or distance is unavailable. |
+| 20 | Ready | feature-063-outdoor-track-recording-time-summary | outdoor/tracks | Show compact GPX recording start/finish date-times and timezone evidence from stored parsed metadata on admin/public track summaries and linked-track cards, omitting unavailable values and leaving manual timezone override to a follow-up. |
 | 21 | Candidate | outdoor-track-device-metadata-extraction | outdoor/tracks | Investigate and extract recording device details from real GPX creator metadata and vendor-specific extensions after collecting examples from Garmin, Strava, OsmAnd, Komoot, and similar sources. |
 | 22 | Candidate | outdoor-photo-manual-ordering | outdoor/photos | Improve manual ordering UX for hike photos after basic association order is proven, considering drag-and-drop, grid ordering, bulk reorder, and mobile behavior. |
 | 23 | Candidate | outdoor-photo-albums-structure | outdoor/photos | Define and add album/grouping structure for photos after basic hike association and ordering are proven. |
@@ -62,13 +61,15 @@ These candidates track the hikes/tracks/photos initiative as small increments. T
 
 | Status | Candidate | Area | Summary |
 | --- | --- | --- | --- |
-| In Progress | outdoor-photo-thumbnail-vercel-500 | outdoor/photos-media | Fix production `GET /files/[fileId]/thumbnail` returning **500** on Vercel after feature-057 on-demand `sharp` thumbnails. Branch `fix-outdoor-photo-thumbnail-vercel-500`: keep `sharp` external, force-trace `@img/sharp*` native binaries into the thumbnail serverless function, pin Node.js runtime. |
+| Ready | feature-062-admin-track-modal-dirty-close-guard | admin/tracks-files | Guard the `/admin/tracks` create/edit modal so dirty forms or newly uploaded unsaved GPX files do not close on a casual outside click; confirm discard and mark unsaved uploaded GPX file assets pending delete before closing. |
+| Ready | feature-063-outdoor-track-recording-time-summary | outdoor/tracks | Show recording start/finish and timezone evidence on track summaries so photo/track time mismatches are visible before inferred coordinate persistence. |
 | Ready | admin-post-save-disabled-until-interaction | posts/admin | Analyze and fix admin post create/edit **Save changes** staying disabled until blur/scroll/console interaction. Reproduced more than once on `/admin/posts/new`. Likely `PostForm` validation gating (`mode: "onBlur"` + `disabled={!form.formState.isValid}`); confirm repro, then make save enable when required fields are valid without needing extra UI noise. |
 
 ## P1 Soon
 
 | Status | Candidate | Area | Summary |
 | --- | --- | --- | --- |
+| Candidate | outdoor-hike-photo-viewer-loading-state | outdoor/hikes-photos | Add a visible loading indicator in the signed-in hike large-photo viewer while the first full-size image (and next/previous switches) loads from `/files/[fileId]/download`, so slow first fetches do not look like a hung UI. Keep prev/next usable; clear the loader on load or error. |
 | Candidate | outdoor-photo-persistent-thumbnail-derivatives | outdoor/photos-media | Follow-up to feature-057's on-demand thumbnail shortcut: store generated thumbnail derivatives with lifecycle, cleanup, regeneration, and multi-size support once gallery usage or photo volume justifies it. Why deferred: prove guest/auth image boundaries first without derivative model, UploadThing storage, or migration scope. |
 | Candidate | outdoor-hike-full-photo-viewer-audience | outdoor/hikes-photos | Follow-up to feature-057's any-signed-in full-viewer shortcut: restrict large/full hike photo viewing (and full-image download) to hike creator, accepted participants, and admins after the participants model exists. Why deferred: participants membership is not shipped yet; feature-057 only needs an authenticated vs anonymous boundary. |
 | Ready | admin-sidebar-role-sections | navigation/admin | Split the admin sidebar into explicit signed-in workspace and admin-only control sections while keeping server-side role checks as the authorization boundary. |
