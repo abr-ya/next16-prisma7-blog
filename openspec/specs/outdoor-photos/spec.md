@@ -172,13 +172,19 @@ The system SHALL expose photo metadata extraction state and refresh controls to 
 
 ### Requirement: Photo map coordinates record source and public readiness
 
-The system SHALL distinguish photo coordinates by source so direct EXIF GPS, inferred track-time coordinates, and manually corrected coordinates can be handled differently before public map display.
+The system SHALL distinguish photo coordinates by source so direct EXIF GPS, inferred track-time coordinates, and manually corrected coordinates can be handled differently before public map display. For this slice, stored direct EXIF GPS from a successful extraction is an accepted public hike map-marker source when the photo is published and linked to a published hike.
 
 #### Scenario: Photo has direct EXIF GPS coordinates
 
 - **WHEN** a photo metadata extraction stores valid GPS latitude and longitude from image metadata
-- **THEN** the photo can have a direct coordinate source suitable for a future public hike map marker when the photo and hike association are otherwise public
+- **THEN** the photo has a direct coordinate source suitable for a public hike map marker when the photo and hike association are otherwise public
 - **AND** the source remains distinguishable from inferred or manually corrected coordinates
+
+#### Scenario: Public hike map uses only direct GPS in this slice
+
+- **WHEN** a published hike map renders photo markers
+- **THEN** only linked published photos with valid stored direct EXIF GPS are included
+- **AND** inferred or manually corrected coordinates are not required or invented by this slice
 
 #### Scenario: Photo has inferred coordinates
 

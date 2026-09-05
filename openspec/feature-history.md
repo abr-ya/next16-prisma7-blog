@@ -69,6 +69,7 @@ Cancelled or deferred candidates do not reserve feature numbers.
 | feature-057 | feature-057-outdoor-hike-photo-gallery-viewer | outdoor/hikes-photos | Add true guest-safe on-demand thumbnails for hike-linked photos and a signed-in large-window photo viewing experience with next/previous navigation, while requiring authentication for full-size hike photo image access. |
 | feature-058 | feature-058-outdoor-hike-map-coordinate-planning | outdoor/maps | Plan the hike detail map roadmap across combined linked tracks, direct GPS photo markers, timestamp-based inferred coordinates, manual correction, all-days/single-day filtering, and future notes before implementation slices begin. |
 | feature-059 | feature-059-outdoor-hike-combined-track-map | outdoor/maps | Add one map under the hike detail title/description that renders all linked visible tracks together and frames the combined bounds, without photo markers or day filtering yet. |
+| feature-060 | feature-060-outdoor-photo-gps-map-markers | outdoor/maps-photos | Place linked published hike photos with stored direct EXIF GPS on the public hike map as visibility-safe markers with title/thumbnail tooltips, including marker-only maps when no tracks are present. |
 
 ## Cancelled Candidate Notes
 
