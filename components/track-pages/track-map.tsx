@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 
+import type { HikePhotoMapMarker } from "@/lib/hikes";
 import type { TrackMapViewModel } from "@/lib/track-gpx-metadata";
 
 export type { TrackMapViewModel };
@@ -19,6 +20,12 @@ export const TrackMap = ({ track }: { track: TrackMapViewModel }) => (
   <TrackMapLeaflet ariaLabel={`${track.title} route map`} tracks={[track]} />
 );
 
-export const CombinedTrackMap = ({ tracks, ariaLabel }: { tracks: TrackMapViewModel[]; ariaLabel: string }) => (
-  <TrackMapLeaflet ariaLabel={ariaLabel} tracks={tracks} />
-);
+export const CombinedTrackMap = ({
+  tracks,
+  ariaLabel,
+  photoMarkers = [],
+}: {
+  tracks: TrackMapViewModel[];
+  ariaLabel: string;
+  photoMarkers?: HikePhotoMapMarker[];
+}) => <TrackMapLeaflet ariaLabel={ariaLabel} tracks={tracks} photoMarkers={photoMarkers} />;

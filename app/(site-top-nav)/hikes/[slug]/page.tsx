@@ -44,6 +44,8 @@ const HikePage = async ({ params }: HikePageProps) => {
 
   const canViewFullPhotos = Boolean(session?.user?.id);
   const mappedTracks = hike.tracks.flatMap(({ track }) => (track.map ? [track.map] : []));
+  const photoMapMarkers = hike.photoMapMarkers;
+  const showRouteMap = mappedTracks.length > 0 || photoMapMarkers.length > 0;
   const galleryPhotos: HikePhotoGalleryItem[] = hike.photos.map(({ photo }) => {
     const preview = photo.images.at(0)?.fileAsset;
 
@@ -72,10 +74,10 @@ const HikePage = async ({ params }: HikePageProps) => {
         ) : (
           <p className="text-sm text-muted-foreground">No description yet.</p>
         )}
-        {mappedTracks.length > 0 ? (
+        {showRouteMap ? (
           <section className="grid gap-3">
             <h2 className="text-base font-semibold">Route map</h2>
-            <HikeTrackMap tracks={mappedTracks} />
+            <HikeTrackMap tracks={mappedTracks} photoMarkers={photoMapMarkers} />
           </section>
         ) : null}
         {hike.tracks.length > 0 ? (

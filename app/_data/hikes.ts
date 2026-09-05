@@ -6,6 +6,8 @@ import type { Prisma } from "@/generated/prisma/client";
 import type { FileAssetStatus, HikeStatus, HikeType, PhotoStatus, TrackStatus } from "@/generated/prisma/enums";
 import { authSession, requireAdmin } from "@/lib/auth-utils";
 import { createSlug } from "@/lib/slug-generator";
+import { getPhotoExifMetadataState, isValidGps } from "@/lib/photo-exif-metadata";
+import type { HikePhotoMapMarker } from "@/lib/hikes";
 import { toTrackMapViewModel, type TrackMapViewModel } from "@/lib/track-gpx-metadata";
 
 export type HikeActionValues = {
@@ -247,6 +249,7 @@ const publicHikeInclude = {
           title: true,
           description: true,
           status: true,
+          metadata: true,
           images: {
             where: {
               fileAsset: {
@@ -282,7 +285,7 @@ type PublicHikeRecord = Prisma.HikeGetPayload<{
   include: typeof publicHikeInclude;
 }>;
 
-export type PublicHike = Omit<PublicHikeRecord, "tracks"> & {
+export type PublicHike = Omit<PublicHikeRecord, "tracks" | "photos"> & {
   tracks: {
     hikeId: string;
     trackId: string;
@@ -297,6 +300,33 @@ export type PublicHike = Omit<PublicHikeRecord, "tracks"> & {
       map: TrackMapViewModel | null;
     };
   }[];
+  photos: {
+    hikeId: string;
+    photoId: string;
+    position: number;
+    assignedAt: Date;
+    photo: Omit<PublicHikeRecord["photos"][number]["photo"], "metadata">;
+  }[];
+  photoMapMarkers: HikePhotoMapMarker[];
+};
+
+const toHikePhotoMapMarker = (photo: PublicHikeRecord["photos"][number]["photo"]): HikePhotoMapMarker | null => {
+  const state = getPhotoExifMetadataState(photo.metadata);
+
+  if (state.status !== "SUCCESS" || !state.summary.gps) return null;
+
+  const { lat, lng } = state.summary.gps;
+  if (!isValidGps(lat, lng)) return null;
+
+  const preview = photo.images.at(0)?.fileAsset;
+
+  return {
+    photoId: photo.id,
+    title: photo.title,
+    lat,
+    lng,
+    thumbnailUrl: preview ? `/files/${preview.id}/thumbnail` : null,
+  };
 };
 
 const toPublicHike = (hike: PublicHikeRecord): PublicHike => ({
@@ -314,6 +344,20 @@ const toPublicHike = (hike: PublicHikeRecord): PublicHike => ({
         }),
       },
     };
+  }),
+  photos: hike.photos.map((association) => ({
+    ...association,
+    photo: {
+      id: association.photo.id,
+      title: association.photo.title,
+      description: association.photo.description,
+      status: association.photo.status,
+      images: association.photo.images,
+    },
+  })),
+  photoMapMarkers: hike.photos.flatMap(({ photo }) => {
+    const marker = toHikePhotoMapMarker(photo);
+    return marker ? [marker] : [];
   }),
 });
 
