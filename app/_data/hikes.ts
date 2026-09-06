@@ -6,13 +6,23 @@ import type { Prisma } from "@/generated/prisma/client";
 import type { FileAssetStatus, HikeStatus, HikeType, PhotoStatus, TrackStatus } from "@/generated/prisma/enums";
 import { authSession, requireAdmin } from "@/lib/auth-utils";
 import { createSlug } from "@/lib/slug-generator";
-import { getPhotoExifMetadataState, isValidGps } from "@/lib/photo-exif-metadata";
+import {
+  getPhotoExifMetadataState,
+  getPhotoMapCoordinate,
+  isValidGps,
+  readPhotoExifMetadata,
+  withPhotoMapCoordinate,
+  type PhotoMapCoordinate,
+} from "@/lib/photo-exif-metadata";
 import type { HikePhotoMapMarker } from "@/lib/hikes";
 import {
+  canPersistInsideTrackWithoutManualOverride,
   proposeTrackTimeMatchCandidates,
+  resolveTrackTimeMatchCoordinate,
   type TrackTimeMatchPhotoInput,
   type TrackTimeMatchTrackInput,
 } from "@/lib/outdoor-photo-track-time-matching";
+import type { TrackTimelineLookup } from "@/lib/outdoor-photo-track-time-coordinate";
 import { getTrackGpxMetadataState, type TrackGpxSummary, type TrackMapViewModel } from "@/lib/track-gpx-metadata";
 
 export type HikeActionValues = {
@@ -38,6 +48,7 @@ export type HikePhotoOption = {
   title: string;
   status: PhotoStatus;
   trackTimeMatch: TrackTimeMatchPhotoInput;
+  mapCoordinate: PhotoMapCoordinate | null;
   previewImage: {
     id: string;
     name: string;
@@ -333,21 +344,41 @@ export type PublicHike = Omit<PublicHikeRecord, "tracks" | "photos"> & {
 
 const toHikePhotoMapMarker = (photo: PublicHikeRecord["photos"][number]["photo"]): HikePhotoMapMarker | null => {
   const state = getPhotoExifMetadataState(photo.metadata);
-
-  if (state.status !== "SUCCESS" || !state.summary.gps) return null;
-
-  const { lat, lng } = state.summary.gps;
-  if (!isValidGps(lat, lng)) return null;
-
   const preview = photo.images.at(0)?.fileAsset;
+  const thumbnailUrl = preview ? `/files/${preview.id}/thumbnail` : null;
 
-  return {
-    photoId: photo.id,
-    title: photo.title,
-    lat,
-    lng,
-    thumbnailUrl: preview ? `/files/${preview.id}/thumbnail` : null,
-  };
+  // Prefer direct EXIF GPS over approved inferred/manual coordinates.
+  if (state.status === "SUCCESS" && state.summary.gps) {
+    const { lat, lng } = state.summary.gps;
+    if (isValidGps(lat, lng)) {
+      return {
+        photoId: photo.id,
+        title: photo.title,
+        lat,
+        lng,
+        thumbnailUrl,
+      };
+    }
+  }
+
+  const mapCoordinate = getPhotoMapCoordinate(photo.metadata);
+
+  if (
+    mapCoordinate?.status === "APPROVED" &&
+    mapCoordinate.lat !== null &&
+    mapCoordinate.lng !== null &&
+    isValidGps(mapCoordinate.lat, mapCoordinate.lng)
+  ) {
+    return {
+      photoId: photo.id,
+      title: photo.title,
+      lat: mapCoordinate.lat,
+      lng: mapCoordinate.lng,
+      thumbnailUrl,
+    };
+  }
+
+  return null;
 };
 
 const toTrackTimeMatchPhotoInput = ({
@@ -398,6 +429,8 @@ const toTrackTimeMatchTrackInput = ({
       recordingTime: null,
       startPoint: null,
       endPoint: null,
+      timeline: null,
+      timezoneEvidence: null,
     };
   }
 
@@ -411,6 +444,8 @@ const toTrackTimeMatchTrackInput = ({
     },
     startPoint: state.mapGeometry.at(0) ?? null,
     endPoint: state.mapGeometry.at(-1) ?? null,
+    timeline: state.timeline,
+    timezoneEvidence: state.summary.time.timezoneEvidence,
   };
 };
 
@@ -588,6 +623,7 @@ export const getHikePhotoOptions = async (): Promise<HikePhotoOption[]> => {
     title: photo.title,
     status: photo.status,
     trackTimeMatch: toTrackTimeMatchPhotoInput(photo),
+    mapCoordinate: getPhotoMapCoordinate(photo.metadata),
     previewImage: photo.images.at(0)?.fileAsset ?? null,
   }));
 };
@@ -606,18 +642,23 @@ export const acceptHikePhotoTrackTimeMatchCandidate = async ({
   hikeId,
   photoId,
   candidateId,
+  lat,
+  lng,
 }: {
   hikeId: string;
   photoId: string;
   candidateId: string;
+  lat?: number | null;
+  lng?: number | null;
 }) => {
-  await getRequiredAdminUserId();
+  const reviewedByUserId = await getRequiredAdminUserId();
   const { default: prisma } = await import("@/lib/prisma");
   const hike = await prisma.hike.findUnique({
     where: { id: hikeId },
     select: {
       id: true,
       title: true,
+      slug: true,
       tracks: {
         where: {
           track: {
@@ -672,27 +713,197 @@ export const acceptHikePhotoTrackTimeMatchCandidate = async ({
     throw new Error("Published photo is not attached to this hike");
   }
 
-  const candidates = proposeTrackTimeMatchCandidates(
-    toTrackTimeMatchPhotoInput(photo),
-    hike.tracks.map(({ track }: { track: Parameters<typeof toTrackTimeMatchTrackInput>[0] }) =>
-      toTrackTimeMatchTrackInput(track),
-    ),
-  );
+  const photoInput = toTrackTimeMatchPhotoInput(photo);
+
+  if (photoInput.hasDirectGps) {
+    throw new Error("Photo already has direct EXIF GPS coordinates");
+  }
+
+  const trackInputs: TrackTimeMatchTrackInput[] = (
+    hike.tracks as Array<{
+      track: {
+        id: string;
+        title: string;
+        slug?: string | null;
+        metadata: Prisma.JsonValue | null;
+        fileAsset: { id: string; fileKey: string };
+      };
+    }>
+  ).map((association) => toTrackTimeMatchTrackInput(association.track));
+  const candidates = proposeTrackTimeMatchCandidates(photoInput, trackInputs);
   const candidate = candidates.find((entry) => entry.id === candidateId);
 
   if (!candidate) {
     throw new Error("Track-time match candidate is no longer available");
   }
 
-  console.info("outdoor-photo-track-time-match-accepted", {
-    hikeId: hike.id,
-    hikeTitle: hike.title,
-    photoId: photo.id,
-    photoTitle: photo.title,
-    candidate,
+  const tracksById = new Map<string, TrackTimelineLookup>();
+
+  for (const track of trackInputs) {
+    tracksById.set(track.id, {
+      id: track.id,
+      timeline: track.timeline ?? null,
+      startPoint: track.startPoint,
+      endPoint: track.endPoint,
+      timezoneEvidence: track.timezoneEvidence ?? null,
+    });
+  }
+
+  const hasManualOverride =
+    typeof lat === "number" && typeof lng === "number" && Number.isFinite(lat) && Number.isFinite(lng);
+
+  if (hasManualOverride && !isValidGps(lat, lng)) {
+    throw new Error("Manual latitude/longitude is invalid");
+  }
+
+  if (
+    !hasManualOverride &&
+    !canPersistInsideTrackWithoutManualOverride(candidate, tracksById) &&
+    candidate.type === "INSIDE_TRACK_WINDOW"
+  ) {
+    throw new Error("This track has no timed timeline; provide manual coordinates or reparse the GPX");
+  }
+
+  const resolved = hasManualOverride
+    ? null
+    : resolveTrackTimeMatchCoordinate(
+        candidate.type === "INSIDE_TRACK_WINDOW"
+          ? {
+              type: "INSIDE_TRACK_WINDOW",
+              trackId: candidate.trackId,
+              capturedAt: candidate.capturedAt,
+            }
+          : candidate.type === "AFTER_TRACK_FINISH"
+            ? {
+                type: "AFTER_TRACK_FINISH",
+                trackId: candidate.trackId,
+                capturedAt: candidate.capturedAt,
+                previousDayFinish: candidate.previousDayFinish,
+              }
+            : {
+                type: "BETWEEN_ADJACENT_TRACKS",
+                previousTrackId: candidate.previousTrackId,
+                nextTrackId: candidate.nextTrackId,
+                capturedAt: candidate.capturedAt,
+                endpointDistanceMeters: candidate.endpointDistanceMeters,
+              },
+        tracksById,
+      );
+
+  if (!hasManualOverride && !resolved) {
+    throw new Error("Unable to resolve coordinates for this candidate");
+  }
+
+  const existingMetadata = readPhotoExifMetadata(photo.metadata);
+
+  if (!existingMetadata || existingMetadata.exifParse.status !== "SUCCESS" || !existingMetadata.summary) {
+    throw new Error("Photo EXIF metadata must be successfully extracted before approving map coordinates");
+  }
+
+  const trackIds =
+    candidate.type === "BETWEEN_ADJACENT_TRACKS"
+      ? [candidate.previousTrackId, candidate.nextTrackId]
+      : [candidate.trackId];
+
+  const mapCoordinate: PhotoMapCoordinate = {
+    lat: hasManualOverride ? lat : resolved!.lat,
+    lng: hasManualOverride ? lng : resolved!.lng,
+    source: hasManualOverride ? "MANUALLY_CORRECTED" : "INFERRED_TRACK_TIME",
+    status: "APPROVED",
+    candidateId: candidate.id,
+    candidateType: candidate.type,
+    placementMethod: hasManualOverride ? "MANUAL_OVERRIDE" : resolved!.placementMethod,
+    trackIds,
+    capturedAt: candidate.capturedAt,
+    confidence: hasManualOverride ? "HIGH" : resolved!.confidence,
+    explanation: candidate.explanation,
+    reviewedAt: new Date().toISOString(),
+    reviewedByUserId,
+  };
+
+  const nextMetadata = withPhotoMapCoordinate(existingMetadata, mapCoordinate);
+
+  await prisma.photo.update({
+    where: { id: photo.id },
+    data: { metadata: nextMetadata as Prisma.InputJsonValue },
   });
 
-  return { success: true };
+  revalidateHikePhotoAssociationPaths(hike.slug);
+
+  return { success: true, mapCoordinate };
+};
+
+export const rejectHikePhotoMapCoordinate = async ({ hikeId, photoId }: { hikeId: string; photoId: string }) => {
+  const reviewedByUserId = await getRequiredAdminUserId();
+  const { default: prisma } = await import("@/lib/prisma");
+  const hike = await prisma.hike.findUnique({
+    where: { id: hikeId },
+    select: {
+      id: true,
+      slug: true,
+      photos: {
+        where: {
+          photoId,
+          photo: {
+            status: "PUBLISHED",
+          },
+        },
+        select: {
+          photo: {
+            select: {
+              id: true,
+              metadata: true,
+            },
+          },
+        },
+        take: 1,
+      },
+    },
+  });
+
+  if (!hike) {
+    throw new Error("Hike not found");
+  }
+
+  const photo = hike.photos.at(0)?.photo;
+
+  if (!photo) {
+    throw new Error("Published photo is not attached to this hike");
+  }
+
+  const existingMetadata = readPhotoExifMetadata(photo.metadata);
+
+  if (!existingMetadata) {
+    throw new Error("Photo metadata is missing");
+  }
+
+  const previous = existingMetadata.mapCoordinate ?? null;
+  const mapCoordinate: PhotoMapCoordinate = {
+    lat: previous?.lat ?? null,
+    lng: previous?.lng ?? null,
+    source: previous?.source ?? "INFERRED_TRACK_TIME",
+    status: "REJECTED",
+    candidateId: previous?.candidateId ?? null,
+    candidateType: previous?.candidateType ?? null,
+    placementMethod: previous?.placementMethod ?? "UNRESOLVED",
+    trackIds: previous?.trackIds ?? [],
+    capturedAt: previous?.capturedAt ?? null,
+    confidence: previous?.confidence ?? null,
+    explanation: previous?.explanation ?? "Rejected by admin",
+    reviewedAt: new Date().toISOString(),
+    reviewedByUserId,
+  };
+
+  const nextMetadata = withPhotoMapCoordinate(existingMetadata, mapCoordinate);
+
+  await prisma.photo.update({
+    where: { id: photo.id },
+    data: { metadata: nextMetadata as Prisma.InputJsonValue },
+  });
+
+  revalidateHikePhotoAssociationPaths(hike.slug);
+
+  return { success: true, mapCoordinate };
 };
 
 export const getPublicHikes = async (): Promise<HikeListItem[]> => {

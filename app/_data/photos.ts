@@ -5,7 +5,11 @@ import { revalidatePath } from "next/cache";
 import type { Prisma } from "@/generated/prisma/client";
 import type { FileAssetStatus, PhotoStatus } from "@/generated/prisma/enums";
 import { requireAdmin } from "@/lib/auth-utils";
-import { markPhotoExifMetadataStale, type PhotoExifSourceImage } from "@/lib/photo-exif-metadata";
+import {
+  markPhotoExifMetadataStale,
+  readPhotoExifMetadata,
+  type PhotoExifSourceImage,
+} from "@/lib/photo-exif-metadata";
 import { parsePhotoExifMetadata } from "@/lib/photo-exif-parser";
 import { normalizePhotoInput } from "@/lib/photos";
 
@@ -296,6 +300,7 @@ export const refreshPhotoExifMetadata = async (id: string) => {
     where: { id },
     select: {
       id: true,
+      metadata: true,
       images: {
         orderBy: { sortOrder: "asc" },
         select: {
@@ -312,7 +317,7 @@ export const refreshPhotoExifMetadata = async (id: string) => {
         },
       },
     },
-  })) as { id: string; images: PhotoRefreshImage[] } | null;
+  })) as { id: string; metadata: Prisma.JsonValue | null; images: PhotoRefreshImage[] } | null;
 
   if (!photo) {
     throw new Error("Photo not found");
@@ -334,15 +339,18 @@ export const refreshPhotoExifMetadata = async (id: string) => {
       url: image.fileAsset.url,
     })),
   });
+  const previousMapCoordinate = readPhotoExifMetadata(photo.metadata)?.mapCoordinate;
+  const metadataToPersist =
+    previousMapCoordinate !== undefined ? { ...metadata, mapCoordinate: previousMapCoordinate } : metadata;
 
   await prisma.photo.update({
     where: { id: photo.id },
-    data: { metadata: metadata as Prisma.InputJsonValue },
+    data: { metadata: metadataToPersist as Prisma.InputJsonValue },
   });
 
   revalidatePhotoPaths();
 
-  return metadata;
+  return metadataToPersist;
 };
 
 export const deletePhoto = async (id: string) => {

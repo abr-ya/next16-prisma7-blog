@@ -29,6 +29,7 @@ import {
   deleteHike,
   detachPhotoFromHike,
   detachTrackFromHike,
+  rejectHikePhotoMapCoordinate,
   reorderHikePhotos,
   updateHike,
   type HikeListItem,
@@ -60,6 +61,7 @@ import {
 } from "@/components/index";
 import type { HikeStatus, HikeType } from "@/generated/prisma/enums";
 import { formatHikeStatus, formatHikeType, hikeStatusOptions, hikeTypeOptions } from "@/lib/hikes";
+import { formatPhotoMapCoordinateStatus } from "@/lib/photo-exif-metadata";
 import {
   proposeTrackTimeMatchCandidates,
   type TrackTimeMatchCandidate,
@@ -68,6 +70,7 @@ import {
 import { formatPhotoStatus } from "@/lib/photos";
 import { createSlug } from "@/lib/slug-generator";
 import { formatTrackStatus } from "@/lib/tracks";
+import { formatTrackTimezoneEvidence } from "@/lib/track-gpx-metadata";
 
 const formSchema = z
   .object({
@@ -139,14 +142,33 @@ const toTrackTimeMatchTracks = (hike: HikeListItem | null): TrackTimeMatchTrackI
           time?: {
             start?: unknown;
             end?: unknown;
+            timezoneEvidence?: unknown;
           } | null;
         } | null;
         mapGeometry?: unknown;
+        timeline?: unknown;
       } | null;
       const time = metadata?.summary?.time;
       const geometry = Array.isArray(metadata?.mapGeometry) ? metadata.mapGeometry : [];
+      const timeline = Array.isArray(metadata?.timeline)
+        ? metadata.timeline.filter(
+            (point): point is { time: string; lat: number; lng: number } =>
+              typeof point === "object" &&
+              point !== null &&
+              typeof (point as { time?: unknown }).time === "string" &&
+              typeof (point as { lat?: unknown }).lat === "number" &&
+              typeof (point as { lng?: unknown }).lng === "number",
+          )
+        : [];
       const firstPoint = geometry.at(0);
       const lastPoint = geometry.at(-1);
+      const timezoneEvidence =
+        time?.timezoneEvidence === "UTC_OR_OFFSET" ||
+        time?.timezoneEvidence === "MISSING" ||
+        time?.timezoneEvidence === "MIXED" ||
+        time?.timezoneEvidence === "UNKNOWN"
+          ? time.timezoneEvidence
+          : null;
 
       return {
         id: track.id,
@@ -161,6 +183,8 @@ const toTrackTimeMatchTracks = (hike: HikeListItem | null): TrackTimeMatchTrackI
             : null,
         startPoint: isCoordinate(firstPoint) ? firstPoint : null,
         endPoint: isCoordinate(lastPoint) ? lastPoint : null,
+        timeline,
+        timezoneEvidence,
       };
     }) ?? [];
 
@@ -541,6 +565,8 @@ const HikePhotosDialog = ({
   const [attachedPhotoIds, setAttachedPhotoIds] = useState<string[]>([]);
   const [matchingPhoto, setMatchingPhoto] = useState<HikePhotoOption | null>(null);
   const [pendingCandidateId, setPendingCandidateId] = useState<string | null>(null);
+  const [manualLat, setManualLat] = useState("");
+  const [manualLng, setManualLng] = useState("");
   const [, startChanging] = useTransition();
   const photosById = useMemo(() => new Map(photos.map((photo) => [photo.id, photo])), [photos]);
   const associatedPhotoIds = useMemo(() => new Set(attachedPhotoIds), [attachedPhotoIds]);
@@ -561,6 +587,22 @@ const HikePhotosDialog = ({
 
     setAttachedPhotoIds(hike?.photos.map(({ photo }) => photo.id) ?? []);
   }, [hike, open]);
+
+  useEffect(() => {
+    if (!matchingPhoto) {
+      setManualLat("");
+      setManualLng("");
+      return;
+    }
+
+    const coordinate = matchingPhoto.mapCoordinate;
+    setManualLat(coordinate?.lat != null ? String(coordinate.lat) : "");
+    setManualLng(coordinate?.lng != null ? String(coordinate.lng) : "");
+  }, [matchingPhoto]);
+
+  const openMatchingPhoto = (photo: HikePhotoOption) => {
+    setMatchingPhoto(photosById.get(photo.id) ?? photo);
+  };
 
   const handleAttach = (photoId: string) => {
     if (!hike) return;
@@ -631,8 +673,22 @@ const HikePhotosDialog = ({
     });
   };
 
-  const handleAcceptCandidate = (candidate: TrackTimeMatchCandidate) => {
+  const handleApproveCandidate = (candidate: TrackTimeMatchCandidate) => {
     if (!hike || !matchingPhoto) return;
+
+    const parsedLat = manualLat.trim() ? Number(manualLat) : null;
+    const parsedLng = manualLng.trim() ? Number(manualLng) : null;
+    const hasManual = parsedLat !== null || parsedLng !== null;
+
+    if (hasManual && (parsedLat === null || parsedLng === null || Number.isNaN(parsedLat) || Number.isNaN(parsedLng))) {
+      toast.error("Enter both latitude and longitude for a manual override");
+      return;
+    }
+
+    if (candidate.placementMethod === "UNRESOLVED" && !hasManual) {
+      toast.error("This candidate needs a timed timeline or manual lat/lng");
+      return;
+    }
 
     setPendingCandidateId(candidate.id);
     startChanging(async () => {
@@ -641,11 +697,34 @@ const HikePhotosDialog = ({
           hikeId: hike.id,
           photoId: matchingPhoto.id,
           candidateId: candidate.id,
+          ...(hasManual ? { lat: parsedLat, lng: parsedLng } : {}),
         });
-        toast.success("Track-time match logged");
+        toast.success("Map coordinate approved");
         setMatchingPhoto(null);
+        onChanged();
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : "Failed to log match candidate");
+        toast.error(error instanceof Error ? error.message : "Failed to approve map coordinate");
+      } finally {
+        setPendingCandidateId(null);
+      }
+    });
+  };
+
+  const handleRejectCoordinate = () => {
+    if (!hike || !matchingPhoto) return;
+
+    setPendingCandidateId("reject");
+    startChanging(async () => {
+      try {
+        await rejectHikePhotoMapCoordinate({
+          hikeId: hike.id,
+          photoId: matchingPhoto.id,
+        });
+        toast.success("Map coordinate rejected");
+        setMatchingPhoto(null);
+        onChanged();
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Failed to reject map coordinate");
       } finally {
         setPendingCandidateId(null);
       }
@@ -666,9 +745,21 @@ const HikePhotosDialog = ({
           <div className="truncate font-medium" title={photo.title}>
             {photo.title}
           </div>
-          <Badge variant={photo.status === "PUBLISHED" ? "default" : "secondary"}>
-            {formatPhotoStatus(photo.status)}
-          </Badge>
+          <div className="flex flex-wrap gap-1">
+            <Badge variant={photo.status === "PUBLISHED" ? "default" : "secondary"}>
+              {formatPhotoStatus(photo.status)}
+            </Badge>
+            {photo.mapCoordinate ? (
+              <>
+                <Badge variant={photo.mapCoordinate.status === "APPROVED" ? "secondary" : "outline"}>
+                  {formatPhotoMapCoordinateStatus(photo.mapCoordinate.status)}
+                </Badge>
+                {photo.mapCoordinate.placementMethod === "PREVIOUS_DAY_FINISH_ENDPOINT" ? (
+                  <Badge variant="outline">Yesterday&apos;s finish</Badge>
+                ) : null}
+              </>
+            ) : null}
+          </div>
         </div>
       </div>
       {typeof index === "number" ? (
@@ -678,9 +769,9 @@ const HikePhotosDialog = ({
               type="button"
               variant="ghost"
               size="icon"
-              title="Review track-time match"
+              title="Review track-time map coordinate"
               disabled={pendingPhotoId === photo.id}
-              onClick={() => setMatchingPhoto(photo)}
+              onClick={() => openMatchingPhoto(photo)}
             >
               <Clock3 className="size-4" />
             </Button>
@@ -776,12 +867,11 @@ const HikePhotosDialog = ({
       >
         <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle>
-              {matchingPhoto ? `Track-time match for ${matchingPhoto.title}` : "Track-time match"}
-            </DialogTitle>
+            <DialogTitle>{matchingPhoto ? `Map coordinate for ${matchingPhoto.title}` : "Map coordinate"}</DialogTitle>
             <DialogDescription>
-              Spike only: timestamps are compared as parseable absolute times. Accepting a candidate logs it for
-              evaluation and does not save coordinates or add a public map marker.
+              Approve a track-time candidate to save an inferred map coordinate, or enter lat/lng to save a manual
+              correction. Direct EXIF GPS still wins on the public map when present. Rejected coordinates stay off the
+              public map.
             </DialogDescription>
           </DialogHeader>
           <div className="grid max-h-[60vh] gap-3 overflow-y-auto pr-1">
@@ -790,28 +880,133 @@ const HikePhotosDialog = ({
                 Captured at {formatDateTime(matchingPhoto.trackTimeMatch.capturedAt)}
               </div>
             ) : null}
+            {matchingPhoto?.mapCoordinate ? (
+              <div className="rounded-md border p-3 text-sm">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge variant={matchingPhoto.mapCoordinate.status === "APPROVED" ? "secondary" : "outline"}>
+                    {formatPhotoMapCoordinateStatus(matchingPhoto.mapCoordinate.status)}
+                  </Badge>
+                  <Badge variant="outline">
+                    {matchingPhoto.mapCoordinate.placementMethod === "PREVIOUS_DAY_FINISH_ENDPOINT"
+                      ? "Yesterday's finish"
+                      : matchingPhoto.mapCoordinate.placementMethod === "TRACK_FINISH_ENDPOINT"
+                        ? "Track finish point"
+                        : matchingPhoto.mapCoordinate.placementMethod === "TIMELINE_INTERPOLATION"
+                          ? "Timeline interpolation"
+                          : matchingPhoto.mapCoordinate.placementMethod === "ENDPOINT_MIDPOINT"
+                            ? "Endpoint midpoint"
+                            : matchingPhoto.mapCoordinate.placementMethod === "MANUAL_OVERRIDE"
+                              ? "Manual override"
+                              : matchingPhoto.mapCoordinate.placementMethod}
+                  </Badge>
+                  <span className="text-muted-foreground">{matchingPhoto.mapCoordinate.source}</span>
+                </div>
+                {matchingPhoto.mapCoordinate.explanation ? (
+                  <div className="mt-2 text-sm">{matchingPhoto.mapCoordinate.explanation}</div>
+                ) : null}
+                {matchingPhoto.mapCoordinate.lat != null && matchingPhoto.mapCoordinate.lng != null ? (
+                  <div className="mt-1 text-muted-foreground">
+                    {matchingPhoto.mapCoordinate.lat.toFixed(5)}, {matchingPhoto.mapCoordinate.lng.toFixed(5)}
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+            <div className="grid gap-2 rounded-md border p-3 sm:grid-cols-2">
+              <div className="grid gap-1">
+                <label className="text-xs font-medium" htmlFor="manual-lat">
+                  Manual latitude (optional)
+                </label>
+                <Input
+                  id="manual-lat"
+                  value={manualLat}
+                  onChange={(event) => setManualLat(event.target.value)}
+                  placeholder="e.g. 55.75"
+                />
+              </div>
+              <div className="grid gap-1">
+                <label className="text-xs font-medium" htmlFor="manual-lng">
+                  Manual longitude (optional)
+                </label>
+                <Input
+                  id="manual-lng"
+                  value={manualLng}
+                  onChange={(event) => setManualLng(event.target.value)}
+                  placeholder="e.g. 37.62"
+                />
+              </div>
+            </div>
             {matchCandidates.length > 0 ? (
               matchCandidates.map((candidate) => (
                 <div key={candidate.id} className="grid gap-3 rounded-md border p-3">
                   <div className="grid gap-1">
-                    <Badge variant="outline" className="w-fit">
-                      {candidate.type === "INSIDE_TRACK_WINDOW" ? "Inside track window" : "Between tracks"}
-                    </Badge>
+                    <div className="flex flex-wrap gap-1">
+                      <Badge variant="outline" className="w-fit">
+                        {candidate.type === "INSIDE_TRACK_WINDOW"
+                          ? "Inside track window"
+                          : candidate.type === "AFTER_TRACK_FINISH"
+                            ? candidate.previousDayFinish
+                              ? "Yesterday's finish"
+                              : "After track finish"
+                            : "Between tracks"}
+                      </Badge>
+                      <Badge variant={candidate.placementMethod === "UNRESOLVED" ? "outline" : "secondary"}>
+                        {candidate.placementMethod === "TIMELINE_INTERPOLATION"
+                          ? "Timeline interpolation"
+                          : candidate.placementMethod === "ENDPOINT_MIDPOINT"
+                            ? "Endpoint midpoint"
+                            : candidate.placementMethod === "PREVIOUS_DAY_FINISH_ENDPOINT"
+                              ? "Yesterday's finish point"
+                              : candidate.placementMethod === "TRACK_FINISH_ENDPOINT"
+                                ? "Track finish point"
+                                : "Needs timeline or manual lat/lng"}
+                      </Badge>
+                      {candidate.timezoneEvidence ? (
+                        <Badge variant={candidate.timezoneEvidence === "UTC_OR_OFFSET" ? "secondary" : "outline"}>
+                          {formatTrackTimezoneEvidence(candidate.timezoneEvidence)}
+                        </Badge>
+                      ) : null}
+                    </div>
                     <div className="text-sm">{candidate.explanation}</div>
                     <div className="text-xs text-muted-foreground">
                       {candidate.type === "INSIDE_TRACK_WINDOW"
                         ? `${formatDateTime(candidate.trackStart)} - ${formatDateTime(candidate.trackEnd)}`
-                        : `${formatDateTime(candidate.previousTrackEnd)} - ${formatDateTime(candidate.nextTrackStart)}`}
+                        : candidate.type === "AFTER_TRACK_FINISH"
+                          ? candidate.previousDayFinish
+                            ? `Finished ${formatDateTime(candidate.trackEnd)} · window until ${
+                                candidate.windowEndsAt
+                                  ? `${formatDateTime(candidate.windowEndsAt)}${
+                                      candidate.windowEndTrackTitle ? ` (${candidate.windowEndTrackTitle})` : ""
+                                    }`
+                                  : "first track of capture day (none yet)"
+                              }`
+                            : `Finished ${formatDateTime(candidate.trackEnd)} · gap ${Math.round(candidate.gapSeconds / 60)} min`
+                          : `${formatDateTime(candidate.previousTrackEnd)} - ${formatDateTime(candidate.nextTrackStart)}`}
                     </div>
+                    {candidate.proposedCoordinate ? (
+                      <div className="text-xs text-muted-foreground">
+                        Proposed {candidate.proposedCoordinate.lat.toFixed(5)},{" "}
+                        {candidate.proposedCoordinate.lng.toFixed(5)}
+                        {candidate.confidence ? ` · confidence ${candidate.confidence.toLowerCase()}` : ""}
+                      </div>
+                    ) : (
+                      <div className="text-xs text-muted-foreground">
+                        No automatic coordinate yet
+                        {candidate.type === "INSIDE_TRACK_WINDOW" && !candidate.hasTimedTimeline
+                          ? " — reparse the track GPX to build a timed timeline, or enter lat/lng below."
+                          : candidate.type === "AFTER_TRACK_FINISH"
+                            ? " — track finish geometry is missing; enter lat/lng or reparse the track."
+                            : "."}
+                      </div>
+                    )}
                   </div>
-                  <div className="flex justify-end">
+                  <div className="flex justify-end gap-2">
                     <Button
                       type="button"
                       size="sm"
                       disabled={pendingCandidateId === candidate.id}
-                      onClick={() => handleAcceptCandidate(candidate)}
+                      onClick={() => handleApproveCandidate(candidate)}
                     >
-                      Log choice
+                      Approve
                     </Button>
                   </div>
                 </div>
@@ -820,9 +1015,23 @@ const HikePhotosDialog = ({
               <div className="rounded-md border p-4 text-sm text-muted-foreground">
                 No track-time candidates found from the currently attached published tracks. Tracks need stored
                 recording start/end times; between-track matches also need a short enough gap and nearby endpoints when
-                endpoint geometry is available.
+                endpoint geometry is available. Photos after a previous calendar day&apos;s finish can use that finish
+                point until the first track of the capture day starts.
               </div>
             )}
+            {matchingPhoto ? (
+              <div className="flex justify-end">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={pendingCandidateId === "reject"}
+                  onClick={handleRejectCoordinate}
+                >
+                  Reject map coordinate
+                </Button>
+              </div>
+            ) : null}
           </div>
         </DialogContent>
       </Dialog>

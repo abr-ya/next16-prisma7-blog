@@ -295,6 +295,35 @@ The system SHALL plan for parsed track metadata to retain enough timestamped rou
 - **THEN** the track can remain map-renderable as route geometry
 - **AND** it is not treated as usable for timestamp-based photo coordinate inference
 
+### Requirement: Parsed tracks may retain a compact timed timeline
+
+The system SHALL allow successfully parsed GPX tracks to store a compact timestamped trackpoint timeline in track metadata when enough source points include usable times, so later photo-to-track coordinate inference can interpolate along the route without reparsing GPX during normal page rendering.
+
+#### Scenario: GPX trackpoints include usable timestamps
+
+- **WHEN** an authenticated admin parses or refreshes a GPX track whose trackpoints include usable timestamp values
+- **THEN** the stored track metadata MAY include a downsampled timeline of time, latitude, and longitude points sufficient for along-route interpolation
+- **AND** the existing simplified map geometry used for drawing remains available
+
+#### Scenario: GPX track lacks usable timed points
+
+- **WHEN** an authenticated admin parses or refreshes a GPX track that has no usable per-point timestamps
+- **THEN** the stored track metadata omits a timed timeline or stores an empty/unavailable timeline state
+- **AND** track summary start/end times may still exist when only range-level timestamps are available
+- **AND** readers treat along-route interpolation as unavailable for that track
+
+#### Scenario: Existing tracks without timeline remain readable
+
+- **WHEN** an older successful track metadata payload has summary and map geometry but no timeline field
+- **THEN** track admin and public surfaces continue to read the existing summary and geometry
+- **AND** photo inference treats along-route interpolation as unavailable until the track is reparsed into a timeline-capable payload
+
+#### Scenario: Timeline storage stays bounded
+
+- **WHEN** a long GPX file contains a large number of timed trackpoints
+- **THEN** the stored timeline SHALL be downsampled or otherwise capped so metadata remains suitable for JSON storage and normal page reads
+- **AND** the system does not require public hike pages to re-fetch or reparse the original GPX file to place approved inferred photo markers
+
 ### Requirement: Track time summaries support matching spikes before full timelines exist
 
 The system SHALL allow an admin track-time matching spike to use stored track recording time ranges when available, while recognizing that simplified map geometry without per-point timestamps is insufficient for precise along-track interpolation.
@@ -311,11 +340,11 @@ The system SHALL allow an admin track-time matching spike to use stored track re
 - **THEN** the track can remain map-renderable
 - **AND** it is not treated as usable for timestamp-based photo matching candidates in the spike
 
-#### Scenario: Future timeline retention remains a follow-up
+#### Scenario: Compact timed timeline enables along-route inference
 
-- **WHEN** precise photo placement along a route is required
-- **THEN** a later change may retain timestamped trackpoint context beyond start/end summary
-- **AND** public hike pages still MUST NOT reparse raw GPX during normal rendering once that data is stored
+- **WHEN** a linked track retains a compact timed timeline from parse/refresh
+- **THEN** admin photo coordinate review MAY interpolate along that timeline for inside-window candidates
+- **AND** public hike pages still MUST NOT reparse raw GPX during normal rendering
 
 ### Requirement: Track day filtering is based on accepted temporal track data
 
@@ -422,5 +451,5 @@ The system SHALL make track timestamp timezone evidence visible enough for admin
 #### Scenario: Timezone evidence does not infer photo coordinates
 
 - **WHEN** timezone evidence is displayed for a track
-- **THEN** the system SHALL NOT automatically persist inferred photo coordinates from that evidence in this slice
-- **AND** later photo matching workflows still require their own accepted confidence and approval rules
+- **THEN** the system SHALL NOT automatically persist inferred photo coordinates from that evidence alone
+- **AND** photo matching workflows still require their own accepted confidence and approval rules

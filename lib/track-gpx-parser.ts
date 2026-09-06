@@ -7,6 +7,7 @@ import {
   type TrackGpxMetadata,
   type TrackGpxSummary,
   type TrackGpxTimeSummary,
+  type TrackGpxTimedPoint,
   type TrackGpxTimezoneEvidence,
 } from "@/lib/track-gpx-metadata";
 
@@ -24,6 +25,7 @@ type ParseTrackGpxInput = {
 
 const EARTH_RADIUS_METERS = 6371000;
 const MAX_SIMPLIFIED_POINTS = 1000;
+const MAX_TIMELINE_POINTS = 400;
 const SIMPLIFY_TOLERANCE_DEGREES = 0.00008;
 
 const decodeXmlEntity = (value: string) =>
@@ -272,6 +274,29 @@ const simplifyMapGeometry = (points: TrackGpxCoordinate[]) => {
   return thinToMaxPoints(simplifiedSegments, MAX_SIMPLIFIED_POINTS);
 };
 
+const buildTimeline = (points: ParsedGpxPoint[]): TrackGpxTimedPoint[] | null => {
+  const timedPoints = points
+    .filter((point): point is ParsedGpxPoint & { time: string } => Boolean(point.time))
+    .map((point) => ({
+      time: point.time,
+      lat: point.lat,
+      lng: point.lng,
+    }));
+
+  if (timedPoints.length === 0) return null;
+
+  if (timedPoints.length <= MAX_TIMELINE_POINTS) return timedPoints;
+
+  const selected = new Set<number>([0, timedPoints.length - 1]);
+  const step = (timedPoints.length - 1) / (MAX_TIMELINE_POINTS - 1);
+
+  for (let i = 1; i < MAX_TIMELINE_POINTS - 1; i += 1) {
+    selected.add(Math.round(i * step));
+  }
+
+  return [...selected].sort((a, b) => a - b).map((index) => timedPoints[index]);
+};
+
 const sanitizeErrorMessage = (error: unknown) => {
   const message = error instanceof Error ? error.message : "GPX parsing failed";
 
@@ -303,6 +328,7 @@ export const parseTrackGpxMetadata = ({
     }
 
     const mapGeometry = simplifyMapGeometry(points.map(({ lat, lng }) => ({ lat, lng })));
+    const timeline = buildTimeline(points);
     const summary: TrackGpxSummary = {
       distanceMeters: computeDistance(points),
       bounds: computeBounds(points),
@@ -319,6 +345,7 @@ export const parseTrackGpxMetadata = ({
       sourceFileKey,
       summary,
       mapGeometry,
+      timeline,
     });
   } catch (error) {
     return createFailedTrackGpxMetadata({

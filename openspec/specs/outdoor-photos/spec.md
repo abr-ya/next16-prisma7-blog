@@ -172,7 +172,7 @@ The system SHALL expose photo metadata extraction state and refresh controls to 
 
 ### Requirement: Photo map coordinates record source and public readiness
 
-The system SHALL distinguish photo coordinates by source so direct EXIF GPS, inferred track-time coordinates, and manually corrected coordinates can be handled differently before public map display. For this slice, stored direct EXIF GPS from a successful extraction is an accepted public hike map-marker source when the photo is published and linked to a published hike.
+The system SHALL distinguish photo coordinates by source so direct EXIF GPS, inferred track-time coordinates, and manually corrected coordinates can be handled differently before public map display. Stored direct EXIF GPS from a successful extraction remains an accepted public hike map-marker source when the photo is published and linked to a published hike. Approved inferred or manually corrected coordinates SHALL also be accepted public marker sources when direct EXIF GPS is absent.
 
 #### Scenario: Photo has direct EXIF GPS coordinates
 
@@ -182,13 +182,13 @@ The system SHALL distinguish photo coordinates by source so direct EXIF GPS, inf
 
 #### Scenario: Public hike map uses only direct GPS in this slice
 
-- **WHEN** a published hike map renders photo markers
-- **THEN** only linked published photos with valid stored direct EXIF GPS are included
-- **AND** inferred or manually corrected coordinates are not required or invented by this slice
+- **WHEN** a published hike map renders photo markers and a linked published photo has valid stored direct EXIF GPS
+- **THEN** that photo marker uses the direct EXIF GPS coordinate
+- **AND** inferred or manually corrected coordinates do not replace the direct EXIF source for public display
 
 #### Scenario: Photo has inferred coordinates
 
-- **WHEN** a future inference process derives candidate coordinates from the photo capture time and linked track timelines
+- **WHEN** an admin-approved inference process derives coordinates from the photo capture time and linked track timelines
 - **THEN** the candidate coordinates are recorded as inferred rather than direct EXIF GPS
 - **AND** they are not treated as public-ready until accepted by the approved review behavior
 
@@ -196,33 +196,33 @@ The system SHALL distinguish photo coordinates by source so direct EXIF GPS, inf
 
 - **WHEN** an authorized admin manually corrects or confirms a photo coordinate
 - **THEN** the corrected coordinate can be recorded as manually corrected or admin-approved
-- **AND** future public map behavior can prefer the accepted corrected coordinate over an unapproved inferred candidate
+- **AND** future public map behavior can prefer the accepted corrected coordinate over an unapproved inferred candidate when direct EXIF GPS is absent
 
 ### Requirement: Inferred photo coordinates require confidence and review
 
-The system SHALL require timestamp-inferred photo coordinates to carry enough provenance and confidence information for admin review before public hike map display. An admin-only matching spike may present non-persistent candidates and log an accepted suggestion before that persistence/review model exists.
+The system SHALL require timestamp-inferred photo coordinates to carry enough provenance and confidence information for admin review before public hike map display. Admins MAY approve, reject, or manually correct proposed coordinates through the track-time matching review flow; rejected or unapproved candidates SHALL NOT appear on public hike maps.
 
 #### Scenario: Spike proposes a track-time candidate
 
-- **WHEN** an authenticated admin opens the track-time matching spike for a hike-linked photo that lacks direct EXIF GPS but has a usable capture timestamp
-- **THEN** the system may show zero or more candidate explanations based on linked track recording windows and simple between-track gaps
-- **AND** it does not write inferred coordinates to the photo record in this spike
+- **WHEN** an authenticated admin opens the track-time matching review for a hike-linked photo that lacks direct EXIF GPS but has a usable capture timestamp
+- **THEN** the system may show zero or more candidate explanations based on linked track recording windows, between-track gaps, and available timed track timelines
+- **AND** persistable candidates include enough provenance to reconstruct why a coordinate would be stored
 
 #### Scenario: Admin accepts a spike candidate
 
-- **WHEN** an authenticated admin accepts one spike candidate
-- **THEN** the system logs the accepted candidate details for evaluation
-- **AND** the public hike map does not gain an inferred marker from that acceptance
+- **WHEN** an authenticated admin accepts/approves one track-time candidate with a resolvable latitude and longitude
+- **THEN** the system persists the coordinate, source track identity, matched timestamp context, confidence or match quality, and approved review status on the photo metadata
+- **AND** the public hike map MAY show a marker for that photo when the hike and photo are otherwise public-eligible and direct EXIF GPS is absent
 
 #### Scenario: Inference creates a candidate coordinate
 
-- **WHEN** a future inference process matches a photo capture timestamp to a linked track timeline
+- **WHEN** an inference process matches a photo capture timestamp to a linked track timeline or between-track placement rule
 - **THEN** the candidate stores the coordinate, source track identity, matched timestamp context, confidence or match quality, and inference status
 - **AND** the public hike map does not display the candidate until it is approved or manually corrected according to the accepted workflow
 
 #### Scenario: Inference cannot produce a confident candidate
 
-- **WHEN** a photo lacks usable capture time, all linked tracks lack usable timestamps, or the match is outside accepted confidence bounds
+- **WHEN** a photo lacks usable capture time, linked tracks lack usable timestamps or timed points needed for a resolvable coordinate, or no candidate can be formed
 - **THEN** the system records no public-ready inferred coordinate for that photo
 - **AND** the photo may remain visible in the hike photo gallery or section without a map marker
 
