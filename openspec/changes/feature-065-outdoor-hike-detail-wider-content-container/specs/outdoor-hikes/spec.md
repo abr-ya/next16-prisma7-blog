@@ -19,5 +19,22 @@ The system SHALL render published hike detail pages in a wide content container 
 
 #### Scenario: Other public pages keep the default prose column
 
-- **WHEN** a visitor opens a public page that is not `/hikes/[slug]`
+- **WHEN** a visitor opens a public page that is not `/hikes` or `/hikes/[slug]`
 - **THEN** this slice SHALL NOT change that page's content-container width
+
+### Requirement: Public hike listing uses the wide content container
+
+The system SHALL render the public hike listing in the same wide content container as hike detail and show published hike cards in up to three columns on medium-or-wider viewports.
+
+#### Scenario: Visitor opens hike listing with published hikes
+
+- **WHEN** a visitor opens `/hikes` and at least one published hike exists
+- **THEN** the listing occupies the wide content container
+- **AND** hike cards show up to three cards per row on a medium-or-wider viewport
+- **AND** a narrow viewport still stacks those cards in a single column
+
+#### Scenario: Visitor opens empty hike listing
+
+- **WHEN** a visitor opens `/hikes` and no published hikes exist
+- **THEN** the page remains usable with the empty-state message in the wide content container
+

@@ -66,7 +66,7 @@ export const HikePhotoGallery = ({ photos, canViewFullPhotos }: HikePhotoGallery
     <>
       <section className="grid gap-3">
         <h2 className="text-base font-semibold">Photos</h2>
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4 md:grid-cols-3">
           {photos.map((photo, index) => {
             const isOpenable = canViewFullPhotos && Boolean(photo.fullUrl);
 

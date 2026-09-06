@@ -1,27 +1,28 @@
 ## Context
 
-See `proposal.md` for motivation. Published `/hikes/[slug]` wraps content in `PageLayout`, whose inner shell is hardcoded `max-w-3xl`. The hike article also sets `max-w-3xl`, which cannot exceed the parent. The public `/hikes` listing already tries `max-w-5xl` on an inner wrapper, but that wider class is currently dead for the same reason. Map and gallery components already fill 100% of their parent; they will get wider once the parent is wider. No schema, auth, or visibility changes are in scope.
+See `proposal.md` for motivation. Published `/hikes` and `/hikes/[slug]` wrap content in `PageLayout`, whose inner shell was hardcoded `max-w-3xl`. The listing's inner `max-w-5xl` could not exceed that parent. Map and gallery components already fill 100% of their parent. No schema, auth, or visibility changes are in scope.
 
 ## Goals / Non-Goals
 
 **Goals:**
 
-- Let hike detail opt into a `max-w-5xl` content shell through `PageLayout`.
-- Keep title/badges/description on a `max-w-3xl` measure inside that shell.
+- Let hike listing and hike detail opt into a `max-w-7xl` content shell through `PageLayout`.
+- Keep hike-detail title/badges/description on a `max-w-3xl` measure inside that shell.
 - Let map, linked tracks, and gallery span the wide shell.
-- Share one named pair of width classes so `PageLayout` and hike detail do not drift.
+- Show listing cards, photo tiles, and linked-track cards in up to three columns on medium-and-up viewports.
+- Share one named pair of width classes so `PageLayout` and hike pages do not drift.
 
 **Non-Goals:**
 
-- Do not change listing, track, docs, or other `PageLayout` callers in this slice.
-- Do not restyle the map, markers, or gallery grid.
+- Do not change track, docs, or other non-hike `PageLayout` callers in this slice.
+- Do not restyle the map or markers.
 - Do not introduce a full design-token system.
 
 ## Decisions
 
 ### Add an opt-in `contentWidth` to `PageLayout`
 
-Keep the default `PageLayout` shell at `max-w-3xl`. Add a `contentWidth` prop (`"narrow"` default, `"wide"` → `max-w-5xl`) and use `"wide"` only on `/hikes/[slug]`. Existing callers stay visually unchanged.
+Keep the default `PageLayout` shell at `max-w-3xl`. Add a `contentWidth` prop (`"narrow"` default, `"wide"` → `max-w-7xl`) and use `"wide"` on `/hikes` and `/hikes/[slug]`. Other callers stay visually unchanged.
 
 Alternative considered: drop `PageLayout` on hike detail and compose a local shell. That would duplicate title/spacing and make later outdoor pages invent their own widths.
 
@@ -40,32 +41,34 @@ Alternative considered: full-bleed map to the viewport edge. That is a larger vi
 Add a small shared helper next to layout (for example `lib/site-content-width.ts` or exports from `components/layout/page-layout.tsx`) with:
 
 - narrow → `max-w-3xl`
-- wide → `max-w-5xl`
+- wide → `max-w-7xl`
 
 `PageLayout` and the hike detail prose column import those classes. Do not add CSS variables, Tailwind theme tokens, or a site-wide spacing scale in this slice.
 
 Alternative considered: keep raw Tailwind classes at each call site. Easy now, but the listing already drifted (`max-w-5xl` child inside a `max-w-3xl` parent) for that reason.
 
-### Leave `/hikes` listing width for a follow-up
+### Use a three-column media grid on the wide shell
 
-The listing's inner `max-w-5xl` is currently clamped by `PageLayout`. Fixing it is one prop, but this candidate is hike detail map/gallery squeeze, not listing cards. Call it out in tasks as out of scope so it is not silently "fixed" mid-slice.
+On medium-and-up viewports, render public hike listing cards, hike photo tiles, and linked-track cards in three columns so the extra `max-w-7xl` width is used. Keep a single column on narrow viewports. Skip a two-column desktop grid; that is what felt sparse after the first width bump.
+
+Alternative considered: `sm:grid-cols-2` plus `xl:grid-cols-3`. That would keep two columns on tablets, which the hike detail review rejected.
 
 ## Risks / Trade-offs
 
-- [Risk] Title at `max-w-5xl` while description is `max-w-3xl` can look left-weighted. → Mitigation: keep left alignment; do not center the prose column. Revisit only if the desktop check looks broken.
+- [Risk] Title at `max-w-7xl` while description is `max-w-3xl` can look left-weighted. → Mitigation: keep left alignment; do not center the prose column. Revisit only if the desktop check looks broken.
 - [Risk] Leaflet can leave a blank map after container resize. → Mitigation: reuse the existing map height/CSS; check desktop and a narrow viewport after the width change.
-- [Risk] Other `PageLayout` pages accidentally pick up wide width. → Mitigation: default remains narrow; only hike detail passes `"wide"`.
+- [Risk] Other `PageLayout` pages accidentally pick up wide width. → Mitigation: default remains narrow; only `/hikes` and `/hikes/[slug]` pass `"wide"`.
 - [Risk] Nested padding (`PageLayout` `px-4` plus article `px-4`) still shrinks usable map width. → Mitigation: drop redundant inner horizontal padding on the hike article while keeping the shared `PageLayout` gutter.
 
 ## Migration Plan
 
 1. No database migration.
 2. Add the shared width helper and `PageLayout` `contentWidth` prop with narrow default.
-3. Switch `/hikes/[slug]` to the wide shell and split prose vs media columns.
-4. Validate with `tsc`, lint, local build, and browser checks for a hike with map+gallery and a hike with neither, on desktop and a mobile viewport.
+3. Switch `/hikes` and `/hikes/[slug]` to the wide shell; split prose vs media columns on hike detail; use a three-column card/photo grid.
+4. Validate with `tsc`, lint, local build, and browser checks for listing, a hike with map+gallery, and a hike with neither, on desktop and a mobile viewport.
 
-Rollback: revert the layout prop and hike detail classes. Content, maps, and photos are unchanged.
+Rollback: revert the layout prop and hike page classes. Content, maps, and photos are unchanged.
 
 ## Open Questions
 
-None. Listing-page width remains a documented follow-up, not a blocker.
+None.
