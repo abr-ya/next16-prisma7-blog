@@ -40,7 +40,7 @@ These candidates track the hikes/tracks/photos initiative as small increments. T
 
 | Order | Status | Candidate | Area | Summary |
 | --- | --- | --- | --- | --- |
-| 10 | Candidate | outdoor-hike-map-day-filter | outdoor/maps | Add an all-days/single-day map filter for linked track geometry and photo markers after temporal semantics and coordinate sources are accepted. |
+| 10 | In Progress (`feature-067`) | outdoor-hike-map-day-filter | outdoor/maps | Add a compact all-days/single-day map selector for linked track geometry and photo markers, with selected-day bounds fitting and an empty state when no confidently dated layers exist. |
 | 11 | Candidate | outdoor-hike-map-notes-layer | outdoor/maps-notes | Add hike notes as a future map layer after the hike note entity is designed, including coordinate/date visibility and public/private boundaries. |
 | 12 | Candidate | outdoor-photo-reaction-model-exploration | outdoor/photos-social | Explore simple likes (preferred over a richer rating model) for hike-linked photos: signed-in identity, duplicate prevention, public counts, and privacy boundaries. Keep text comments out of this slice — see `outdoor-photo-comments`. |
 | 13 | Candidate | outdoor-photo-comments | outdoor/photos-social | Add signed-in comments on hike-linked photos (create/list, visibility through published hike association, own edit/delete policy) after the gallery viewer and preferably after a likes spike proves the social surface. Reuse the shared comment domain patterns from video comments rather than inventing a photo-only comment stack. |
