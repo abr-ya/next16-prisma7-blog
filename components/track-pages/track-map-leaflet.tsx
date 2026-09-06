@@ -2,9 +2,10 @@
 
 import L, { type LatLngBoundsExpression, type LatLngExpression } from "leaflet";
 import { useEffect } from "react";
-import { CircleMarker, MapContainer, Marker, Polyline, TileLayer, Tooltip, useMap } from "react-leaflet";
+import { CircleMarker, MapContainer, Marker, Polyline, Popup, TileLayer, Tooltip, useMap } from "react-leaflet";
 
 import type { HikePhotoMapMarker } from "@/lib/hikes";
+import { groupHikePhotoMapMarkers } from "@/lib/hike-map-markers";
 import type { TrackMapViewModel } from "@/lib/track-gpx-metadata";
 
 const TRACK_LINE_COLORS = ["#0f766e", "#0369a1", "#7c3aed", "#c2410c", "#15803d", "#a21caf", "#b45309", "#0e7490"];
@@ -23,6 +24,7 @@ const createEndpointIcon = (label: string, color: string) =>
 const startIcon = createEndpointIcon("S", START_COLOR);
 const endIcon = createEndpointIcon("E", END_COLOR);
 const photoIcon = createEndpointIcon("P", PHOTO_MARKER_COLOR);
+const createPhotoGroupIcon = (count: number) => createEndpointIcon(String(count), PHOTO_MARKER_COLOR);
 
 type MapPoint = { lat: number; lng: number };
 
@@ -73,6 +75,7 @@ const TrackMapLeaflet = ({
   photoMarkers?: HikePhotoMapMarker[];
 }) => {
   const points = collectMapPoints(tracks, photoMarkers);
+  const photoMarkerGroups = groupHikePhotoMapMarkers(photoMarkers);
 
   if (points.length === 0) return null;
 
@@ -125,23 +128,53 @@ const TrackMapLeaflet = ({
             radius={8}
           />
         ) : null}
-        {photoMarkers.map((marker) => (
-          <Marker
-            key={marker.photoId}
-            icon={photoIcon}
-            position={toLatLng({ lat: marker.lat, lng: marker.lng })}
-            title={marker.title}
-          >
-            <Tooltip direction="top" offset={[0, -12]} opacity={1}>
-              <div className="grid max-w-40 gap-1.5">
-                {marker.thumbnailUrl ? (
-                  <img src={marker.thumbnailUrl} alt="" className="h-20 w-full rounded-sm object-cover" />
-                ) : null}
-                <div className="text-xs font-medium leading-snug">{marker.title}</div>
-              </div>
-            </Tooltip>
-          </Marker>
-        ))}
+        {photoMarkerGroups.map((group) => {
+          if (group.photos.length > 1) {
+            return (
+              <Marker
+                key={`${group.lat},${group.lng}`}
+                icon={createPhotoGroupIcon(group.photos.length)}
+                position={toLatLng(group)}
+                title={`${group.photos.length} photos`}
+              >
+                <Popup>
+                  <div className="grid max-h-64 max-w-64 gap-2 overflow-y-auto pr-1">
+                    {group.photos.map((marker) => (
+                      <div key={marker.photoId} className="grid grid-cols-[4rem_1fr] items-center gap-2">
+                        {marker.thumbnailUrl ? (
+                          <img src={marker.thumbnailUrl} alt="" className="h-16 w-16 rounded-sm object-cover" />
+                        ) : (
+                          <div aria-hidden="true" className="h-16 w-16 rounded-sm bg-muted" />
+                        )}
+                        <div className="text-xs font-medium leading-snug">{marker.title}</div>
+                      </div>
+                    ))}
+                  </div>
+                </Popup>
+              </Marker>
+            );
+          }
+
+          const marker = group.photos[0];
+
+          return (
+            <Marker
+              key={marker.photoId}
+              icon={photoIcon}
+              position={toLatLng({ lat: marker.lat, lng: marker.lng })}
+              title={marker.title}
+            >
+              <Tooltip direction="top" offset={[0, -12]} opacity={1}>
+                <div className="grid max-w-40 gap-1.5">
+                  {marker.thumbnailUrl ? (
+                    <img src={marker.thumbnailUrl} alt="" className="h-20 w-full rounded-sm object-cover" />
+                  ) : null}
+                  <div className="text-xs font-medium leading-snug">{marker.title}</div>
+                </div>
+              </Tooltip>
+            </Marker>
+          );
+        })}
       </MapContainer>
     </div>
   );
