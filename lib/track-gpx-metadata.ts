@@ -220,6 +220,7 @@ export type TrackMapViewModel = {
   title: string;
   bounds: TrackGpxBounds;
   geometry: TrackGpxCoordinate[];
+  dayKeys?: string[];
 };
 
 export const toTrackMapViewModel = (

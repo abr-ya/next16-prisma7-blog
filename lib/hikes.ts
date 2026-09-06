@@ -6,6 +6,7 @@ export type HikePhotoMapMarker = {
   lat: number;
   lng: number;
   thumbnailUrl: string | null;
+  dayKeys?: string[];
 };
 
 export const hikeTypeOptions = [
