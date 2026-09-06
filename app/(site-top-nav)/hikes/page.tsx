@@ -19,12 +19,12 @@ const HikesPage = async () => {
   const hikes = await getPublicHikes();
 
   return (
-    <PageLayout title="Hikes" className="pt-6" showBackLink={false}>
-      <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 pb-10">
+    <PageLayout title="Hikes" className="pt-6" showBackLink={false} contentWidth="wide">
+      <div className="flex w-full flex-col gap-6 pb-10">
         {hikes.length > 0 ? (
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-4 md:grid-cols-3">
             {hikes.map((hike) => (
-              <Card key={hike.id} className="gap-3">
+              <Card key={hike.id} className="h-full gap-3">
                 <CardHeader className="gap-3">
                   <div className="flex flex-wrap gap-2">
                     <Badge variant="secondary">{formatHikeType(hike.type)}</Badge>
@@ -39,13 +39,13 @@ const HikesPage = async () => {
                     </Link>
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="flex flex-col gap-4">
+                <CardContent className="flex flex-1 flex-col gap-4">
                   {hike.description ? (
                     <p className="line-clamp-3 text-sm text-muted-foreground">
                       {getTextMetadataDescription(hike.description, 220)}
                     </p>
                   ) : null}
-                  <div>
+                  <div className="mt-auto">
                     <Button asChild size="sm">
                       <Link href={`/hikes/${hike.slug}`}>
                         <Map />
