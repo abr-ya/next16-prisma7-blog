@@ -40,7 +40,6 @@ These candidates track the hikes/tracks/photos initiative as small increments. T
 
 | Order | Status | Candidate | Area | Summary |
 | --- | --- | --- | --- | --- |
-| 9 | Candidate | outdoor-hike-map-coincident-photo-markers | outdoor/maps-photos | Choose and implement how the hike map surfaces several photos that share the same lat/lng (common for 5–10 camp/morning shots at yesterday's finish): stacked tooltip listing, compact count tooltip that expands on click, or another clear pattern so overlapping markers do not hide photos. Also tracked under P0 Now. |
 | 10 | Candidate | outdoor-hike-map-day-filter | outdoor/maps | Add an all-days/single-day map filter for linked track geometry and photo markers after temporal semantics and coordinate sources are accepted. |
 | 11 | Candidate | outdoor-hike-map-notes-layer | outdoor/maps-notes | Add hike notes as a future map layer after the hike note entity is designed, including coordinate/date visibility and public/private boundaries. |
 | 12 | Candidate | outdoor-photo-reaction-model-exploration | outdoor/photos-social | Explore simple likes (preferred over a richer rating model) for hike-linked photos: signed-in identity, duplicate prevention, public counts, and privacy boundaries. Keep text comments out of this slice — see `outdoor-photo-comments`. |
@@ -60,7 +59,6 @@ These candidates track the hikes/tracks/photos initiative as small increments. T
 
 | Status | Candidate | Area | Summary |
 | --- | --- | --- | --- |
-| Candidate | outdoor-hike-map-coincident-photo-markers | outdoor/maps-photos | After inferred finish-point coordinates, several photos often share one lat/lng (e.g. 5–10 shots between an evening finish and morning start). Decide and implement the best hike-map UX so all are reachable: full multi-photo tooltip, short count tooltip that expands on click, spiderfy/cluster, or another pattern. Goal: overlapping markers must not hide photos. |
 | Ready | admin-post-save-disabled-until-interaction | posts/admin | Analyze and fix admin post create/edit **Save changes** staying disabled until blur/scroll/console interaction. Reproduced more than once on `/admin/posts/new`. Likely `PostForm` validation gating (`mode: "onBlur"` + `disabled={!form.formState.isValid}`); confirm repro, then make save enable when required fields are valid without needing extra UI noise. |
 
 ## P1 Soon
