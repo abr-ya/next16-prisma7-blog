@@ -4,10 +4,9 @@ The outdoor domain now includes city walks, water routes, cycling, skiing, and h
 
 ## What Changes
 
-- Adopt `Trip` as the user-facing and application-domain term for the current hike-centered content.
+- Adopt `Trip` as the user-facing term for the current hike-centered content.
 - Move primary public and admin routes to `/trips` and `/admin/trips`, preserving `/hikes` and `/admin/hikes` as redirects.
-- Rename domain models, actions, components, and associations to `Trip` while preserving existing data and public slugs.
-- Keep `Photo` independent rather than introducing `TripPhoto`.
+- Keep the current Prisma schema and internal `Hike` API stable for this slice.
 
 **Non-goals:** changing trip records, changing existing visibility rules, adding new trip types/categories, or deleting legacy URLs/data.
 
@@ -23,5 +22,5 @@ The outdoor domain now includes city walks, water routes, cycling, skiing, and h
 
 ## Impact
 
-- Affected: Prisma schema/migrations, `app/_data`, admin/public routes, navigation, maps, photos, tracks, notes, metadata, and OpenSpec terminology.
-- No new dependency is expected; migration must preserve all existing records and URLs.
+- Affected: admin/public routes, navigation, links, metadata, revalidation, copy, and OpenSpec terminology.
+- No schema migration or dependency is expected; existing records and legacy URLs remain intact.

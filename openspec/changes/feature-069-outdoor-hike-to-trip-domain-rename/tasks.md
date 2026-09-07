@@ -1,17 +1,17 @@
-## 1. Domain and data migration
+## 1. Route compatibility foundation
 
-- [ ] 1.1 Inventory Hike, HikesTo*, hike-note, route, and public-link dependencies.
-- [ ] 1.2 Rename Prisma and application domain types to Trip using storage mappings that preserve records and associations.
-- [ ] 1.3 Create and review a data-preserving migration; regenerate the Prisma client.
+- [x] 1.1 Inventory public/admin hike routes, internal links, metadata, and revalidation paths.
+- [x] 1.2 Add `/trips` and `/admin/trips` as canonical route implementations using the existing Hike data API.
+- [x] 1.3 Permanently redirect legacy `/hikes`, `/hikes/[slug]`, and `/admin/hikes` routes to their canonical trip equivalents.
 
 ## 2. Routes and interfaces
 
-- [ ] 2.1 Move primary routes to `/trips` and `/admin/trips`; add permanent legacy redirects.
-- [ ] 2.2 Rename data helpers, components, navigation, copy, metadata, revalidation, and internal links to Trip terminology.
-- [ ] 2.3 Preserve types, maps, photos, notes, authorization, slugs, and visibility rules.
+- [x] 2.1 Update navigation, internal links, metadata, revalidation, and visible copy to use canonical Trip terminology and URLs.
+- [x] 2.2 Preserve existing Hike Prisma models/data helpers, types, maps, photos, notes, authorization, slugs, and visibility rules.
+- [x] 2.3 Record the deferred internal Hike-to-Trip API and Prisma-storage rename as a separate backlog candidate.
 
 ## 3. Validation and documentation
 
-- [ ] 3.1 Update affected specs and documentation to Trip terminology and compatibility redirects.
-- [ ] 3.2 Run strict OpenSpec validation, `npm run tsc`, and targeted ESLint.
-- [ ] 3.3 Ask the user to run `npm run build` and verify canonical routes, redirects, admin access, linked media/notes, and visibility.
+- [x] 3.1 Update affected specs and documentation to Trip terminology and compatibility redirects.
+- [x] 3.2 Run strict OpenSpec validation, `npm run tsc`, and targeted ESLint.
+- [x] 3.3 Local `npm run build` passed; user manually verified canonical routes, legacy redirects, admin access, and trip detail media/notes.

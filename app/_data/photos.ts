@@ -91,9 +91,11 @@ const revalidatePhotoPaths = () => {
 const revalidateLinkedHikePaths = (slugs: string[]) => {
   revalidatePhotoPaths();
   revalidatePath("/admin/hikes");
+  revalidatePath("/admin/trips");
 
   slugs.forEach((slug) => {
     revalidatePath(`/hikes/${slug}`);
+    revalidatePath(`/trips/${slug}`);
   });
 };
 

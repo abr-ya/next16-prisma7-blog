@@ -66,8 +66,8 @@ const items = [
     icon: File,
   },
   {
-    title: "Hikes",
-    url: "/admin/hikes",
+    title: "Trips",
+    url: "/admin/trips",
     icon: Map,
   },
   {

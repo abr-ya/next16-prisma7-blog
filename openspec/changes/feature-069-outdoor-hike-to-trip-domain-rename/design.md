@@ -4,7 +4,7 @@ The Hike domain owns tracks, photos, and notes and is used by public/admin route
 
 ## Goals / Non-Goals
 
-**Goals:** adopt `Trip` without changing records, IDs, slugs, visibility, or relations; establish canonical trip routes with legacy redirects; map existing database storage during the transition.
+**Goals:** adopt `Trip` in public/admin language without changing records, IDs, slugs, visibility, relations, or the internal Prisma domain; establish canonical trip routes with legacy redirects.
 
 **Non-Goals:** new categories, permissions, schema redesign, or deleting legacy URL support.
 
@@ -14,9 +14,9 @@ The Hike domain owns tracks, photos, and notes and is used by public/admin route
 
 `Trip` includes city walks and existing hiking, cycling, water, ski, and other types. `OutdoorTrip` would exclude a supported city-walk use case.
 
-### Rename application names while mapping existing storage
+### Keep the internal Hike API stable in this slice
 
-Use Prisma mapping for current physical tables, columns, and relation names in the first transition. This avoids destructive table recreation or a bulk data move.
+The first slice changes routes, internal links, metadata, and visible labels only. Current Prisma models, tables, data helpers, and relation names stay `Hike`-based; a later independently deployable feature will rename the code domain using storage mappings.
 
 ### Make trip URLs canonical with redirects
 
@@ -26,12 +26,11 @@ Move implementations to `/trips` and `/admin/trips`; legacy hike URLs permanentl
 
 - Missed references → inventory Hike, hike, `/hikes`, and relation names before edits.
 - Redirect regressions → test listing/detail routes and canonical metadata.
-- Prisma relation rename can generate unsafe SQL → review and reject drop/create or data-loss migrations.
+- Future Prisma relation rename can generate unsafe SQL → defer it to a dedicated feature with migration review.
 
 ## Migration Plan
 
-1. Add mapped Prisma Trip names and regenerate the client without changing stored data.
-2. Move code/routes and add permanent redirects.
-3. Validate associations, access, public visibility, maps, and legacy URLs.
-4. Consider physical table renames only in a later dedicated migration.
-
+1. Move route implementations and add permanent redirects without a schema migration.
+2. Update links, metadata, navigation, revalidation, and visible labels to canonical trip URLs.
+3. Validate redirects, access, public visibility, maps, and associations.
+4. Defer internal Prisma/API and physical storage renames to later dedicated migrations.
