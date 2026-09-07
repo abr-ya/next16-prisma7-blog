@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import { CircleMarker, MapContainer, Marker, Polyline, Popup, TileLayer, Tooltip, useMap } from "react-leaflet";
 
 import type { HikePhotoMapMarker } from "@/lib/hikes";
+import type { HikeNoteMapMarker } from "@/lib/hike-notes";
 import { groupHikePhotoMapMarkers } from "@/lib/hike-map-markers";
 import type { TrackMapViewModel } from "@/lib/track-gpx-metadata";
 
@@ -12,6 +13,7 @@ const TRACK_LINE_COLORS = ["#0f766e", "#0369a1", "#7c3aed", "#c2410c", "#15803d"
 const START_COLOR = "#16a34a";
 const END_COLOR = "#dc2626";
 const PHOTO_MARKER_COLOR = "#d97706";
+const NOTE_MARKER_COLOR = "#2563eb";
 
 const createEndpointIcon = (label: string, color: string) =>
   L.divIcon({
@@ -24,6 +26,7 @@ const createEndpointIcon = (label: string, color: string) =>
 const startIcon = createEndpointIcon("S", START_COLOR);
 const endIcon = createEndpointIcon("E", END_COLOR);
 const photoIcon = createEndpointIcon("P", PHOTO_MARKER_COLOR);
+const noteIcon = createEndpointIcon("N", NOTE_MARKER_COLOR);
 const createPhotoGroupIcon = (count: number) => createEndpointIcon(String(count), PHOTO_MARKER_COLOR);
 
 type MapPoint = { lat: number; lng: number };
@@ -35,22 +38,29 @@ const toBoundsFromPoints = (points: MapPoint[]): LatLngBoundsExpression => [
   [Math.max(...points.map((point) => point.lat)), Math.max(...points.map((point) => point.lng))],
 ];
 
-const collectMapPoints = (tracks: TrackMapViewModel[], photoMarkers: HikePhotoMapMarker[]): MapPoint[] => [
+const collectMapPoints = (
+  tracks: TrackMapViewModel[],
+  photoMarkers: HikePhotoMapMarker[],
+  noteMarkers: HikeNoteMapMarker[],
+): MapPoint[] => [
   ...tracks.flatMap((track) => track.geometry),
   ...photoMarkers.map((marker) => ({ lat: marker.lat, lng: marker.lng })),
+  ...noteMarkers.map((marker) => ({ lat: marker.lat, lng: marker.lng })),
 ];
 
 const FitMapBounds = ({
   tracks,
   photoMarkers,
+  noteMarkers,
 }: {
   tracks: TrackMapViewModel[];
   photoMarkers: HikePhotoMapMarker[];
+  noteMarkers: HikeNoteMapMarker[];
 }) => {
   const map = useMap();
 
   useEffect(() => {
-    const points = collectMapPoints(tracks, photoMarkers);
+    const points = collectMapPoints(tracks, photoMarkers, noteMarkers);
 
     if (points.length === 0) return;
 
@@ -60,7 +70,7 @@ const FitMapBounds = ({
     }
 
     map.fitBounds(toBoundsFromPoints(points), { padding: [28, 28], maxZoom: 15 });
-  }, [map, photoMarkers, tracks]);
+  }, [map, noteMarkers, photoMarkers, tracks]);
 
   return null;
 };
@@ -69,12 +79,14 @@ const TrackMapLeaflet = ({
   ariaLabel,
   tracks,
   photoMarkers = [],
+  noteMarkers = [],
 }: {
   ariaLabel: string;
   tracks: TrackMapViewModel[];
   photoMarkers?: HikePhotoMapMarker[];
+  noteMarkers?: HikeNoteMapMarker[];
 }) => {
-  const points = collectMapPoints(tracks, photoMarkers);
+  const points = collectMapPoints(tracks, photoMarkers, noteMarkers);
   const photoMarkerGroups = groupHikePhotoMapMarkers(photoMarkers);
 
   if (points.length === 0) return null;
@@ -101,7 +113,7 @@ const TrackMapLeaflet = ({
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        <FitMapBounds tracks={tracks} photoMarkers={photoMarkers} />
+        <FitMapBounds tracks={tracks} photoMarkers={photoMarkers} noteMarkers={noteMarkers} />
         {tracks.map((track, index) => {
           const positions = track.geometry.map(toLatLng);
 
@@ -175,6 +187,16 @@ const TrackMapLeaflet = ({
             </Marker>
           );
         })}
+        {noteMarkers.map((marker) => (
+          <Marker key={marker.noteId} icon={noteIcon} position={toLatLng(marker)} title={marker.title}>
+            <Popup>
+              <div className="grid max-w-64 gap-1">
+                <div className="text-sm font-medium">{marker.title}</div>
+                {marker.body ? <div className="whitespace-pre-wrap text-xs leading-relaxed">{marker.body}</div> : null}
+              </div>
+            </Popup>
+          </Marker>
+        ))}
       </MapContainer>
     </div>
   );

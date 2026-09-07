@@ -217,6 +217,11 @@ enum PhotoStatus {
   PUBLISHED
 }
 
+enum HikeNoteStatus {
+  DRAFT
+  PUBLISHED
+}
+
 enum HikeType {
   HIKING
   MOUNTAIN
@@ -239,12 +244,30 @@ model Hike {
   user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   tracks      HikesToTracks[]
   photos      HikesToPhotos[]
+  notes       HikeNote[]
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @default(now()) @updatedAt
 
   @@index([status])
   @@index([startDate, endDate])
   @@index([userId])
+}
+
+model HikeNote {
+  id        String         @id @default(uuid())
+  hikeId    String
+  hike      Hike           @relation(fields: [hikeId], references: [id], onDelete: Cascade)
+  title     String
+  body      String?
+  latitude  Float?
+  longitude Float?
+  dayKey    String?
+  status    HikeNoteStatus @default(DRAFT)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @default(now()) @updatedAt
+
+  @@index([hikeId, status])
+  @@index([hikeId, dayKey])
 }
 
 model Track {

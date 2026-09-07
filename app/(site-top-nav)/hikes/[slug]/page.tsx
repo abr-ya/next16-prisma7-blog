@@ -49,7 +49,8 @@ const HikePage = async ({ params }: HikePageProps) => {
   const canViewFullPhotos = Boolean(session?.user?.id);
   const mappedTracks = hike.tracks.flatMap(({ track }) => (track.map ? [track.map] : []));
   const photoMapMarkers = hike.photoMapMarkers;
-  const showRouteMap = mappedTracks.length > 0 || photoMapMarkers.length > 0;
+  const noteMapMarkers = hike.noteMapMarkers;
+  const showRouteMap = mappedTracks.length > 0 || photoMapMarkers.length > 0 || noteMapMarkers.length > 0;
   const galleryPhotos: HikePhotoGalleryItem[] = hike.photos.map(({ photo }) => {
     const preview = photo.images.at(0)?.fileAsset;
 
@@ -86,6 +87,7 @@ const HikePage = async ({ params }: HikePageProps) => {
             <HikeTrackMap
               tracks={mappedTracks}
               photoMarkers={photoMapMarkers}
+              noteMarkers={noteMapMarkers}
               days={getHikeMapDays(hike.startDate, hike.endDate)}
             />
           </section>

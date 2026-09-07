@@ -17,6 +17,12 @@ import {
 import type { HikePhotoMapMarker } from "@/lib/hikes";
 import { getHikeMapDays, getTimestampDayKey, getTrackDayKeys } from "@/lib/hike-map-days";
 import {
+  isValidHikeNoteCoordinate,
+  validateHikeNoteDayKey,
+  type HikeNoteInput,
+  type HikeNoteMapMarker,
+} from "@/lib/hike-notes";
+import {
   canPersistInsideTrackWithoutManualOverride,
   proposeTrackTimeMatchCandidates,
   resolveTrackTimeMatchCoordinate,
@@ -226,6 +232,7 @@ const hikeListInclude = {
       },
     },
   },
+  notes: { orderBy: [{ dayKey: "asc" }, { createdAt: "asc" }] },
 } satisfies Prisma.HikeInclude;
 
 const publicHikeInclude = {
@@ -305,6 +312,11 @@ const publicHikeInclude = {
       },
     },
   },
+  notes: {
+    where: { status: "PUBLISHED", latitude: { not: null }, longitude: { not: null } },
+    orderBy: [{ dayKey: "asc" }, { createdAt: "asc" }],
+    select: { id: true, title: true, body: true, latitude: true, longitude: true, dayKey: true },
+  },
 } satisfies Prisma.HikeInclude;
 
 export type HikeListItem = Prisma.HikeGetPayload<{
@@ -315,7 +327,7 @@ type PublicHikeRecord = Prisma.HikeGetPayload<{
   include: typeof publicHikeInclude;
 }>;
 
-export type PublicHike = Omit<PublicHikeRecord, "tracks" | "photos"> & {
+export type PublicHike = Omit<PublicHikeRecord, "tracks" | "photos" | "notes"> & {
   tracks: {
     hikeId: string;
     trackId: string;
@@ -341,6 +353,7 @@ export type PublicHike = Omit<PublicHikeRecord, "tracks" | "photos"> & {
     photo: Omit<PublicHikeRecord["photos"][number]["photo"], "metadata">;
   }[];
   photoMapMarkers: HikePhotoMapMarker[];
+  noteMapMarkers: HikeNoteMapMarker[];
 };
 
 const toHikePhotoMapMarker = ({
@@ -513,6 +526,24 @@ const toPublicHike = (hike: PublicHikeRecord): PublicHike => {
     photoMapMarkers: hike.photos.flatMap(({ photo }) => {
       const marker = toHikePhotoMapMarker({ photo, hikeDayKeys });
       return marker ? [marker] : [];
+    }),
+    noteMapMarkers: hike.notes.flatMap((note) => {
+      if (
+        note.latitude === null ||
+        note.longitude === null ||
+        !isValidHikeNoteCoordinate(note.latitude, note.longitude)
+      )
+        return [];
+      return [
+        {
+          noteId: note.id,
+          title: note.title,
+          body: note.body,
+          lat: note.latitude,
+          lng: note.longitude,
+          dayKeys: note.dayKey && hikeDayKeys.has(note.dayKey) ? [note.dayKey] : [],
+        },
+      ];
     }),
   };
 };
@@ -1176,6 +1207,63 @@ export const reorderHikePhotos = async ({ hikeId, photoIds }: { hikeId: string; 
 
   revalidateHikePhotoAssociationPaths(hike.slug);
 
+  return { success: true };
+};
+
+const normalizeHikeNote = (values: HikeNoteInput, hike: { startDate: Date; endDate: Date }) => {
+  const title = normalizeRequiredText(values.title, "Note title");
+  const body = normalizeOptionalText(values.body);
+  const hasLatitude = values.latitude !== null && values.latitude !== undefined;
+  const hasLongitude = values.longitude !== null && values.longitude !== undefined;
+  if (hasLatitude !== hasLongitude) throw new Error("Latitude and longitude must be provided together");
+  if (hasLatitude && !isValidHikeNoteCoordinate(values.latitude!, values.longitude!))
+    throw new Error("Note coordinates are invalid");
+  const status = values.status ?? "DRAFT";
+  if (status !== "DRAFT" && status !== "PUBLISHED") throw new Error("Note status is invalid");
+  return {
+    title,
+    body,
+    latitude: hasLatitude ? values.latitude! : null,
+    longitude: hasLongitude ? values.longitude! : null,
+    dayKey: validateHikeNoteDayKey({ dayKey: values.dayKey, ...hike }),
+    status,
+  };
+};
+
+export const createHikeNote = async (values: HikeNoteInput) => {
+  await getRequiredAdminUserId();
+  const { default: prisma } = await import("@/lib/prisma");
+  const hike = await prisma.hike.findUnique({
+    where: { id: values.hikeId },
+    select: { id: true, slug: true, startDate: true, endDate: true },
+  });
+  if (!hike) throw new Error("Hike not found");
+  const note = await prisma.hikeNote.create({ data: { hikeId: hike.id, ...normalizeHikeNote(values, hike) } });
+  revalidateHikePaths(hike.slug);
+  return note;
+};
+
+export const updateHikeNote = async (values: HikeNoteInput) => {
+  if (!values.id) throw new Error("Note id is required");
+  await getRequiredAdminUserId();
+  const { default: prisma } = await import("@/lib/prisma");
+  const note = await prisma.hikeNote.findUnique({
+    where: { id: values.id },
+    include: { hike: { select: { slug: true, startDate: true, endDate: true } } },
+  });
+  if (!note) throw new Error("Hike note not found");
+  const updated = await prisma.hikeNote.update({ where: { id: note.id }, data: normalizeHikeNote(values, note.hike) });
+  revalidateHikePaths(note.hike.slug);
+  return updated;
+};
+
+export const deleteHikeNote = async (id: string) => {
+  await getRequiredAdminUserId();
+  const { default: prisma } = await import("@/lib/prisma");
+  const note = await prisma.hikeNote.findUnique({ where: { id }, include: { hike: { select: { slug: true } } } });
+  if (!note) return { success: false };
+  await prisma.hikeNote.delete({ where: { id: note.id } });
+  revalidateHikePaths(note.hike.slug);
   return { success: true };
 };
 

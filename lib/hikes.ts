@@ -9,6 +9,8 @@ export type HikePhotoMapMarker = {
   dayKeys?: string[];
 };
 
+export type { HikeNoteMapMarker } from "@/lib/hike-notes";
+
 export const hikeTypeOptions = [
   { value: "HIKING", label: "Hiking" },
   { value: "MOUNTAIN", label: "Mountain" },
