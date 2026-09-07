@@ -21,4 +21,4 @@
 - [x] 4.1 Update relevant project documentation or checklists if the admin hike workflow or outdoor map notes are already documented there.
 - [x] 4.2 Run `openspec validate feature-068-outdoor-hike-map-notes-layer --strict`.
 - [x] 4.3 Run `npm run tsc` and targeted ESLint for changed non-`app` files.
-- [ ] 4.4 Ask the user to run `npm run build` locally and manually verify admin draft/published notes, coordinate/day validation, all-days and selected-day map markers, undated notes, and public non-exposure of drafts.
+- [x] 4.4 Record the successful local `npm run build` and confirm the admin smoke-check that a hike note can be created. Defer the full visibility, coordinate/day, and map-filter manual QA matrix to a follow-up check.

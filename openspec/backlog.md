@@ -40,7 +40,6 @@ These candidates track the hikes/tracks/photos initiative as small increments. T
 
 | Order | Status | Candidate | Area | Summary |
 | --- | --- | --- | --- | --- |
-| 11 | In Progress (`feature-068`) | outdoor-hike-map-notes-layer | outdoor/maps-notes | Add admin-curated hike notes with optional coordinates/day assignment and explicit visibility, then render eligible notes as public hike-map markers. |
 | 11a | Candidate | outdoor-hike-map-note-placement | outdoor/maps-notes | Let admins start a hike note directly from the map: click a coordinate, open the existing note form with latitude/longitude prefilled, then save its text, visibility, and optional hike-day assignment. Keep map-click placement separate from the base note domain. |
 | 12 | Candidate | outdoor-photo-reaction-model-exploration | outdoor/photos-social | Explore simple likes (preferred over a richer rating model) for hike-linked photos: signed-in identity, duplicate prevention, public counts, and privacy boundaries. Keep text comments out of this slice — see `outdoor-photo-comments`. |
 | 13 | Candidate | outdoor-photo-comments | outdoor/photos-social | Add signed-in comments on hike-linked photos (create/list, visibility through published hike association, own edit/delete policy) after the gallery viewer and preferably after a likes spike proves the social surface. Reuse the shared comment domain patterns from video comments rather than inventing a photo-only comment stack. |
