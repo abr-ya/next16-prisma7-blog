@@ -10,6 +10,7 @@ import {
   Edit,
   ImageIcon,
   Link2,
+  NotebookPen,
   Plus,
   Route,
   Trash2,
@@ -26,12 +27,15 @@ import {
   attachTrackToHike,
   attachPhotoToHike,
   createHike,
+  createHikeNote,
   deleteHike,
+  deleteHikeNote,
   detachPhotoFromHike,
   detachTrackFromHike,
   rejectHikePhotoMapCoordinate,
   reorderHikePhotos,
   updateHike,
+  updateHikeNote,
   type HikeListItem,
   type HikePhotoOption,
   type HikeTrackOption,
@@ -59,8 +63,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/index";
-import type { HikeStatus, HikeType } from "@/generated/prisma/enums";
+import type { HikeNoteStatus, HikeStatus, HikeType } from "@/generated/prisma/enums";
 import { formatHikeStatus, formatHikeType, hikeStatusOptions, hikeTypeOptions } from "@/lib/hikes";
+import { formatHikeNoteStatus, hikeNoteStatusOptions } from "@/lib/hike-notes";
 import { formatPhotoMapCoordinateStatus } from "@/lib/photo-exif-metadata";
 import {
   proposeTrackTimeMatchCandidates,
@@ -1039,6 +1044,207 @@ const HikePhotosDialog = ({
   );
 };
 
+const HikeNotesDialog = ({
+  hike,
+  open,
+  onOpenChange,
+  onChanged,
+}: {
+  hike: HikeListItem | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onChanged: () => void;
+}) => {
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [title, setTitle] = useState("");
+  const [body, setBody] = useState("");
+  const [latitude, setLatitude] = useState("");
+  const [longitude, setLongitude] = useState("");
+  const [dayKey, setDayKey] = useState("");
+  const [status, setStatus] = useState<HikeNoteStatus>("DRAFT");
+  const [notes, setNotes] = useState(() => hike?.notes ?? []);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+
+  const edit = (note: HikeListItem["notes"][number]) => {
+    setEditingId(note.id);
+    setTitle(note.title);
+    setBody(note.body ?? "");
+    setLatitude(note.latitude?.toString() ?? "");
+    setLongitude(note.longitude?.toString() ?? "");
+    setDayKey(note.dayKey ?? "");
+    setStatus(note.status);
+  };
+  const reset = () => {
+    setEditingId(null);
+    setTitle("");
+    setBody("");
+    setLatitude("");
+    setLongitude("");
+    setDayKey("");
+    setStatus("DRAFT");
+  };
+  const save = () => {
+    if (!hike) return;
+    startTransition(async () => {
+      try {
+        const lat = latitude.trim() ? Number(latitude) : null;
+        const lng = longitude.trim() ? Number(longitude) : null;
+        const values = {
+          id: editingId ?? undefined,
+          hikeId: hike.id,
+          title,
+          body,
+          latitude: lat,
+          longitude: lng,
+          dayKey,
+          status,
+        };
+        if (editingId) {
+          const note = await updateHikeNote(values);
+          setNotes((current) => current.map((item) => (item.id === note.id ? note : item)));
+        } else {
+          const note = await createHikeNote(values);
+          setNotes((current) => [...current, note]);
+        }
+        toast.success(editingId ? "Note updated" : "Note created");
+        reset();
+        onChanged();
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Failed to save note");
+      }
+    });
+  };
+  const remove = () => {
+    if (!deleteId) return;
+    startTransition(async () => {
+      const result = await deleteHikeNote(deleteId);
+      if (result.success) {
+        toast.success("Note deleted");
+        setNotes((current) => current.filter((note) => note.id !== deleteId));
+        setDeleteId(null);
+        reset();
+        onChanged();
+      } else toast.error("Note not found");
+    });
+  };
+  return (
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Hike notes{hike ? ` — ${hike.title}` : ""}</DialogTitle>
+            <DialogDescription>Only published notes with coordinates appear on the public map.</DialogDescription>
+          </DialogHeader>
+          {hike ? (
+            <div className="grid gap-4">
+              <div className="grid gap-2">
+                {notes.length ? (
+                  notes.map((note) => (
+                    <div key={note.id} className="flex items-start justify-between gap-3 rounded-md border p-3">
+                      <div className="grid gap-1">
+                        <div className="flex gap-2">
+                          <span className="font-medium">{note.title}</span>
+                          <Badge variant={note.status === "PUBLISHED" ? "default" : "secondary"}>
+                            {formatHikeNoteStatus(note.status)}
+                          </Badge>
+                        </div>
+                        {note.body ? <p className="text-sm text-muted-foreground">{note.body}</p> : null}
+                        <span className="text-xs text-muted-foreground">
+                          {note.dayKey ?? "All days only"}
+                          {note.latitude !== null
+                            ? ` · ${note.latitude.toFixed(5)}, ${note.longitude?.toFixed(5)}`
+                            : " · No map coordinate"}
+                        </span>
+                      </div>
+                      <div className="flex gap-1">
+                        <Button type="button" size="icon" variant="ghost" title="Edit note" onClick={() => edit(note)}>
+                          <Edit className="size-4" />
+                        </Button>
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          title="Delete note"
+                          onClick={() => setDeleteId(note.id)}
+                        >
+                          <Trash2 className="size-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-muted-foreground">No notes yet.</p>
+                )}
+              </div>
+              <div className="grid gap-3 rounded-md border p-3">
+                <div className="font-medium">{editingId ? "Edit note" : "Add note"}</div>
+                <Input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Title" />
+                <textarea
+                  value={body}
+                  onChange={(event) => setBody(event.target.value)}
+                  placeholder="Optional note"
+                  className="border-input min-h-20 rounded-md border bg-transparent px-3 py-2 text-sm"
+                />
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Input
+                    value={latitude}
+                    onChange={(event) => setLatitude(event.target.value)}
+                    placeholder="Latitude (optional)"
+                  />
+                  <Input
+                    value={longitude}
+                    onChange={(event) => setLongitude(event.target.value)}
+                    placeholder="Longitude (optional)"
+                  />
+                  <Input
+                    value={dayKey}
+                    onChange={(event) => setDayKey(event.target.value)}
+                    type="date"
+                    min={dateInputValue(hike.startDate)}
+                    max={dateInputValue(hike.endDate)}
+                  />
+                  <Select value={status} onValueChange={(value) => setStatus(value as HikeNoteStatus)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {hikeNoteStatusOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex justify-end gap-2">
+                  {editingId ? (
+                    <Button type="button" variant="outline" onClick={reset}>
+                      Cancel
+                    </Button>
+                  ) : null}
+                  <Button type="button" disabled={isPending} onClick={save}>
+                    {isPending ? "Saving..." : "Save note"}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ) : null}
+        </DialogContent>
+      </Dialog>
+      <ConfirmDialog
+        open={Boolean(deleteId)}
+        onOpenChange={(value) => !value && setDeleteId(null)}
+        title="Delete note?"
+        confirmLabel="Delete"
+        confirmVariant="destructive"
+        isPending={isPending}
+        onConfirm={remove}
+      />
+    </>
+  );
+};
+
 export const HikesAdminPanel = ({
   hikes,
   tracks,
@@ -1053,6 +1259,7 @@ export const HikesAdminPanel = ({
   const [editingHike, setEditingHike] = useState<HikeListItem | null>(null);
   const [managingTracksHike, setManagingTracksHike] = useState<HikeListItem | null>(null);
   const [managingPhotosHike, setManagingPhotosHike] = useState<HikeListItem | null>(null);
+  const [managingNotesHike, setManagingNotesHike] = useState<HikeListItem | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<HikeListItem | null>(null);
   const [isDeleting, startDeleting] = useTransition();
 
@@ -1132,6 +1339,15 @@ export const HikesAdminPanel = ({
         id: "actions",
         cell: ({ row }) => (
           <div className="flex justify-end gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              title="Manage notes"
+              onClick={() => setManagingNotesHike(row.original)}
+            >
+              <NotebookPen className="size-4" />
+            </Button>
             <Button
               type="button"
               variant="ghost"
@@ -1233,6 +1449,15 @@ export const HikesAdminPanel = ({
         onChanged={() => router.refresh()}
         onOpenChange={(open) => {
           if (!open) setManagingPhotosHike(null);
+        }}
+      />
+      <HikeNotesDialog
+        key={managingNotesHike?.id ?? "closed"}
+        hike={managingNotesHike}
+        open={Boolean(managingNotesHike)}
+        onChanged={() => router.refresh()}
+        onOpenChange={(open) => {
+          if (!open) setManagingNotesHike(null);
         }}
       />
       <ConfirmDialog

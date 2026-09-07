@@ -43,6 +43,10 @@ As of `feature-055-outdoor-hike-photo-association`, hike detail pages can show l
 
 Later admin or frontend editing can let users click the map, capture a `lat/lng`, and save manual points such as camps, viewpoints, notes, or custom points of interest. Leaflet supports the click interaction and marker rendering needed for this workflow.
 
+### Hike Notes
+
+As of `feature-068-outdoor-hike-map-notes-layer`, admins can create hike-owned draft or published notes with optional plain-text body, coordinate pair, and deliberate hike-day assignment. Only published notes with valid coordinates appear as public map markers. Notes without a day assignment remain visible only in the all-days map view; the first slice deliberately excludes map-click placement, media attachments, and public note authoring.
+
 ## Performance Notes
 
 The main performance risk is not the number of tracks, but the number of coordinates inside each GPX file. A single GPX file can contain thousands or tens of thousands of points. The GPX parsing slice should therefore store map-ready geometry separately from raw file storage, ideally including a simplified geometry for public map rendering.

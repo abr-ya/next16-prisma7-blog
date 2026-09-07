@@ -6,16 +6,19 @@ import { CombinedTrackMap, type TrackMapViewModel } from "@/components/track-pag
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { HikeMapDay } from "@/lib/hike-map-days";
 import type { HikePhotoMapMarker } from "@/lib/hikes";
+import type { HikeNoteMapMarker } from "@/lib/hike-notes";
 
 const ALL_DAYS = "all";
 
 export const HikeTrackMap = ({
   tracks,
   photoMarkers = [],
+  noteMarkers = [],
   days,
 }: {
   tracks: TrackMapViewModel[];
   photoMarkers?: HikePhotoMapMarker[];
+  noteMarkers?: HikeNoteMapMarker[];
   days: HikeMapDay[];
 }) => {
   const [selectedDay, setSelectedDay] = useState(ALL_DAYS);
@@ -24,7 +27,13 @@ export const HikeTrackMap = ({
     selectedDay === ALL_DAYS ? tracks : tracks.filter((track) => track.dayKeys?.includes(selectedDay));
   const visiblePhotoMarkers =
     selectedDay === ALL_DAYS ? photoMarkers : photoMarkers.filter((marker) => marker.dayKeys?.includes(selectedDay));
-  const isEmptySelection = selectedDay !== ALL_DAYS && visibleTracks.length === 0 && visiblePhotoMarkers.length === 0;
+  const visibleNoteMarkers =
+    selectedDay === ALL_DAYS ? noteMarkers : noteMarkers.filter((marker) => marker.dayKeys?.includes(selectedDay));
+  const isEmptySelection =
+    selectedDay !== ALL_DAYS &&
+    visibleTracks.length === 0 &&
+    visiblePhotoMarkers.length === 0 &&
+    visibleNoteMarkers.length === 0;
 
   return (
     <div className="grid gap-2">
@@ -39,7 +48,8 @@ export const HikeTrackMap = ({
               {days.map((day, index) => {
                 const hasLayers =
                   tracks.some((track) => track.dayKeys?.includes(day.key)) ||
-                  photoMarkers.some((marker) => marker.dayKeys?.includes(day.key));
+                  photoMarkers.some((marker) => marker.dayKeys?.includes(day.key)) ||
+                  noteMarkers.some((marker) => marker.dayKeys?.includes(day.key));
 
                 return (
                   <SelectItem key={day.key} value={day.key} disabled={!hasLayers}>
@@ -56,7 +66,12 @@ export const HikeTrackMap = ({
           No confidently dated map layers are available for this day.
         </div>
       ) : (
-        <CombinedTrackMap ariaLabel="Hike route map" tracks={visibleTracks} photoMarkers={visiblePhotoMarkers} />
+        <CombinedTrackMap
+          ariaLabel="Hike route map"
+          tracks={visibleTracks}
+          photoMarkers={visiblePhotoMarkers}
+          noteMarkers={visibleNoteMarkers}
+        />
       )}
     </div>
   );
