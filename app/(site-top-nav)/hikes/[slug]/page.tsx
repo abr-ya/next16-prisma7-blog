@@ -10,6 +10,7 @@ import { Badge, Button } from "@/components/index";
 import { PageLayout } from "@/components/layout/page-layout";
 import { authSession } from "@/lib/auth-utils";
 import { formatHikeDateRange, formatHikeType } from "@/lib/hikes";
+import { getHikeMapDays } from "@/lib/hike-map-days";
 import { SITE_CONTENT_WIDTH } from "@/lib/site-content-width";
 import { buildPageMetadata, getTextMetadataDescription } from "@/lib/site-metadata";
 import { formatTrackRecordingTimeRange, formatTrackTimezoneEvidence } from "@/lib/track-gpx-metadata";
@@ -82,7 +83,11 @@ const HikePage = async ({ params }: HikePageProps) => {
         {showRouteMap ? (
           <section className="grid gap-3">
             <h2 className="text-base font-semibold">Route map</h2>
-            <HikeTrackMap tracks={mappedTracks} photoMarkers={photoMapMarkers} />
+            <HikeTrackMap
+              tracks={mappedTracks}
+              photoMarkers={photoMapMarkers}
+              days={getHikeMapDays(hike.startDate, hike.endDate)}
+            />
           </section>
         ) : null}
         {hike.tracks.length > 0 ? (

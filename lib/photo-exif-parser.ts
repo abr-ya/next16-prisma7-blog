@@ -8,6 +8,7 @@ import {
   type PhotoExifGps,
   type PhotoExifImageSummary,
   type PhotoExifMetadata,
+  type PhotoCaptureTimezoneEvidence,
   type PhotoExifSafeRaw,
   type PhotoExifSourceImage,
   type PhotoExifSummary,
@@ -113,7 +114,10 @@ const parseExifDateTimeParts = (value: string) => {
 // EXIF DateTime* is a wall-clock value. When OffsetTime* is present, convert with that offset
 // instead of letting exifr/Date treat the wall clock as the Node process timezone (which adds a
 // second shift — e.g. +03 display — on top of an already-offset photo).
-const toCapturedAt = (value: unknown, offsetValue?: unknown): string | null => {
+const toCapturedAt = (
+  value: unknown,
+  offsetValue?: unknown,
+): { value: string; evidence: PhotoCaptureTimezoneEvidence } | null => {
   if (typeof value === "string") {
     const parts = parseExifDateTimeParts(value);
 
@@ -122,24 +126,28 @@ const toCapturedAt = (value: unknown, offsetValue?: unknown): string | null => {
       const utcMillis = Date.UTC(parts.year, parts.month - 1, parts.day, parts.hours, parts.minutes, parts.seconds);
 
       if (offsetMinutes !== null) {
-        return new Date(utcMillis - offsetMinutes * 60_000).toISOString();
+        return { value: new Date(utcMillis - offsetMinutes * 60_000).toISOString(), evidence: "UTC_OR_OFFSET" };
       }
 
       // No OffsetTime*: keep prior ambiguous behavior (interpret as process-local wall time).
       const local = new Date(parts.year, parts.month - 1, parts.day, parts.hours, parts.minutes, parts.seconds);
 
-      return Number.isNaN(local.getTime()) ? null : local.toISOString();
+      return Number.isNaN(local.getTime()) ? null : { value: local.toISOString(), evidence: "MISSING" };
     }
 
     if (!Number.isNaN(Date.parse(value))) {
-      return new Date(value).toISOString();
+      const normalized = new Date(value).toISOString();
+      return {
+        value: normalized,
+        evidence: /(?:Z|[+-]\d{2}:?\d{2})$/i.test(value.trim()) ? "UTC_OR_OFFSET" : "MISSING",
+      };
     }
 
     return null;
   }
 
   if (value instanceof Date && !Number.isNaN(value.getTime())) {
-    return value.toISOString();
+    return { value: value.toISOString(), evidence: "UTC_OR_OFFSET" };
   }
 
   return null;
@@ -208,7 +216,7 @@ const parseOneImage = async (input: PhotoExifParseImageInput): Promise<ParsedIma
   const orientation = toNullableNumber(parsed?.Orientation);
   const originalOffset = parsed?.OffsetTimeOriginal ?? parsed?.OffsetTime;
   const digitizedOffset = parsed?.OffsetTimeDigitized ?? parsed?.OffsetTime;
-  const capturedAt =
+  const captured =
     toCapturedAt(parsed?.DateTimeOriginal, originalOffset) ?? toCapturedAt(parsed?.CreateDate, digitizedOffset);
   const exposureTime = toNullableNumber(parsed?.ExposureTime);
   const fNumber = toNullableNumber(parsed?.FNumber);
@@ -220,7 +228,8 @@ const parseOneImage = async (input: PhotoExifParseImageInput): Promise<ParsedIma
       fileAssetId: input.fileAssetId,
       fileKey: input.fileKey,
       sortOrder: input.sortOrder,
-      capturedAt,
+      capturedAt: captured?.value ?? null,
+      captureTimeTimezoneEvidence: captured?.evidence ?? null,
       width,
       height,
       orientation,
@@ -242,6 +251,7 @@ const buildSummary = (images: PhotoExifImageSummary[]): PhotoExifSummary => {
 
   return {
     capturedAt: images.find((image) => image.capturedAt)?.capturedAt ?? null,
+    captureTimeTimezoneEvidence: images.find((image) => image.capturedAt)?.captureTimeTimezoneEvidence ?? null,
     width: primary?.width ?? null,
     height: primary?.height ?? null,
     orientation: primary?.orientation ?? null,

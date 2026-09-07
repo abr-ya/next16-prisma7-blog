@@ -3,6 +3,7 @@ import type { Prisma } from "@/generated/prisma/client";
 export const PHOTO_EXIF_METADATA_VERSION = "photo-exif-metadata/v1";
 
 export type PhotoExifParseStatus = "SUCCESS" | "FAILED" | "STALE";
+export type PhotoCaptureTimezoneEvidence = "UTC_OR_OFFSET" | "MISSING";
 
 export type PhotoExifGps = {
   lat: number;
@@ -20,6 +21,7 @@ export type PhotoExifImageSummary = {
   fileKey: string;
   sortOrder: number;
   capturedAt: string | null;
+  captureTimeTimezoneEvidence?: PhotoCaptureTimezoneEvidence | null;
   width: number | null;
   height: number | null;
   orientation: number | null;
@@ -34,6 +36,7 @@ export type PhotoExifImageSummary = {
 
 export type PhotoExifSummary = {
   capturedAt: string | null;
+  captureTimeTimezoneEvidence?: PhotoCaptureTimezoneEvidence | null;
   width: number | null;
   height: number | null;
   orientation: number | null;
@@ -114,6 +117,11 @@ export const isValidGps = (lat: number, lng: number) =>
 
 const isNullableString = (value: unknown): value is string | null => value === null || typeof value === "string";
 
+const isOptionalCaptureTimeTimezoneEvidence = (
+  value: unknown,
+): value is PhotoCaptureTimezoneEvidence | null | undefined =>
+  value === undefined || value === null || value === "UTC_OR_OFFSET" || value === "MISSING";
+
 const isNullableFiniteNumber = (value: unknown): value is number | null => value === null || isFiniteNumber(value);
 
 const isOptionalNullableFiniteNumber = (value: unknown): boolean =>
@@ -135,6 +143,7 @@ const normalizeImageSummary = (value: unknown): PhotoExifImageSummary | null => 
     !isFiniteNumber(value.sortOrder) ||
     !isNullableString(value.capturedAt) ||
     (value.capturedAt !== null && !isIsoDateString(value.capturedAt)) ||
+    !isOptionalCaptureTimeTimezoneEvidence(value.captureTimeTimezoneEvidence) ||
     !isNullableFiniteNumber(value.width) ||
     !isNullableFiniteNumber(value.height) ||
     !isNullableFiniteNumber(value.orientation) ||
@@ -154,6 +163,9 @@ const normalizeImageSummary = (value: unknown): PhotoExifImageSummary | null => 
     fileKey: value.fileKey,
     sortOrder: value.sortOrder,
     capturedAt: value.capturedAt,
+    ...(value.captureTimeTimezoneEvidence !== undefined
+      ? { captureTimeTimezoneEvidence: value.captureTimeTimezoneEvidence }
+      : {}),
     width: value.width,
     height: value.height,
     orientation: value.orientation,
@@ -172,6 +184,7 @@ const normalizeSummary = (value: unknown): PhotoExifSummary | null => {
     !isRecord(value) ||
     !isNullableString(value.capturedAt) ||
     (value.capturedAt !== null && !isIsoDateString(value.capturedAt)) ||
+    !isOptionalCaptureTimeTimezoneEvidence(value.captureTimeTimezoneEvidence) ||
     !isNullableFiniteNumber(value.width) ||
     !isNullableFiniteNumber(value.height) ||
     !isNullableFiniteNumber(value.orientation) ||
@@ -190,6 +203,9 @@ const normalizeSummary = (value: unknown): PhotoExifSummary | null => {
 
   return {
     capturedAt: value.capturedAt,
+    ...(value.captureTimeTimezoneEvidence !== undefined
+      ? { captureTimeTimezoneEvidence: value.captureTimeTimezoneEvidence }
+      : {}),
     width: value.width,
     height: value.height,
     orientation: value.orientation,

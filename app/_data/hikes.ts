@@ -15,6 +15,7 @@ import {
   type PhotoMapCoordinate,
 } from "@/lib/photo-exif-metadata";
 import type { HikePhotoMapMarker } from "@/lib/hikes";
+import { getHikeMapDays, getTimestampDayKey, getTrackDayKeys } from "@/lib/hike-map-days";
 import {
   canPersistInsideTrackWithoutManualOverride,
   proposeTrackTimeMatchCandidates,
@@ -342,10 +343,21 @@ export type PublicHike = Omit<PublicHikeRecord, "tracks" | "photos"> & {
   photoMapMarkers: HikePhotoMapMarker[];
 };
 
-const toHikePhotoMapMarker = (photo: PublicHikeRecord["photos"][number]["photo"]): HikePhotoMapMarker | null => {
+const toHikePhotoMapMarker = ({
+  photo,
+  hikeDayKeys,
+}: {
+  photo: PublicHikeRecord["photos"][number]["photo"];
+  hikeDayKeys: Set<string>;
+}): HikePhotoMapMarker | null => {
   const state = getPhotoExifMetadataState(photo.metadata);
   const preview = photo.images.at(0)?.fileAsset;
   const thumbnailUrl = preview ? `/files/${preview.id}/thumbnail` : null;
+  const dayKey =
+    state.status === "SUCCESS"
+      ? getTimestampDayKey(state.summary.capturedAt, state.summary.captureTimeTimezoneEvidence)
+      : null;
+  const dayKeys = dayKey && hikeDayKeys.has(dayKey) ? [dayKey] : [];
 
   // Prefer direct EXIF GPS over approved inferred/manual coordinates.
   if (state.status === "SUCCESS" && state.summary.gps) {
@@ -357,6 +369,7 @@ const toHikePhotoMapMarker = (photo: PublicHikeRecord["photos"][number]["photo"]
         lat,
         lng,
         thumbnailUrl,
+        dayKeys,
       };
     }
   }
@@ -375,6 +388,7 @@ const toHikePhotoMapMarker = (photo: PublicHikeRecord["photos"][number]["photo"]
       lat: mapCoordinate.lat,
       lng: mapCoordinate.lng,
       thumbnailUrl,
+      dayKeys,
     };
   }
 
@@ -449,46 +463,59 @@ const toTrackTimeMatchTrackInput = ({
   };
 };
 
-const toPublicHike = (hike: PublicHikeRecord): PublicHike => ({
-  ...hike,
-  tracks: hike.tracks.map((association) => {
-    const { metadata, fileAsset, ...track } = association.track;
-    const parsedState = getTrackGpxMetadataState(metadata, {
-      fileAssetId: fileAsset.id,
-      fileKey: fileAsset.fileKey,
-    });
+const toPublicHike = (hike: PublicHikeRecord): PublicHike => {
+  const hikeDays = getHikeMapDays(hike.startDate, hike.endDate);
+  const hikeDayKeys = new Set(hikeDays.map(({ key }) => key));
 
-    return {
+  return {
+    ...hike,
+    tracks: hike.tracks.map((association) => {
+      const { metadata, fileAsset, ...track } = association.track;
+      const parsedState = getTrackGpxMetadataState(metadata, {
+        fileAssetId: fileAsset.id,
+        fileKey: fileAsset.fileKey,
+      });
+
+      return {
+        ...association,
+        track: {
+          ...track,
+          parsed: parsedState.status === "SUCCESS" ? { summary: parsedState.summary } : null,
+          map:
+            parsedState.status === "SUCCESS" && parsedState.mapGeometry.length > 0
+              ? {
+                  title: track.title,
+                  bounds: parsedState.summary.bounds,
+                  geometry: parsedState.mapGeometry,
+                  dayKeys: parsedState.summary.time
+                    ? getTrackDayKeys({
+                        start: parsedState.summary.time.start,
+                        end: parsedState.summary.time.end,
+                        timezoneEvidence: parsedState.summary.time.timezoneEvidence,
+                        hikeDays,
+                      })
+                    : [],
+                }
+              : null,
+        },
+      };
+    }),
+    photos: hike.photos.map((association) => ({
       ...association,
-      track: {
-        ...track,
-        parsed: parsedState.status === "SUCCESS" ? { summary: parsedState.summary } : null,
-        map:
-          parsedState.status === "SUCCESS" && parsedState.mapGeometry.length > 0
-            ? {
-                title: track.title,
-                bounds: parsedState.summary.bounds,
-                geometry: parsedState.mapGeometry,
-              }
-            : null,
+      photo: {
+        id: association.photo.id,
+        title: association.photo.title,
+        description: association.photo.description,
+        status: association.photo.status,
+        images: association.photo.images,
       },
-    };
-  }),
-  photos: hike.photos.map((association) => ({
-    ...association,
-    photo: {
-      id: association.photo.id,
-      title: association.photo.title,
-      description: association.photo.description,
-      status: association.photo.status,
-      images: association.photo.images,
-    },
-  })),
-  photoMapMarkers: hike.photos.flatMap(({ photo }) => {
-    const marker = toHikePhotoMapMarker(photo);
-    return marker ? [marker] : [];
-  }),
-});
+    })),
+    photoMapMarkers: hike.photos.flatMap(({ photo }) => {
+      const marker = toHikePhotoMapMarker({ photo, hikeDayKeys });
+      return marker ? [marker] : [];
+    }),
+  };
+};
 
 const revalidateHikePaths = (slug?: string | null) => {
   revalidatePath("/admin/hikes");
