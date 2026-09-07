@@ -14,4 +14,4 @@
 
 - [x] 3.1 Run `openspec validate feature-067-outdoor-hike-map-day-filter --strict`.
 - [x] 3.2 Run `npm run tsc` and targeted ESLint for changed non-`app` files.
-- [ ] 3.3 Ask the user to run `npm run build` locally and manually verify all-days, a selected day with layers, a selected empty day, a multi-day hike with 10+ options, and a single-day hike.
+- [x] 3.3 Ask the user to run `npm run build` locally and manually verify all-days, a selected day with layers, a selected empty day, a multi-day hike with 10+ options, and a single-day hike. Build completed successfully; manual day switching check passed.
