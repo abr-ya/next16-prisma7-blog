@@ -40,12 +40,17 @@ Alternative: trust client-side route conditions or make participants editable in
 
 Public trip list/detail types will not select or serialize invitation/member rows. Owner/admin management views and the recipient inbox use narrow projections: display name/email only where the authenticated manager or recipient needs it. Revalidate the affected `/trips/[slug]`, `/trips/invitations`, and relevant admin paths after mutation.
 
+### Participant management is a compact header action
+
+The authorized owner/admin view of a trip renders a compact participant-management trigger in the right side of the page header. Its dialog contains the email invite form and pending/accepted management lists. This keeps the public trip narrative, map, tracks, and photos from being displaced by a potentially long private list while preserving the same server-enforced actions.
+
 ## Risks / Trade-offs
 
 - Existing users may miss in-app invitations without an email notification → Make the inbox route reachable from authenticated trip UX; evaluate delivery as a separate feature.
 - A unique pair loses historical repeated-invite records → Preserve the current lifecycle timestamps; introduce a history table only if audit needs emerge.
 - A deleted user/trip can leave dangling relations → Use foreign keys with cascade deletion and verify migration behavior.
 - Email-address probing could leak account presence → Use neutral invitation errors and rate-limit naturally through authenticated server actions; avoid autocomplete/search output.
+- A long participant list can make a dialog dense on small screens → Keep rows compact and let the dialog scroll independently of the trip page.
 
 ## Migration Plan
 

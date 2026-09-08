@@ -7,6 +7,7 @@ Trip owners need a safe way to build a participant group before public contribut
 - Add trip-scoped participant invitations addressed to an existing site account by its email address, with pending, accepted, declined, cancelled, and expired states.
 - Let a trip owner invite, cancel a pending invitation, and remove an accepted participant; administrators retain an override for those management actions.
 - Give invited users an authenticated, trip-scoped accept/decline control, without exposing invitation information publicly.
+- Keep trip participation management compact in the right side of the trip-page header, opening its invite and state controls in a dialog rather than occupying the main trip content.
 - Treat only an accepted invitation as active trip membership and the future basis for participant contribution permissions.
 - Preserve existing trip ownership, records, media associations, and public visibility rules.
 

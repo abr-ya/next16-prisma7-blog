@@ -70,7 +70,13 @@ export const TripPage = async ({ params }: HikePageProps) => {
   });
 
   return (
-    <PageLayout title={hike.title} className="pt-6" showBackLink={false} contentWidth="wide">
+    <PageLayout
+      title={hike.title}
+      className="pt-6"
+      showBackLink={false}
+      contentWidth="wide"
+      headerAction={participantManagement ? <HikeParticipantManager management={participantManagement} /> : null}
+    >
       <article className="flex w-full flex-col gap-6 pb-10">
         <div className={cn("flex w-full flex-col gap-6", SITE_CONTENT_WIDTH.narrow)}>
           <div className="flex flex-wrap gap-2">
@@ -90,7 +96,6 @@ export const TripPage = async ({ params }: HikePageProps) => {
               <Link href="/trips/invitations">My invitations</Link>
             </Button>
           ) : null}
-          {participantManagement ? <HikeParticipantManager management={participantManagement} /> : null}
         </div>
         {showRouteMap ? (
           <section className="grid gap-3">

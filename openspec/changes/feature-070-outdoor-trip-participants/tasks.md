@@ -15,6 +15,7 @@
 - [x] 3.1 Add owner/admin participation controls to the trip detail experience for inviting by email, reviewing pending/accepted state, cancelling invitations, and removing participants.
 - [x] 3.2 Add the authenticated `/trips/invitations` inbox with accept/decline controls and an appropriate empty state.
 - [x] 3.3 Confirm anonymous, non-owner, and non-admin UI paths do not expose private participation controls or data.
+- [x] 3.4 Move authorized participant management into a compact right-aligned trip-header action and dialog, preserving all existing invitation controls.
 
 ## 4. Documentation and validation
 
