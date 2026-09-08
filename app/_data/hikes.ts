@@ -550,10 +550,13 @@ const toPublicHike = (hike: PublicHikeRecord): PublicHike => {
 
 const revalidateHikePaths = (slug?: string | null) => {
   revalidatePath("/admin/hikes");
+  revalidatePath("/admin/trips");
   revalidatePath("/hikes");
+  revalidatePath("/trips");
 
   if (slug) {
     revalidatePath(`/hikes/${slug}`);
+    revalidatePath(`/trips/${slug}`);
   }
 };
 

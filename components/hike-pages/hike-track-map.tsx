@@ -67,7 +67,7 @@ export const HikeTrackMap = ({
         </div>
       ) : (
         <CombinedTrackMap
-          ariaLabel="Hike route map"
+          ariaLabel="Trip route map"
           tracks={visibleTracks}
           photoMarkers={visiblePhotoMarkers}
           noteMarkers={visibleNoteMarkers}

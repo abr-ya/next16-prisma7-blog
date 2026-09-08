@@ -156,7 +156,7 @@ const TrackPage = async ({ params }: TrackPageProps) => {
                       </div>
                     </div>
                     <Button asChild size="sm" variant="outline">
-                      <Link href={`/hikes/${hike.slug}`}>
+                      <Link href={`/trips/${hike.slug}`}>
                         <Map />
                         Open hike
                       </Link>

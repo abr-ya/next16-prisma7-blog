@@ -4,6 +4,16 @@ Defines the first hike content capability: storing hikes, managing them from adm
 
 ## Requirements
 
+### Requirement: Legacy hike terminology remains URL-compatible
+
+The system SHALL preserve legacy hike URLs as compatibility entry points while the primary user-facing domain is Trips.
+
+#### Scenario: Existing hike link remains usable
+
+- **WHEN** a visitor follows an existing `/hikes/[slug]` link
+- **THEN** the system permanently redirects to `/trips/[slug]`
+- **AND** it does not expose a duplicate public detail page at the legacy URL
+
 ### Requirement: Hike records store core trip information
 
 The system SHALL store hikes with title, unique slug, optional description, start date, end date, type, publication status, owner, creation timestamp, and update timestamp.

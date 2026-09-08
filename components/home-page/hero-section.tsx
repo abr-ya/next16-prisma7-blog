@@ -22,7 +22,7 @@ const contentSections = [
     icon: FileText,
   },
   {
-    href: "/hikes",
+    href: "/trips",
     title: "Trips",
     description: "Outdoor routes, trip notes, tracks, and linked photo stories.",
     icon: Map,

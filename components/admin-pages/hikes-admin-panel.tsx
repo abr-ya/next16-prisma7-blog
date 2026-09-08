@@ -246,10 +246,10 @@ const HikeFormDialog = ({
           type: values.type as HikeType,
           status: values.status as HikeStatus,
         });
-        toast.success("Hike updated");
+        toast.success("Trip updated");
       } else {
         await createHike({ ...values, type: values.type as HikeType, status: values.status as HikeStatus });
-        toast.success("Hike created");
+        toast.success("Trip created");
       }
 
       onOpenChange(false);
@@ -1133,7 +1133,7 @@ const HikeNotesDialog = ({
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
           <DialogHeader>
-            <DialogTitle>Hike notes{hike ? ` — ${hike.title}` : ""}</DialogTitle>
+            <DialogTitle>Trip notes{hike ? ` — ${hike.title}` : ""}</DialogTitle>
             <DialogDescription>Only published notes with coordinates appear on the public map.</DialogDescription>
           </DialogHeader>
           {hike ? (
@@ -1406,9 +1406,9 @@ export const HikesAdminPanel = ({
       const result = await deleteHike(deleteTarget.id);
 
       if (result.success) {
-        toast.success("Hike deleted");
+        toast.success("Trip deleted");
       } else {
-        toast.error("Hike not found");
+        toast.error("Trip not found");
       }
 
       setDeleteTarget(null);

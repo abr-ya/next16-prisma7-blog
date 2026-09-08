@@ -557,7 +557,7 @@ export const TracksAdminPanel = ({ tracks }: { tracks: TrackListItem[] }) => {
       },
       {
         id: "hikes",
-        header: "Hikes",
+        header: "Trips",
         cell: ({ row }) => (
           <div className="flex max-w-56 flex-col gap-1">
             {row.original.hikes.length > 0 ? (

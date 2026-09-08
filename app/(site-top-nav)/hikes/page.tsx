@@ -1,6 +1,7 @@
 import { CalendarDays, Map } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { permanentRedirect } from "next/navigation";
 
 import { getPublicHikes } from "@/app/_data/hikes";
 import { Badge, Button, Card, CardContent, CardHeader, CardTitle } from "@/components/index";
@@ -9,17 +10,17 @@ import { buildPageMetadata, getTextMetadataDescription } from "@/lib/site-metada
 import { formatHikeDateRange, formatHikeType } from "@/lib/hikes";
 
 export const dynamic = "force-dynamic";
-export const metadata: Metadata = buildPageMetadata({
-  title: "Hikes",
+export const tripsMetadata: Metadata = buildPageMetadata({
+  title: "Trips",
   description: "Published hikes and outdoor trip notes.",
-  path: "/hikes",
+  path: "/trips",
 });
 
-const HikesPage = async () => {
+export const TripsPage = async () => {
   const hikes = await getPublicHikes();
 
   return (
-    <PageLayout title="Hikes" className="pt-6" showBackLink={false} contentWidth="wide">
+    <PageLayout title="Trips" className="pt-6" showBackLink={false} contentWidth="wide">
       <div className="flex w-full flex-col gap-6 pb-10">
         {hikes.length > 0 ? (
           <div className="grid gap-4 md:grid-cols-3">
@@ -34,7 +35,7 @@ const HikesPage = async () => {
                     </Badge>
                   </div>
                   <CardTitle className="text-xl leading-tight">
-                    <Link href={`/hikes/${hike.slug}`} className="hover:underline">
+                    <Link href={`/trips/${hike.slug}`} className="hover:underline">
                       {hike.title}
                     </Link>
                   </CardTitle>
@@ -47,7 +48,7 @@ const HikesPage = async () => {
                   ) : null}
                   <div className="mt-auto">
                     <Button asChild size="sm">
-                      <Link href={`/hikes/${hike.slug}`}>
+                      <Link href={`/trips/${hike.slug}`}>
                         <Map />
                         Details
                       </Link>
@@ -58,11 +59,13 @@ const HikesPage = async () => {
             ))}
           </div>
         ) : (
-          <div className="rounded-md border p-8 text-center text-sm text-muted-foreground">No published hikes yet.</div>
+          <div className="rounded-md border p-8 text-center text-sm text-muted-foreground">No published trips yet.</div>
         )}
       </div>
     </PageLayout>
   );
 };
 
-export default HikesPage;
+export default function LegacyHikesPage() {
+  permanentRedirect("/trips");
+}

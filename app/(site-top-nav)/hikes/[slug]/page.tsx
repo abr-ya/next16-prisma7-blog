@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { CalendarDays, Route } from "lucide-react";
 
 import { getPublicHikeBySlug } from "@/app/_data/hikes";
@@ -20,27 +20,27 @@ type HikePageProps = {
   params: Promise<{ slug: string }>;
 };
 
-export const generateMetadata = async ({ params }: HikePageProps): Promise<Metadata> => {
+export const generateTripMetadata = async ({ params }: HikePageProps): Promise<Metadata> => {
   const { slug } = await params;
   const hike = await getPublicHikeBySlug(slug);
 
   if (!hike) {
     return buildPageMetadata({
-      title: "Hikes",
+      title: "Trips",
       description: "Published hikes and outdoor trip notes.",
-      path: `/hikes/${slug}`,
+      path: `/trips/${slug}`,
     });
   }
 
   return buildPageMetadata({
     title: hike.title,
     description: getTextMetadataDescription(hike.description) || "Published hike and outdoor trip notes.",
-    path: `/hikes/${hike.slug}`,
+    path: `/trips/${hike.slug}`,
     type: "article",
   });
 };
 
-const HikePage = async ({ params }: HikePageProps) => {
+export const TripPage = async ({ params }: HikePageProps) => {
   const { slug } = await params;
   const [hike, session] = await Promise.all([getPublicHikeBySlug(slug), authSession()]);
 
@@ -133,4 +133,7 @@ const HikePage = async ({ params }: HikePageProps) => {
   );
 };
 
-export default HikePage;
+export default async function LegacyHikePage({ params }: HikePageProps) {
+  const { slug } = await params;
+  permanentRedirect(`/trips/${slug}`);
+}
