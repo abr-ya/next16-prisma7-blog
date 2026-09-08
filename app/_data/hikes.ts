@@ -3,8 +3,16 @@
 import { revalidatePath } from "next/cache";
 
 import type { Prisma } from "@/generated/prisma/client";
-import type { FileAssetStatus, HikeStatus, HikeType, PhotoStatus, TrackStatus } from "@/generated/prisma/enums";
-import { authSession, requireAdmin } from "@/lib/auth-utils";
+import type {
+  FileAssetStatus,
+  HikeParticipantStatus,
+  HikeStatus,
+  HikeType,
+  PhotoStatus,
+  TrackStatus,
+} from "@/generated/prisma/enums";
+import { authSession, currentUserRole, requireAdmin } from "@/lib/auth-utils";
+import { hasAdminRole } from "@/lib/auth-roles";
 import { createSlug } from "@/lib/slug-generator";
 import {
   getPhotoExifMetadataState,
@@ -356,6 +364,18 @@ export type PublicHike = Omit<PublicHikeRecord, "tracks" | "photos" | "notes"> &
   noteMapMarkers: HikeNoteMapMarker[];
 };
 
+export type HikeParticipantManagement = {
+  hike: { id: string; slug: string; title: string };
+  pendingInvitations: { id: string; email: string; name: string; invitedAt: Date }[];
+  acceptedParticipants: { id: string; email: string; name: string; acceptedAt: Date | null }[];
+};
+
+export type PendingHikeInvitation = {
+  id: string;
+  hike: { title: string; slug: string; startDate: Date; endDate: Date };
+  invitedAt: Date;
+};
+
 const toHikePhotoMapMarker = ({
   photo,
   hikeDayKeys,
@@ -553,11 +573,41 @@ const revalidateHikePaths = (slug?: string | null) => {
   revalidatePath("/admin/trips");
   revalidatePath("/hikes");
   revalidatePath("/trips");
+  revalidatePath("/trips/invitations");
 
   if (slug) {
     revalidatePath(`/hikes/${slug}`);
     revalidatePath(`/trips/${slug}`);
   }
+};
+
+const getHikeParticipantManager = async ({ hikeId, userId }: { hikeId: string; userId: string }) => {
+  const { default: prisma } = await import("@/lib/prisma");
+  const [role, hike] = await Promise.all([
+    currentUserRole(),
+    prisma.hike.findUnique({ where: { id: hikeId }, select: { id: true, slug: true, userId: true } }),
+  ]);
+
+  if (!hike) throw new Error("Trip not found");
+  if (hike.userId !== userId && !hasAdminRole(role)) throw new Error("Unauthorized to manage trip participants");
+
+  return hike;
+};
+
+const expireHikeParticipantIfNeeded = async ({
+  id,
+  status,
+  expiresAt,
+}: {
+  id: string;
+  status: HikeParticipantStatus;
+  expiresAt: Date | null;
+}) => {
+  if (status !== "PENDING" || !expiresAt || expiresAt > new Date()) return false;
+
+  const { default: prisma } = await import("@/lib/prisma");
+  await prisma.hikeParticipant.update({ where: { id }, data: { status: "EXPIRED", respondedAt: new Date() } });
+  return true;
 };
 
 const revalidateHikeTrackAssociationPaths = ({
@@ -986,6 +1036,173 @@ export const getPublicHikeBySlug = async (slug: string): Promise<PublicHike | nu
   });
 
   return hike ? toPublicHike(hike) : null;
+};
+
+export const isAcceptedHikeParticipant = async ({ hikeId, userId }: { hikeId: string; userId: string }) => {
+  const { default: prisma } = await import("@/lib/prisma");
+  const participant = await prisma.hikeParticipant.findUnique({
+    where: { hikeId_userId: { hikeId, userId } },
+    select: { id: true, status: true, expiresAt: true },
+  });
+
+  if (!participant || (await expireHikeParticipantIfNeeded(participant))) return false;
+  return participant.status === "ACCEPTED";
+};
+
+export const getHikeParticipantManagementBySlug = async (slug: string): Promise<HikeParticipantManagement | null> => {
+  const session = await authSession();
+  if (!session) return null;
+
+  const { default: prisma } = await import("@/lib/prisma");
+  const hike = await prisma.hike.findUnique({
+    where: { slug },
+    select: {
+      id: true,
+      slug: true,
+      title: true,
+      userId: true,
+      participants: {
+        where: { status: { in: ["PENDING", "ACCEPTED"] } },
+        orderBy: [{ status: "asc" }, { invitedAt: "desc" }],
+        select: {
+          id: true,
+          status: true,
+          invitedAt: true,
+          respondedAt: true,
+          user: { select: { name: true, email: true } },
+        },
+      },
+    },
+  });
+  const role = await currentUserRole();
+
+  if (!hike || (hike.userId !== session.user.id && !hasAdminRole(role))) return null;
+
+  return {
+    hike: { id: hike.id, slug: hike.slug, title: hike.title },
+    pendingInvitations: hike.participants
+      .filter((participant: { status: HikeParticipantStatus }) => participant.status === "PENDING")
+      .map((participant: { id: string; invitedAt: Date; user: { email: string; name: string } }) => ({
+        id: participant.id,
+        email: participant.user.email,
+        name: participant.user.name,
+        invitedAt: participant.invitedAt,
+      })),
+    acceptedParticipants: hike.participants
+      .filter((participant: { status: HikeParticipantStatus }) => participant.status === "ACCEPTED")
+      .map((participant: { id: string; respondedAt: Date | null; user: { email: string; name: string } }) => ({
+        id: participant.id,
+        email: participant.user.email,
+        name: participant.user.name,
+        acceptedAt: participant.respondedAt,
+      })),
+  };
+};
+
+export const getPendingHikeInvitations = async (): Promise<PendingHikeInvitation[]> => {
+  const userId = await getRequiredUserId();
+  const { default: prisma } = await import("@/lib/prisma");
+  const now = new Date();
+
+  await prisma.hikeParticipant.updateMany({
+    where: { userId, status: "PENDING", expiresAt: { lte: now } },
+    data: { status: "EXPIRED", respondedAt: now },
+  });
+
+  return prisma.hikeParticipant.findMany({
+    where: { userId, status: "PENDING" },
+    orderBy: { invitedAt: "desc" },
+    select: {
+      id: true,
+      invitedAt: true,
+      hike: { select: { title: true, slug: true, startDate: true, endDate: true } },
+    },
+  });
+};
+
+export const inviteHikeParticipant = async ({ hikeId, email }: { hikeId: string; email: string }) => {
+  const userId = await getRequiredUserId();
+  const normalizedEmail = email.trim().toLowerCase();
+  if (!normalizedEmail) throw new Error("This user cannot be invited");
+
+  const hike = await getHikeParticipantManager({ hikeId, userId });
+  const { default: prisma } = await import("@/lib/prisma");
+  const invitedUser = await prisma.user.findFirst({
+    where: { email: { equals: normalizedEmail, mode: "insensitive" } },
+    select: { id: true },
+  });
+  if (!invitedUser || invitedUser.id === hike.userId) throw new Error("This user cannot be invited");
+
+  const existing = await prisma.hikeParticipant.findUnique({
+    where: { hikeId_userId: { hikeId: hike.id, userId: invitedUser.id } },
+    select: { id: true, status: true },
+  });
+  if (existing?.status === "PENDING" || existing?.status === "ACCEPTED") {
+    throw new Error("This user cannot be invited");
+  }
+
+  const invitedAt = new Date();
+  if (existing) {
+    await prisma.hikeParticipant.update({
+      where: { id: existing.id },
+      data: { status: "PENDING", invitedById: userId, invitedAt, respondedAt: null, expiresAt: null },
+    });
+  } else {
+    await prisma.hikeParticipant.create({
+      data: { hikeId: hike.id, userId: invitedUser.id, invitedById: userId, invitedAt },
+    });
+  }
+
+  revalidateHikePaths(hike.slug);
+  return { success: true };
+};
+
+export const respondToHikeInvitation = async ({ id, accept }: { id: string; accept: boolean }) => {
+  const userId = await getRequiredUserId();
+  const { default: prisma } = await import("@/lib/prisma");
+  const invitation = await prisma.hikeParticipant.findUnique({
+    where: { id },
+    select: { id: true, userId: true, status: true, expiresAt: true, hike: { select: { slug: true } } },
+  });
+  if (!invitation || invitation.userId !== userId || (await expireHikeParticipantIfNeeded(invitation))) {
+    throw new Error("Invitation is no longer available");
+  }
+  if (invitation.status !== "PENDING") throw new Error("Invitation is no longer available");
+
+  await prisma.hikeParticipant.update({
+    where: { id: invitation.id },
+    data: { status: accept ? "ACCEPTED" : "DECLINED", respondedAt: new Date() },
+  });
+  revalidateHikePaths(invitation.hike.slug);
+  return { success: true };
+};
+
+export const cancelHikeInvitation = async ({ hikeId, id }: { hikeId: string; id: string }) => {
+  const userId = await getRequiredUserId();
+  const hike = await getHikeParticipantManager({ hikeId, userId });
+  const { default: prisma } = await import("@/lib/prisma");
+  const updated = await prisma.hikeParticipant.updateMany({
+    where: { id, hikeId: hike.id, status: "PENDING" },
+    data: { status: "CANCELLED", respondedAt: new Date() },
+  });
+  if (updated.count === 0) throw new Error("Invitation is no longer available");
+
+  revalidateHikePaths(hike.slug);
+  return { success: true };
+};
+
+export const removeHikeParticipant = async ({ hikeId, id }: { hikeId: string; id: string }) => {
+  const userId = await getRequiredUserId();
+  const hike = await getHikeParticipantManager({ hikeId, userId });
+  const { default: prisma } = await import("@/lib/prisma");
+  const updated = await prisma.hikeParticipant.updateMany({
+    where: { id, hikeId: hike.id, status: "ACCEPTED" },
+    data: { status: "CANCELLED", respondedAt: new Date() },
+  });
+  if (updated.count === 0) throw new Error("Participant is no longer active");
+
+  revalidateHikePaths(hike.slug);
+  return { success: true };
 };
 
 export const attachTrackToHike = async ({ hikeId, trackId }: { hikeId: string; trackId: string }) => {

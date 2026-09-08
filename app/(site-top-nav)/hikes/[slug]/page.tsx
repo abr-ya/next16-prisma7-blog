@@ -3,7 +3,8 @@ import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
 import { CalendarDays, Route } from "lucide-react";
 
-import { getPublicHikeBySlug } from "@/app/_data/hikes";
+import { getHikeParticipantManagementBySlug, getPublicHikeBySlug } from "@/app/_data/hikes";
+import { HikeParticipantManager } from "@/components/hike-pages/hike-participant-manager";
 import { HikePhotoGallery, type HikePhotoGalleryItem } from "@/components/hike-pages/hike-photo-gallery";
 import { HikeTrackMap } from "@/components/hike-pages/hike-track-map";
 import { Badge, Button } from "@/components/index";
@@ -42,7 +43,11 @@ export const generateTripMetadata = async ({ params }: HikePageProps): Promise<M
 
 export const TripPage = async ({ params }: HikePageProps) => {
   const { slug } = await params;
-  const [hike, session] = await Promise.all([getPublicHikeBySlug(slug), authSession()]);
+  const [hike, session, participantManagement] = await Promise.all([
+    getPublicHikeBySlug(slug),
+    authSession(),
+    getHikeParticipantManagementBySlug(slug),
+  ]);
 
   if (!hike) notFound();
 
@@ -80,6 +85,12 @@ export const TripPage = async ({ params }: HikePageProps) => {
           ) : (
             <p className="text-sm text-muted-foreground">No description yet.</p>
           )}
+          {session ? (
+            <Button asChild size="sm" variant="outline" className="self-start">
+              <Link href="/trips/invitations">My invitations</Link>
+            </Button>
+          ) : null}
+          {participantManagement ? <HikeParticipantManager management={participantManagement} /> : null}
         </div>
         {showRouteMap ? (
           <section className="grid gap-3">
