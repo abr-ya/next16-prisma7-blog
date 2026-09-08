@@ -91,11 +91,6 @@ export const TripPage = async ({ params }: HikePageProps) => {
           ) : (
             <p className="text-sm text-muted-foreground">No description yet.</p>
           )}
-          {session ? (
-            <Button asChild size="sm" variant="outline" className="self-start">
-              <Link href="/trips/invitations">My invitations</Link>
-            </Button>
-          ) : null}
         </div>
         {showRouteMap ? (
           <section className="grid gap-3">
