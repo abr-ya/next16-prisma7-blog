@@ -79,6 +79,7 @@ Cancelled or deferred candidates do not reserve feature numbers.
 | feature-067 | feature-067-outdoor-hike-map-day-filter | outdoor/maps | Add a compact all-days/single-day map selector for linked track geometry and photo markers, with selected-day bounds fitting and an empty state when no confidently dated layers exist. |
 | feature-068 | feature-068-outdoor-hike-map-notes-layer | outdoor/maps-notes | Add admin-curated hike notes with optional coordinates/day assignment and explicit visibility, then render eligible notes as public hike-map markers. |
 | feature-069 | feature-069-outdoor-hike-to-trip-domain-rename | outdoor/domain | Add canonical Trip routes and user-facing terminology while permanently redirecting legacy hike URLs and preserving the internal Hike API. |
+| feature-071 | feature-071-public-user-profile | navigation/public-users | Add a private read-only Profile with identity display, personal-content summary, direct trip invitations, and a public-nav entry point. |
 
 ## Cancelled Candidate Notes
 
