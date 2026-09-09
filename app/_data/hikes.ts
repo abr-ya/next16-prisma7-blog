@@ -574,6 +574,7 @@ const revalidateHikePaths = (slug?: string | null) => {
   revalidatePath("/hikes");
   revalidatePath("/trips");
   revalidatePath("/trips/invitations");
+  revalidatePath("/profile");
 
   if (slug) {
     revalidatePath(`/hikes/${slug}`);
