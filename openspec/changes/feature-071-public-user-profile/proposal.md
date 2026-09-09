@@ -1,17 +1,17 @@
 ## Why
 
-Signed-in users need one private public-site destination for their identity, personal content, and trip invitations instead of finding these features from unrelated pages.
+Signed-in users need one private public-site destination where they can see their identity, personal content, and trip invitations instead of finding these features from unrelated pages.
 
 ## What Changes
 
-- Add authenticated `/profile` with editable display name and one profile avatar.
-- Let users upload, replace, and remove their single profile avatar using the existing managed-file workflow.
+- Add authenticated read-only `/profile` that displays the current display name and avatar.
 - Show links and lightweight counts for the user's own posts, trips, tracks, and photos, with clear empty states.
-- Move the trip invitation inbox into the Profile experience and remove the invitation shortcut from individual trip pages.
+- Render the user's pending trip invitations directly in Profile, with accept and decline actions.
+- Retain `/trips/invitations` as a compatible destination for the same invitation inbox.
 
 ### Non-goals
 
-- Per-post, per-comment, or multiple selectable avatars; posts/comments continue to render the user's current profile avatar.
+- Editing display names or avatars, including upload, replacement, removal, or managed-file lifecycle work.
 - Public profile pages, user directories, role management, or editing other users.
 - Changing ownership of existing posts, trips, tracks, or photos.
 
@@ -19,14 +19,14 @@ Signed-in users need one private public-site destination for their identity, per
 
 ### New Capabilities
 
-- `public-user-profile`: Authenticated private profile, profile avatar lifecycle, personal-content summary, and invitation access.
+- `public-user-profile`: Authenticated read-only profile, personal-content summary, and invitation inbox.
 
 ### Modified Capabilities
 
-- `outdoor-trip-participants`: Relocate recipient invitation access from a trip-page shortcut to the private profile while retaining `/trips/invitations` compatibility.
+- `outdoor-trip-participants`: Render the recipient invitation inbox directly in the private profile while retaining `/trips/invitations` compatibility.
 
 ## Impact
 
 - Routes: new `/profile`; existing `/trips/invitations` remains a compatible destination but is linked from Profile.
-- Data: use the existing `User.image` profile field and managed file assets; assess a safe replacement/cleanup policy without altering post/comment ownership.
-- UI: public navbar user menu, profile page, and trip detail shortcut.
+- Data: read existing user identity, owned content, and invitation records without schema changes or altering ownership.
+- UI: public navbar user menu and profile page; no avatar-editing controls.
