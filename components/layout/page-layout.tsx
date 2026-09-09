@@ -10,6 +10,7 @@ interface PageLayoutProps {
   className?: string;
   showBackLink?: boolean;
   contentWidth?: SiteContentWidth;
+  headerAction?: React.ReactNode;
 }
 
 export const PageLayout = ({
@@ -18,6 +19,7 @@ export const PageLayout = ({
   className,
   showBackLink = true,
   contentWidth = "narrow",
+  headerAction,
 }: PageLayoutProps) => (
   <main className={cn("min-h-screen px-4 py-16", className)}>
     <div className={cn("mx-auto", SITE_CONTENT_WIDTH[contentWidth])}>
@@ -29,7 +31,10 @@ export const PageLayout = ({
           </Link>
         </Button>
       ) : null}
-      <h1 className="text-3xl font-bold mb-4">{title}</h1>
+      <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+        <h1 className="text-3xl font-bold">{title}</h1>
+        {headerAction}
+      </div>
       {children}
     </div>
   </main>

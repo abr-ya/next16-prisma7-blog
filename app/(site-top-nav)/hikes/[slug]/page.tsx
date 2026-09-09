@@ -3,7 +3,8 @@ import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
 import { CalendarDays, Route } from "lucide-react";
 
-import { getPublicHikeBySlug } from "@/app/_data/hikes";
+import { getHikeParticipantManagementBySlug, getPublicHikeBySlug } from "@/app/_data/hikes";
+import { HikeParticipantManager } from "@/components/hike-pages/hike-participant-manager";
 import { HikePhotoGallery, type HikePhotoGalleryItem } from "@/components/hike-pages/hike-photo-gallery";
 import { HikeTrackMap } from "@/components/hike-pages/hike-track-map";
 import { Badge, Button } from "@/components/index";
@@ -42,7 +43,11 @@ export const generateTripMetadata = async ({ params }: HikePageProps): Promise<M
 
 export const TripPage = async ({ params }: HikePageProps) => {
   const { slug } = await params;
-  const [hike, session] = await Promise.all([getPublicHikeBySlug(slug), authSession()]);
+  const [hike, session, participantManagement] = await Promise.all([
+    getPublicHikeBySlug(slug),
+    authSession(),
+    getHikeParticipantManagementBySlug(slug),
+  ]);
 
   if (!hike) notFound();
 
@@ -65,7 +70,13 @@ export const TripPage = async ({ params }: HikePageProps) => {
   });
 
   return (
-    <PageLayout title={hike.title} className="pt-6" showBackLink={false} contentWidth="wide">
+    <PageLayout
+      title={hike.title}
+      className="pt-6"
+      showBackLink={false}
+      contentWidth="wide"
+      headerAction={participantManagement ? <HikeParticipantManager management={participantManagement} /> : null}
+    >
       <article className="flex w-full flex-col gap-6 pb-10">
         <div className={cn("flex w-full flex-col gap-6", SITE_CONTENT_WIDTH.narrow)}>
           <div className="flex flex-wrap gap-2">
