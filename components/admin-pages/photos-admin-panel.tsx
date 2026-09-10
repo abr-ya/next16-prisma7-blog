@@ -16,6 +16,7 @@ import {
   updatePhoto,
   type PhotoListItem,
 } from "@/app/_data/photos";
+import { PhotoUploadDialog, type PhotoUploadDialogValues } from "@/components/common/photo-upload-dialog";
 import {
   Badge,
   Button,
@@ -229,7 +230,7 @@ const PhotoImagesField = ({
   </div>
 );
 
-const PhotoFormDialog = ({
+export const PhotoFormDialog = ({
   photo,
   open,
   onOpenChange,
@@ -494,6 +495,142 @@ const PhotoFormDialog = ({
   );
 };
 
+const AdminPhotoUploadDialog = ({
+  photo,
+  open,
+  onOpenChange,
+  onRefresh,
+  refreshingPhotoId,
+  onSaved,
+}: {
+  photo: PhotoListItem | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onRefresh: (photo: PhotoListItem) => void;
+  refreshingPhotoId: string | null;
+  onSaved: () => void;
+}) => {
+  const [status, setStatus] = useState<PhotoStatus>(() => photo?.status ?? "DRAFT");
+  const initialValues = useMemo<PhotoUploadDialogValues>(
+    () => ({
+      title: photo?.title ?? "",
+      description: photo?.description ?? "",
+      images:
+        photo?.images.map((image) => ({
+          fileAssetId: image.fileAssetId,
+          name: image.fileAsset.name,
+          url: image.fileAsset.url,
+        })) ?? [],
+    }),
+    [photo],
+  );
+  const metadataState = photo ? getPhotoMetadataState(photo) : null;
+  const isRefreshing = Boolean(photo && refreshingPhotoId === photo.id);
+
+  const submit = async (values: PhotoUploadDialogValues) => {
+    const payload = {
+      title: values.title,
+      description: values.description,
+      status,
+      fileAssetIds: values.images.map((image) => image.fileAssetId),
+    };
+
+    try {
+      if (photo) {
+        await updatePhoto({ id: photo.id, ...payload });
+        toast.success("Photo updated");
+      } else {
+        await createPhoto(payload);
+        toast.success("Photo created");
+      }
+      onSaved();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to save photo");
+      throw error;
+    }
+  };
+
+  return (
+    <PhotoUploadDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      dialogTitle={photo ? "Edit photo" : "Create photo"}
+      submitLabel="Save photo"
+      initialValues={initialValues}
+      beforeDescription={
+        <label className="grid gap-2 text-sm font-medium">
+          Status
+          <Select value={status} onValueChange={(value) => setStatus(value as PhotoStatus)}>
+            <SelectTrigger className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {photoStatusOptions.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </label>
+      }
+      afterUpload={(isDirty) =>
+        photo && metadataState ? (
+          <div className="grid gap-3 rounded-md border p-3 text-sm">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <span className="font-medium">EXIF metadata</span>
+                <Badge variant={getMetadataStatusVariant(metadataState)}>{getMetadataStatusLabel(metadataState)}</Badge>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={isRefreshing || isDirty || status !== photo.status}
+                onClick={() => onRefresh(photo)}
+              >
+                <RefreshCw className={isRefreshing ? "animate-spin" : undefined} />
+                {isRefreshing
+                  ? "Refreshing..."
+                  : metadataState.status === "SUCCESS"
+                    ? "Refresh metadata"
+                    : "Extract metadata"}
+              </Button>
+            </div>
+            {metadataState.status === "SUCCESS" ? (
+              <div className="flex flex-wrap gap-3 text-muted-foreground">
+                <span>{formatPhotoCapturedAt(metadataState.summary.capturedAt) ?? "No capture date"}</span>
+                <span>
+                  {formatPhotoDimensions(metadataState.summary.width, metadataState.summary.height) ?? "No dimensions"}
+                </span>
+                <span>{metadataState.summary.cameraLabel ?? "No camera"}</span>
+                <span>
+                  {formatPhotoExposureTriplet({
+                    exposureTime: metadataState.summary.exposureTime,
+                    fNumber: metadataState.summary.fNumber,
+                    focalLength: metadataState.summary.focalLength,
+                  }) ?? "No exposure details"}
+                </span>
+                <span>{formatPhotoGpsPresence(metadataState.summary.gps)}</span>
+                <span>Parsed {formatDate(metadataState.metadata.exifParse.parsedAt)}</span>
+              </div>
+            ) : null}
+            {metadataState.status === "FAILED" || metadataState.status === "STALE" ? (
+              <div className="text-muted-foreground">{metadataState.errorMessage}</div>
+            ) : null}
+            {metadataState.status === "MISSING" ? (
+              <div className="text-muted-foreground">
+                Metadata has not been extracted yet. Extract to read capture date, camera, and GPS when available.
+              </div>
+            ) : null}
+          </div>
+        ) : null
+      }
+      onSubmit={submit}
+    />
+  );
+};
+
 export const PhotosAdminPanel = ({ photos }: { photos: PhotoListItem[] }) => {
   const router = useRouter();
   const [formOpen, setFormOpen] = useState(false);
@@ -685,7 +822,8 @@ export const PhotosAdminPanel = ({ photos }: { photos: PhotoListItem[] }) => {
         </Button>
       </div>
       <DataTable data={photos} columns={columns} pagination={{ pageSize: 10 }} />
-      <PhotoFormDialog
+      <AdminPhotoUploadDialog
+        key={editingPhoto?.id ?? "create"}
         photo={editingPhoto}
         open={formOpen}
         onRefresh={handleRefresh}
