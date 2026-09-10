@@ -1,6 +1,6 @@
 "use client";
 
-import { LayoutDashboard, LogOut } from "lucide-react";
+import { LayoutDashboard, LogOut, UserRound } from "lucide-react";
 import Link from "next/link";
 import { useT } from "next-i18next/client";
 import { useRouter } from "next/navigation";
@@ -53,6 +53,12 @@ export const NavbarUserMenu = ({ userName, userImage }: NavbarUserMenuProps) => 
       <NavigationMenuContent className="left-auto right-0 w-max min-w-[10rem]">
         <ul className="grid gap-4">
           <li>
+            <NavigationMenuLink asChild>
+              <Link href="/profile" className="flex-row items-center gap-2">
+                <UserRound />
+                Profile
+              </Link>
+            </NavigationMenuLink>
             <NavigationMenuLink asChild>
               <Link href="/admin" className="flex-row items-center gap-2">
                 <LayoutDashboard />
