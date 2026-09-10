@@ -17,9 +17,11 @@ See `proposal.md` for motivation and the delta specs for behavior. Feature-070 p
 
 ## Decisions
 
-### Use a dedicated trip contribution server action and compact client form
+### Use a dedicated trip contribution server action and a shared photo dialog
 
-Add a small client upload/form component to the public trip detail page only when a server-derived capability result says the current user is creator, accepted participant, or admin. A dedicated server action receives the trip identity, title/optional description, and uploaded file-asset ids. It reloads session, trip, role, membership, and file ownership/eligibility; UI visibility is never authorization.
+Extract the admin photo dialog's common title, optional description, one-to-three-image selection, and UploadThing UI into a reusable dialog/form component with explicit modes. The existing administrator mode retains status, EXIF refresh, create/update, and other administrator-only behavior. The trip-contribution mode is opened from a compact `Add photo` trigger on the public trip detail page and submits only the contribution-safe payload to the dedicated action.
+
+Render the trigger only when a server-derived capability result says the current user is creator, accepted participant, or admin. A dedicated server action receives the trip identity, title/optional description, and uploaded file-asset ids. It reloads session, trip, role, membership, and file ownership/eligibility; dialog visibility is never authorization. A quota-reached eligible user sees an explanatory disabled trigger rather than an open contribution dialog.
 
 Alternative: expose the existing admin `createPhoto` action. It is intentionally admin-only and lacks trip context, contribution authorization, quota enforcement, and atomic association.
 
@@ -51,6 +53,6 @@ Alternative: delete files on rejection. Upload and action failure paths are inde
 ## Migration Plan
 
 1. No schema migration is expected: quota is derived from existing photo ownership and trip-photo associations.
-2. Add server capability/query/action helpers and the conditional trip-page contribution UI.
+2. Extract the shared photo dialog and add the conditional trip-page contribution trigger/dialog UI.
 3. Validate direct-action authorization, quota, and transaction behavior before exposing the control.
 4. Rollback by removing the contribution UI/action wiring; existing uploaded file assets and successfully created standard photo records remain intact and manageable through existing admin workflows.

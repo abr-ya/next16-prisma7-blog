@@ -1,12 +1,17 @@
 ## ADDED Requirements
 
 ### Requirement: Authorized trip users can contribute photos from trip detail
-The system SHALL allow the signed-in creator of a published trip, an accepted active trip participant, or an authenticated administrator to upload one to three eligible image files from `/trips/[slug]`, create a published photo owned by the submitting user, and attach it to that trip. The system SHALL reject anonymous users, users without accepted active membership who are not the trip creator or an administrator, and submissions to a draft or unavailable trip.
+The system SHALL allow the signed-in creator of a published trip, an accepted active trip participant, or an authenticated administrator to open a photo contribution dialog from `/trips/[slug]`, upload one to three eligible image files, create a published photo owned by the submitting user, and attach it to that trip. The contribution dialog SHALL reuse the shared photo title, description, and image-upload controls used by the administrator photo workflow, without exposing its administrator-only controls or mutations. The system SHALL reject anonymous users, users without accepted active membership who are not the trip creator or an administrator, and submissions to a draft or unavailable trip.
 
 #### Scenario: Accepted participant contributes a photo
-- **WHEN** an accepted active participant uploads one to three eligible image files from a published trip detail page
+- **WHEN** an accepted active participant opens the contribution dialog and uploads one to three eligible image files from a published trip detail page
 - **THEN** the system creates a published photo owned by that participant
 - **AND** attaches it to that trip so it is eligible for the existing trip photo gallery
+
+#### Scenario: Contribution dialog excludes administrator controls
+- **WHEN** an eligible user opens the photo contribution dialog from a trip detail page
+- **THEN** the dialog provides the shared title, description, and image-upload controls
+- **AND** it does not provide photo-status selection, EXIF refresh, edit, or other administrator-only controls
 
 #### Scenario: Trip creator contributes a photo
 - **WHEN** the signed-in creator uploads one to three eligible image files from their published trip detail page

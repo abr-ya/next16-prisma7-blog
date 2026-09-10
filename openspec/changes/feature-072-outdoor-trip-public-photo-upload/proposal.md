@@ -4,7 +4,8 @@ Trip creators and accepted participants need to contribute their own photos whil
 
 ## What Changes
 
-- Add an authenticated photo-upload workflow on published `/trips/[slug]` pages for the trip creator, accepted participants, and administrators.
+- Add an authenticated, dialog-based photo-upload workflow on published `/trips/[slug]` pages for the trip creator, accepted participants, and administrators.
+- Reuse the admin photo dialog's shared title, description, image-selection, and upload UI, while keeping its administrator-only fields and mutations out of the public contribution mode.
 - Create and attach submitted image-backed photo records to the current trip through the existing first-party file and outdoor-photo workflows.
 - Enforce a default maximum of 10 contributed photos per non-admin user per trip, counting each created photo record (not each image inside its existing one-to-three-image model).
 - Keep the trip creator and accepted participant authorization checks server-side; reject anonymous, non-member, and inactive-membership submissions.
@@ -14,7 +15,7 @@ Trip creators and accepted participants need to contribute their own photos whil
 
 - Rating-, activity-, post-, or like-based quota increases; this becomes a separately prioritized backlog candidate after the base limit is proven.
 - Participant uploads to draft trips, public upload access for guests, or participant GPX track uploads.
-- Changing the existing admin photo workflow, one-to-three-images-per-photo model, gallery ordering tools, or existing public image/viewer access boundaries.
+- Changing the existing administrator photo workflow, one-to-three-images-per-photo model, gallery ordering tools, or existing public image/viewer access boundaries.
 - Email notifications, moderation queues, or automatic publication review beyond the existing photo-status behavior.
 
 ## Capabilities

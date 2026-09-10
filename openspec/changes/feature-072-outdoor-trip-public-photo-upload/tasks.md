@@ -5,11 +5,12 @@
 - [x] 1.3 Create the owned published photo, ordered image bindings, and next trip-photo association atomically using the existing photo model.
 - [x] 1.4 Enforce the 10-photo-per-non-admin-user-per-trip limit inside the write path so concurrent requests cannot exceed it; retain administrator override and return a clear limit-reached error without partial records.
 
-## 2. Public trip contribution UI
+## 2. Shared photo dialog and public trip contribution UI
 
-- [x] 2.1 Add a compact authenticated photo contribution form to `/trips/[slug]`, reusing the existing outdoor-photo upload endpoint and enforcing the current one-to-three-image client constraints.
-- [x] 2.2 Show the control only to eligible users and provide pending, success, validation, authorization, and quota-reached feedback without exposing contribution management data publicly.
-- [ ] 2.3 Confirm a successful contribution appears through the existing trip gallery while anonymous/non-member/draft-trip paths do not expose an upload control.
+- [ ] 2.1 Extract the administrator photo dialog's shared title, description, image-selection, and upload controls into a reusable component, retaining administrator-only fields and mutations solely in the administrator mode.
+- [ ] 2.2 Replace the inline trip contribution form with an eligible-user `Add photo` trigger that opens the shared dialog in contribution mode; reuse the existing outdoor-photo upload endpoint and enforce the current one-to-three-image client constraints.
+- [ ] 2.3 Preserve pending, success, validation, authorization, and quota-reached feedback in the dialog flow, without exposing contribution-management or administrator controls publicly.
+- [ ] 2.4 Confirm a successful contribution appears through the existing trip gallery while anonymous/non-member/draft-trip paths do not expose a trigger or dialog; confirm the public dialog excludes administrator-only fields.
 
 ## 3. Documentation and validation
 
