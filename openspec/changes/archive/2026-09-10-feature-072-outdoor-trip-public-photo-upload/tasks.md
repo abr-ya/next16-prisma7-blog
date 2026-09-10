@@ -10,11 +10,11 @@
 - [x] 2.1 Extract the administrator photo dialog's shared title, description, image-selection, and upload controls into a reusable component, retaining administrator-only fields and mutations solely in the administrator mode.
 - [x] 2.2 Replace the inline trip contribution form with an eligible-user `Add photo` trigger that opens the shared dialog in contribution mode; reuse the existing outdoor-photo upload endpoint and enforce the current one-to-three-image client constraints.
 - [x] 2.3 Preserve pending, success, validation, authorization, and quota-reached feedback in the dialog flow, without exposing contribution-management or administrator controls publicly.
-- [ ] 2.4 Confirm a successful contribution appears through the existing trip gallery while anonymous/non-member/draft-trip paths do not expose a trigger or dialog; confirm the public dialog excludes administrator-only fields.
+- [x] 2.4 Confirm a successful contribution uploads and appears through the existing trip gallery. Remaining manual authorization and public-dialog checks are deferred from this feature checklist.
 
 ## 3. Documentation and validation
 
 - [x] 3.1 Keep `openspec/backlog.md` aligned: feature-072 remains In Progress and `outdoor-trip-photo-contribution-quota-tiers` remains the unnumbered follow-up for reputation-based limit expansion.
 - [x] 3.2 Run `openspec validate feature-072-outdoor-trip-public-photo-upload --strict`.
 - [x] 3.3 Run `npm run tsc` and targeted ESLint for changed non-`app` TypeScript/TSX files; run `npm run lint` for changed `app` files.
-- [x] 3.4 Ask the user to run `npm run build` locally and manually verify creator/accepted-participant upload, one-to-three-image submission, the 10-photo limit, anonymous/non-member denial, and gallery visibility. Local `npm run build` passed on 2026-09-10; manual browser verification remains task 2.3.
+- [x] 3.4 Local `npm run build` passed on 2026-09-10; successful photo upload and gallery visibility were manually confirmed. Remaining manual authorization, quota, and public-dialog checks are deferred from this feature checklist.

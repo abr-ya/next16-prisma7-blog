@@ -80,6 +80,7 @@ Cancelled or deferred candidates do not reserve feature numbers.
 | feature-068 | feature-068-outdoor-hike-map-notes-layer | outdoor/maps-notes | Add admin-curated hike notes with optional coordinates/day assignment and explicit visibility, then render eligible notes as public hike-map markers. |
 | feature-069 | feature-069-outdoor-hike-to-trip-domain-rename | outdoor/domain | Add canonical Trip routes and user-facing terminology while permanently redirecting legacy hike URLs and preserving the internal Hike API. |
 | feature-071 | feature-071-public-user-profile | navigation/public-users | Add a private read-only Profile with identity display, personal-content summary, direct trip invitations, and a public-nav entry point. |
+| feature-072 | feature-072-outdoor-trip-public-photo-upload | outdoor/trips-photos | Let trip creators, accepted participants, and administrators contribute one-to-three-image photos from published trip detail in a shared dialog, with server-authoritative authorization, atomic association, and a 10-photo per-user-per-trip non-admin quota. |
 
 ## Cancelled Candidate Notes
 
