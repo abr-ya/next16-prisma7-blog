@@ -3,7 +3,12 @@ import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
 import { CalendarDays, Route } from "lucide-react";
 
-import { getHikeParticipantManagementBySlug, getPublicHikeBySlug } from "@/app/_data/hikes";
+import {
+  getHikeParticipantManagementBySlug,
+  getHikePhotoContributionCapabilityBySlug,
+  getPublicHikeBySlug,
+} from "@/app/_data/hikes";
+import { HikePhotoContributionForm } from "@/components/hike-pages/hike-photo-contribution-form";
 import { HikeParticipantManager } from "@/components/hike-pages/hike-participant-manager";
 import { HikePhotoGallery, type HikePhotoGalleryItem } from "@/components/hike-pages/hike-photo-gallery";
 import { HikeTrackMap } from "@/components/hike-pages/hike-track-map";
@@ -43,10 +48,11 @@ export const generateTripMetadata = async ({ params }: HikePageProps): Promise<M
 
 export const TripPage = async ({ params }: HikePageProps) => {
   const { slug } = await params;
-  const [hike, session, participantManagement] = await Promise.all([
+  const [hike, session, participantManagement, photoContributionCapability] = await Promise.all([
     getPublicHikeBySlug(slug),
     authSession(),
     getHikeParticipantManagementBySlug(slug),
+    getHikePhotoContributionCapabilityBySlug(slug),
   ]);
 
   if (!hike) notFound();
@@ -138,6 +144,7 @@ export const TripPage = async ({ params }: HikePageProps) => {
             </div>
           </section>
         ) : null}
+        {photoContributionCapability ? <HikePhotoContributionForm capability={photoContributionCapability} /> : null}
         <HikePhotoGallery photos={galleryPhotos} canViewFullPhotos={canViewFullPhotos} />
       </article>
     </PageLayout>
