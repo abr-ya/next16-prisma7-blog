@@ -1,8 +1,8 @@
 ## 1. Authorized photo-detail data and review boundaries
 
-- [ ] 1.1 Add a narrow server-side per-trip photo-detail projection that returns capture summary, accepted coordinate provenance, and capability flags only for the photo owner, trip creator, accepted active participant, or administrator.
-- [ ] 1.2 Add server-authoritative coordinate-review actions for the photo owner, trip creator, and administrator that revalidate session, published trip/photo linkage, candidate data, and manual-coordinate input before reusing the existing approval/rejection persistence rules.
-- [ ] 1.3 Keep anonymous and unrelated signed-in page/action paths image-only and denied respectively; do not project EXIF, exact coordinates, review candidates, or internal extraction errors.
+- [x] 1.1 Add a narrow server-side per-trip photo-detail projection that returns capture summary, accepted coordinate provenance, and capability flags only for the photo owner, trip creator, accepted active participant, or administrator.
+- [x] 1.2 Add server-authoritative coordinate-review actions for the photo owner, trip creator, and administrator that revalidate session, published trip/photo linkage, candidate data, and manual-coordinate input before reusing the existing approval/rejection persistence rules.
+- [x] 1.3 Keep anonymous and unrelated signed-in page/action paths image-only and denied respectively; do not project EXIF, exact coordinates, review candidates, or internal extraction errors.
 
 ## 2. Shared details and trip gallery UI
 

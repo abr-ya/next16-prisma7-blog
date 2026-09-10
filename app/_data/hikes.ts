@@ -21,6 +21,7 @@ import {
   isValidGps,
   readPhotoExifMetadata,
   withPhotoMapCoordinate,
+  type PhotoExifSummary,
   type PhotoMapCoordinate,
 } from "@/lib/photo-exif-metadata";
 import type { HikePhotoMapMarker } from "@/lib/hikes";
@@ -36,6 +37,7 @@ import {
   proposeTrackTimeMatchCandidates,
   resolveTrackTimeMatchCoordinate,
   type TrackTimeMatchPhotoInput,
+  type TrackTimeMatchCandidate,
   type TrackTimeMatchTrackInput,
 } from "@/lib/outdoor-photo-track-time-matching";
 import type { TrackTimelineLookup } from "@/lib/outdoor-photo-track-time-coordinate";
@@ -374,6 +376,24 @@ export type HikeParticipantManagement = {
 export type HikePhotoContributionCapability = {
   hikeId: string;
   remainingPhotoCount: number | null;
+};
+
+export type HikePhotoAcceptedCoordinate = {
+  lat: number;
+  lng: number;
+  source: "DIRECT_EXIF" | "INFERRED_TRACK_TIME" | "MANUALLY_CORRECTED";
+  confidence: "HIGH" | "MEDIUM" | "LOW" | null;
+  placementMethod: PhotoMapCoordinate["placementMethod"] | "DIRECT_EXIF";
+  explanation: string | null;
+};
+
+export type HikePhotoDetail = {
+  hikeId: string;
+  photoId: string;
+  captureSummary: PhotoExifSummary | null;
+  acceptedCoordinate: HikePhotoAcceptedCoordinate | null;
+  canReviewCoordinate: boolean;
+  candidates: TrackTimeMatchCandidate[];
 };
 
 export type PendingHikeInvitation = {
@@ -756,20 +776,21 @@ export const getHikeById = async (id: string): Promise<HikeListItem | null> => {
   });
 };
 
-export const acceptHikePhotoTrackTimeMatchCandidate = async ({
+const persistHikePhotoTrackTimeMatchCandidate = async ({
   hikeId,
   photoId,
   candidateId,
   lat,
   lng,
+  reviewedByUserId,
 }: {
   hikeId: string;
   photoId: string;
   candidateId: string;
   lat?: number | null;
   lng?: number | null;
+  reviewedByUserId: string;
 }) => {
-  const reviewedByUserId = await getRequiredAdminUserId();
   const { default: prisma } = await import("@/lib/prisma");
   const hike = await prisma.hike.findUnique({
     where: { id: hikeId },
@@ -951,8 +972,15 @@ export const acceptHikePhotoTrackTimeMatchCandidate = async ({
   return { success: true, mapCoordinate };
 };
 
-export const rejectHikePhotoMapCoordinate = async ({ hikeId, photoId }: { hikeId: string; photoId: string }) => {
-  const reviewedByUserId = await getRequiredAdminUserId();
+const persistHikePhotoMapCoordinateRejection = async ({
+  hikeId,
+  photoId,
+  reviewedByUserId,
+}: {
+  hikeId: string;
+  photoId: string;
+  reviewedByUserId: string;
+}) => {
   const { default: prisma } = await import("@/lib/prisma");
   const hike = await prisma.hike.findUnique({
     where: { id: hikeId },
@@ -1024,6 +1052,39 @@ export const rejectHikePhotoMapCoordinate = async ({ hikeId, photoId }: { hikeId
   return { success: true, mapCoordinate };
 };
 
+export const acceptHikePhotoTrackTimeMatchCandidate = async ({
+  hikeId,
+  photoId,
+  candidateId,
+  lat,
+  lng,
+}: {
+  hikeId: string;
+  photoId: string;
+  candidateId: string;
+  lat?: number | null;
+  lng?: number | null;
+}) => {
+  const access = await getPhotoDetailAccess({ hikeId, photoId });
+  if (!access?.canReviewCoordinate) throw new Error("You cannot review this photo coordinate");
+
+  return persistHikePhotoTrackTimeMatchCandidate({
+    hikeId,
+    photoId,
+    candidateId,
+    lat,
+    lng,
+    reviewedByUserId: access.reviewedByUserId,
+  });
+};
+
+export const rejectHikePhotoMapCoordinate = async ({ hikeId, photoId }: { hikeId: string; photoId: string }) => {
+  const access = await getPhotoDetailAccess({ hikeId, photoId });
+  if (!access?.canReviewCoordinate) throw new Error("You cannot review this photo coordinate");
+
+  return persistHikePhotoMapCoordinateRejection({ hikeId, photoId, reviewedByUserId: access.reviewedByUserId });
+};
+
 export const getPublicHikes = async (): Promise<HikeListItem[]> => {
   const { default: prisma } = await import("@/lib/prisma");
 
@@ -1054,6 +1115,128 @@ export const isAcceptedHikeParticipant = async ({ hikeId, userId }: { hikeId: st
 
   if (!participant || (await expireHikeParticipantIfNeeded(participant))) return false;
   return participant.status === "ACCEPTED";
+};
+
+const getPhotoDetailAccess = async ({ hikeId, photoId }: { hikeId: string; photoId: string }) => {
+  const session = await authSession();
+  if (!session) return null;
+
+  const { default: prisma } = await import("@/lib/prisma");
+  const [role, hike] = await Promise.all([
+    currentUserRole(),
+    prisma.hike.findFirst({
+      where: { id: hikeId, status: "PUBLISHED" },
+      select: {
+        id: true,
+        slug: true,
+        userId: true,
+        photos: {
+          where: { photoId, photo: { status: "PUBLISHED" } },
+          select: {
+            photo: {
+              select: { id: true, userId: true, title: true, metadata: true },
+            },
+          },
+          take: 1,
+        },
+        tracks: {
+          where: { track: { status: "PUBLISHED" } },
+          select: {
+            track: {
+              select: {
+                id: true,
+                title: true,
+                slug: true,
+                metadata: true,
+                fileAsset: { select: { id: true, fileKey: true } },
+              },
+            },
+          },
+        },
+      },
+    }),
+  ]);
+
+  const photo = hike?.photos.at(0)?.photo;
+  if (!hike || !photo) return null;
+
+  const isAdmin = hasAdminRole(role);
+  const isCreator = hike.userId === session.user.id;
+  const isPhotoOwner = photo.userId === session.user.id;
+  const isParticipant =
+    !isAdmin &&
+    !isCreator &&
+    !isPhotoOwner &&
+    (await isAcceptedHikeParticipant({ hikeId: hike.id, userId: session.user.id }));
+
+  if (!isAdmin && !isCreator && !isPhotoOwner && !isParticipant) return null;
+
+  return {
+    hike,
+    photo,
+    canReviewCoordinate: isAdmin || isCreator || isPhotoOwner,
+    reviewedByUserId: session.user.id,
+  };
+};
+
+export const getHikePhotoDetail = async ({
+  hikeId,
+  photoId,
+}: {
+  hikeId: string;
+  photoId: string;
+}): Promise<HikePhotoDetail | null> => {
+  const access = await getPhotoDetailAccess({ hikeId, photoId });
+  if (!access) return null;
+
+  const metadataState = getPhotoExifMetadataState(access.photo.metadata);
+  const directGps = metadataState.status === "SUCCESS" ? metadataState.summary.gps : null;
+  const mapCoordinate = getPhotoMapCoordinate(access.photo.metadata);
+  const acceptedCoordinate =
+    directGps && isValidGps(directGps.lat, directGps.lng)
+      ? {
+          lat: directGps.lat,
+          lng: directGps.lng,
+          source: "DIRECT_EXIF" as const,
+          confidence: "HIGH" as const,
+          placementMethod: "DIRECT_EXIF" as const,
+          explanation: null,
+        }
+      : mapCoordinate?.status === "APPROVED" &&
+          mapCoordinate.lat !== null &&
+          mapCoordinate.lng !== null &&
+          isValidGps(mapCoordinate.lat, mapCoordinate.lng)
+        ? {
+            lat: mapCoordinate.lat,
+            lng: mapCoordinate.lng,
+            source: mapCoordinate.source,
+            confidence: mapCoordinate.confidence,
+            placementMethod: mapCoordinate.placementMethod,
+            explanation: mapCoordinate.explanation,
+          }
+        : null;
+  const trackInputs: TrackTimeMatchTrackInput[] = (
+    access.hike.tracks as Array<{
+      track: {
+        id: string;
+        title: string;
+        slug: string | null;
+        metadata: Prisma.JsonValue | null;
+        fileAsset: { id: string; fileKey: string };
+      };
+    }>
+  ).map(({ track }) => toTrackTimeMatchTrackInput(track));
+
+  return {
+    hikeId: access.hike.id,
+    photoId: access.photo.id,
+    captureSummary: metadataState.status === "SUCCESS" ? metadataState.summary : null,
+    acceptedCoordinate,
+    canReviewCoordinate: access.canReviewCoordinate,
+    candidates: access.canReviewCoordinate
+      ? proposeTrackTimeMatchCandidates(toTrackTimeMatchPhotoInput(access.photo), trackInputs)
+      : [],
+  };
 };
 
 export const getHikePhotoContributionCapabilityBySlug = async (
