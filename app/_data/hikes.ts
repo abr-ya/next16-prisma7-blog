@@ -13,6 +13,7 @@ import type {
 } from "@/generated/prisma/enums";
 import { authSession, currentUserRole, requireAdmin } from "@/lib/auth-utils";
 import { hasAdminRole } from "@/lib/auth-roles";
+import { normalizePhotoInput } from "@/lib/photos";
 import { createSlug } from "@/lib/slug-generator";
 import {
   getPhotoExifMetadataState,
@@ -368,6 +369,11 @@ export type HikeParticipantManagement = {
   hike: { id: string; slug: string; title: string };
   pendingInvitations: { id: string; email: string; name: string; invitedAt: Date }[];
   acceptedParticipants: { id: string; email: string; name: string; acceptedAt: Date | null }[];
+};
+
+export type HikePhotoContributionCapability = {
+  hikeId: string;
+  remainingPhotoCount: number | null;
 };
 
 export type PendingHikeInvitation = {
@@ -1048,6 +1054,131 @@ export const isAcceptedHikeParticipant = async ({ hikeId, userId }: { hikeId: st
 
   if (!participant || (await expireHikeParticipantIfNeeded(participant))) return false;
   return participant.status === "ACCEPTED";
+};
+
+export const getHikePhotoContributionCapabilityBySlug = async (
+  slug: string,
+): Promise<HikePhotoContributionCapability | null> => {
+  const session = await authSession();
+  if (!session) return null;
+
+  const { default: prisma } = await import("@/lib/prisma");
+  const [role, hike] = await Promise.all([
+    currentUserRole(),
+    prisma.hike.findFirst({
+      where: { slug, status: "PUBLISHED" },
+      select: { id: true, userId: true },
+    }),
+  ]);
+
+  if (!hike) return null;
+
+  const isAdmin = hasAdminRole(role);
+  const isCreator = hike.userId === session.user.id;
+  const isParticipant =
+    !isCreator && !isAdmin && (await isAcceptedHikeParticipant({ hikeId: hike.id, userId: session.user.id }));
+
+  if (!isAdmin && !isCreator && !isParticipant) return null;
+
+  if (isAdmin) {
+    return { hikeId: hike.id, remainingPhotoCount: null };
+  }
+
+  const contributedCount = await prisma.hikesToPhotos.count({
+    where: { hikeId: hike.id, photo: { userId: session.user.id } },
+  });
+
+  return { hikeId: hike.id, remainingPhotoCount: Math.max(0, 10 - contributedCount) };
+};
+
+export type HikePhotoContributionValues = {
+  hikeId: string;
+  title: string;
+  description?: string | null;
+  fileAssetIds?: string[] | null;
+};
+
+export const contributePhotoToHike = async ({
+  hikeId,
+  title,
+  description,
+  fileAssetIds,
+}: HikePhotoContributionValues) => {
+  const session = await authSession();
+  if (!session) throw new Error("You must be signed in to add photos");
+
+  const data = normalizePhotoInput({ title, description, status: "PUBLISHED", fileAssetIds });
+  const { default: prisma } = await import("@/lib/prisma");
+  const [role, hike] = await Promise.all([
+    currentUserRole(),
+    prisma.hike.findFirst({
+      where: { id: hikeId, status: "PUBLISHED" },
+      select: { id: true, slug: true, userId: true },
+    }),
+  ]);
+
+  if (!hike) throw new Error("Trip is not available for photo contributions");
+
+  const isAdmin = hasAdminRole(role);
+  const isCreator = hike.userId === session.user.id;
+  const isParticipant =
+    !isCreator && !isAdmin && (await isAcceptedHikeParticipant({ hikeId, userId: session.user.id }));
+  if (!isAdmin && !isCreator && !isParticipant) throw new Error("You cannot add photos to this trip");
+
+  await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+    if (!isAdmin) {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`${hikeId}:${session.user.id}`}))`;
+      const contributedCount = await tx.hikesToPhotos.count({
+        where: { hikeId, photo: { userId: session.user.id } },
+      });
+
+      if (contributedCount >= 10) throw new Error("You have reached the 10-photo limit for this trip");
+    }
+
+    const fileAssets = await tx.fileAsset.findMany({
+      where: {
+        id: { in: data.fileAssetIds },
+        ownerUserId: session.user.id,
+        purpose: "OUTDOOR_PHOTO_IMAGE",
+        status: ACTIVE_FILE_STATUS,
+      },
+      select: { id: true, photoImages: { select: { photoId: true } } },
+    });
+    const assetsById = new Map(fileAssets.map((fileAsset) => [fileAsset.id, fileAsset]));
+    if (data.fileAssetIds.some((fileAssetId) => !assetsById.has(fileAssetId))) {
+      throw new Error("Selected image file is not eligible for photos");
+    }
+    if (fileAssets.some((fileAsset) => fileAsset.photoImages.length > 0)) {
+      throw new Error("Selected image file is already linked to another photo");
+    }
+
+    const lastAssociation = await tx.hikesToPhotos.findFirst({
+      where: { hikeId },
+      orderBy: { position: "desc" },
+      select: { position: true },
+    });
+    const photo = await tx.photo.create({
+      data: {
+        title: data.title,
+        description: data.description,
+        status: "PUBLISHED",
+        userId: session.user.id,
+        images: {
+          create: data.fileAssetIds.map((fileAssetId, sortOrder) => ({ fileAssetId, sortOrder })),
+        },
+      },
+      select: { id: true },
+    });
+    await tx.hikesToPhotos.create({
+      data: { hikeId, photoId: photo.id, position: (lastAssociation?.position ?? -1) + 1 },
+    });
+  });
+
+  revalidateHikePhotoAssociationPaths(hike.slug);
+  revalidatePath("/admin/photos");
+  revalidatePath("/admin/files");
+
+  return { success: true };
 };
 
 export const getHikeParticipantManagementBySlug = async (slug: string): Promise<HikeParticipantManagement | null> => {
