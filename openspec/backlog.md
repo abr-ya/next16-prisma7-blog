@@ -52,6 +52,7 @@ These candidates track the hikes/tracks/photos initiative as small increments. T
 | 18 | Candidate | outdoor-trip-categories-admin | outdoor/trips | Evaluate and add admin-managed trip categories or types after the hike-to-trip direction is accepted, including support for city walks or similar non-hiking trips, category add/rename behavior, migration from the current fixed hike type enum, and public/admin labeling rules. |
 | 19 | Candidate | outdoor-photo-persistent-thumbnail-derivatives | outdoor/photos-media | Follow-up to feature-057: replace on-demand thumbnail generation with stored derivatives (lifecycle, cleanup, regeneration, multi-size). Also tracked under P1 Soon. |
 | 20 | Candidate | outdoor-track-device-metadata-extraction | outdoor/tracks | Investigate and extract recording device details from real GPX creator metadata and vendor-specific extensions after collecting examples from Garmin, Strava, OsmAnd, Komoot, and similar sources. |
+| Candidate | outdoor-track-timezone-from-route | outdoor/tracks-time | After manual source-timezone selection is proven, derive a suggested IANA timezone from the first valid GPX coordinate with a deterministic timezone-boundary dataset or service, show it for owner confirmation, and fall back to manual selection. Handle route-border/multi-timezone trips and historical DST explicitly; no AI is required. |
 | 21 | Candidate | outdoor-photo-manual-ordering | outdoor/photos | Improve manual ordering UX for hike photos after basic association order is proven, considering drag-and-drop, grid ordering, bulk reorder, and mobile behavior. |
 | 22 | Candidate | outdoor-photo-albums-structure | outdoor/photos | Define and add album/grouping structure for photos after basic hike association and ordering are proven. |
 | 23 | Candidate | outdoor-photos-public-gallery | outdoor/photos | Consider a standalone public photo listing/detail experience only after hike-linked photos, ordering, and album/grouping behavior prove useful. |
@@ -62,6 +63,7 @@ These candidates track the hikes/tracks/photos initiative as small increments. T
 | Status | Candidate | Area | Summary |
 | --- | --- | --- | --- |
 | Ready | admin-post-save-disabled-until-interaction | posts/admin | Analyze and fix admin post create/edit **Save changes** staying disabled until blur/scroll/console interaction. Reproduced more than once on `/admin/posts/new`. Likely `PostForm` validation gating (`mode: "onBlur"` + `disabled={!form.formState.isValid}`); confirm repro, then make save enable when required fields are valid without needing extra UI noise. |
+| Ready | outdoor-track-source-timezone-selection | outdoor/tracks-time | **P0:** Add an explicit per-track source-timezone setting for recording-time display. At upload/edit, preselect the browser timezone but require the owner to confirm or choose an IANA timezone; render stored UTC instants in that selected timezone instead of silently using each viewer's browser timezone. Preserve absolute GPX timestamps and coordinate matching; do not shift stored point times. |
 
 ## P1 Soon
 
