@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 
 import {
+  canRefreshHikePhotoExif,
   canReviewHikePhotoCoordinate,
   canViewHikePhotoDetail,
   getAcceptedHikePhotoCoordinate,
@@ -9,7 +10,10 @@ import {
 const unrelated = { isAdmin: false, isCreator: false, isPhotoOwner: false, isAcceptedParticipant: false };
 assert.equal(canViewHikePhotoDetail(unrelated), false);
 assert.equal(canReviewHikePhotoCoordinate({ ...unrelated, isAcceptedParticipant: true }), false);
+assert.equal(canReviewHikePhotoCoordinate({ ...unrelated, isCreator: true }), false);
 assert.equal(canReviewHikePhotoCoordinate({ ...unrelated, isPhotoOwner: true }), true);
+assert.equal(canRefreshHikePhotoExif({ ...unrelated, isCreator: true }), false);
+assert.equal(canRefreshHikePhotoExif({ ...unrelated, isAdmin: true }), true);
 
 const approvedInference = {
   lat: 55.75,

@@ -39,7 +39,7 @@ As of `feature-052-outdoor-photos-exif-gps-capture`, outdoor photos store versio
 
 As of `feature-055-outdoor-hike-photo-association`, hike detail pages can show linked published photos in hike-specific order using public-display-eligible image assets. Direct EXIF GPS markers and approved inferred/manual coordinate markers are public-map eligible only through their established marker rules.
 
-As of `feature-074-outdoor-photo-details-coordinate-review`, EXIF summaries, exact accepted coordinates, and provenance are not public gallery data. They are projected only to the linked photo owner, trip creator, accepted active participant, or administrator. The owner, creator, and administrator may review existing candidates or apply a valid manual correction; unrelated signed-in users and anonymous visitors retain image-only gallery behavior. An accepted coordinate in the authorized details viewer can focus the existing trip map.
+As of `feature-074-outdoor-photo-details-coordinate-review`, EXIF summaries, exact accepted coordinates, and provenance are not public gallery data. They are projected only to the linked photo owner, trip creator, accepted active participant, or administrator. Only the photo owner or an administrator may refresh EXIF or review existing candidates through the compact `EXIF` and `GPX coordinates` photo-card controls; unrelated signed-in users and anonymous visitors retain image-only gallery behavior. An accepted coordinate in the authorized details viewer can focus the existing trip map.
 
 ### Manual Points
 

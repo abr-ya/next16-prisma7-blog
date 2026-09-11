@@ -24,9 +24,11 @@ import {
   type PhotoExifSummary,
   type PhotoMapCoordinate,
 } from "@/lib/photo-exif-metadata";
+import { parsePhotoExifMetadata } from "@/lib/photo-exif-parser";
 import type { HikePhotoMapMarker } from "@/lib/hikes";
 import { getHikeMapDays, getTimestampDayKey, getTrackDayKeys } from "@/lib/hike-map-days";
 import {
+  canRefreshHikePhotoExif,
   canReviewHikePhotoCoordinate,
   canViewHikePhotoDetail,
   getAcceptedHikePhotoCoordinate,
@@ -1090,6 +1092,42 @@ export const rejectHikePhotoMapCoordinate = async ({ hikeId, photoId }: { hikeId
   return persistHikePhotoMapCoordinateRejection({ hikeId, photoId, reviewedByUserId: access.reviewedByUserId });
 };
 
+export const refreshHikePhotoExifMetadata = async ({ hikeId, photoId }: { hikeId: string; photoId: string }) => {
+  const access = await getPhotoDetailAccess({ hikeId, photoId });
+  if (!access || !canRefreshHikePhotoExif(access.accessFlags))
+    throw new Error("You cannot refresh this photo metadata");
+  const images = access.photo.images as Array<{
+    sortOrder: number;
+    fileAsset: { id: string; fileKey: string; url: string; purpose: string; status: FileAssetStatus };
+  }>;
+
+  const ineligibleImage = images.find(
+    (image) => image.fileAsset.purpose !== "OUTDOOR_PHOTO_IMAGE" || image.fileAsset.status !== ACTIVE_FILE_STATUS,
+  );
+  if (ineligibleImage) throw new Error("Selected image file is not eligible for photos");
+
+  const metadata = await parsePhotoExifMetadata({
+    images: images.map((image) => ({
+      fileAssetId: image.fileAsset.id,
+      fileKey: image.fileAsset.fileKey,
+      sortOrder: image.sortOrder,
+      url: image.fileAsset.url,
+    })),
+  });
+  const previousMapCoordinate = readPhotoExifMetadata(access.photo.metadata)?.mapCoordinate;
+  const metadataToPersist =
+    previousMapCoordinate !== undefined ? { ...metadata, mapCoordinate: previousMapCoordinate } : metadata;
+  const { default: prisma } = await import("@/lib/prisma");
+
+  await prisma.photo.update({
+    where: { id: access.photo.id },
+    data: { metadata: metadataToPersist as Prisma.InputJsonValue },
+  });
+  revalidateHikePhotoAssociationPaths(access.hike.slug);
+
+  return metadataToPersist;
+};
+
 export const getPublicHikes = async (): Promise<HikeListItem[]> => {
   const { default: prisma } = await import("@/lib/prisma");
 
@@ -1139,7 +1177,19 @@ const getPhotoDetailAccess = async ({ hikeId, photoId }: { hikeId: string; photo
           where: { photoId, photo: { status: "PUBLISHED" } },
           select: {
             photo: {
-              select: { id: true, userId: true, title: true, metadata: true },
+              select: {
+                id: true,
+                userId: true,
+                title: true,
+                metadata: true,
+                images: {
+                  orderBy: { sortOrder: "asc" },
+                  select: {
+                    sortOrder: true,
+                    fileAsset: { select: { id: true, fileKey: true, url: true, purpose: true, status: true } },
+                  },
+                },
+              },
             },
           },
           take: 1,
@@ -1180,6 +1230,7 @@ const getPhotoDetailAccess = async ({ hikeId, photoId }: { hikeId: string; photo
   return {
     hike,
     photo,
+    accessFlags,
     canReviewCoordinate: canReviewHikePhotoCoordinate(accessFlags),
     reviewedByUserId: session.user.id,
   };

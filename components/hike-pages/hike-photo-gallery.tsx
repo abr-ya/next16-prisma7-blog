@@ -1,14 +1,16 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, ImageIcon, MapPin } from "lucide-react";
+import { ChevronLeft, ChevronRight, FileSearch, ImageIcon, MapPin, Route } from "lucide-react";
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
-import type { HikePhotoDetail } from "@/app/_data/hikes";
+import { refreshHikePhotoExifMetadata, type HikePhotoDetail } from "@/app/_data/hikes";
 import { Button, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/index";
 import { HikePhotoCoordinateReview } from "@/components/hike-pages/hike-photo-coordinate-review";
 import { HikePhotoDetailSummary } from "@/components/hike-pages/hike-photo-detail-summary";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 export type HikePhotoGalleryItem = {
   id: string;
@@ -30,9 +32,13 @@ type HikePhotoGalleryProps = {
 export const HikePhotoGallery = ({ photos, canViewFullPhotos, canFocusMap, onFocusMap }: HikePhotoGalleryProps) => {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [showDetails, setShowDetails] = useState(false);
-  const [, startTransition] = useTransition();
+  const [exifPhotoId, setExifPhotoId] = useState<string | null>(null);
+  const [coordinatePhotoId, setCoordinatePhotoId] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
   const router = useRouter();
   const activePhoto = activeIndex === null ? null : photos[activeIndex];
+  const exifPhoto = photos.find((photo) => photo.id === exifPhotoId) ?? null;
+  const coordinatePhoto = photos.find((photo) => photo.id === coordinatePhotoId) ?? null;
   const canNavigate = canViewFullPhotos && photos.length > 1;
 
   const openPhoto = (index: number) => {
@@ -56,6 +62,21 @@ export const HikePhotoGallery = ({ photos, canViewFullPhotos, canFocusMap, onFoc
     if (activeIndex === null || photos.length === 0) return;
     setShowDetails(false);
     setActiveIndex((activeIndex + 1) % photos.length);
+  };
+
+  const refreshExif = () => {
+    if (!exifPhoto?.detail) return;
+    const detail = exifPhoto.detail;
+
+    startTransition(async () => {
+      try {
+        await refreshHikePhotoExifMetadata({ hikeId: detail.hikeId, photoId: exifPhoto.id });
+        toast.success("EXIF metadata refreshed");
+        router.refresh();
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Failed to refresh EXIF metadata");
+      }
+    });
   };
 
   useEffect(() => {
@@ -111,7 +132,41 @@ export const HikePhotoGallery = ({ photos, canViewFullPhotos, canFocusMap, onFoc
                   )}
                 </div>
                 <div className="grid gap-1 p-3">
-                  <div className="font-medium">{photo.title}</div>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 font-medium">{photo.title}</div>
+                    {photo.detail?.canReviewCoordinate ? (
+                      <div className="flex shrink-0 gap-1">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              aria-label="Refresh EXIF metadata"
+                              onClick={() => setExifPhotoId(photo.id)}
+                            >
+                              <FileSearch />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>EXIF metadata</TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              aria-label="Review GPX coordinates"
+                              onClick={() => setCoordinatePhotoId(photo.id)}
+                            >
+                              <Route />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>GPX coordinates</TooltipContent>
+                        </Tooltip>
+                      </div>
+                    ) : null}
+                  </div>
                   {photo.description ? (
                     <p className="line-clamp-2 text-sm text-muted-foreground">{photo.description}</p>
                   ) : null}
@@ -206,15 +261,53 @@ export const HikePhotoGallery = ({ photos, canViewFullPhotos, canFocusMap, onFoc
                       </Button>
                     </div>
                   ) : null}
-                  {activePhoto.detail.canReviewCoordinate ? (
-                    <HikePhotoCoordinateReview
-                      detail={activePhoto.detail}
-                      onChanged={() => startTransition(() => router.refresh())}
-                    />
-                  ) : null}
                 </div>
               ) : null}
             </>
+          ) : null}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={Boolean(exifPhoto)} onOpenChange={(open) => (!open ? setExifPhotoId(null) : undefined)}>
+        <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle>{exifPhoto ? `EXIF for ${exifPhoto.title}` : "EXIF"}</DialogTitle>
+            <DialogDescription>
+              Refresh the stored photo-level capture metadata. Existing approved coordinate review data is preserved.
+            </DialogDescription>
+          </DialogHeader>
+          {exifPhoto?.detail ? (
+            <div className="grid gap-4">
+              <HikePhotoDetailSummary
+                captureSummary={exifPhoto.detail.captureSummary}
+                acceptedCoordinate={exifPhoto.detail.acceptedCoordinate}
+              />
+              <div className="flex justify-end">
+                <Button type="button" disabled={isPending} onClick={refreshExif}>
+                  <FileSearch />
+                  {isPending ? "Refreshing..." : "Refresh EXIF"}
+                </Button>
+              </div>
+            </div>
+          ) : null}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={Boolean(coordinatePhoto)} onOpenChange={(open) => (!open ? setCoordinatePhotoId(null) : undefined)}>
+        <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>
+              {coordinatePhoto ? `GPX coordinates for ${coordinatePhoto.title}` : "GPX coordinates"}
+            </DialogTitle>
+            <DialogDescription>
+              Approve, reject, or manually correct a coordinate candidate for this linked photo.
+            </DialogDescription>
+          </DialogHeader>
+          {coordinatePhoto?.detail ? (
+            <HikePhotoCoordinateReview
+              detail={coordinatePhoto.detail}
+              onChanged={() => startTransition(() => router.refresh())}
+            />
           ) : null}
         </DialogContent>
       </Dialog>

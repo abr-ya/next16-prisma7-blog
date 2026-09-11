@@ -14,8 +14,11 @@ export const canViewHikePhotoDetail = ({
   isAcceptedParticipant,
 }: HikePhotoDetailAccessFlags) => isAdmin || isCreator || isPhotoOwner || isAcceptedParticipant;
 
-export const canReviewHikePhotoCoordinate = ({ isAdmin, isCreator, isPhotoOwner }: HikePhotoDetailAccessFlags) =>
-  isAdmin || isCreator || isPhotoOwner;
+export const canReviewHikePhotoCoordinate = ({ isAdmin, isPhotoOwner }: HikePhotoDetailAccessFlags) =>
+  isAdmin || isPhotoOwner;
+
+export const canRefreshHikePhotoExif = ({ isAdmin, isPhotoOwner }: HikePhotoDetailAccessFlags) =>
+  isAdmin || isPhotoOwner;
 
 export const getAcceptedHikePhotoCoordinate = ({
   directGps,
