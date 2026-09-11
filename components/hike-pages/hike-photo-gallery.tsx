@@ -1,9 +1,13 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, ImageIcon } from "lucide-react";
-import { useEffect, useState } from "react";
+import { ChevronLeft, ChevronRight, ImageIcon, MapPin } from "lucide-react";
+import { useEffect, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 
+import type { HikePhotoDetail } from "@/app/_data/hikes";
 import { Button, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/index";
+import { HikePhotoCoordinateReview } from "@/components/hike-pages/hike-photo-coordinate-review";
+import { HikePhotoDetailSummary } from "@/components/hike-pages/hike-photo-detail-summary";
 import { cn } from "@/lib/utils";
 
 export type HikePhotoGalleryItem = {
@@ -13,32 +17,44 @@ export type HikePhotoGalleryItem = {
   alt: string;
   thumbnailUrl: string | null;
   fullUrl: string | null;
+  detail: HikePhotoDetail | null;
 };
 
 type HikePhotoGalleryProps = {
   photos: HikePhotoGalleryItem[];
   canViewFullPhotos: boolean;
+  canFocusMap: boolean;
+  onFocusMap: (coordinate: NonNullable<HikePhotoDetail["acceptedCoordinate"]>) => void;
 };
 
-export const HikePhotoGallery = ({ photos, canViewFullPhotos }: HikePhotoGalleryProps) => {
+export const HikePhotoGallery = ({ photos, canViewFullPhotos, canFocusMap, onFocusMap }: HikePhotoGalleryProps) => {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const [showDetails, setShowDetails] = useState(false);
+  const [, startTransition] = useTransition();
+  const router = useRouter();
   const activePhoto = activeIndex === null ? null : photos[activeIndex];
   const canNavigate = canViewFullPhotos && photos.length > 1;
 
   const openPhoto = (index: number) => {
     if (!canViewFullPhotos || !photos[index]?.fullUrl) return;
+    setShowDetails(false);
     setActiveIndex(index);
   };
 
-  const closeViewer = () => setActiveIndex(null);
+  const closeViewer = () => {
+    setActiveIndex(null);
+    setShowDetails(false);
+  };
 
   const showPrevious = () => {
     if (activeIndex === null || photos.length === 0) return;
+    setShowDetails(false);
     setActiveIndex((activeIndex - 1 + photos.length) % photos.length);
   };
 
   const showNext = () => {
     if (activeIndex === null || photos.length === 0) return;
+    setShowDetails(false);
     setActiveIndex((activeIndex + 1) % photos.length);
   };
 
@@ -48,10 +64,12 @@ export const HikePhotoGallery = ({ photos, canViewFullPhotos }: HikePhotoGallery
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "ArrowLeft") {
         event.preventDefault();
+        setShowDetails(false);
         setActiveIndex((current) => (current === null ? current : (current - 1 + photos.length) % photos.length));
       }
       if (event.key === "ArrowRight") {
         event.preventDefault();
+        setShowDetails(false);
         setActiveIndex((current) => (current === null ? current : (current + 1) % photos.length));
       }
     };
@@ -108,7 +126,7 @@ export const HikePhotoGallery = ({ photos, canViewFullPhotos }: HikePhotoGallery
         <DialogContent
           showCloseButton
           className={cn(
-            "gap-3 border-none bg-black/95 p-3 text-white sm:max-w-[min(96vw,72rem)]",
+            "max-h-[calc(100dvh-2rem)] gap-3 overflow-y-auto border-none bg-black/95 p-3 text-white sm:max-w-[min(96vw,72rem)]",
             "top-[50%] left-[50%] translate-x-[-50%] translate-y-[-50%]",
           )}
           aria-describedby="hike-photo-viewer-description"
@@ -154,6 +172,48 @@ export const HikePhotoGallery = ({ photos, canViewFullPhotos }: HikePhotoGallery
                   </>
                 ) : null}
               </div>
+              {activePhoto.detail ? (
+                <div className="flex justify-end">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => setShowDetails((current) => !current)}
+                  >
+                    {showDetails ? "Hide details" : "Photo details"}
+                  </Button>
+                </div>
+              ) : null}
+              {showDetails && activePhoto.detail ? (
+                <div className="grid gap-4 rounded-md bg-white p-4 text-foreground">
+                  <HikePhotoDetailSummary
+                    captureSummary={activePhoto.detail.captureSummary}
+                    acceptedCoordinate={activePhoto.detail.acceptedCoordinate}
+                  />
+                  {canFocusMap && activePhoto.detail.acceptedCoordinate ? (
+                    <div className="flex justify-end">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          onFocusMap(activePhoto.detail!.acceptedCoordinate!);
+                          closeViewer();
+                        }}
+                      >
+                        <MapPin />
+                        Show on map
+                      </Button>
+                    </div>
+                  ) : null}
+                  {activePhoto.detail.canReviewCoordinate ? (
+                    <HikePhotoCoordinateReview
+                      detail={activePhoto.detail}
+                      onChanged={() => startTransition(() => router.refresh())}
+                    />
+                  ) : null}
+                </div>
+              ) : null}
             </>
           ) : null}
         </DialogContent>

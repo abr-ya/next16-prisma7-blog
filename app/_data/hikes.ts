@@ -27,6 +27,11 @@ import {
 import type { HikePhotoMapMarker } from "@/lib/hikes";
 import { getHikeMapDays, getTimestampDayKey, getTrackDayKeys } from "@/lib/hike-map-days";
 import {
+  canReviewHikePhotoCoordinate,
+  canViewHikePhotoDetail,
+  getAcceptedHikePhotoCoordinate,
+} from "@/lib/hike-photo-detail-policy";
+import {
   isValidHikeNoteCoordinate,
   validateHikeNoteDayKey,
   type HikeNoteInput,
@@ -1169,12 +1174,13 @@ const getPhotoDetailAccess = async ({ hikeId, photoId }: { hikeId: string; photo
     !isPhotoOwner &&
     (await isAcceptedHikeParticipant({ hikeId: hike.id, userId: session.user.id }));
 
-  if (!isAdmin && !isCreator && !isPhotoOwner && !isParticipant) return null;
+  const accessFlags = { isAdmin, isCreator, isPhotoOwner, isAcceptedParticipant: isParticipant };
+  if (!canViewHikePhotoDetail(accessFlags)) return null;
 
   return {
     hike,
     photo,
-    canReviewCoordinate: isAdmin || isCreator || isPhotoOwner,
+    canReviewCoordinate: canReviewHikePhotoCoordinate(accessFlags),
     reviewedByUserId: session.user.id,
   };
 };
@@ -1192,29 +1198,7 @@ export const getHikePhotoDetail = async ({
   const metadataState = getPhotoExifMetadataState(access.photo.metadata);
   const directGps = metadataState.status === "SUCCESS" ? metadataState.summary.gps : null;
   const mapCoordinate = getPhotoMapCoordinate(access.photo.metadata);
-  const acceptedCoordinate =
-    directGps && isValidGps(directGps.lat, directGps.lng)
-      ? {
-          lat: directGps.lat,
-          lng: directGps.lng,
-          source: "DIRECT_EXIF" as const,
-          confidence: "HIGH" as const,
-          placementMethod: "DIRECT_EXIF" as const,
-          explanation: null,
-        }
-      : mapCoordinate?.status === "APPROVED" &&
-          mapCoordinate.lat !== null &&
-          mapCoordinate.lng !== null &&
-          isValidGps(mapCoordinate.lat, mapCoordinate.lng)
-        ? {
-            lat: mapCoordinate.lat,
-            lng: mapCoordinate.lng,
-            source: mapCoordinate.source,
-            confidence: mapCoordinate.confidence,
-            placementMethod: mapCoordinate.placementMethod,
-            explanation: mapCoordinate.explanation,
-          }
-        : null;
+  const acceptedCoordinate = getAcceptedHikePhotoCoordinate({ directGps, mapCoordinate });
   const trackInputs: TrackTimeMatchTrackInput[] = (
     access.hike.tracks as Array<{
       track: {

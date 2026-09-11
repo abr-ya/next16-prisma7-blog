@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import type { HikeMapDay } from "@/lib/hike-map-days";
 import type { HikePhotoMapMarker } from "@/lib/hikes";
 import type { HikeNoteMapMarker } from "@/lib/hike-notes";
+import type { HikePhotoAcceptedCoordinate } from "@/app/_data/hikes";
 
 const ALL_DAYS = "all";
 
@@ -15,22 +16,31 @@ export const HikeTrackMap = ({
   photoMarkers = [],
   noteMarkers = [],
   days,
+  focusCoordinate,
 }: {
   tracks: TrackMapViewModel[];
   photoMarkers?: HikePhotoMapMarker[];
   noteMarkers?: HikeNoteMapMarker[];
   days: HikeMapDay[];
+  focusCoordinate?: HikePhotoAcceptedCoordinate | null;
 }) => {
   const [selectedDay, setSelectedDay] = useState(ALL_DAYS);
+  const effectiveSelectedDay = focusCoordinate ? ALL_DAYS : selectedDay;
   const isSingleDay = days.length <= 1;
   const visibleTracks =
-    selectedDay === ALL_DAYS ? tracks : tracks.filter((track) => track.dayKeys?.includes(selectedDay));
+    effectiveSelectedDay === ALL_DAYS
+      ? tracks
+      : tracks.filter((track) => track.dayKeys?.includes(effectiveSelectedDay));
   const visiblePhotoMarkers =
-    selectedDay === ALL_DAYS ? photoMarkers : photoMarkers.filter((marker) => marker.dayKeys?.includes(selectedDay));
+    effectiveSelectedDay === ALL_DAYS
+      ? photoMarkers
+      : photoMarkers.filter((marker) => marker.dayKeys?.includes(effectiveSelectedDay));
   const visibleNoteMarkers =
-    selectedDay === ALL_DAYS ? noteMarkers : noteMarkers.filter((marker) => marker.dayKeys?.includes(selectedDay));
+    effectiveSelectedDay === ALL_DAYS
+      ? noteMarkers
+      : noteMarkers.filter((marker) => marker.dayKeys?.includes(effectiveSelectedDay));
   const isEmptySelection =
-    selectedDay !== ALL_DAYS &&
+    effectiveSelectedDay !== ALL_DAYS &&
     visibleTracks.length === 0 &&
     visiblePhotoMarkers.length === 0 &&
     visibleNoteMarkers.length === 0;
@@ -39,7 +49,7 @@ export const HikeTrackMap = ({
     <div className="grid gap-2">
       {!isSingleDay ? (
         <div className="flex justify-end">
-          <Select value={selectedDay} onValueChange={setSelectedDay}>
+          <Select value={effectiveSelectedDay} onValueChange={setSelectedDay}>
             <SelectTrigger aria-label="Map day" size="sm">
               <SelectValue placeholder="All days" />
             </SelectTrigger>
@@ -71,6 +81,7 @@ export const HikeTrackMap = ({
           tracks={visibleTracks}
           photoMarkers={visiblePhotoMarkers}
           noteMarkers={visibleNoteMarkers}
+          focusCoordinate={focusCoordinate}
         />
       )}
     </div>

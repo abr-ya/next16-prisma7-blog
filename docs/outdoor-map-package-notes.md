@@ -24,7 +24,7 @@ A track detail page can render one GPX-backed polyline, fit the map to its bound
 
 ### Hike Detail Map
 
-As of `feature-059-outdoor-hike-combined-track-map`, a published hike detail page renders all linked published tracks with current map-ready geometry in one map under the title and description. The viewport fits the combined stored bounds. A single mapped track keeps start/end markers; multiple tracks render as distinct polylines without per-track start/end markers. Photo markers remain a later slice.
+As of `feature-059-outdoor-hike-combined-track-map`, a published hike detail page renders all linked published tracks with current map-ready geometry in one map under the title and description. The viewport fits the combined stored bounds. A single mapped track keeps start/end markers; multiple tracks render as distinct polylines without per-track start/end markers.
 
 ### Photo Markers
 
@@ -35,9 +35,11 @@ Photos can become map markers in two ways:
 
 Leaflet handles marker display, popups, and layer toggles. The EXIF extraction and time-to-track matching logic belongs to the application domain, not the map package.
 
-As of `feature-052-outdoor-photos-exif-gps-capture`, outdoor photos store versioned admin-only EXIF/GPS metadata on `Photo.metadata` (`photo-exif-metadata/v1`), including normalized `summary.gps` and `summary.gpsSourceFileAssetId` when coordinates exist. Public gallery pages and public coordinate display remain later slices; hike map markers should read the stored admin metadata rather than reparsing image files at request time.
+As of `feature-052-outdoor-photos-exif-gps-capture`, outdoor photos store versioned EXIF/GPS metadata on `Photo.metadata` (`photo-exif-metadata/v1`), including normalized `summary.gps` and `summary.gpsSourceFileAssetId` when coordinates exist. Hike map markers read the stored metadata rather than reparsing image files at request time.
 
-As of `feature-055-outdoor-hike-photo-association`, hike detail pages can show linked published photos in hike-specific order using public-display-eligible image assets. As of `feature-059-outdoor-hike-combined-track-map`, the hike map shows linked tracks only; photo map markers still belong to later slices that explicitly decide coordinate display, marker popups, and fallback behavior.
+As of `feature-055-outdoor-hike-photo-association`, hike detail pages can show linked published photos in hike-specific order using public-display-eligible image assets. Direct EXIF GPS markers and approved inferred/manual coordinate markers are public-map eligible only through their established marker rules.
+
+As of `feature-074-outdoor-photo-details-coordinate-review`, EXIF summaries, exact accepted coordinates, and provenance are not public gallery data. They are projected only to the linked photo owner, trip creator, accepted active participant, or administrator. The owner, creator, and administrator may review existing candidates or apply a valid manual correction; unrelated signed-in users and anonymous visitors retain image-only gallery behavior. An accepted coordinate in the authorized details viewer can focus the existing trip map.
 
 ### Manual Points
 
