@@ -20,13 +20,13 @@ See `proposal.md` and the `outdoor-tracks` delta spec. `Track.metadata` currentl
 
 ### Persist a nullable canonical IANA timezone on `Track`
 
-Add a nullable `recordingTimezone` field on `Track`, validated against the server runtime's supported IANA identifiers before create or update. It belongs on the track record rather than parsed JSON because it is user-confirmed presentation policy, can change without reparsing the file, and needs a durable backward-compatible migration. New and newly edited tracks must supply it; null remains only for legacy records until an administrator confirms a value.
+Add a nullable `recordingTimezone` field on `Track`, validated against the server runtime's supported IANA identifiers before a focused timezone update. It belongs on the track record rather than parsed JSON because it is user-confirmed presentation policy, can change without reparsing the file, and needs a durable backward-compatible migration. Null remains only for legacy records until an administrator confirms a value.
 
 Alternative: write the timezone into GPX metadata. That mixes user-selected display policy with parser output and risks losing the setting on a reparse, so it is rejected.
 
-### Propose in the browser, confirm in the form, validate on the server
+### Propose in the browser, save through a focused action, validate on the server
 
-The client will read `Intl.DateTimeFormat().resolvedOptions().timeZone` after hydration and use it only to prefill the timezone selector for a new track. A deliberate confirmation/select action is required before save, and the server action validates the submitted value and normalizes the form state from persisted data on edit. The selector uses the project's existing local UI controls and a curated/runtime-supported IANA list; no timezone package is required.
+The client will read `Intl.DateTimeFormat().resolvedOptions().timeZone` after hydration and use it only to prefill a timezone dialog launched from the track row. The focused server action validates and persists the administrator's submitted value without requiring title, GPX, or other track edits. The selector uses the project's existing local UI controls and a curated/runtime-supported IANA list; no timezone package is required.
 
 Alternative: automatically save the browser timezone. It recreates the implicit, machine-dependent behavior that caused the defect and prevents correction before first save.
 
@@ -48,11 +48,11 @@ Alternative: shift parsed timestamps during import. That would corrupt absolute 
 - A track crosses timezone boundaries → this first slice deliberately records one owner-confirmed presentation timezone; the coordinate-derived multi-zone follow-up remains backlog work.
 - Existing tracks have no setting → preserve null at migration, display explicit UTC, and make the next edit require confirmation instead of guessing.
 - Server/browser ICU timezone data can differ → use server validation and the persisted identifier as the authority; test representative identifiers including `Europe/Sofia`.
-- Date labels can influence human coordinate review → preserve all matching inputs as absolute instants and run the deferred feature-074 review QA only after timezone-corrected display is available.
+- Date labels can influence human coordinate review → preserve all matching inputs as absolute instants; updating ambiguous GPX/EXIF source timestamps and coordinate-review labels is deferred to dedicated candidates.
 
 ## Migration Plan
 
 1. Add nullable `Track.recordingTimezone` through a forward Prisma migration; do not modify existing GPX metadata or timestamps.
-2. Deploy server validation, admin selection/confirmation, explicit formatter inputs, and projections before relying on local-time labels.
+2. Deploy server validation, the focused admin action, explicit formatter inputs, and projections before relying on local-time labels.
 3. Existing tracks remain readable as clearly labelled UTC until an administrator saves a confirmed timezone; no bulk guess or reparse is performed.
 4. Roll back UI/formatting only if necessary; the nullable field is additive and retained values are harmless presentation metadata. Do not roll back by shifting or regenerating parsed GPX data.

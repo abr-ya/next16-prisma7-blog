@@ -2,31 +2,31 @@
 
 ### Requirement: Tracks retain a confirmed recording timezone
 
-The system SHALL retain a validated IANA timezone for a track's recording-time presentation independently of the timezone of the administrator who later views it. Creating or editing a track SHALL require an authenticated administrator to confirm the browser-proposed timezone or select another supported IANA timezone before saving; the browser proposal SHALL be a convenience only and SHALL NOT be trusted as persisted data without server-side validation.
+The system SHALL retain a validated IANA timezone for a track's recording-time presentation independently of the timezone of the administrator who later views it. The administration list SHALL show each track's confirmed timezone or clearly identify an unconfirmed legacy value, and SHALL provide an authenticated administrator with a focused action to set or correct the value; the browser proposal SHALL be a convenience only and SHALL NOT be trusted as persisted data without server-side validation.
 
 #### Scenario: Administrator confirms browser-proposed timezone
 
-- **WHEN** an administrator opens the create-track form in a browser that reports a supported IANA timezone
-- **THEN** the form proposes that timezone as the initial recording-timezone choice
-- **AND** the administrator can explicitly confirm it before saving the track
+- **WHEN** an administrator opens the recording-timezone action in a browser that reports a supported IANA timezone
+- **THEN** the action proposes that timezone as its initial choice
+- **AND** the administrator can explicitly save it for the track
 
 #### Scenario: Administrator selects a different recording timezone
 
-- **WHEN** an administrator creates or edits a track whose recording location uses a timezone other than the browser-proposed value
+- **WHEN** an administrator sets the timezone for a track whose recording location uses a timezone other than the browser-proposed value
 - **THEN** the administrator can select a different supported IANA timezone
 - **AND** the system persists that selected timezone with the track
 
 #### Scenario: Server rejects an invalid timezone
 
-- **WHEN** a create or update request contains an empty, malformed, or unsupported recording timezone
+- **WHEN** a recording-timezone update request contains an empty, malformed, or unsupported value
 - **THEN** the system rejects the request with a validation error
-- **AND** it does not create or change the track's timezone setting
+- **AND** it does not change the track's timezone setting
 
 #### Scenario: Existing track lacks a confirmed timezone
 
 - **WHEN** an administrator opens an existing track created before recording-timezone selection was available
 - **THEN** the system preserves its GPX metadata and absolute timestamps
-- **AND** the administration UI identifies that a recording timezone still needs confirmation before the track is next saved
+- **AND** the administration UI provides the focused timezone action without requiring the administrator to edit GPX or other track fields
 
 ### Requirement: Track recording-time display is timezone-stable
 
