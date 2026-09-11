@@ -81,6 +81,7 @@ Cancelled or deferred candidates do not reserve feature numbers.
 | feature-069 | feature-069-outdoor-hike-to-trip-domain-rename | outdoor/domain | Add canonical Trip routes and user-facing terminology while permanently redirecting legacy hike URLs and preserving the internal Hike API. |
 | feature-071 | feature-071-public-user-profile | navigation/public-users | Add a private read-only Profile with identity display, personal-content summary, direct trip invitations, and a public-nav entry point. |
 | feature-072 | feature-072-outdoor-trip-public-photo-upload | outdoor/trips-photos | Let trip creators, accepted participants, and administrators contribute one-to-three-image photos from published trip detail in a shared dialog, with server-authoritative authorization, atomic association, and a 10-photo per-user-per-trip non-admin quota. |
+| feature-074 | feature-074-outdoor-photo-details-coordinate-review | outdoor/maps-photos | Add privacy-safe trip-photo details, owner-or-admin EXIF refresh and coordinate-review modals, accepted-coordinate map focus, and the related access-policy boundaries. |
 
 ## Cancelled Candidate Notes
 

@@ -7,7 +7,7 @@ Authenticated users, owners, trip participants, and administrators currently hav
 - Define the active role vocabulary as ordinary authenticated `user` and persisted `admin`; keep future `editor` or reputation roles out of this change.
 - Publish a concise, repository-maintained access matrix covering public visitors, signed-in users, resource owners, accepted trip participants, and administrators across the current workspace routes and sensitive actions.
 - Divide `/admin` navigation into a personal workspace for owner-scoped content and an administrator-only control section, with accurate empty/denied states.
-- Apply consistent server-side authorization to the audited post, track, trip, photo, file, and site-control actions: owner-scoped content remains available to its owner; cross-user, association, lifecycle, and global-control operations require admin privileges.
+- Apply consistent server-side authorization to the audited post, track, trip, photo, file, and site-control actions: owner-scoped content remains available to its owner; cross-user, association, lifecycle, and global-control operations require admin privileges. A photo owner may refresh EXIF and review coordinates for their own linked photo, while an administrator retains the cross-user override.
 - Make direct route/action access obey the same policy as the UI, including clear denial behavior and no protected data leakage.
 
 ### Non-goals

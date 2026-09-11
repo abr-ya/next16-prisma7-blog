@@ -5,18 +5,18 @@ import { CalendarDays, Route } from "lucide-react";
 
 import {
   getHikeParticipantManagementBySlug,
+  getHikePhotoDetail,
   getHikePhotoContributionCapabilityBySlug,
   getPublicHikeBySlug,
 } from "@/app/_data/hikes";
 import { HikePhotoContributionForm } from "@/components/hike-pages/hike-photo-contribution-form";
 import { HikeParticipantManager } from "@/components/hike-pages/hike-participant-manager";
-import { HikePhotoGallery, type HikePhotoGalleryItem } from "@/components/hike-pages/hike-photo-gallery";
-import { HikeTrackMap } from "@/components/hike-pages/hike-track-map";
+import type { HikePhotoGalleryItem } from "@/components/hike-pages/hike-photo-gallery";
+import { HikeTripMedia } from "@/components/hike-pages/hike-trip-media";
 import { Badge, Button } from "@/components/index";
 import { PageLayout } from "@/components/layout/page-layout";
 import { authSession } from "@/lib/auth-utils";
 import { formatHikeDateRange, formatHikeType } from "@/lib/hikes";
-import { getHikeMapDays } from "@/lib/hike-map-days";
 import { SITE_CONTENT_WIDTH } from "@/lib/site-content-width";
 import { buildPageMetadata, getTextMetadataDescription } from "@/lib/site-metadata";
 import { formatTrackRecordingTimeRange, formatTrackTimezoneEvidence } from "@/lib/track-gpx-metadata";
@@ -61,7 +61,9 @@ export const TripPage = async ({ params }: HikePageProps) => {
   const mappedTracks = hike.tracks.flatMap(({ track }) => (track.map ? [track.map] : []));
   const photoMapMarkers = hike.photoMapMarkers;
   const noteMapMarkers = hike.noteMapMarkers;
-  const showRouteMap = mappedTracks.length > 0 || photoMapMarkers.length > 0 || noteMapMarkers.length > 0;
+  const photoDetails = await Promise.all(
+    hike.photos.map(({ photo }) => getHikePhotoDetail({ hikeId: hike.id, photoId: photo.id })),
+  );
   const galleryPhotos: HikePhotoGalleryItem[] = hike.photos.map(({ photo }) => {
     const preview = photo.images.at(0)?.fileAsset;
 
@@ -72,6 +74,7 @@ export const TripPage = async ({ params }: HikePageProps) => {
       alt: preview?.name || photo.title,
       thumbnailUrl: preview ? `/files/${preview.id}/thumbnail` : null,
       fullUrl: canViewFullPhotos && preview ? `/files/${preview.id}/download?disposition=inline` : null,
+      detail: photoDetails.find((detail) => detail?.photoId === photo.id) ?? null,
     };
   });
 
@@ -98,17 +101,15 @@ export const TripPage = async ({ params }: HikePageProps) => {
             <p className="text-sm text-muted-foreground">No description yet.</p>
           )}
         </div>
-        {showRouteMap ? (
-          <section className="grid gap-3">
-            <h2 className="text-base font-semibold">Route map</h2>
-            <HikeTrackMap
-              tracks={mappedTracks}
-              photoMarkers={photoMapMarkers}
-              noteMarkers={noteMapMarkers}
-              days={getHikeMapDays(hike.startDate, hike.endDate)}
-            />
-          </section>
-        ) : null}
+        <HikeTripMedia
+          tracks={mappedTracks}
+          photoMarkers={photoMapMarkers}
+          noteMarkers={noteMapMarkers}
+          startDate={hike.startDate}
+          endDate={hike.endDate}
+          photos={galleryPhotos}
+          canViewFullPhotos={canViewFullPhotos}
+        />
         {hike.tracks.length > 0 ? (
           <section className="grid gap-3">
             <h2 className="text-base font-semibold">Linked tracks</h2>
@@ -145,7 +146,6 @@ export const TripPage = async ({ params }: HikePageProps) => {
           </section>
         ) : null}
         {photoContributionCapability ? <HikePhotoContributionForm capability={photoContributionCapability} /> : null}
-        <HikePhotoGallery photos={galleryPhotos} canViewFullPhotos={canViewFullPhotos} />
       </article>
     </PageLayout>
   );

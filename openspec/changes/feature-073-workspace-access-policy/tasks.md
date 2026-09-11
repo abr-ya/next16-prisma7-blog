@@ -1,14 +1,14 @@
 ## 1. Access-policy inventory
 
 - [ ] 1.1 Audit the current `/admin` routes, sidebar entries, server pages, server actions, and data helpers for posts, tracks, trips, photos, files, map review, and site controls.
-- [ ] 1.2 Add a concise access matrix that records the active `user`/`admin` roles, ownership and accepted-participant scopes, allowed routes/actions, and denial behavior.
+- [ ] 1.2 Add a concise access matrix that records the active `user`/`admin` roles, ownership and accepted-participant scopes, allowed routes/actions, and denial behavior, including own-photo EXIF/coordinate actions versus administrator cross-user override.
 - [ ] 1.3 Reconcile the matrix with existing OpenSpec role, file, trip, and contribution requirements; record deferred roles and unaudited domains explicitly.
 
 ## 2. Server authorization alignment
 
 - [ ] 2.1 Add or consolidate narrow server-only authorization helpers for authenticated user, owner-or-admin, and explicit administrator control checks.
 - [ ] 2.2 Apply owner-scoped checks to audited post, track, and trip reads/mutations so direct action calls cannot read, mutate, or reassign another user's content.
-- [ ] 2.3 Apply explicit administrator checks to audited cross-user media association, photo/file lifecycle, map-review, and global-control operations; preserve only the accepted participant contribution path.
+- [ ] 2.3 Apply owner-or-admin checks to own-photo EXIF/coordinate operations and explicit administrator checks to audited cross-user media association, photo/file lifecycle, and global-control operations; preserve only the accepted participant contribution path.
 - [ ] 2.4 Update audited data projections so denied actors do not receive protected records merely because a page shell is session-gated.
 
 ## 3. Workspace navigation and routes

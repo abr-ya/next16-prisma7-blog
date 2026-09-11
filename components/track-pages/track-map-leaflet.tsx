@@ -75,16 +75,28 @@ const FitMapBounds = ({
   return null;
 };
 
+const FocusMapCoordinate = ({ coordinate }: { coordinate?: MapPoint | null }) => {
+  const map = useMap();
+
+  useEffect(() => {
+    if (coordinate) map.flyTo(toLatLng(coordinate), Math.max(map.getZoom(), 15));
+  }, [coordinate, map]);
+
+  return null;
+};
+
 const TrackMapLeaflet = ({
   ariaLabel,
   tracks,
   photoMarkers = [],
   noteMarkers = [],
+  focusCoordinate,
 }: {
   ariaLabel: string;
   tracks: TrackMapViewModel[];
   photoMarkers?: HikePhotoMapMarker[];
   noteMarkers?: HikeNoteMapMarker[];
+  focusCoordinate?: MapPoint | null;
 }) => {
   const points = collectMapPoints(tracks, photoMarkers, noteMarkers);
   const photoMarkerGroups = groupHikePhotoMapMarkers(photoMarkers);
@@ -114,6 +126,7 @@ const TrackMapLeaflet = ({
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         <FitMapBounds tracks={tracks} photoMarkers={photoMarkers} noteMarkers={noteMarkers} />
+        <FocusMapCoordinate coordinate={focusCoordinate} />
         {tracks.map((track, index) => {
           const positions = track.geometry.map(toLatLng);
 
