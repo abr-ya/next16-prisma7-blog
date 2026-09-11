@@ -403,6 +403,7 @@ export type HikePhotoDetail = {
   captureSummary: PhotoExifSummary | null;
   acceptedCoordinate: HikePhotoAcceptedCoordinate | null;
   canReviewCoordinate: boolean;
+  isAdmin: boolean;
   candidates: TrackTimeMatchCandidate[];
 };
 
@@ -1279,6 +1280,7 @@ export const getHikePhotoDetail = async ({
     captureSummary: metadataState.status === "SUCCESS" ? metadataState.summary : null,
     acceptedCoordinate,
     canReviewCoordinate: access.canReviewCoordinate,
+    isAdmin: access.accessFlags.isAdmin,
     candidates: access.canReviewCoordinate
       ? proposeTrackTimeMatchCandidates(toTrackTimeMatchPhotoInput(access.photo), trackInputs)
       : [],

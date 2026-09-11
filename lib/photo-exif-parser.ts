@@ -44,6 +44,12 @@ const SAFE_RAW_KEYS = [
   "FNumber",
   "ExposureTime",
   "FocalLength",
+  "GPSDateStamp",
+  "GPSTimeStamp",
+  "GPSAltitude",
+  "GPSMapDatum",
+  "GPSImgDirection",
+  "GPSHPositioningError",
 ] as const;
 
 const EXIF_OFFSET_PATTERN = /^([+-])(\d{2}):?(\d{2})$/;
@@ -162,6 +168,15 @@ const toGps = (latitude: unknown, longitude: unknown): PhotoExifGps | null => {
   return { lat, lng };
 };
 
+const toGpsCapturedAt = (dateValue: unknown, timeValue: unknown) => {
+  if (typeof dateValue !== "string") return null;
+  const date = dateValue.trim().match(/^(\d{4})[:.-](\d{2})[:.-](\d{2})$/);
+  const parts = Array.isArray(timeValue) ? timeValue.map(Number) : typeof timeValue === "string" ? timeValue.split(":").map(Number) : [];
+  if (!date || parts.length < 3 || parts.slice(0, 3).some((part) => !Number.isFinite(part))) return null;
+  const value = new Date(Date.UTC(Number(date[1]), Number(date[2]) - 1, Number(date[3]), parts[0], parts[1], parts[2]));
+  return Number.isNaN(value.getTime()) ? null : { value: value.toISOString(), evidence: "UTC_OR_OFFSET" as const };
+};
+
 const toSafeRaw = (parsed: Record<string, unknown> | null | undefined): PhotoExifSafeRaw => {
   if (!parsed) return {};
 
@@ -205,7 +220,6 @@ const parseOneImage = async (input: PhotoExifParseImageInput): Promise<ParsedIma
     gps: true,
     // Keep date tags as raw EXIF strings so OffsetTime* can be applied explicitly.
     reviveValues: false,
-    pick: [...SAFE_RAW_KEYS, "latitude", "longitude"],
   })) as Record<string, unknown> | undefined;
 
   const make = toNullableString(parsed?.Make);
@@ -216,12 +230,21 @@ const parseOneImage = async (input: PhotoExifParseImageInput): Promise<ParsedIma
   const orientation = toNullableNumber(parsed?.Orientation);
   const originalOffset = parsed?.OffsetTimeOriginal ?? parsed?.OffsetTime;
   const digitizedOffset = parsed?.OffsetTimeDigitized ?? parsed?.OffsetTime;
-  const captured =
+  const captured = toGpsCapturedAt(parsed?.GPSDateStamp, parsed?.GPSTimeStamp) ??
     toCapturedAt(parsed?.DateTimeOriginal, originalOffset) ?? toCapturedAt(parsed?.CreateDate, digitizedOffset);
   const exposureTime = toNullableNumber(parsed?.ExposureTime);
   const fNumber = toNullableNumber(parsed?.FNumber);
   const focalLength = toNullableNumber(parsed?.FocalLength);
   const gps = toGps(parsed?.latitude, parsed?.longitude);
+  const provenance = captured
+    ? {
+        source: parsed?.GPSDateStamp && parsed?.GPSTimeStamp ? ("GPS_UTC" as const) : captured.evidence === "UTC_OR_OFFSET" ? ("EXIF_OFFSET" as const) : ("EXIF_WALL_CLOCK" as const),
+        instantUtc: captured.evidence === "UTC_OR_OFFSET" ? captured.value : null,
+        localWallTime: captured.evidence === "MISSING" ? String(parsed?.DateTimeOriginal ?? parsed?.CreateDate ?? "") : null,
+        timezoneEvidence: captured.evidence,
+        sourceFileAssetId: input.fileAssetId,
+      }
+    : null;
 
   return {
     image: {
@@ -230,6 +253,7 @@ const parseOneImage = async (input: PhotoExifParseImageInput): Promise<ParsedIma
       sortOrder: input.sortOrder,
       capturedAt: captured?.value ?? null,
       captureTimeTimezoneEvidence: captured?.evidence ?? null,
+      captureTimeProvenance: provenance,
       width,
       height,
       orientation,

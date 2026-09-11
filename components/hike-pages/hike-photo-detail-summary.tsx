@@ -20,9 +20,11 @@ const sourceLabel = (source: HikePhotoAcceptedCoordinate["source"]) =>
 export const HikePhotoDetailSummary = ({
   captureSummary,
   acceptedCoordinate,
+  isAdmin = false,
 }: {
   captureSummary: PhotoExifSummary | null;
   acceptedCoordinate: HikePhotoAcceptedCoordinate | null;
+  isAdmin?: boolean;
 }) => {
   const exposure = captureSummary
     ? formatPhotoExposureTriplet({
@@ -54,6 +56,7 @@ export const HikePhotoDetailSummary = ({
           <p className="text-muted-foreground">Capture metadata is unavailable.</p>
         )}
       </section>
+      {isAdmin ? <section className="grid gap-1"><h3 className="font-medium">EXIF extraction diagnostics</h3><p className="text-muted-foreground">Use Refresh EXIF metadata to re-read the stored original file.</p></section> : null}
       <section className="grid gap-2">
         <h3 className="font-medium">Map location</h3>
         {acceptedCoordinate ? (

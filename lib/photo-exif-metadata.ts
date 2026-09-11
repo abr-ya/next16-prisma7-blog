@@ -4,6 +4,15 @@ export const PHOTO_EXIF_METADATA_VERSION = "photo-exif-metadata/v1";
 
 export type PhotoExifParseStatus = "SUCCESS" | "FAILED" | "STALE";
 export type PhotoCaptureTimezoneEvidence = "UTC_OR_OFFSET" | "MISSING";
+export type PhotoCaptureTimeSource = "GPS_UTC" | "EXIF_OFFSET" | "EXIF_WALL_CLOCK";
+
+export type PhotoCaptureTimeProvenance = {
+  source: PhotoCaptureTimeSource;
+  instantUtc: string | null;
+  localWallTime: string | null;
+  timezoneEvidence: PhotoCaptureTimezoneEvidence;
+  sourceFileAssetId: string;
+};
 
 export type PhotoExifGps = {
   lat: number;
@@ -22,6 +31,7 @@ export type PhotoExifImageSummary = {
   sortOrder: number;
   capturedAt: string | null;
   captureTimeTimezoneEvidence?: PhotoCaptureTimezoneEvidence | null;
+  captureTimeProvenance?: PhotoCaptureTimeProvenance | null;
   width: number | null;
   height: number | null;
   orientation: number | null;
@@ -37,6 +47,7 @@ export type PhotoExifImageSummary = {
 export type PhotoExifSummary = {
   capturedAt: string | null;
   captureTimeTimezoneEvidence?: PhotoCaptureTimezoneEvidence | null;
+  captureTimeProvenance?: PhotoCaptureTimeProvenance | null;
   width: number | null;
   height: number | null;
   orientation: number | null;

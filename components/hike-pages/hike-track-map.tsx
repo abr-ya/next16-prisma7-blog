@@ -53,7 +53,7 @@ export const HikeTrackMap = ({
             <SelectTrigger aria-label="Map day" size="sm">
               <SelectValue placeholder="All days" />
             </SelectTrigger>
-            <SelectContent position="popper" align="end" className="z-[1000]">
+            <SelectContent position="popper" align="end">
               <SelectItem value={ALL_DAYS}>All days</SelectItem>
               {days.map((day, index) => {
                 const hasLayers =

@@ -92,3 +92,19 @@ The system SHALL parse and retain all available standard EXIF GPS fields in safe
 - **WHEN** an uploaded image contains valid GPS coordinates and `GPSDateStamp` plus `GPSTimeStamp`
 - **THEN** the system retains the GPS evidence and uses its UTC instant for matching
 - **AND** it does not apply browser or server timezone interpretation
+
+### Requirement: Photo capture-time provenance remains explicit
+
+The system SHALL retain a versioned capture-time provenance record identifying `GPS_UTC`, `EXIF_OFFSET`, or `EXIF_WALL_CLOCK`, its source file, UTC instant when authoritative, local wall-clock value when applicable, and timezone evidence. Photo cards SHALL NOT use the viewer browser timezone as the primary capture-time display. They SHALL show the source local time with a confirmed linked-track timezone when available, or clearly identify an unconfirmed camera-local value.
+
+#### Scenario: GPS time is shown in linked track timezone
+
+- **WHEN** a photo has `GPS_UTC` provenance and is linked to a track with recording timezone `Europe/Sofia`
+- **THEN** its primary capture display renders the GPS instant in `Europe/Sofia`
+- **AND** the card retains the GPS UTC instant and provenance for authorized inspection
+
+#### Scenario: Camera local time has no confirmed timezone
+
+- **WHEN** a photo has `EXIF_WALL_CLOCK` provenance without a linked confirmed track timezone
+- **THEN** its primary capture display identifies the value as unconfirmed camera-local time
+- **AND** it does not derive a UTC instant from browser or server timezone
