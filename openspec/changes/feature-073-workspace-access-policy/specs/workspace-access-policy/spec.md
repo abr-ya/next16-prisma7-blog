@@ -46,8 +46,13 @@ The system SHALL enforce the access matrix independently of UI visibility for au
 - **THEN** the system denies the request
 - **AND** it does not disclose protected content or change its ownership
 
+#### Scenario: Photo owner works with their own linked photo metadata
+- **WHEN** a signed-in `user` requests EXIF extraction or coordinate review for their own photo linked to the named published trip
+- **THEN** the system permits the action after it confirms photo ownership and the published trip/photo linkage
+- **AND** a trip creator who does not own the photo and an accepted participant remain denied
+
 #### Scenario: User attempts administrator-only media or file control
-- **WHEN** a signed-in `user` directly invokes an audited administrator-only photo, file, map-review, or global-control action
+- **WHEN** a signed-in `user` directly invokes an audited administrator-only cross-user photo, file, map-review, or global-control action
 - **THEN** the system denies the request
 - **AND** it does not change the protected resource
 

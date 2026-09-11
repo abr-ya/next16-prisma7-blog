@@ -25,3 +25,16 @@ The system SHALL provide an authorized viewer with a way to focus the current tr
 - **WHEN** an authorized viewer opens details for a photo without a public-ready coordinate
 - **THEN** the details view explains that no accepted location is available
 - **AND** it does not offer a map focus action for an invented location
+
+### Requirement: Photo-card controls separate EXIF and coordinate work
+The system SHALL show compact `EXIF` and `GPX coordinates` controls on a published trip photo card only to that photo's owner or an administrator. Each control SHALL open a focused modal from the trip page. The EXIF modal SHALL provide the authorized metadata-refresh workflow and the coordinate modal SHALL provide the authorized coordinate-review workflow. Trip creators who do not own the photo, accepted participants, anonymous visitors, and unrelated signed-in users SHALL NOT receive either control.
+
+#### Scenario: Photo owner opens a card control
+- **WHEN** the owner of a published linked photo selects `EXIF` or `GPX coordinates` on its card
+- **THEN** the system opens the corresponding focused modal
+- **AND** the modal operates only on that linked photo in the current published trip
+
+#### Scenario: Read-only viewer opens a photo card
+- **WHEN** a trip creator who does not own the photo or an accepted participant views a linked photo card
+- **THEN** the system does not show EXIF-refresh or coordinate-review controls
+- **AND** their existing authorized read-only details behavior remains unchanged

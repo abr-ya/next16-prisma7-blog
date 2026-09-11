@@ -26,7 +26,7 @@ Alternative: require `admin` for the entire `/admin` layout. This would remove o
 
 ### Use role plus resource scope for every audited mutation
 
-Adopt a small authorization vocabulary: authenticated user, resource owner, accepted trip participant, and administrator. Helpers must load the target resource with its owner or membership context, rather than trust client-provided ids. Admin override is explicit; participation only applies to the named trip contribution operation.
+Adopt a small authorization vocabulary: authenticated user, resource owner, accepted trip participant, and administrator. Helpers must load the target resource with its owner or membership context, rather than trust client-provided ids. Admin override is explicit; participation only applies to the named trip contribution operation. A photo owner may refresh the EXIF metadata and review coordinates for their own photo when it is linked to the named published trip; the trip creator alone does not receive that authority.
 
 Alternative: rely on route guards or hide UI controls. Either approach leaves direct server-action calls and data helpers inconsistent.
 
@@ -38,7 +38,7 @@ Alternative: encode the policy only in code. That prevents product owners from e
 
 ### Correct existing inconsistencies in focused domain slices
 
-Audit posts, tracks, trips, photos, files, map-review, and dashboard/sidebar flows. Preserve owner CRUD where intended, add missing owner checks (including post read/update), and move or hide cross-user association controls from non-admin personal pages. Do not broaden administrator access to other users' personal content except where the matrix explicitly grants a management action.
+Audit posts, tracks, trips, photos, files, map-review, and dashboard/sidebar flows. Preserve owner CRUD where intended, add missing owner checks (including post read/update and own-photo EXIF/coordinate operations), and move or hide cross-user association controls from non-admin personal pages. Do not broaden administrator access to other users' personal content except where the matrix explicitly grants a management action.
 
 ## Risks / Trade-offs
 
