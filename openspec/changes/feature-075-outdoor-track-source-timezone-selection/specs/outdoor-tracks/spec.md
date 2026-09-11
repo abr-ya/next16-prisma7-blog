@@ -82,3 +82,13 @@ The system SHALL show an authorized photo-detail or coordinate reviewer the stor
 - **WHEN** a `Europe/Sofia` track has a parsed range beginning `2016-11-10T10:35:42Z` and a linked photo has a stored capture instant outside that absolute range
 - **THEN** the review shows the labelled UTC photo instant and the `Europe/Sofia` recording range
 - **AND** it preserves the existing inside-track, between-track, or previous-day-finish candidate outcome
+
+### Requirement: EXIF GPS data is available to trusted matching
+
+The system SHALL parse and retain all available standard EXIF GPS fields in safe versioned metadata, including coordinates, altitude, GPS date/time, datum, direction, and accuracy fields. A complete valid `GPSDateStamp` plus `GPSTimeStamp` SHALL be the preferred UTC capture instant for matching; partial or invalid GPS data SHALL NOT be invented or treated as a valid coordinate or time.
+
+#### Scenario: Image contains GPS coordinates and UTC time
+
+- **WHEN** an uploaded image contains valid GPS coordinates and `GPSDateStamp` plus `GPSTimeStamp`
+- **THEN** the system retains the GPS evidence and uses its UTC instant for matching
+- **AND** it does not apply browser or server timezone interpretation

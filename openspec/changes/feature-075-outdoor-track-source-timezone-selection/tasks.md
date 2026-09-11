@@ -22,6 +22,7 @@
 - [ ] 4.1 Add shared deterministic presentation of a stored photo capture instant as UTC plus its existing timezone-evidence label, without using browser-local time as the comparison value.
 - [ ] 4.2 Render the explicit photo context in authorized photo details and coordinate-review candidates, and render every source-track range through its persisted recording timezone formatter.
 - [ ] 4.3 Add focused deterministic coverage proving the Sofia display context does not alter the prior absolute-time candidate result.
+- [ ] 4.4 Extend versioned photo metadata extraction to retain the full standard EXIF GPS block and prefer complete valid `GPSDateStamp` plus `GPSTimeStamp`; cover Sofia GPS fixtures and safe refresh of existing metadata.
 
 ## 5. Verification
 
