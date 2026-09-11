@@ -20,6 +20,7 @@ import { formatHikeDateRange, formatHikeType } from "@/lib/hikes";
 import { SITE_CONTENT_WIDTH } from "@/lib/site-content-width";
 import { buildPageMetadata, getTextMetadataDescription } from "@/lib/site-metadata";
 import { formatTrackRecordingTimeRange, formatTrackTimezoneEvidence } from "@/lib/track-gpx-metadata";
+import { formatTrackRecordingTimezone } from "@/lib/track-recording-timezone";
 import { cn } from "@/lib/utils";
 
 type HikePageProps = {
@@ -123,7 +124,12 @@ export const TripPage = async ({ params }: HikePageProps) => {
                     ) : null}
                     {track.parsed?.summary.time ? (
                       <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
-                        <Badge variant="outline">{formatTrackRecordingTimeRange(track.parsed.summary.time)}</Badge>
+                        <Badge variant="outline">
+                          {formatTrackRecordingTimeRange(track.parsed.summary.time, track.recordingTimezone)}
+                        </Badge>
+                        <Badge variant={track.recordingTimezone ? "secondary" : "outline"}>
+                          {formatTrackRecordingTimezone(track.recordingTimezone)}
+                        </Badge>
                         <Badge
                           variant={
                             track.parsed.summary.time.timezoneEvidence === "UTC_OR_OFFSET" ? "secondary" : "outline"

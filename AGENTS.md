@@ -100,3 +100,9 @@ Notes:
 - Preserve user changes in the working tree.
 - Keep changes scoped to the requested capability.
 - Avoid new dependencies unless they clearly reduce implementation risk or match existing project direction.
+
+## Prisma Migration Integrity
+
+- Treat a migration recorded as applied in Prisma as immutable: do not reformat it or add explanatory comments, because Prisma checks the exact SQL checksum.
+- Put later schema corrections in a new forward migration, never by editing an applied one.
+- On migration checksum drift, do not run `prisma migrate reset`. First compare `_prisma_migrations.checksum` with candidate SQL in read-only mode and restore the exact applied content when it is known; preserve production/development data and resolve history deliberately.

@@ -1,4 +1,5 @@
 import type { TrackGpxCoordinate, TrackGpxTimedPoint, TrackGpxTimezoneEvidence } from "@/lib/track-gpx-metadata";
+import type { PhotoCaptureTimezoneEvidence } from "@/lib/photo-exif-metadata";
 import {
   canPersistInsideTrackWithoutManualOverride,
   resolveTrackTimeMatchCoordinate,
@@ -12,6 +13,7 @@ export type TrackTimeMatchPhotoInput = {
   id: string;
   title: string;
   capturedAt: string | null;
+  captureTimeTimezoneEvidence?: PhotoCaptureTimezoneEvidence | null;
   hasDirectGps: boolean;
 };
 
@@ -27,6 +29,7 @@ export type TrackTimeMatchTrackInput = {
   endPoint: TrackGpxCoordinate | null;
   timeline?: TrackGpxTimedPoint[] | null;
   timezoneEvidence?: TrackGpxTimezoneEvidence | null;
+  recordingTimezone?: string | null;
 };
 
 export type TrackTimeMatchPlacementMethod =
@@ -51,6 +54,7 @@ export type TrackTimeMatchCandidate =
       proposedCoordinate: TrackGpxCoordinate | null;
       hasTimedTimeline: boolean;
       timezoneEvidence: TrackGpxTimezoneEvidence | null;
+      recordingTimezone: string | null;
       confidence: "HIGH" | "MEDIUM" | "LOW" | null;
     }
   | {
@@ -72,6 +76,7 @@ export type TrackTimeMatchCandidate =
       proposedCoordinate: TrackGpxCoordinate | null;
       hasTimedTimeline: boolean;
       timezoneEvidence: TrackGpxTimezoneEvidence | null;
+      recordingTimezone: string | null;
       confidence: "HIGH" | "MEDIUM" | "LOW" | null;
     }
   | {
@@ -93,6 +98,7 @@ export type TrackTimeMatchCandidate =
       proposedCoordinate: TrackGpxCoordinate | null;
       hasTimedTimeline: boolean;
       timezoneEvidence: TrackGpxTimezoneEvidence | null;
+      recordingTimezone: string | null;
       confidence: "HIGH" | "MEDIUM" | "LOW" | null;
     };
 
@@ -168,7 +174,7 @@ const withResolvedPlacement = (
     trackEnd: string;
     explanation: string;
   },
-  tracksById: Map<string, TrackTimelineLookup>,
+  tracksById: Map<string, TrackTimelineLookup>, displayTracksById: Map<string, TrackTimeMatchTrackInput>,
 ): TrackTimeMatchCandidate => {
   const track = tracksById.get(candidate.trackId);
   const resolved = resolveTrackTimeMatchCoordinate(
@@ -186,6 +192,7 @@ const withResolvedPlacement = (
     proposedCoordinate: resolved ? { lat: resolved.lat, lng: resolved.lng } : null,
     hasTimedTimeline: Boolean(track?.timeline?.length),
     timezoneEvidence: (track?.timezoneEvidence as TrackGpxTimezoneEvidence | null) ?? null,
+    recordingTimezone: displayTracksById.get(candidate.trackId)?.recordingTimezone ?? null,
     confidence: resolved?.confidence ?? null,
   };
 };
@@ -226,6 +233,7 @@ const withResolvedBetweenPlacement = (
     proposedCoordinate: resolved ? { lat: resolved.lat, lng: resolved.lng } : null,
     hasTimedTimeline: false,
     timezoneEvidence: null,
+    recordingTimezone: null,
     confidence: resolved?.confidence ?? null,
   };
 };
@@ -247,7 +255,7 @@ const withResolvedAfterFinishPlacement = (
     nextTrackTitle: string | null;
     explanation: string;
   },
-  tracksById: Map<string, TrackTimelineLookup>,
+  tracksById: Map<string, TrackTimelineLookup>, displayTracksById: Map<string, TrackTimeMatchTrackInput>,
 ): TrackTimeMatchCandidate => {
   const track = tracksById.get(candidate.trackId);
   const resolved = resolveTrackTimeMatchCoordinate(
@@ -266,6 +274,7 @@ const withResolvedAfterFinishPlacement = (
     proposedCoordinate: resolved ? { lat: resolved.lat, lng: resolved.lng } : null,
     hasTimedTimeline: Boolean(track?.timeline?.length),
     timezoneEvidence: (track?.timezoneEvidence as TrackGpxTimezoneEvidence | null) ?? null,
+    recordingTimezone: displayTracksById.get(candidate.trackId)?.recordingTimezone ?? null,
     confidence: resolved?.confidence ?? null,
   };
 };
@@ -285,6 +294,7 @@ export const proposeTrackTimeMatchCandidates = (
   const maxGapSeconds = options.maxGapSeconds ?? DEFAULT_TRACK_TIME_MATCH_MAX_GAP_SECONDS;
   const endpointNearnessMeters = options.endpointNearnessMeters ?? DEFAULT_TRACK_TIME_MATCH_ENDPOINT_NEARNESS_METERS;
   const tracksById = toTimelineLookup(tracks);
+  const displayTracksById = new Map(tracks.map((track) => [track.id, track]));
   const usableTracks = tracks
     .map((track) => {
       const startMs = parseTimestamp(track.recordingTime?.start ?? null);
@@ -317,7 +327,7 @@ export const proposeTrackTimeMatchCandidates = (
           trackEnd: track.recordingTime.end,
           explanation: `Captured inside the recording window for ${track.title}.`,
         },
-        tracksById,
+        tracksById, displayTracksById,
       ),
     );
 
@@ -422,7 +432,7 @@ export const proposeTrackTimeMatchCandidates = (
           nextTrackTitle: nextTrack?.title ?? null,
           explanation,
         },
-        tracksById,
+        tracksById, displayTracksById,
       ),
     ];
   });

@@ -66,7 +66,7 @@ import {
 import type { HikeNoteStatus, HikeStatus, HikeType } from "@/generated/prisma/enums";
 import { formatHikeStatus, formatHikeType, hikeStatusOptions, hikeTypeOptions } from "@/lib/hikes";
 import { formatHikeNoteStatus, hikeNoteStatusOptions } from "@/lib/hike-notes";
-import { formatPhotoMapCoordinateStatus } from "@/lib/photo-exif-metadata";
+import { formatPhotoCapturedAtUtc, formatPhotoCaptureTimezoneEvidence, formatPhotoMapCoordinateStatus } from "@/lib/photo-exif-metadata";
 import {
   proposeTrackTimeMatchCandidates,
   type TrackTimeMatchCandidate,
@@ -972,6 +972,9 @@ const HikePhotosDialog = ({
                       ) : null}
                     </div>
                     <div className="text-sm">{candidate.explanation}</div>
+                    <div className="text-xs text-muted-foreground">
+                      Photo UTC: {formatPhotoCapturedAtUtc(candidate.capturedAt) ?? candidate.capturedAt} · {formatPhotoCaptureTimezoneEvidence(matchingPhoto?.trackTimeMatch.captureTimeTimezoneEvidence)}
+                    </div>
                     <div className="text-xs text-muted-foreground">
                       {candidate.type === "INSIDE_TRACK_WINDOW"
                         ? `${formatDateTime(candidate.trackStart)} - ${formatDateTime(candidate.trackEnd)}`

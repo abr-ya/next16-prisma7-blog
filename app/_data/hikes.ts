@@ -210,6 +210,7 @@ const hikeListInclude = {
           id: true,
           title: true,
           slug: true,
+          recordingTimezone: true,
           status: true,
           metadata: true,
           fileAsset: {
@@ -277,6 +278,7 @@ const publicHikeInclude = {
           title: true,
           slug: true,
           description: true,
+          recordingTimezone: true,
           status: true,
           updatedAt: true,
           metadata: true,
@@ -355,6 +357,7 @@ export type PublicHike = Omit<PublicHikeRecord, "tracks" | "photos" | "notes"> &
       title: string;
       slug: string;
       description: string | null;
+      recordingTimezone: string | null;
       status: TrackStatus;
       updatedAt: Date;
       parsed: {
@@ -476,6 +479,7 @@ const toTrackTimeMatchPhotoInput = ({
     id,
     title,
     capturedAt: state.status === "SUCCESS" ? state.summary.capturedAt : null,
+    captureTimeTimezoneEvidence: state.status === "SUCCESS" ? state.summary.captureTimeTimezoneEvidence : null,
     hasDirectGps: state.status === "SUCCESS" ? Boolean(state.summary.gps) : false,
   };
 };
@@ -484,12 +488,14 @@ const toTrackTimeMatchTrackInput = ({
   id,
   title,
   slug,
+  recordingTimezone,
   metadata,
   fileAsset,
 }: {
   id: string;
   title: string;
   slug?: string | null;
+  recordingTimezone?: string | null;
   metadata: Prisma.JsonValue | null;
   fileAsset: {
     id: string;
@@ -511,6 +517,7 @@ const toTrackTimeMatchTrackInput = ({
       endPoint: null,
       timeline: null,
       timezoneEvidence: null,
+      recordingTimezone: recordingTimezone ?? null,
     };
   }
 
@@ -526,6 +533,7 @@ const toTrackTimeMatchTrackInput = ({
     endPoint: state.mapGeometry.at(-1) ?? null,
     timeline: state.timeline,
     timezoneEvidence: state.summary.time.timezoneEvidence,
+    recordingTimezone: recordingTimezone ?? null,
   };
 };
 
@@ -871,6 +879,7 @@ const persistHikePhotoTrackTimeMatchCandidate = async ({
         id: string;
         title: string;
         slug?: string | null;
+        recordingTimezone?: string | null;
         metadata: Prisma.JsonValue | null;
         fileAsset: { id: string; fileKey: string };
       };
@@ -1202,6 +1211,7 @@ const getPhotoDetailAccess = async ({ hikeId, photoId }: { hikeId: string; photo
                 id: true,
                 title: true,
                 slug: true,
+                recordingTimezone: true,
                 metadata: true,
                 fileAsset: { select: { id: true, fileKey: true } },
               },
@@ -1256,6 +1266,7 @@ export const getHikePhotoDetail = async ({
         id: string;
         title: string;
         slug: string | null;
+        recordingTimezone: string | null;
         metadata: Prisma.JsonValue | null;
         fileAsset: { id: string; fileKey: string };
       };

@@ -2,6 +2,8 @@ import type { HikePhotoAcceptedCoordinate } from "@/app/_data/hikes";
 import { Badge } from "@/components/index";
 import {
   formatPhotoCapturedAt,
+  formatPhotoCapturedAtUtc,
+  formatPhotoCaptureTimezoneEvidence,
   formatPhotoDimensions,
   formatPhotoExposureTriplet,
   formatPhotoGpsPresence,
@@ -36,7 +38,13 @@ export const HikePhotoDetailSummary = ({
         <h3 className="font-medium">Capture details</h3>
         {captureSummary ? (
           <dl className="grid gap-1 text-muted-foreground sm:grid-cols-2">
-            <div>Captured: {formatPhotoCapturedAt(captureSummary.capturedAt) ?? "Unavailable"}</div>
+            <div>Captured (viewer local): {formatPhotoCapturedAt(captureSummary.capturedAt) ?? "Unavailable"}</div>
+            {formatPhotoCapturedAtUtc(captureSummary.capturedAt) ? (
+              <div>Captured (stored UTC): {formatPhotoCapturedAtUtc(captureSummary.capturedAt)}</div>
+            ) : null}
+            {captureSummary.capturedAt ? (
+              <div>Timezone evidence: {formatPhotoCaptureTimezoneEvidence(captureSummary.captureTimeTimezoneEvidence)}</div>
+            ) : null}
             <div>Camera: {captureSummary.cameraLabel ?? "Unavailable"}</div>
             <div>Dimensions: {formatPhotoDimensions(captureSummary.width, captureSummary.height) ?? "Unavailable"}</div>
             <div>Exposure: {exposure ?? "Unavailable"}</div>

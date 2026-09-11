@@ -13,6 +13,7 @@ import {
   formatTrackRecordingTimeRange,
   formatTrackTimezoneEvidence,
 } from "@/lib/track-gpx-metadata";
+import { formatTrackRecordingTimezone } from "@/lib/track-recording-timezone";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = buildPageMetadata({
@@ -74,7 +75,12 @@ const TracksPage = async () => {
                       <Badge variant="outline">{formatTrackPointCount(track.parsed.summary.points)}</Badge>
                       {track.parsed.summary.time ? (
                         <>
-                          <Badge variant="outline">{formatTrackRecordingTimeRange(track.parsed.summary.time)}</Badge>
+                          <Badge variant="outline">
+                            {formatTrackRecordingTimeRange(track.parsed.summary.time, track.recordingTimezone)}
+                          </Badge>
+                          <Badge variant={track.recordingTimezone ? "secondary" : "outline"}>
+                            {formatTrackRecordingTimezone(track.recordingTimezone)}
+                          </Badge>
                           <Badge
                             variant={
                               track.parsed.summary.time.timezoneEvidence === "UTC_OR_OFFSET" ? "secondary" : "outline"

@@ -505,11 +505,30 @@ const dateTimeFormat = new Intl.DateTimeFormat("en", {
   minute: "2-digit",
 });
 
+const utcDateTimeFormat = new Intl.DateTimeFormat("en", {
+  year: "numeric",
+  month: "short",
+  day: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+  timeZone: "UTC",
+  timeZoneName: "short",
+});
+
 export const formatPhotoCapturedAt = (value?: string | null) => {
   if (!value || Number.isNaN(Date.parse(value))) return null;
 
   return dateTimeFormat.format(new Date(value));
 };
+
+export const formatPhotoCapturedAtUtc = (value?: string | null) => {
+  if (!value || Number.isNaN(Date.parse(value))) return null;
+
+  return utcDateTimeFormat.format(new Date(value));
+};
+
+export const formatPhotoCaptureTimezoneEvidence = (value?: PhotoCaptureTimezoneEvidence | null) =>
+  value === "UTC_OR_OFFSET" ? "EXIF UTC/offset" : value === "MISSING" ? "EXIF timezone missing" : "Timezone evidence unavailable";
 
 export const formatPhotoDimensions = (width?: number | null, height?: number | null) => {
   if (!isFiniteNumber(width) || !isFiniteNumber(height)) return null;

@@ -10,6 +10,8 @@ import {
 } from "@/app/_data/hikes";
 import { Badge, Button, Input } from "@/components/index";
 import { formatTrackTimezoneEvidence } from "@/lib/track-gpx-metadata";
+import { formatTrackRecordingDateTime } from "@/lib/track-gpx-metadata";
+import { formatPhotoCapturedAtUtc, formatPhotoCaptureTimezoneEvidence } from "@/lib/photo-exif-metadata";
 
 const candidateLabel = (type: HikePhotoDetail["candidates"][number]["type"], previousDayFinish?: boolean) =>
   type === "INSIDE_TRACK_WINDOW"
@@ -79,6 +81,16 @@ export const HikePhotoCoordinateReview = ({
               ) : null}
             </div>
             <p>{candidate.explanation}</p>
+            <p className="text-muted-foreground">
+              Photo: {formatPhotoCapturedAtUtc(candidate.capturedAt) ?? candidate.capturedAt} · {formatPhotoCaptureTimezoneEvidence(detail.captureSummary?.captureTimeTimezoneEvidence)}
+            </p>
+            {candidate.type === "INSIDE_TRACK_WINDOW" || candidate.type === "AFTER_TRACK_FINISH" ? (
+              <p className="text-muted-foreground">
+                Track: {candidate.type === "INSIDE_TRACK_WINDOW"
+                  ? `${formatTrackRecordingDateTime(candidate.trackStart, candidate.recordingTimezone)} – ${formatTrackRecordingDateTime(candidate.trackEnd, candidate.recordingTimezone)}`
+                  : formatTrackRecordingDateTime(candidate.trackEnd, candidate.recordingTimezone)} ({candidate.recordingTimezone ?? "UTC (unconfirmed)"})
+              </p>
+            ) : null}
             {candidate.proposedCoordinate ? (
               <p className="text-muted-foreground">
                 Proposed {candidate.proposedCoordinate.lat.toFixed(5)}, {candidate.proposedCoordinate.lng.toFixed(5)}

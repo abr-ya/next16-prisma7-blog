@@ -36,6 +36,12 @@ Update the recording-time formatting helpers to accept a timezone explicitly and
 
 Alternative: pass a timezone only to the admin panel. That leaves public pages and trip coordinate-review information inconsistent, so it is rejected.
 
+### Make photo-to-track comparison context explicit without changing matching
+
+Authorized photo details and coordinate-review cards will display the stored photo ISO instant formatted explicitly in UTC, with its existing EXIF timezone-evidence state. The source-track recording range will use the persisted track timezone formatter and label. Any browser-local readable photo display is labelled as viewer-local and is never the comparison value.
+
+Alternative: rely on the current browser-local photo clock or reinterpret its EXIF value in the track timezone. The first is ambiguous; the second would alter matching semantics and can corrupt a valid absolute instant.
+
 ### Treat the timezone as display metadata only
 
 The parser will continue to turn offset-bearing GPX values into ISO instants, and it will not receive the selected timezone as an input. Matching, duration, sort order, timeline storage, and map geometry will continue using epoch/ISO values. Any time labels shown in coordinate-review UI will use the selected timezone only at the final formatting boundary.
@@ -48,7 +54,7 @@ Alternative: shift parsed timestamps during import. That would corrupt absolute 
 - A track crosses timezone boundaries → this first slice deliberately records one owner-confirmed presentation timezone; the coordinate-derived multi-zone follow-up remains backlog work.
 - Existing tracks have no setting → preserve null at migration, display explicit UTC, and make the next edit require confirmation instead of guessing.
 - Server/browser ICU timezone data can differ → use server validation and the persisted identifier as the authority; test representative identifiers including `Europe/Sofia`.
-- Date labels can influence human coordinate review → preserve all matching inputs as absolute instants; updating ambiguous GPX/EXIF source timestamps and coordinate-review labels is deferred to dedicated candidates.
+- Date labels can influence human coordinate review → preserve all matching inputs as absolute instants and expose their UTC comparison context; ambiguous GPX/EXIF source timestamp correction remains deferred.
 
 ## Migration Plan
 
