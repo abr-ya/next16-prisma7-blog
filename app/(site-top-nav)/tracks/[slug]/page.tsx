@@ -19,6 +19,7 @@ import {
   formatTrackRecordingDateTime,
   formatTrackTimezoneEvidence,
 } from "@/lib/track-gpx-metadata";
+import { formatTrackRecordingTimezone } from "@/lib/track-recording-timezone";
 
 type TrackPageProps = {
   params: Promise<{ slug: string }>;
@@ -116,15 +117,23 @@ const TrackPage = async ({ params }: TrackPageProps) => {
                 <>
                   <div>
                     <div className="text-muted-foreground">Recording start</div>
-                    <div className="font-medium">{formatTrackRecordingDateTime(track.parsed.summary.time.start)}</div>
+                    <div className="font-medium">
+                      {formatTrackRecordingDateTime(track.parsed.summary.time.start, track.recordingTimezone)}
+                    </div>
                   </div>
                   <div>
                     <div className="text-muted-foreground">Recording finish</div>
-                    <div className="font-medium">{formatTrackRecordingDateTime(track.parsed.summary.time.end)}</div>
+                    <div className="font-medium">
+                      {formatTrackRecordingDateTime(track.parsed.summary.time.end, track.recordingTimezone)}
+                    </div>
                   </div>
                   <div>
                     <div className="text-muted-foreground">Duration</div>
                     <div className="font-medium">{formatTrackDuration(track.parsed.summary.time.durationSeconds)}</div>
+                  </div>
+                  <div>
+                    <div className="text-muted-foreground">Recording timezone</div>
+                    <div className="font-medium">{formatTrackRecordingTimezone(track.recordingTimezone)}</div>
                   </div>
                   <div>
                     <div className="text-muted-foreground">Timezone evidence</div>

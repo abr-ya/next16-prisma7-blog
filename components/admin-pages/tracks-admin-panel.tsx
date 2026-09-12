@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { ColumnDef } from "@tanstack/react-table";
-import { ArrowUpDown, Edit, FileUp, Plus, RefreshCw, Trash2 } from "lucide-react";
+import { ArrowUpDown, Clock3, Edit, FileUp, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { useForm, useWatch } from "react-hook-form";
@@ -10,7 +10,14 @@ import { toast } from "sonner";
 import z from "zod";
 
 import { markDiscardedTrackGpxFileAssetsPendingDelete } from "@/app/_actions/files";
-import { createTrack, deleteTrack, parseTrackGpx, updateTrack, type TrackListItem } from "@/app/_data/tracks";
+import {
+  createTrack,
+  deleteTrack,
+  parseTrackGpx,
+  updateTrack,
+  updateTrackRecordingTimezone,
+  type TrackListItem,
+} from "@/app/_data/tracks";
 import {
   Badge,
   Button,
@@ -38,6 +45,11 @@ import { formatFileSize, TRACK_GPX_UPLOAD_MAX_SIZE } from "@/lib/file-upload-lim
 import { formatHikeDateRange, formatHikeStatus, formatHikeType } from "@/lib/hikes";
 import { UploadDropzone } from "@/lib/uploadthing";
 import { createSlug } from "@/lib/slug-generator";
+import {
+  formatTrackRecordingTimezone,
+  getSupportedTrackRecordingTimezones,
+  normalizeTrackRecordingTimezone,
+} from "@/lib/track-recording-timezone";
 import { formatTrackStatus, trackStatusOptions } from "@/lib/tracks";
 import {
   formatTrackDistance,
@@ -104,7 +116,8 @@ const TrackParseStatus = ({ track }: { track: TrackListItem }) => {
   const distance = state.status === "SUCCESS" ? formatTrackDistance(state.summary.distanceMeters) : null;
   const points = state.status === "SUCCESS" ? formatTrackPointCount(state.summary.points) : null;
   const timeline = state.status === "SUCCESS" ? formatTrackTimelinePresence(state.timeline) : null;
-  const recordingTime = state.status === "SUCCESS" ? formatTrackRecordingTimeRange(state.summary.time) : null;
+  const recordingTime =
+    state.status === "SUCCESS" ? formatTrackRecordingTimeRange(state.summary.time, track.recordingTimezone) : null;
 
   return (
     <div className="flex max-w-72 flex-wrap items-center gap-1.5">
@@ -438,7 +451,7 @@ const TrackFormDialog = ({
                       </div>
                       {parseState.summary.time ? (
                         <div className="flex flex-wrap gap-2">
-                          <span>{formatTrackRecordingTimeRange(parseState.summary.time)}</span>
+                          <span>{formatTrackRecordingTimeRange(parseState.summary.time, track.recordingTimezone)}</span>
                           <Badge
                             variant={
                               parseState.summary.time.timezoneEvidence === "UTC_OR_OFFSET" ? "secondary" : "outline"
@@ -492,9 +505,27 @@ export const TracksAdminPanel = ({ tracks }: { tracks: TrackListItem[] }) => {
   const [formOpen, setFormOpen] = useState(false);
   const [editingTrack, setEditingTrack] = useState<TrackListItem | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<TrackListItem | null>(null);
+  const [timezoneTarget, setTimezoneTarget] = useState<TrackListItem | null>(null);
+  const [recordingTimezone, setRecordingTimezone] = useState("");
+  const [browserTimezone, setBrowserTimezone] = useState<string | null>(null);
   const [parsingTrackId, setParsingTrackId] = useState<string | null>(null);
   const [isDeleting, startDeleting] = useTransition();
+  const [isSavingTimezone, startSavingTimezone] = useTransition();
   const [, startParsing] = useTransition();
+
+  const timezoneOptions = useMemo(() => getSupportedTrackRecordingTimezones(), []);
+
+  useEffect(() => {
+    const detected = normalizeTrackRecordingTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone);
+
+    setBrowserTimezone(detected);
+  }, []);
+
+  useEffect(() => {
+    if (!timezoneTarget) return;
+
+    setRecordingTimezone(timezoneTarget.recordingTimezone ?? browserTimezone ?? "UTC");
+  }, [browserTimezone, timezoneTarget]);
 
   const handleParse = useCallback(
     (track: TrackListItem) => {
@@ -556,6 +587,15 @@ export const TracksAdminPanel = ({ tracks }: { tracks: TrackListItem[] }) => {
         cell: ({ row }) => <TrackParseStatus track={row.original} />,
       },
       {
+        id: "timezone",
+        header: "Timezone",
+        cell: ({ row }) => (
+          <Badge variant={row.original.recordingTimezone ? "secondary" : "outline"}>
+            {formatTrackRecordingTimezone(row.original.recordingTimezone)}
+          </Badge>
+        ),
+      },
+      {
         id: "hikes",
         header: "Trips",
         cell: ({ row }) => (
@@ -595,6 +635,15 @@ export const TracksAdminPanel = ({ tracks }: { tracks: TrackListItem[] }) => {
               type="button"
               variant="ghost"
               size="icon"
+              title="Set recording timezone"
+              onClick={() => setTimezoneTarget(row.original)}
+            >
+              <Clock3 className="size-4" />
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
               title="Parse GPX"
               disabled={parsingTrackId === row.original.id}
               onClick={() => handleParse(row.original)}
@@ -628,6 +677,28 @@ export const TracksAdminPanel = ({ tracks }: { tracks: TrackListItem[] }) => {
     ],
     [handleParse, parsingTrackId],
   );
+
+  const handleTimezoneSave = () => {
+    if (!timezoneTarget) return;
+
+    const timezone = normalizeTrackRecordingTimezone(recordingTimezone);
+
+    if (!timezone) {
+      toast.error("Choose a supported IANA timezone");
+      return;
+    }
+
+    startSavingTimezone(async () => {
+      try {
+        await updateTrackRecordingTimezone({ id: timezoneTarget.id, recordingTimezone: timezone });
+        toast.success("Recording timezone saved");
+        setTimezoneTarget(null);
+        router.refresh();
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Failed to save recording timezone");
+      }
+    });
+  };
 
   const handleCreateClick = () => {
     setEditingTrack(null);
@@ -671,6 +742,55 @@ export const TracksAdminPanel = ({ tracks }: { tracks: TrackListItem[] }) => {
           if (!open) setEditingTrack(null);
         }}
       />
+      <Dialog open={Boolean(timezoneTarget)} onOpenChange={(open) => !open && setTimezoneTarget(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Recording timezone</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4">
+            <div className="grid gap-1 text-sm">
+              <span className="font-medium">{timezoneTarget?.title}</span>
+              <span className="text-muted-foreground">
+                This affects displayed recording times only. GPX timestamps and map coordinates stay unchanged.
+              </span>
+            </div>
+            <div className="grid gap-2">
+              <label htmlFor="track-recording-timezone" className="text-sm font-medium">
+                IANA timezone
+              </label>
+              <Input
+                id="track-recording-timezone"
+                list="track-recording-timezone-options"
+                value={recordingTimezone}
+                onChange={(event) => setRecordingTimezone(event.target.value)}
+                placeholder="Europe/Sofia"
+                autoComplete="off"
+              />
+              <datalist id="track-recording-timezone-options">
+                {timezoneOptions.map((timezone) => (
+                  <option key={timezone} value={timezone} />
+                ))}
+              </datalist>
+              <p className="text-xs text-muted-foreground">
+                {browserTimezone ? `Browser suggestion: ${browserTimezone}` : "Choose a supported IANA timezone."}
+              </p>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setTimezoneTarget(null)}
+                disabled={isSavingTimezone}
+              >
+                Cancel
+              </Button>
+              <Button type="button" onClick={handleTimezoneSave} disabled={isSavingTimezone}>
+                {isSavingTimezone ? "Saving..." : "Save timezone"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
       <ConfirmDialog
         open={Boolean(deleteTarget)}
         onOpenChange={(open) => {

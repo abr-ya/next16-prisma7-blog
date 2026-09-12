@@ -4,6 +4,15 @@ export const PHOTO_EXIF_METADATA_VERSION = "photo-exif-metadata/v1";
 
 export type PhotoExifParseStatus = "SUCCESS" | "FAILED" | "STALE";
 export type PhotoCaptureTimezoneEvidence = "UTC_OR_OFFSET" | "MISSING";
+export type PhotoCaptureTimeSource = "GPS_UTC" | "EXIF_OFFSET" | "EXIF_WALL_CLOCK";
+
+export type PhotoCaptureTimeProvenance = {
+  source: PhotoCaptureTimeSource;
+  instantUtc: string | null;
+  localWallTime: string | null;
+  timezoneEvidence: PhotoCaptureTimezoneEvidence;
+  sourceFileAssetId: string;
+};
 
 export type PhotoExifGps = {
   lat: number;
@@ -22,6 +31,7 @@ export type PhotoExifImageSummary = {
   sortOrder: number;
   capturedAt: string | null;
   captureTimeTimezoneEvidence?: PhotoCaptureTimezoneEvidence | null;
+  captureTimeProvenance?: PhotoCaptureTimeProvenance | null;
   width: number | null;
   height: number | null;
   orientation: number | null;
@@ -37,6 +47,7 @@ export type PhotoExifImageSummary = {
 export type PhotoExifSummary = {
   capturedAt: string | null;
   captureTimeTimezoneEvidence?: PhotoCaptureTimezoneEvidence | null;
+  captureTimeProvenance?: PhotoCaptureTimeProvenance | null;
   width: number | null;
   height: number | null;
   orientation: number | null;
@@ -122,6 +133,17 @@ const isOptionalCaptureTimeTimezoneEvidence = (
 ): value is PhotoCaptureTimezoneEvidence | null | undefined =>
   value === undefined || value === null || value === "UTC_OR_OFFSET" || value === "MISSING";
 
+const isCaptureTimeProvenance = (value: unknown): value is PhotoCaptureTimeProvenance =>
+  isRecord(value) &&
+  (value.source === "GPS_UTC" || value.source === "EXIF_OFFSET" || value.source === "EXIF_WALL_CLOCK") &&
+  isNullableString(value.instantUtc) &&
+  (value.instantUtc === null || isIsoDateString(value.instantUtc)) &&
+  isNullableString(value.localWallTime) &&
+  isOptionalCaptureTimeTimezoneEvidence(value.timezoneEvidence) &&
+  value.timezoneEvidence !== undefined &&
+  value.timezoneEvidence !== null &&
+  typeof value.sourceFileAssetId === "string";
+
 const isNullableFiniteNumber = (value: unknown): value is number | null => value === null || isFiniteNumber(value);
 
 const isOptionalNullableFiniteNumber = (value: unknown): boolean =>
@@ -144,6 +166,9 @@ const normalizeImageSummary = (value: unknown): PhotoExifImageSummary | null => 
     !isNullableString(value.capturedAt) ||
     (value.capturedAt !== null && !isIsoDateString(value.capturedAt)) ||
     !isOptionalCaptureTimeTimezoneEvidence(value.captureTimeTimezoneEvidence) ||
+    (value.captureTimeProvenance !== undefined &&
+      value.captureTimeProvenance !== null &&
+      !isCaptureTimeProvenance(value.captureTimeProvenance)) ||
     !isNullableFiniteNumber(value.width) ||
     !isNullableFiniteNumber(value.height) ||
     !isNullableFiniteNumber(value.orientation) ||
@@ -166,6 +191,7 @@ const normalizeImageSummary = (value: unknown): PhotoExifImageSummary | null => 
     ...(value.captureTimeTimezoneEvidence !== undefined
       ? { captureTimeTimezoneEvidence: value.captureTimeTimezoneEvidence }
       : {}),
+    ...(value.captureTimeProvenance !== undefined ? { captureTimeProvenance: value.captureTimeProvenance } : {}),
     width: value.width,
     height: value.height,
     orientation: value.orientation,
@@ -185,6 +211,9 @@ const normalizeSummary = (value: unknown): PhotoExifSummary | null => {
     !isNullableString(value.capturedAt) ||
     (value.capturedAt !== null && !isIsoDateString(value.capturedAt)) ||
     !isOptionalCaptureTimeTimezoneEvidence(value.captureTimeTimezoneEvidence) ||
+    (value.captureTimeProvenance !== undefined &&
+      value.captureTimeProvenance !== null &&
+      !isCaptureTimeProvenance(value.captureTimeProvenance)) ||
     !isNullableFiniteNumber(value.width) ||
     !isNullableFiniteNumber(value.height) ||
     !isNullableFiniteNumber(value.orientation) ||
@@ -206,6 +235,7 @@ const normalizeSummary = (value: unknown): PhotoExifSummary | null => {
     ...(value.captureTimeTimezoneEvidence !== undefined
       ? { captureTimeTimezoneEvidence: value.captureTimeTimezoneEvidence }
       : {}),
+    ...(value.captureTimeProvenance !== undefined ? { captureTimeProvenance: value.captureTimeProvenance } : {}),
     width: value.width,
     height: value.height,
     orientation: value.orientation,
@@ -505,11 +535,61 @@ const dateTimeFormat = new Intl.DateTimeFormat("en", {
   minute: "2-digit",
 });
 
+const utcDateTimeFormat = new Intl.DateTimeFormat("en", {
+  year: "numeric",
+  month: "short",
+  day: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+  timeZone: "UTC",
+  timeZoneName: "short",
+});
+
 export const formatPhotoCapturedAt = (value?: string | null) => {
   if (!value || Number.isNaN(Date.parse(value))) return null;
 
   return dateTimeFormat.format(new Date(value));
 };
+
+export const formatPhotoCapturedAtUtc = (value?: string | null) => {
+  if (!value || Number.isNaN(Date.parse(value))) return null;
+
+  return utcDateTimeFormat.format(new Date(value));
+};
+
+export const formatPhotoCapturedAtInTimezone = (value?: string | null, timeZone?: string | null) => {
+  if (!value || !timeZone || Number.isNaN(Date.parse(value))) return null;
+
+  try {
+    return new Intl.DateTimeFormat("en", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      timeZone,
+      timeZoneName: "short",
+    }).format(new Date(value));
+  } catch {
+    return null;
+  }
+};
+
+export const formatPhotoCaptureTimeSource = (value?: PhotoCaptureTimeSource | null) =>
+  value === "GPS_UTC"
+    ? "GPS UTC"
+    : value === "EXIF_OFFSET"
+      ? "EXIF offset"
+      : value === "EXIF_WALL_CLOCK"
+        ? "EXIF wall clock"
+        : "Capture source unavailable";
+
+export const formatPhotoCaptureTimezoneEvidence = (value?: PhotoCaptureTimezoneEvidence | null) =>
+  value === "UTC_OR_OFFSET"
+    ? "EXIF UTC/offset"
+    : value === "MISSING"
+      ? "EXIF timezone missing"
+      : "Timezone evidence unavailable";
 
 export const formatPhotoDimensions = (width?: number | null, height?: number | null) => {
   if (!isFiniteNumber(width) || !isFiniteNumber(height)) return null;

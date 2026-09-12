@@ -311,6 +311,7 @@ model Track {
   fileAssetId String          @unique
   fileAsset   FileAsset       @relation(fields: [fileAssetId], references: [id], onDelete: Restrict)
   metadata    Json?
+  recordingTimezone String?
   userId      String
   user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   hikes       HikesToTracks[]

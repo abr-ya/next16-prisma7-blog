@@ -1,4 +1,5 @@
 import type { Prisma } from "@/generated/prisma/client";
+import { getTrackRecordingTimezone } from "@/lib/track-recording-timezone";
 
 export const TRACK_GPX_METADATA_VERSION = "track-gpx-metadata/v1";
 
@@ -357,7 +358,7 @@ export const formatTrackDuration = (seconds?: number | null) => {
   return `${minutes} min`;
 };
 
-export const formatTrackRecordingDateTime = (value?: string | null) => {
+export const formatTrackRecordingDateTime = (value?: string | null, recordingTimezone?: string | null) => {
   if (!value || Number.isNaN(Date.parse(value))) return null;
 
   return new Intl.DateTimeFormat("en", {
@@ -366,14 +367,15 @@ export const formatTrackRecordingDateTime = (value?: string | null) => {
     day: "numeric",
     hour: "2-digit",
     minute: "2-digit",
+    timeZone: getTrackRecordingTimezone(recordingTimezone),
   }).format(new Date(value));
 };
 
-export const formatTrackRecordingTimeRange = (time?: TrackGpxTimeSummary | null) => {
+export const formatTrackRecordingTimeRange = (time?: TrackGpxTimeSummary | null, recordingTimezone?: string | null) => {
   if (!time) return null;
 
-  const start = formatTrackRecordingDateTime(time.start);
-  const end = formatTrackRecordingDateTime(time.end);
+  const start = formatTrackRecordingDateTime(time.start, recordingTimezone);
+  const end = formatTrackRecordingDateTime(time.end, recordingTimezone);
 
   if (!start || !end) return null;
 

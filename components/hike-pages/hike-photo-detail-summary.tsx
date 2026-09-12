@@ -1,11 +1,15 @@
 import type { HikePhotoAcceptedCoordinate } from "@/app/_data/hikes";
 import { Badge } from "@/components/index";
 import {
-  formatPhotoCapturedAt,
+  formatPhotoCapturedAtInTimezone,
+  formatPhotoCapturedAtUtc,
+  formatPhotoCaptureTimeSource,
+  formatPhotoCaptureTimezoneEvidence,
   formatPhotoDimensions,
   formatPhotoExposureTriplet,
   formatPhotoGpsPresence,
   type PhotoExifSummary,
+  type PhotoExifMetadata,
 } from "@/lib/photo-exif-metadata";
 
 const sourceLabel = (source: HikePhotoAcceptedCoordinate["source"]) =>
@@ -18,10 +22,19 @@ const sourceLabel = (source: HikePhotoAcceptedCoordinate["source"]) =>
 export const HikePhotoDetailSummary = ({
   captureSummary,
   acceptedCoordinate,
+  linkedTrackTimezones,
+  adminExifMetadata,
 }: {
   captureSummary: PhotoExifSummary | null;
   acceptedCoordinate: HikePhotoAcceptedCoordinate | null;
+  linkedTrackTimezones: string[];
+  adminExifMetadata: PhotoExifMetadata | null;
 }) => {
+  const linkedTrackTimezone = linkedTrackTimezones.length === 1 ? linkedTrackTimezones[0] : null;
+  const primaryCapture = captureSummary?.captureTimeProvenance?.localWallTime
+    ? `${captureSummary.captureTimeProvenance.localWallTime} (unconfirmed camera-local)`
+    : (formatPhotoCapturedAtInTimezone(captureSummary?.capturedAt, linkedTrackTimezone) ??
+      formatPhotoCapturedAtUtc(captureSummary?.capturedAt));
   const exposure = captureSummary
     ? formatPhotoExposureTriplet({
         exposureTime: captureSummary.exposureTime,
@@ -36,7 +49,19 @@ export const HikePhotoDetailSummary = ({
         <h3 className="font-medium">Capture details</h3>
         {captureSummary ? (
           <dl className="grid gap-1 text-muted-foreground sm:grid-cols-2">
-            <div>Captured: {formatPhotoCapturedAt(captureSummary.capturedAt) ?? "Unavailable"}</div>
+            <div>Captured: {primaryCapture ?? "Unavailable"}</div>
+            {formatPhotoCapturedAtUtc(captureSummary.capturedAt) ? (
+              <div>Captured (stored UTC): {formatPhotoCapturedAtUtc(captureSummary.capturedAt)}</div>
+            ) : null}
+            {captureSummary.captureTimeProvenance ? (
+              <div>Capture source: {formatPhotoCaptureTimeSource(captureSummary.captureTimeProvenance.source)}</div>
+            ) : null}
+            {linkedTrackTimezone ? <div>Linked track timezone: {linkedTrackTimezone}</div> : null}
+            {captureSummary.capturedAt ? (
+              <div>
+                Timezone evidence: {formatPhotoCaptureTimezoneEvidence(captureSummary.captureTimeTimezoneEvidence)}
+              </div>
+            ) : null}
             <div>Camera: {captureSummary.cameraLabel ?? "Unavailable"}</div>
             <div>Dimensions: {formatPhotoDimensions(captureSummary.width, captureSummary.height) ?? "Unavailable"}</div>
             <div>Exposure: {exposure ?? "Unavailable"}</div>
@@ -46,6 +71,21 @@ export const HikePhotoDetailSummary = ({
           <p className="text-muted-foreground">Capture metadata is unavailable.</p>
         )}
       </section>
+      {adminExifMetadata ? (
+        <section className="grid gap-2">
+          <h3 className="font-medium">EXIF extraction diagnostics</h3>
+          <p className="text-muted-foreground">Use Refresh EXIF metadata to re-read the stored original file.</p>
+          {adminExifMetadata.raw && Object.keys(adminExifMetadata.raw).length > 0 ? (
+            <dl className="grid gap-1 text-muted-foreground sm:grid-cols-2">
+              {Object.entries(adminExifMetadata.raw).map(([key, value]) => (
+                <div key={key}>{`${key}: ${value}`}</div>
+              ))}
+            </dl>
+          ) : (
+            <p className="text-muted-foreground">No safe EXIF/GPS fields were extracted.</p>
+          )}
+        </section>
+      ) : null}
       <section className="grid gap-2">
         <h3 className="font-medium">Map location</h3>
         {acceptedCoordinate ? (

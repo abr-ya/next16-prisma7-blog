@@ -7,6 +7,7 @@ import type { FileAssetStatus, FileAssetVisibility, HikeType, TrackStatus } from
 import { authSession } from "@/lib/auth-utils";
 import { createSlug } from "@/lib/slug-generator";
 import { parseTrackGpxMetadata } from "@/lib/track-gpx-parser";
+import { requireTrackRecordingTimezone } from "@/lib/track-recording-timezone";
 import {
   getTrackGpxMetadataState,
   markTrackGpxMetadataStale,
@@ -31,6 +32,7 @@ type PublicTrackRecord = Prisma.TrackGetPayload<{
     title: true;
     slug: true;
     description: true;
+    recordingTimezone: true;
     updatedAt: true;
     createdAt: true;
     fileAsset: {
@@ -70,6 +72,7 @@ export type PublicTrack = {
   title: string;
   slug: string;
   description: string | null;
+  recordingTimezone: string | null;
   updatedAt: Date;
   createdAt: Date;
   file: {
@@ -244,6 +247,7 @@ const publicTrackSelect = {
   title: true,
   slug: true,
   description: true,
+  recordingTimezone: true,
   updatedAt: true,
   createdAt: true,
   metadata: true,
@@ -301,6 +305,7 @@ const toPublicTrack = (
     title: track.title,
     slug: track.slug,
     description: track.description,
+    recordingTimezone: track.recordingTimezone,
     updatedAt: track.updatedAt,
     createdAt: track.createdAt,
     file: {
@@ -355,6 +360,7 @@ const revalidateTrackPaths = () => {
   revalidatePath("/admin/tracks");
   revalidatePath("/admin/files");
   revalidatePath("/tracks");
+  revalidatePath("/hikes");
 };
 
 const revalidateTrackDetailPaths = (slug?: string | null) => {
@@ -473,6 +479,47 @@ export const updateTrack = async (values: TrackActionValues) => {
   });
 
   revalidateTrackDetailPaths(track.slug);
+
+  return track;
+};
+
+export const updateTrackRecordingTimezone = async ({
+  id,
+  recordingTimezone,
+}: {
+  id: string;
+  recordingTimezone: string;
+}) => {
+  const userId = await getRequiredUserId();
+  const timezone = requireTrackRecordingTimezone(recordingTimezone);
+  const { default: prisma } = await import("@/lib/prisma");
+  const existingTrack = await prisma.track.findFirst({
+    where: { id, userId },
+    select: {
+      id: true,
+      slug: true,
+      hikes: {
+        select: {
+          hike: {
+            select: { slug: true },
+          },
+        },
+      },
+    },
+  });
+
+  if (!existingTrack) throw new Error("Track not found");
+
+  const track = await prisma.track.update({
+    where: { id: existingTrack.id },
+    data: { recordingTimezone: timezone },
+    include: trackListInclude,
+  });
+
+  revalidateTrackDetailPaths(track.slug);
+  for (const association of existingTrack.hikes) {
+    revalidatePath(`/hikes/${association.hike.slug}`);
+  }
 
   return track;
 };
