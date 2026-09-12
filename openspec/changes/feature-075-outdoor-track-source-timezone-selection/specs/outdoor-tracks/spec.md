@@ -83,16 +83,6 @@ The system SHALL show an authorized photo-detail or coordinate reviewer the stor
 - **THEN** the review shows the labelled UTC photo instant and the `Europe/Sofia` recording range
 - **AND** it preserves the existing inside-track, between-track, or previous-day-finish candidate outcome
 
-### Requirement: EXIF GPS data is available to trusted matching
-
-The system SHALL parse and retain all available standard EXIF GPS fields in safe versioned metadata, including coordinates, altitude, GPS date/time, datum, direction, and accuracy fields. A complete valid `GPSDateStamp` plus `GPSTimeStamp` SHALL be the preferred UTC capture instant for matching; partial or invalid GPS data SHALL NOT be invented or treated as a valid coordinate or time.
-
-#### Scenario: Image contains GPS coordinates and UTC time
-
-- **WHEN** an uploaded image contains valid GPS coordinates and `GPSDateStamp` plus `GPSTimeStamp`
-- **THEN** the system retains the GPS evidence and uses its UTC instant for matching
-- **AND** it does not apply browser or server timezone interpretation
-
 ### Requirement: Photo capture-time provenance remains explicit
 
 The system SHALL retain a versioned capture-time provenance record identifying `GPS_UTC`, `EXIF_OFFSET`, or `EXIF_WALL_CLOCK`, its source file, UTC instant when authoritative, local wall-clock value when applicable, and timezone evidence. Photo cards SHALL NOT use the viewer browser timezone as the primary capture-time display. They SHALL show the source local time with a confirmed linked-track timezone when available, or clearly identify an unconfirmed camera-local value.

@@ -244,6 +244,8 @@ export const HikePhotoGallery = ({ photos, canViewFullPhotos, canFocusMap, onFoc
                   <HikePhotoDetailSummary
                     captureSummary={activePhoto.detail.captureSummary}
                     acceptedCoordinate={activePhoto.detail.acceptedCoordinate}
+                    linkedTrackTimezones={activePhoto.detail.linkedTrackTimezones}
+                    adminExifMetadata={activePhoto.detail.adminExifMetadata}
                   />
                   {canFocusMap && activePhoto.detail.acceptedCoordinate ? (
                     <div className="flex justify-end">
@@ -281,6 +283,8 @@ export const HikePhotoGallery = ({ photos, canViewFullPhotos, canFocusMap, onFoc
               <HikePhotoDetailSummary
                 captureSummary={exifPhoto.detail.captureSummary}
                 acceptedCoordinate={exifPhoto.detail.acceptedCoordinate}
+                linkedTrackTimezones={exifPhoto.detail.linkedTrackTimezones}
+                adminExifMetadata={exifPhoto.detail.adminExifMetadata}
               />
               <div className="flex justify-end">
                 <Button type="button" disabled={isPending} onClick={refreshExif}>

@@ -21,6 +21,7 @@ import {
   isValidGps,
   readPhotoExifMetadata,
   withPhotoMapCoordinate,
+  type PhotoExifMetadata,
   type PhotoExifSummary,
   type PhotoMapCoordinate,
 } from "@/lib/photo-exif-metadata";
@@ -401,6 +402,8 @@ export type HikePhotoDetail = {
   hikeId: string;
   photoId: string;
   captureSummary: PhotoExifSummary | null;
+  adminExifMetadata: PhotoExifMetadata | null;
+  linkedTrackTimezones: string[];
   acceptedCoordinate: HikePhotoAcceptedCoordinate | null;
   canReviewCoordinate: boolean;
   isAdmin: boolean;
@@ -1273,11 +1276,20 @@ export const getHikePhotoDetail = async ({
       };
     }>
   ).map(({ track }) => toTrackTimeMatchTrackInput(track));
+  const linkedTrackTimezones = [
+    ...new Set(
+      (mapCoordinate?.trackIds ?? [])
+        .map((trackId) => trackInputs.find((track) => track.id === trackId)?.recordingTimezone ?? null)
+        .filter((timezone): timezone is string => Boolean(timezone)),
+    ),
+  ];
 
   return {
     hikeId: access.hike.id,
     photoId: access.photo.id,
     captureSummary: metadataState.status === "SUCCESS" ? metadataState.summary : null,
+    adminExifMetadata: access.accessFlags.isAdmin && metadataState.status === "SUCCESS" ? metadataState.metadata : null,
+    linkedTrackTimezones,
     acceptedCoordinate,
     canReviewCoordinate: access.canReviewCoordinate,
     isAdmin: access.accessFlags.isAdmin,
