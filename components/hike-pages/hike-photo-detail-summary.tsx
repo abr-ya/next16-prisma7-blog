@@ -2,9 +2,8 @@ import type { HikePhotoAcceptedCoordinate } from "@/app/_data/hikes";
 import { Badge } from "@/components/index";
 import {
   formatPhotoCapturedAtInTimezone,
-  formatPhotoCapturedAtUtc,
+  formatPhotoCaptureTimeContext,
   formatPhotoCaptureTimeSource,
-  formatPhotoCaptureTimezoneEvidence,
   formatPhotoDimensions,
   formatPhotoExposureTriplet,
   formatPhotoGpsPresence,
@@ -31,10 +30,14 @@ export const HikePhotoDetailSummary = ({
   adminExifMetadata: PhotoExifMetadata | null;
 }) => {
   const linkedTrackTimezone = linkedTrackTimezones.length === 1 ? linkedTrackTimezones[0] : null;
+  const captureTimeContext = formatPhotoCaptureTimeContext({
+    capturedAt: captureSummary?.capturedAt,
+    timezoneEvidence: captureSummary?.captureTimeTimezoneEvidence,
+  });
   const primaryCapture = captureSummary?.captureTimeProvenance?.localWallTime
     ? `${captureSummary.captureTimeProvenance.localWallTime} (unconfirmed camera-local)`
     : (formatPhotoCapturedAtInTimezone(captureSummary?.capturedAt, linkedTrackTimezone) ??
-      formatPhotoCapturedAtUtc(captureSummary?.capturedAt));
+      captureTimeContext?.storedUtc);
   const exposure = captureSummary
     ? formatPhotoExposureTriplet({
         exposureTime: captureSummary.exposureTime,
@@ -50,18 +53,12 @@ export const HikePhotoDetailSummary = ({
         {captureSummary ? (
           <dl className="grid gap-1 text-muted-foreground sm:grid-cols-2">
             <div>Captured: {primaryCapture ?? "Unavailable"}</div>
-            {formatPhotoCapturedAtUtc(captureSummary.capturedAt) ? (
-              <div>Captured (stored UTC): {formatPhotoCapturedAtUtc(captureSummary.capturedAt)}</div>
-            ) : null}
+            {captureTimeContext ? <div>Captured (stored UTC): {captureTimeContext.storedUtc}</div> : null}
             {captureSummary.captureTimeProvenance ? (
               <div>Capture source: {formatPhotoCaptureTimeSource(captureSummary.captureTimeProvenance.source)}</div>
             ) : null}
             {linkedTrackTimezone ? <div>Linked track timezone: {linkedTrackTimezone}</div> : null}
-            {captureSummary.capturedAt ? (
-              <div>
-                Timezone evidence: {formatPhotoCaptureTimezoneEvidence(captureSummary.captureTimeTimezoneEvidence)}
-              </div>
-            ) : null}
+            {captureTimeContext ? <div>Timezone evidence: {captureTimeContext.timezoneEvidence}</div> : null}
             <div>Camera: {captureSummary.cameraLabel ?? "Unavailable"}</div>
             <div>Dimensions: {formatPhotoDimensions(captureSummary.width, captureSummary.height) ?? "Unavailable"}</div>
             <div>Exposure: {exposure ?? "Unavailable"}</div>
