@@ -82,6 +82,7 @@ Cancelled or deferred candidates do not reserve feature numbers.
 | feature-071 | feature-071-public-user-profile | navigation/public-users | Add a private read-only Profile with identity display, personal-content summary, direct trip invitations, and a public-nav entry point. |
 | feature-072 | feature-072-outdoor-trip-public-photo-upload | outdoor/trips-photos | Let trip creators, accepted participants, and administrators contribute one-to-three-image photos from published trip detail in a shared dialog, with server-authoritative authorization, atomic association, and a 10-photo per-user-per-trip non-admin quota. |
 | feature-074 | feature-074-outdoor-photo-details-coordinate-review | outdoor/maps-photos | Add privacy-safe trip-photo details, owner-or-admin EXIF refresh and coordinate-review modals, accepted-coordinate map focus, and the related access-policy boundaries. |
+| feature-075 | feature-075-outdoor-track-source-timezone-selection | outdoor/tracks-time | Add per-track recording-timezone selection, timezone-stable GPX time rendering across admin/public track and trip surfaces, and explicit photo capture-time provenance with admin diagnostics. |
 
 ## Cancelled Candidate Notes
 

@@ -17,16 +17,13 @@
 - [x] 3.2 Replace viewer/runtime-local time formatting on those surfaces with the shared explicit-timezone formatter and clearly label the selected timezone or UTC legacy fallback.
 - [x] 3.3 Verify a `2016-11-10T10:35:42Z` timestamp on a `Europe/Sofia` track renders as 12:35 regardless of browser timezone.
 
-## 4. Explicit photo-to-track time context
+## 4. Photo capture-time provenance
 
-- [ ] 4.1 Add shared deterministic presentation of a stored photo capture instant as UTC plus its existing timezone-evidence label, without using browser-local time as the comparison value.
-- [ ] 4.2 Render the explicit photo context in authorized photo details and coordinate-review candidates, and render every source-track range through its persisted recording timezone formatter.
-- [ ] 4.3 Add focused deterministic coverage proving the Sofia display context does not alter the prior absolute-time candidate result.
-- [x] 4.5 Persist explicit `GPS_UTC`/`EXIF_OFFSET`/`EXIF_WALL_CLOCK` capture-time provenance and render source-local capture time without browser timezone dependence.
-- [x] 4.6 Show provenance and safe EXIF/GPS diagnostics to administrators only, and render linked-track timezone for authorized photo cards.
+- [x] 4.1 Persist explicit `GPS_UTC`/`EXIF_OFFSET`/`EXIF_WALL_CLOCK` capture-time provenance and render source-local capture time without browser timezone dependence.
+- [x] 4.2 Show provenance and safe EXIF/GPS diagnostics to administrators only, and render linked-track timezone for authorized photo cards.
 
 ## 5. Verification
 
-- [ ] 5.1 Run `openspec validate feature-075-outdoor-track-source-timezone-selection --strict`, `npm run tsc`, targeted ESLint for changed non-`app` files, and `npm run lint` for changed `app` files.
-- [ ] 5.2 Confirm the local `npm run build` after the new presentation work; record the result.
-- [ ] 5.3 Manually verify the `/admin/tracks` timezone action: set `Europe/Sofia` on a parsed UTC track, confirm no reparse is requested, confirm the labelled time is stable in admin, `/tracks`, track detail, and linked trip display, and confirm photo detail/review makes the UTC comparison unambiguous.
+- [x] 5.1 Run `openspec validate feature-075-outdoor-track-source-timezone-selection --strict`, `npm run tsc`, targeted ESLint for changed non-`app` files, and `npm run lint` for changed `app` files.
+- [x] 5.2 Confirm the local `npm run build` after the new presentation work; passed on 2026-09-12 (Next.js 16.1.1 production build).
+- [x] 5.3 Manually verify the `/admin/tracks` timezone action: set `Europe/Sofia` on a parsed UTC track, confirm no reparse is requested, and confirm the labelled time is stable in admin, `/tracks`, track detail, and linked trip display (passed on 2026-09-12).

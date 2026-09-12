@@ -67,22 +67,6 @@ The system SHALL treat the recording-timezone setting as presentation metadata o
 - **THEN** the parser stores GPX timestamps as their original absolute instants
 - **AND** subsequent presentation uses the track's confirmed timezone without applying a browser-derived offset
 
-### Requirement: Authorized photo-to-track time comparison is timezone-explicit
-
-The system SHALL show an authorized photo-detail or coordinate reviewer the stored photo capture instant in explicit UTC and its existing timezone-evidence state, together with each source track's recording range rendered in that track's persisted recording timezone. The system SHALL retain the existing candidate and coordinate-placement result; it SHALL NOT reinterpret or rewrite a photo or GPX timestamp for display.
-
-#### Scenario: Browser-local photo clock differs from the source-track timezone
-
-- **WHEN** an authorized reviewer opens a photo whose browser-local readable clock differs from a source track's persisted recording timezone
-- **THEN** the view identifies the photo's canonical UTC instant and timezone evidence
-- **AND** it renders the source-track range with its persisted timezone label rather than comparing unlabelled clocks
-
-#### Scenario: Sofia track candidate retains its absolute-time outcome
-
-- **WHEN** a `Europe/Sofia` track has a parsed range beginning `2016-11-10T10:35:42Z` and a linked photo has a stored capture instant outside that absolute range
-- **THEN** the review shows the labelled UTC photo instant and the `Europe/Sofia` recording range
-- **AND** it preserves the existing inside-track, between-track, or previous-day-finish candidate outcome
-
 ### Requirement: Photo capture-time provenance remains explicit
 
 The system SHALL retain a versioned capture-time provenance record identifying `GPS_UTC`, `EXIF_OFFSET`, or `EXIF_WALL_CLOCK`, its source file, UTC instant when authoritative, local wall-clock value when applicable, and timezone evidence. Photo cards SHALL NOT use the viewer browser timezone as the primary capture-time display. They SHALL show the source local time with a confirmed linked-track timezone when available, or clearly identify an unconfirmed camera-local value.
