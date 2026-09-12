@@ -64,7 +64,6 @@ These candidates track the hikes/tracks/photos initiative as small increments. T
 | Status | Candidate | Area | Summary |
 | --- | --- | --- | --- |
 | Ready | admin-post-save-disabled-until-interaction | posts/admin | Analyze and fix admin post create/edit **Save changes** staying disabled until blur/scroll/console interaction. Reproduced more than once on `/admin/posts/new`. Likely `PostForm` validation gating (`mode: "onBlur"` + `disabled={!form.formState.isValid}`); confirm repro, then make save enable when required fields are valid without needing extra UI noise. |
-| In Progress | feature-076-outdoor-photo-capture-time-context | outdoor/photos-time | Show authorized reviewers the photo's stored UTC capture instant, timezone evidence, and comparable source-track timezone range so track-time candidate explanations do not depend on unlabelled browser-local clocks. Preserve all matching behavior and defer timestamp correction to `outdoor-photo-capture-timezone-normalization`. |
 
 ## P1 Soon
 

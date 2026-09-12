@@ -13,4 +13,4 @@
 
 - [x] 3.1 Mark the promoted backlog candidate as In Progress and keep `outdoor-photo-capture-timezone-normalization` as the separate future correction path.
 - [x] 3.2 Run `openspec validate feature-076-outdoor-photo-capture-time-context --strict`, `npm run tsc`, targeted ESLint for changed non-`app` files, and `npm run lint` for changed `app` files.
-- [ ] 3.3 Ask the user to run `npm run build` locally and manually verify the labelled photo timestamp in the authorized photo-detail flow. Defer real-photo coordinate-review QA until a suitable photo without direct GPS is available.
+- [x] 3.3 Ask the user to run `npm run build` locally and manually verify the labelled photo timestamp in the authorized photo-detail flow; passed on 2026-09-12. Defer real-photo coordinate-review QA until a suitable photo without direct GPS is available.

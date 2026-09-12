@@ -287,7 +287,7 @@ The system SHALL allow only the photo owner or an administrator to review the ex
 
 ### Requirement: Photo detail metadata distinguishes accepted coordinate state
 
-The system SHALL expose an authorized photo-detail view with the current metadata state without treating a failed extraction, unreviewed inference, missing capture time, or unavailable track timeline as a coordinate. Coordinate review controls SHALL explain why a candidate cannot be automatically resolved and SHALL preserve the existing manual-correction path for authorized reviewers.
+The system SHALL expose an authorized photo-detail view with the current metadata state without treating a failed extraction, unreviewed inference, missing capture time, or unavailable track timeline as a coordinate. The detail view SHALL display an available capture timestamp with an explicit timezone context: a readable display, the stored UTC instant, and whether the EXIF value included UTC/offset evidence or lacked it. Coordinate review controls SHALL explain why a candidate cannot be automatically resolved and SHALL preserve the existing manual-correction path for authorized reviewers.
 
 #### Scenario: Candidate cannot resolve automatically
 
