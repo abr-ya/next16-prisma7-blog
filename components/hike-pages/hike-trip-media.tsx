@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import type { HikePhotoAcceptedCoordinate } from "@/app/_data/hikes";
+import type { HikePhotoAcceptedCoordinate, HikePhotoContributionCapability } from "@/app/_data/hikes";
 import { HikePhotoGallery, type HikePhotoGalleryItem } from "@/components/hike-pages/hike-photo-gallery";
 import { HikeTrackMap } from "@/components/hike-pages/hike-track-map";
 import type { HikeNoteMapMarker } from "@/lib/hike-notes";
@@ -18,6 +18,7 @@ export const HikeTripMedia = ({
   endDate,
   photos,
   canViewFullPhotos,
+  photoContributionCapability,
 }: {
   tracks: TrackMapViewModel[];
   photoMarkers: HikePhotoMapMarker[];
@@ -26,6 +27,7 @@ export const HikeTripMedia = ({
   endDate: Date;
   photos: HikePhotoGalleryItem[];
   canViewFullPhotos: boolean;
+  photoContributionCapability?: HikePhotoContributionCapability | null;
 }) => {
   const [focusCoordinate, setFocusCoordinate] = useState<HikePhotoAcceptedCoordinate | null>(null);
   const hasMap = tracks.length > 0 || photoMarkers.length > 0 || noteMarkers.length > 0;
@@ -49,6 +51,7 @@ export const HikeTripMedia = ({
         canViewFullPhotos={canViewFullPhotos}
         canFocusMap={hasMap}
         onFocusMap={setFocusCoordinate}
+        photoContributionCapability={photoContributionCapability}
       />
     </>
   );

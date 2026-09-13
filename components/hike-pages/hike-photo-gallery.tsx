@@ -4,9 +4,14 @@ import { ChevronLeft, ChevronRight, FileSearch, ImageIcon, MapPin, Route } from 
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
-import { refreshHikePhotoExifMetadata, type HikePhotoDetail } from "@/app/_data/hikes";
+import {
+  refreshHikePhotoExifMetadata,
+  type HikePhotoContributionCapability,
+  type HikePhotoDetail,
+} from "@/app/_data/hikes";
 import { Button, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/index";
 import { HikePhotoCoordinateReview } from "@/components/hike-pages/hike-photo-coordinate-review";
+import { HikePhotoContributionButton } from "@/components/hike-pages/hike-photo-contribution-form";
 import { HikePhotoDetailSummary } from "@/components/hike-pages/hike-photo-detail-summary";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
@@ -27,9 +32,16 @@ type HikePhotoGalleryProps = {
   canViewFullPhotos: boolean;
   canFocusMap: boolean;
   onFocusMap: (coordinate: NonNullable<HikePhotoDetail["acceptedCoordinate"]>) => void;
+  photoContributionCapability?: HikePhotoContributionCapability | null;
 };
 
-export const HikePhotoGallery = ({ photos, canViewFullPhotos, canFocusMap, onFocusMap }: HikePhotoGalleryProps) => {
+export const HikePhotoGallery = ({
+  photos,
+  canViewFullPhotos,
+  canFocusMap,
+  onFocusMap,
+  photoContributionCapability,
+}: HikePhotoGalleryProps) => {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [showDetails, setShowDetails] = useState(false);
   const [exifPhotoId, setExifPhotoId] = useState<string | null>(null);
@@ -99,82 +111,89 @@ export const HikePhotoGallery = ({ photos, canViewFullPhotos, canFocusMap, onFoc
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [activeIndex, canNavigate, photos.length]);
 
-  if (photos.length === 0) return null;
+  if (photos.length === 0 && !photoContributionCapability) return null;
 
   return (
     <>
       <section className="grid gap-3">
-        <h2 className="text-base font-semibold">Photos</h2>
-        <div className="grid gap-4 md:grid-cols-3">
-          {photos.map((photo, index) => {
-            const isOpenable = canViewFullPhotos && Boolean(photo.fullUrl);
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-base font-semibold">Photos</h2>
+          {photoContributionCapability ? (
+            <HikePhotoContributionButton capability={photoContributionCapability} />
+          ) : null}
+        </div>
+        {photos.length > 0 ? (
+          <div className="grid gap-4 md:grid-cols-3">
+            {photos.map((photo, index) => {
+              const isOpenable = canViewFullPhotos && Boolean(photo.fullUrl);
 
-            return (
-              <div key={photo.id} className="overflow-hidden rounded-md border">
-                <div className="aspect-[4/3] bg-muted">
-                  {photo.thumbnailUrl ? (
-                    isOpenable ? (
-                      <button
-                        type="button"
-                        className="size-full cursor-zoom-in"
-                        onClick={() => openPhoto(index)}
-                        aria-label={`Open full photo: ${photo.title}`}
-                      >
+              return (
+                <div key={photo.id} className="overflow-hidden rounded-md border">
+                  <div className="aspect-[4/3] bg-muted">
+                    {photo.thumbnailUrl ? (
+                      isOpenable ? (
+                        <button
+                          type="button"
+                          className="size-full cursor-zoom-in"
+                          onClick={() => openPhoto(index)}
+                          aria-label={`Open full photo: ${photo.title}`}
+                        >
+                          <img src={photo.thumbnailUrl} alt={photo.alt} className="size-full object-cover" />
+                        </button>
+                      ) : (
                         <img src={photo.thumbnailUrl} alt={photo.alt} className="size-full object-cover" />
-                      </button>
+                      )
                     ) : (
-                      <img src={photo.thumbnailUrl} alt={photo.alt} className="size-full object-cover" />
-                    )
-                  ) : (
-                    <div className="flex size-full items-center justify-center text-muted-foreground">
-                      <ImageIcon className="size-6" />
-                    </div>
-                  )}
-                </div>
-                <div className="grid gap-1 p-3">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0 font-medium">{photo.title}</div>
-                    {photo.detail?.canReviewCoordinate ? (
-                      <div className="flex shrink-0 gap-1">
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              aria-label="Refresh EXIF metadata"
-                              onClick={() => setExifPhotoId(photo.id)}
-                            >
-                              <FileSearch />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>EXIF metadata</TooltipContent>
-                        </Tooltip>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              aria-label="Review GPX coordinates"
-                              onClick={() => setCoordinatePhotoId(photo.id)}
-                            >
-                              <Route />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>GPX coordinates</TooltipContent>
-                        </Tooltip>
+                      <div className="flex size-full items-center justify-center text-muted-foreground">
+                        <ImageIcon className="size-6" />
                       </div>
+                    )}
+                  </div>
+                  <div className="grid gap-1 p-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 font-medium">{photo.title}</div>
+                      {photo.detail?.canReviewCoordinate ? (
+                        <div className="flex shrink-0 gap-1">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                aria-label="Refresh EXIF metadata"
+                                onClick={() => setExifPhotoId(photo.id)}
+                              >
+                                <FileSearch />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>EXIF metadata</TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                aria-label="Review GPX coordinates"
+                                onClick={() => setCoordinatePhotoId(photo.id)}
+                              >
+                                <Route />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>GPX coordinates</TooltipContent>
+                          </Tooltip>
+                        </div>
+                      ) : null}
+                    </div>
+                    {photo.description ? (
+                      <p className="line-clamp-2 text-sm text-muted-foreground">{photo.description}</p>
                     ) : null}
                   </div>
-                  {photo.description ? (
-                    <p className="line-clamp-2 text-sm text-muted-foreground">{photo.description}</p>
-                  ) : null}
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        ) : null}
       </section>
 
       <Dialog open={activePhoto !== null} onOpenChange={(open) => (!open ? closeViewer() : undefined)}>

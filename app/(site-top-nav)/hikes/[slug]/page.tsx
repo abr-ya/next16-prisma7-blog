@@ -9,7 +9,6 @@ import {
   getHikePhotoContributionCapabilityBySlug,
   getPublicHikeBySlug,
 } from "@/app/_data/hikes";
-import { HikePhotoContributionForm } from "@/components/hike-pages/hike-photo-contribution-form";
 import { HikeParticipantManager } from "@/components/hike-pages/hike-participant-manager";
 import type { HikePhotoGalleryItem } from "@/components/hike-pages/hike-photo-gallery";
 import { HikeTripMedia } from "@/components/hike-pages/hike-trip-media";
@@ -110,6 +109,7 @@ export const TripPage = async ({ params }: HikePageProps) => {
           endDate={hike.endDate}
           photos={galleryPhotos}
           canViewFullPhotos={canViewFullPhotos}
+          photoContributionCapability={photoContributionCapability}
         />
         {hike.tracks.length > 0 ? (
           <section className="grid gap-3">
@@ -151,7 +151,6 @@ export const TripPage = async ({ params }: HikePageProps) => {
             </div>
           </section>
         ) : null}
-        {photoContributionCapability ? <HikePhotoContributionForm capability={photoContributionCapability} /> : null}
       </article>
     </PageLayout>
   );
