@@ -367,6 +367,7 @@ export const formatTrackRecordingDateTime = (value?: string | null, recordingTim
     day: "numeric",
     hour: "2-digit",
     minute: "2-digit",
+    hourCycle: "h23",
     timeZone: getTrackRecordingTimezone(recordingTimezone),
   }).format(new Date(value));
 };

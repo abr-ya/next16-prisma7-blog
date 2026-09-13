@@ -533,6 +533,7 @@ const dateTimeFormat = new Intl.DateTimeFormat("en", {
   day: "numeric",
   hour: "2-digit",
   minute: "2-digit",
+  hourCycle: "h23",
 });
 
 const utcDateTimeFormat = new Intl.DateTimeFormat("en", {
@@ -541,6 +542,7 @@ const utcDateTimeFormat = new Intl.DateTimeFormat("en", {
   day: "numeric",
   hour: "2-digit",
   minute: "2-digit",
+  hourCycle: "h23",
   timeZone: "UTC",
   timeZoneName: "short",
 });
@@ -567,6 +569,7 @@ export const formatPhotoCapturedAtInTimezone = (value?: string | null, timeZone?
       day: "numeric",
       hour: "2-digit",
       minute: "2-digit",
+      hourCycle: "h23",
       timeZone,
       timeZoneName: "short",
     }).format(new Date(value));
@@ -590,6 +593,23 @@ export const formatPhotoCaptureTimezoneEvidence = (value?: PhotoCaptureTimezoneE
     : value === "MISSING"
       ? "EXIF timezone missing"
       : "Timezone evidence unavailable";
+
+export const formatPhotoCaptureTimeContext = ({
+  capturedAt,
+  timezoneEvidence,
+}: {
+  capturedAt?: string | null;
+  timezoneEvidence?: PhotoCaptureTimezoneEvidence | null;
+}) => {
+  const storedUtc = formatPhotoCapturedAtUtc(capturedAt);
+
+  if (!storedUtc) return null;
+
+  return {
+    storedUtc,
+    timezoneEvidence: formatPhotoCaptureTimezoneEvidence(timezoneEvidence),
+  };
+};
 
 export const formatPhotoDimensions = (width?: number | null, height?: number | null) => {
   if (!isFiniteNumber(width) || !isFiniteNumber(height)) return null;

@@ -9,9 +9,8 @@ import {
   type HikePhotoDetail,
 } from "@/app/_data/hikes";
 import { Badge, Button, Input } from "@/components/index";
-import { formatTrackTimezoneEvidence } from "@/lib/track-gpx-metadata";
-import { formatTrackRecordingDateTime } from "@/lib/track-gpx-metadata";
-import { formatPhotoCapturedAtUtc, formatPhotoCaptureTimezoneEvidence } from "@/lib/photo-exif-metadata";
+import { formatTrackRecordingDateTime, formatTrackTimezoneEvidence } from "@/lib/track-gpx-metadata";
+import { formatPhotoCaptureTimeContext } from "@/lib/photo-exif-metadata";
 
 const candidateLabel = (type: HikePhotoDetail["candidates"][number]["type"], previousDayFinish?: boolean) =>
   type === "INSIDE_TRACK_WINDOW"
@@ -21,6 +20,18 @@ const candidateLabel = (type: HikePhotoDetail["candidates"][number]["type"], pre
         ? "Yesterday's finish"
         : "After track finish"
       : "Between tracks";
+
+const formatCandidateTrackContext = (candidate: HikePhotoDetail["candidates"][number]) => {
+  if (candidate.type === "INSIDE_TRACK_WINDOW") {
+    return `${formatTrackRecordingDateTime(candidate.trackStart, candidate.recordingTimezone)} – ${formatTrackRecordingDateTime(candidate.trackEnd, candidate.recordingTimezone)} (${candidate.recordingTimezone ?? "UTC (unconfirmed)"})`;
+  }
+
+  if (candidate.type === "AFTER_TRACK_FINISH") {
+    return `${formatTrackRecordingDateTime(candidate.trackEnd, candidate.recordingTimezone)} (${candidate.recordingTimezone ?? "UTC (unconfirmed)"})`;
+  }
+
+  return `${formatTrackRecordingDateTime(candidate.previousTrackEnd, candidate.previousRecordingTimezone)} (${candidate.previousRecordingTimezone ?? "UTC (unconfirmed)"}) – ${formatTrackRecordingDateTime(candidate.nextTrackStart, candidate.nextRecordingTimezone)} (${candidate.nextRecordingTimezone ?? "UTC (unconfirmed)"})`;
+};
 
 export const HikePhotoCoordinateReview = ({
   detail,
@@ -82,15 +93,18 @@ export const HikePhotoCoordinateReview = ({
             </div>
             <p>{candidate.explanation}</p>
             <p className="text-muted-foreground">
-              Photo: {formatPhotoCapturedAtUtc(candidate.capturedAt) ?? candidate.capturedAt} · {formatPhotoCaptureTimezoneEvidence(detail.captureSummary?.captureTimeTimezoneEvidence)}
+              {(() => {
+                const context = formatPhotoCaptureTimeContext({
+                  capturedAt: candidate.capturedAt,
+                  timezoneEvidence: detail.captureSummary?.captureTimeTimezoneEvidence,
+                });
+
+                return context
+                  ? `Photo UTC: ${context.storedUtc} · ${context.timezoneEvidence}`
+                  : "Photo capture time is unavailable";
+              })()}
             </p>
-            {candidate.type === "INSIDE_TRACK_WINDOW" || candidate.type === "AFTER_TRACK_FINISH" ? (
-              <p className="text-muted-foreground">
-                Track: {candidate.type === "INSIDE_TRACK_WINDOW"
-                  ? `${formatTrackRecordingDateTime(candidate.trackStart, candidate.recordingTimezone)} – ${formatTrackRecordingDateTime(candidate.trackEnd, candidate.recordingTimezone)}`
-                  : formatTrackRecordingDateTime(candidate.trackEnd, candidate.recordingTimezone)} ({candidate.recordingTimezone ?? "UTC (unconfirmed)"})
-              </p>
-            ) : null}
+            <p className="text-muted-foreground">Track: {formatCandidateTrackContext(candidate)}</p>
             {candidate.proposedCoordinate ? (
               <p className="text-muted-foreground">
                 Proposed {candidate.proposedCoordinate.lat.toFixed(5)}, {candidate.proposedCoordinate.lng.toFixed(5)}

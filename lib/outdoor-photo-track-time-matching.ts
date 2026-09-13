@@ -76,7 +76,8 @@ export type TrackTimeMatchCandidate =
       proposedCoordinate: TrackGpxCoordinate | null;
       hasTimedTimeline: boolean;
       timezoneEvidence: TrackGpxTimezoneEvidence | null;
-      recordingTimezone: string | null;
+      previousRecordingTimezone: string | null;
+      nextRecordingTimezone: string | null;
       confidence: "HIGH" | "MEDIUM" | "LOW" | null;
     }
   | {
@@ -174,7 +175,8 @@ const withResolvedPlacement = (
     trackEnd: string;
     explanation: string;
   },
-  tracksById: Map<string, TrackTimelineLookup>, displayTracksById: Map<string, TrackTimeMatchTrackInput>,
+  tracksById: Map<string, TrackTimelineLookup>,
+  displayTracksById: Map<string, TrackTimeMatchTrackInput>,
 ): TrackTimeMatchCandidate => {
   const track = tracksById.get(candidate.trackId);
   const resolved = resolveTrackTimeMatchCoordinate(
@@ -215,6 +217,7 @@ const withResolvedBetweenPlacement = (
     explanation: string;
   },
   tracksById: Map<string, TrackTimelineLookup>,
+  displayTracksById: Map<string, TrackTimeMatchTrackInput>,
 ): TrackTimeMatchCandidate => {
   const resolved = resolveTrackTimeMatchCoordinate(
     {
@@ -233,7 +236,8 @@ const withResolvedBetweenPlacement = (
     proposedCoordinate: resolved ? { lat: resolved.lat, lng: resolved.lng } : null,
     hasTimedTimeline: false,
     timezoneEvidence: null,
-    recordingTimezone: null,
+    previousRecordingTimezone: displayTracksById.get(candidate.previousTrackId)?.recordingTimezone ?? null,
+    nextRecordingTimezone: displayTracksById.get(candidate.nextTrackId)?.recordingTimezone ?? null,
     confidence: resolved?.confidence ?? null,
   };
 };
@@ -255,7 +259,8 @@ const withResolvedAfterFinishPlacement = (
     nextTrackTitle: string | null;
     explanation: string;
   },
-  tracksById: Map<string, TrackTimelineLookup>, displayTracksById: Map<string, TrackTimeMatchTrackInput>,
+  tracksById: Map<string, TrackTimelineLookup>,
+  displayTracksById: Map<string, TrackTimeMatchTrackInput>,
 ): TrackTimeMatchCandidate => {
   const track = tracksById.get(candidate.trackId);
   const resolved = resolveTrackTimeMatchCoordinate(
@@ -327,7 +332,8 @@ export const proposeTrackTimeMatchCandidates = (
           trackEnd: track.recordingTime.end,
           explanation: `Captured inside the recording window for ${track.title}.`,
         },
-        tracksById, displayTracksById,
+        tracksById,
+        displayTracksById,
       ),
     );
 
@@ -370,6 +376,7 @@ export const proposeTrackTimeMatchCandidates = (
           explanation: `Captured between ${previousTrack.title} and ${nextTrack.title}; gap is ${formatMinutes(gapSeconds)} and ${distanceCopy}.`,
         },
         tracksById,
+        displayTracksById,
       ),
     ];
   });
@@ -432,7 +439,8 @@ export const proposeTrackTimeMatchCandidates = (
           nextTrackTitle: nextTrack?.title ?? null,
           explanation,
         },
-        tracksById, displayTracksById,
+        tracksById,
+        displayTracksById,
       ),
     ];
   });

@@ -66,7 +66,7 @@ import {
 import type { HikeNoteStatus, HikeStatus, HikeType } from "@/generated/prisma/enums";
 import { formatHikeStatus, formatHikeType, hikeStatusOptions, hikeTypeOptions } from "@/lib/hikes";
 import { formatHikeNoteStatus, hikeNoteStatusOptions } from "@/lib/hike-notes";
-import { formatPhotoCapturedAtUtc, formatPhotoCaptureTimezoneEvidence, formatPhotoMapCoordinateStatus } from "@/lib/photo-exif-metadata";
+import { formatPhotoCaptureTimeContext, formatPhotoMapCoordinateStatus } from "@/lib/photo-exif-metadata";
 import {
   proposeTrackTimeMatchCandidates,
   type TrackTimeMatchCandidate,
@@ -75,7 +75,7 @@ import {
 import { formatPhotoStatus } from "@/lib/photos";
 import { createSlug } from "@/lib/slug-generator";
 import { formatTrackStatus } from "@/lib/tracks";
-import { formatTrackTimezoneEvidence } from "@/lib/track-gpx-metadata";
+import { formatTrackRecordingDateTime, formatTrackTimezoneEvidence } from "@/lib/track-gpx-metadata";
 
 const formSchema = z
   .object({
@@ -121,14 +121,17 @@ const formatDate = (value: Date | string) =>
 
 const getDateRange = (hike: HikeListItem) => `${formatDate(hike.startDate)} - ${formatDate(hike.endDate)}`;
 
-const formatDateTime = (value: string) =>
-  new Intl.DateTimeFormat("en", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(value));
+const formatCandidateTrackContext = (candidate: TrackTimeMatchCandidate) => {
+  if (candidate.type === "INSIDE_TRACK_WINDOW") {
+    return `${formatTrackRecordingDateTime(candidate.trackStart, candidate.recordingTimezone)} – ${formatTrackRecordingDateTime(candidate.trackEnd, candidate.recordingTimezone)} (${candidate.recordingTimezone ?? "UTC (unconfirmed)"})`;
+  }
+
+  if (candidate.type === "AFTER_TRACK_FINISH") {
+    return `${formatTrackRecordingDateTime(candidate.trackEnd, candidate.recordingTimezone)} (${candidate.recordingTimezone ?? "UTC (unconfirmed)"})`;
+  }
+
+  return `${formatTrackRecordingDateTime(candidate.previousTrackEnd, candidate.previousRecordingTimezone)} (${candidate.previousRecordingTimezone ?? "UTC (unconfirmed)"}) – ${formatTrackRecordingDateTime(candidate.nextTrackStart, candidate.nextRecordingTimezone)} (${candidate.nextRecordingTimezone ?? "UTC (unconfirmed)"})`;
+};
 
 const isCoordinate = (value: unknown): value is { lat: number; lng: number } =>
   typeof value === "object" &&
@@ -882,7 +885,16 @@ const HikePhotosDialog = ({
           <div className="grid max-h-[60vh] gap-3 overflow-y-auto pr-1">
             {matchingPhoto?.trackTimeMatch.capturedAt ? (
               <div className="text-sm text-muted-foreground">
-                Captured at {formatDateTime(matchingPhoto.trackTimeMatch.capturedAt)}
+                {(() => {
+                  const context = formatPhotoCaptureTimeContext({
+                    capturedAt: matchingPhoto.trackTimeMatch.capturedAt,
+                    timezoneEvidence: matchingPhoto.trackTimeMatch.captureTimeTimezoneEvidence,
+                  });
+
+                  return context
+                    ? `Photo UTC: ${context.storedUtc} · ${context.timezoneEvidence}`
+                    : "Photo capture time is unavailable";
+                })()}
               </div>
             ) : null}
             {matchingPhoto?.mapCoordinate ? (
@@ -973,23 +985,18 @@ const HikePhotosDialog = ({
                     </div>
                     <div className="text-sm">{candidate.explanation}</div>
                     <div className="text-xs text-muted-foreground">
-                      Photo UTC: {formatPhotoCapturedAtUtc(candidate.capturedAt) ?? candidate.capturedAt} · {formatPhotoCaptureTimezoneEvidence(matchingPhoto?.trackTimeMatch.captureTimeTimezoneEvidence)}
+                      {(() => {
+                        const context = formatPhotoCaptureTimeContext({
+                          capturedAt: candidate.capturedAt,
+                          timezoneEvidence: matchingPhoto?.trackTimeMatch.captureTimeTimezoneEvidence,
+                        });
+
+                        return context
+                          ? `Photo UTC: ${context.storedUtc} · ${context.timezoneEvidence}`
+                          : "Photo capture time is unavailable";
+                      })()}
                     </div>
-                    <div className="text-xs text-muted-foreground">
-                      {candidate.type === "INSIDE_TRACK_WINDOW"
-                        ? `${formatDateTime(candidate.trackStart)} - ${formatDateTime(candidate.trackEnd)}`
-                        : candidate.type === "AFTER_TRACK_FINISH"
-                          ? candidate.previousDayFinish
-                            ? `Finished ${formatDateTime(candidate.trackEnd)} · window until ${
-                                candidate.windowEndsAt
-                                  ? `${formatDateTime(candidate.windowEndsAt)}${
-                                      candidate.windowEndTrackTitle ? ` (${candidate.windowEndTrackTitle})` : ""
-                                    }`
-                                  : "first track of capture day (none yet)"
-                              }`
-                            : `Finished ${formatDateTime(candidate.trackEnd)} · gap ${Math.round(candidate.gapSeconds / 60)} min`
-                          : `${formatDateTime(candidate.previousTrackEnd)} - ${formatDateTime(candidate.nextTrackStart)}`}
-                    </div>
+                    <div className="text-xs text-muted-foreground">Track: {formatCandidateTrackContext(candidate)}</div>
                     {candidate.proposedCoordinate ? (
                       <div className="text-xs text-muted-foreground">
                         Proposed {candidate.proposedCoordinate.lat.toFixed(5)},{" "}
