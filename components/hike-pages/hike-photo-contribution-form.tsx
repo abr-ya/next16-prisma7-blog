@@ -8,7 +8,7 @@ import { contributePhotoToHike, type HikePhotoContributionCapability } from "@/a
 import { PhotoUploadDialog, type PhotoUploadDialogValues } from "@/components/common/photo-upload-dialog";
 import { Button } from "@/components/index";
 
-export const HikePhotoContributionForm = ({ capability }: { capability: HikePhotoContributionCapability }) => {
+export const HikePhotoContributionButton = ({ capability }: { capability: HikePhotoContributionCapability }) => {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const limitReached = capability.remainingPhotoCount === 0;
@@ -30,20 +30,18 @@ export const HikePhotoContributionForm = ({ capability }: { capability: HikePhot
   };
 
   return (
-    <section className="flex flex-wrap items-center gap-3 rounded-md border p-4">
-      <div className="mr-auto grid gap-1">
-        <h2 className="text-base font-semibold">Trip photos</h2>
-        <p className="text-sm text-muted-foreground">
-          {capability.remainingPhotoCount === null
-            ? "Add one photo with up to three images."
-            : limitReached
-              ? "You have reached your 10-photo limit for this trip."
-              : `${capability.remainingPhotoCount} of 10 photo contributions remaining for this trip.`}
-        </p>
+    <>
+      <div className="flex items-center gap-2">
+        <Button
+          type="button"
+          disabled={limitReached}
+          title={limitReached ? "You have reached your 10-photo limit for this trip." : undefined}
+          onClick={() => setOpen(true)}
+        >
+          Add photo
+        </Button>
+        {limitReached ? <span className="text-xs text-muted-foreground">10-photo limit reached</span> : null}
       </div>
-      <Button type="button" disabled={limitReached} onClick={() => setOpen(true)}>
-        Add photo
-      </Button>
       <PhotoUploadDialog
         open={open}
         onOpenChange={setOpen}
@@ -51,6 +49,6 @@ export const HikePhotoContributionForm = ({ capability }: { capability: HikePhot
         submitLabel="Add photo"
         onSubmit={submit}
       />
-    </section>
+    </>
   );
 };
