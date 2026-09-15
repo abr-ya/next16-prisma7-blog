@@ -85,6 +85,7 @@ Cancelled or deferred candidates do not reserve feature numbers.
 | feature-075 | feature-075-outdoor-track-source-timezone-selection | outdoor/tracks-time | Add per-track recording-timezone selection, timezone-stable GPX time rendering across admin/public track and trip surfaces, and explicit photo capture-time provenance with admin diagnostics. |
 | feature-076 | feature-076-outdoor-photo-capture-time-context | outdoor/photos-time | Add explicit 24-hour UTC photo capture context and timezone-evidence labels to authorized photo details and coordinate-review candidates without changing matching behavior. |
 | feature-077 | feature-077-outdoor-trip-photo-add-header | outdoor/trips-photos | Move the authorized public trip `Add photo` action from the bottom contribution panel into the Photos section header while preserving contribution authorization, quota, and upload behavior. |
+| feature-078 | feature-078-outdoor-trip-photo-lightbox-overlay-polish | outdoor/photos | Add a photo position counter and a stable semi-transparent authorized-details overlay to the authenticated trip photo lightbox. |
 
 ## Cancelled Candidate Notes
 
