@@ -217,6 +217,7 @@ The system SHALL show associated published photos on published hike detail pages
 - **THEN** the page shows the linked photo set within the hike detail experience
 - **AND** the user can open a large-photo viewer for those photos
 - **AND** the viewer renders linked photos in the hike-specific stored order
+- **AND** the viewer identifies the active photo's ordinal and the total number of linked photos
 
 #### Scenario: Visitor opens hike with no public linked photos
 
@@ -672,13 +673,14 @@ The system SHALL preserve existing public visibility boundaries when map layers 
 
 ### Requirement: Authorized trip photo viewer exposes photo details
 
-The system SHALL let an authenticated viewer who is the linked photo owner, the published trip creator, an accepted active trip participant, or an administrator open a details view from that trip's photo card or large-photo viewer. The details view SHALL show the extracted capture summary that is available for the photo, the accepted coordinate when present, and the coordinate source and confidence/provenance. Anonymous visitors and signed-in users without that trip relationship SHALL retain the existing image-only gallery and SHALL NOT receive the new metadata or exact-coordinate projection.
+The system SHALL let an authenticated viewer who is the linked photo owner, the published trip creator, an accepted active trip participant, or an administrator open a details view from that trip's photo card or large-photo viewer. The details view SHALL show the extracted capture summary that is available for the photo, the accepted coordinate when present, and the coordinate source and confidence/provenance. In the large-photo viewer, the details view SHALL render as a compact semi-transparent overlay over the displayed image, and opening or closing it SHALL NOT change the dialog geometry or require dialog scrolling. Anonymous visitors and signed-in users without that trip relationship SHALL retain the existing image-only gallery and SHALL NOT receive the new metadata or exact-coordinate projection.
 
 #### Scenario: Authorized participant opens photo details
 
-- **WHEN** an accepted active participant opens a published trip photo's details view
-- **THEN** the system displays available capture date, camera, dimensions, exposure, GPS presence, and accepted coordinate provenance
+- **WHEN** an accepted active participant opens a published trip photo's details view from the large-photo viewer
+- **THEN** the system displays available capture date, camera, dimensions, exposure, GPS presence, and accepted coordinate provenance in an overlay over that photo
 - **AND** unavailable metadata or coordinates are represented without an extraction error detail or invented location
+- **AND** the viewer remains at the same dialog size without requiring scroll caused by the details view
 
 #### Scenario: Unrelated viewer opens a photo
 
