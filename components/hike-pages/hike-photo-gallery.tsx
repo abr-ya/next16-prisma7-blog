@@ -200,7 +200,7 @@ export const HikePhotoGallery = ({
         <DialogContent
           showCloseButton
           className={cn(
-            "max-h-[calc(100dvh-2rem)] gap-3 overflow-y-auto border-none bg-black/95 p-3 text-white sm:max-w-[min(96vw,72rem)]",
+            "max-h-[calc(100dvh-2rem)] gap-3 overflow-hidden border-none bg-black/95 p-3 text-white sm:max-w-[min(96vw,72rem)]",
             "top-[50%] left-[50%] translate-x-[-50%] translate-y-[-50%]",
           )}
           aria-describedby="hike-photo-viewer-description"
@@ -208,7 +208,12 @@ export const HikePhotoGallery = ({
           {activePhoto ? (
             <>
               <DialogHeader className="gap-1 pr-8 text-left">
-                <DialogTitle className="text-white">{activePhoto.title}</DialogTitle>
+                <div className="flex items-center justify-between gap-3">
+                  <DialogTitle className="text-white">{activePhoto.title}</DialogTitle>
+                  <span className="shrink-0 text-sm text-white/70" aria-live="polite">
+                    {`${(activeIndex ?? 0) + 1} of ${photos.length}`}
+                  </span>
+                </div>
                 <DialogDescription id="hike-photo-viewer-description" className="text-white/70">
                   {activePhoto.description || "Linked hike photo"}
                 </DialogDescription>
@@ -245,45 +250,49 @@ export const HikePhotoGallery = ({
                     </Button>
                   </>
                 ) : null}
-              </div>
-              {activePhoto.detail ? (
-                <div className="flex justify-end">
+                {showDetails && activePhoto.detail ? (
+                  <div className="absolute inset-x-3 bottom-3 max-h-[calc(100%-1.5rem)] overflow-y-auto rounded-md bg-white/75 p-3 text-foreground shadow-lg backdrop-blur-sm sm:max-w-xl">
+                    <div className="mb-3 flex justify-end">
+                      <Button type="button" size="sm" variant="secondary" onClick={() => setShowDetails(false)}>
+                        Hide details
+                      </Button>
+                    </div>
+                    <HikePhotoDetailSummary
+                      captureSummary={activePhoto.detail.captureSummary}
+                      acceptedCoordinate={activePhoto.detail.acceptedCoordinate}
+                      linkedTrackTimezones={activePhoto.detail.linkedTrackTimezones}
+                      adminExifMetadata={activePhoto.detail.adminExifMetadata}
+                    />
+                    {canFocusMap && activePhoto.detail.acceptedCoordinate ? (
+                      <div className="mt-4 flex justify-end">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            onFocusMap(activePhoto.detail!.acceptedCoordinate!);
+                            closeViewer();
+                          }}
+                        >
+                          <MapPin />
+                          Show on map
+                        </Button>
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
+                {activePhoto.detail && !showDetails ? (
                   <Button
                     type="button"
                     size="sm"
                     variant="secondary"
-                    onClick={() => setShowDetails((current) => !current)}
+                    className="absolute right-3 bottom-3"
+                    onClick={() => setShowDetails(true)}
                   >
-                    {showDetails ? "Hide details" : "Photo details"}
+                    Photo details
                   </Button>
-                </div>
-              ) : null}
-              {showDetails && activePhoto.detail ? (
-                <div className="grid gap-4 rounded-md bg-white p-4 text-foreground">
-                  <HikePhotoDetailSummary
-                    captureSummary={activePhoto.detail.captureSummary}
-                    acceptedCoordinate={activePhoto.detail.acceptedCoordinate}
-                    linkedTrackTimezones={activePhoto.detail.linkedTrackTimezones}
-                    adminExifMetadata={activePhoto.detail.adminExifMetadata}
-                  />
-                  {canFocusMap && activePhoto.detail.acceptedCoordinate ? (
-                    <div className="flex justify-end">
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          onFocusMap(activePhoto.detail!.acceptedCoordinate!);
-                          closeViewer();
-                        }}
-                      >
-                        <MapPin />
-                        Show on map
-                      </Button>
-                    </div>
-                  ) : null}
-                </div>
-              ) : null}
+                ) : null}
+              </div>
             </>
           ) : null}
         </DialogContent>
