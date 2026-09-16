@@ -28,6 +28,13 @@ export const TripsPage = async () => {
               <Card key={hike.id} className="h-full gap-3">
                 <CardHeader className="gap-3">
                   <div className="flex flex-wrap gap-2">
+                    <Badge variant={hike.viewerStatus === "creator" ? "default" : "outline"}>
+                      {hike.viewerStatus === "creator"
+                        ? "My trip"
+                        : hike.viewerStatus === "participant"
+                          ? "Participant"
+                          : "Public trip"}
+                    </Badge>
                     <Badge variant="secondary">{formatHikeType(hike.type)}</Badge>
                     <Badge variant="outline">
                       <CalendarDays className="size-3.5" />

@@ -344,6 +344,12 @@ export type HikeListItem = Prisma.HikeGetPayload<{
   include: typeof hikeListInclude;
 }>;
 
+export type HikeViewerStatus = "creator" | "participant" | "viewer";
+
+export type PublicHikeListItem = HikeListItem & {
+  viewerStatus: HikeViewerStatus;
+};
+
 type PublicHikeRecord = Prisma.HikeGetPayload<{
   include: typeof publicHikeInclude;
 }>;
@@ -1141,14 +1147,33 @@ export const refreshHikePhotoExifMetadata = async ({ hikeId, photoId }: { hikeId
   return metadataToPersist;
 };
 
-export const getPublicHikes = async (): Promise<HikeListItem[]> => {
+export const getPublicHikes = async (): Promise<PublicHikeListItem[]> => {
+  const session = await authSession();
   const { default: prisma } = await import("@/lib/prisma");
 
-  return prisma.hike.findMany({
+  const hikes = (await prisma.hike.findMany({
     where: { status: "PUBLISHED" },
     include: hikeListInclude,
     orderBy: [{ startDate: "desc" }, { createdAt: "desc" }],
-  });
+  })) as HikeListItem[];
+
+  if (!session) return hikes.map((hike) => ({ ...hike, viewerStatus: "viewer" }));
+
+  const acceptedParticipations = (await prisma.hikeParticipant.findMany({
+    where: {
+      userId: session.user.id,
+      status: "ACCEPTED",
+      hike: { status: "PUBLISHED" },
+    },
+    select: { hikeId: true },
+  })) as { hikeId: string }[];
+  const participantHikeIds = new Set(acceptedParticipations.map((participation) => participation.hikeId));
+
+  return hikes.map((hike) => ({
+    ...hike,
+    viewerStatus:
+      hike.userId === session.user.id ? "creator" : participantHikeIds.has(hike.id) ? "participant" : "viewer",
+  }));
 };
 
 export const getPublicHikeBySlug = async (slug: string): Promise<PublicHike | null> => {
