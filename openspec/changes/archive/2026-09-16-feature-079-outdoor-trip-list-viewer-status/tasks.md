@@ -11,5 +11,5 @@
 ## 3. Verification and documentation
 
 - [x] 3.1 Run `npm run tsc` and targeted ESLint for the changed public route/data files.
-- [ ] 3.2 Ask for or perform local browser checks as an anonymous visitor, trip owner, accepted participant, and unrelated signed-in user; include a pending or expired invitation case when suitable data exists.
-- [ ] 3.3 Ask the user to run `npm run build` locally and record the result, then update the feature checklist and backlog/history workflow state as appropriate.
+- [x] 3.2 Ask for or perform local browser checks as an anonymous visitor, trip owner, accepted participant, and unrelated signed-in user; include a pending or expired invitation case when suitable data exists.
+- [x] 3.3 Local `npm run build` completed successfully on 2026-09-16; update the feature checklist and backlog/history workflow state as appropriate.
