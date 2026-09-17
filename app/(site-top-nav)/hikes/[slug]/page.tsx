@@ -7,6 +7,7 @@ import {
   getHikeParticipantManagementBySlug,
   getHikePhotoDetail,
   getHikePhotoContributionCapabilityBySlug,
+  getPublicHikePhotoLikeStates,
   getPublicHikeBySlug,
 } from "@/app/_data/hikes";
 import { HikeParticipantManager } from "@/components/hike-pages/hike-participant-manager";
@@ -58,6 +59,12 @@ export const TripPage = async ({ params }: HikePageProps) => {
   if (!hike) notFound();
 
   const canViewFullPhotos = Boolean(session?.user?.id);
+  const photoLikeStates = session
+    ? await getPublicHikePhotoLikeStates({
+        hikeId: hike.id,
+        photoIds: hike.photos.map(({ photo }) => photo.id),
+      })
+    : {};
   const mappedTracks = hike.tracks.flatMap(({ track }) => (track.map ? [track.map] : []));
   const photoMapMarkers = hike.photoMapMarkers;
   const noteMapMarkers = hike.noteMapMarkers;
@@ -69,12 +76,14 @@ export const TripPage = async ({ params }: HikePageProps) => {
 
     return {
       id: photo.id,
+      hikeId: hike.id,
       title: photo.title,
       description: photo.description,
       alt: preview?.name || photo.title,
       thumbnailUrl: preview ? `/files/${preview.id}/thumbnail` : null,
       fullUrl: canViewFullPhotos && preview ? `/files/${preview.id}/download?disposition=inline` : null,
       detail: photoDetails.find((detail) => detail?.photoId === photo.id) ?? null,
+      isLikedByViewer: photoLikeStates[photo.id]?.isLikedByViewer ?? false,
     };
   });
 

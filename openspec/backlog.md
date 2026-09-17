@@ -51,8 +51,6 @@ These candidates track the hikes/tracks/photos initiative as small increments. T
 | Order | Status | Candidate | Area | Summary |
 | --- | --- | --- | --- | --- |
 | 11a | Candidate | outdoor-hike-map-note-placement | outdoor/maps-notes | Let admins start a hike note directly from the map: click a coordinate, open the existing note form with latitude/longitude prefilled, then save its text, visibility, and optional hike-day assignment. Keep map-click placement separate from the base note domain. |
-| 12 | Candidate | outdoor-photo-reaction-model-exploration | outdoor/photos-social | Explore simple likes (preferred over a richer rating model) for hike-linked photos: signed-in identity, duplicate prevention, public counts, and privacy boundaries. Keep text comments out of this slice — see `outdoor-photo-comments`. |
-| 13 | Candidate | outdoor-photo-comments | outdoor/photos-social | Add signed-in comments on hike-linked photos (create/list, visibility through published hike association, own edit/delete policy) after the gallery viewer and preferably after a likes spike proves the social surface. Reuse the shared comment domain patterns from video comments rather than inventing a photo-only comment stack. |
 | Candidate | outdoor-trip-internal-domain-api-rename | outdoor/domain | Follow feature-069 by renaming internal Hike TypeScript and Prisma APIs to Trip with mapped existing storage and a reviewed data-preserving migration; keep it separate from public route compatibility. |
 | 15 | In Progress | feature-070-outdoor-trip-participants | outdoor/trips-users | Let trip owners invite existing site users by email; invitations require acceptance before membership, preserve admin override, and establish the permission base for later public contributions. |
 | 16 | Candidate | outdoor-trip-map-photo-lightbox | outdoor/maps-photos | Let a map-photo marker open the existing trip photo lightbox for the selected photo, including a selectable list when several photos share coordinates. Reuse the current authenticated full-photo boundary; for guests, show a clear message that sign-in is required to view the full photo without exposing its full-size URL. |
@@ -74,6 +72,7 @@ These candidates track the hikes/tracks/photos initiative as small increments. T
 
 | Status | Candidate | Area | Summary |
 | --- | --- | --- | --- |
+| P0 Now | outdoor-photo-comments | outdoor/photos-social | Add signed-in comments on hike-linked photos (create/list, visibility through published trip association, and own edit/delete policy). Reuse the shared comment domain patterns from video comments rather than inventing a photo-only comment stack. |
 | Ready | admin-post-save-disabled-until-interaction | posts/admin | Analyze and fix admin post create/edit **Save changes** staying disabled until blur/scroll/console interaction. Reproduced more than once on `/admin/posts/new`. Likely `PostForm` validation gating (`mode: "onBlur"` + `disabled={!form.formState.isValid}`); confirm repro, then make save enable when required fields are valid without needing extra UI noise. |
 
 ## P1 Soon
@@ -108,7 +107,6 @@ These candidates track the hikes/tracks/photos initiative as small increments. T
 | Status | Candidate | Area | Summary |
 | --- | --- | --- | --- |
 | Candidate | outdoor-photo-multi-image-vs-single-row-model | outdoor/photos | Decide whether a Photo should keep 1-3 bundled image files with aggregated EXIF summary, or whether multi-file uploads should create one Photo row per image so each row owns its own EXIF/GPS. Revisit before albums/gallery/map-marker slices lean harder on the current multi-image Photo shape. |
-| Candidate | outdoor-photo-comments | outdoor/photos-social | Signed-in comments on hike-linked photos after gallery + preferably likes; reuse shared comment domain from video comments. Kept separate from `outdoor-photo-reaction-model-exploration`. |
 | Candidate | video-search | video/search | Add broader video search across title, URL, channel, tags, notes, bookmarks, comments, and extracted metadata. |
 | Candidate | video-import-export | video/tools | Add import and export workflows for saved video links. |
 | Candidate | video-admin-bulk-actions | video/admin | Add bulk actions to the admin video table. |
