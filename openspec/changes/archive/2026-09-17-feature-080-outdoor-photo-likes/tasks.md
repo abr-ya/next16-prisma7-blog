@@ -18,5 +18,5 @@
 ## 4. Verification and documentation
 
 - [x] 4.1 Re-run `npm run tsc` and targeted ESLint for changed files.
-- [ ] 4.2 Ask for or perform manual browser checks as an anonymous visitor and as a signed-in user: top-right overlay placement, sign-in-required state, like, unlike, refresh persistence, and duplicate-click behavior.
-- [ ] 4.3 Ask the user to run `npm run build` locally and record the result.
+- [x] 4.2 Ask for or perform manual browser checks as an anonymous visitor and as a signed-in user: top-right overlay placement, sign-in-required state, like, unlike, refresh persistence, and duplicate-click behavior. (Manual browser verification reported successful on 2026-09-17.)
+- [x] 4.3 Ask the user to run `npm run build` locally and record the result. (Passed locally on 2026-09-17.)

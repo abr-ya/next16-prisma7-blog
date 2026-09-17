@@ -87,6 +87,7 @@ Cancelled or deferred candidates do not reserve feature numbers.
 | feature-077 | feature-077-outdoor-trip-photo-add-header | outdoor/trips-photos | Move the authorized public trip `Add photo` action from the bottom contribution panel into the Photos section header while preserving contribution authorization, quota, and upload behavior. |
 | feature-078 | feature-078-outdoor-trip-photo-lightbox-overlay-polish | outdoor/photos | Add a photo position counter and a stable semi-transparent authorized-details overlay to the authenticated trip photo lightbox. |
 | feature-079 | feature-079-outdoor-trip-list-viewer-status | outdoor/trips-users | Show each viewer whether a published trip is their own, one where they are an accepted participant, or another public trip directly on its `/trips` card. |
+| feature-080 | feature-080-outdoor-photo-likes | outdoor/photos-social | Add private signed-in likes for published trip photos, including duplicate prevention, visibility-safe server reads, a future own-liked-photo read, and a semi-transparent top-right heart control without public counts. |
 
 ## Cancelled Candidate Notes
 
