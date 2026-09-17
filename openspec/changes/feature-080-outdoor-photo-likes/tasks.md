@@ -1,21 +1,22 @@
 ## 1. Photo-like data foundation
 
-- [ ] 1.1 Add the one-user-per-photo `PhotoLike` Prisma relation, indexes, cascade behavior, and a new forward migration; regenerate the Prisma client without editing generated files.
-- [ ] 1.2 Add bounded public-trip photo-like reads that return aggregate counts and only the signed-in viewer's liked state.
+- [x] 1.1 Add the one-user-per-photo `PhotoLike` Prisma relation, indexes, cascade behavior, and a new forward migration; regenerate the Prisma client without editing generated files.
+- [x] 1.2 Update bounded public-trip photo-like reads to return only the signed-in viewer's liked state, with identity-free anonymous payloads.
+- [x] 1.3 Add a server-only current-user liked-photo read that returns only currently public eligible photo/trip data for a future private surface.
 
 ## 2. Server-authoritative interaction
 
-- [ ] 2.1 Add authenticated like/unlike actions that verify the current photo is published and linked to the specified published trip before mutation.
-- [ ] 2.2 Make duplicate and repeated requests idempotent, revalidate the affected trip path, and return safe user-facing failures without private relationship data.
+- [x] 2.1 Add authenticated like/unlike actions that verify the current photo is published and linked to the specified published trip before mutation.
+- [x] 2.2 Make duplicate and repeated requests idempotent, revalidate the affected trip path, and return safe user-facing failures without private relationship data.
 
 ## 3. Public gallery UI
 
-- [ ] 3.1 Extend public trip gallery item data with the count and viewer state, while keeping anonymous payloads identity-free.
-- [ ] 3.2 Render accessible like count and toggle controls on eligible trip photo cards, including an unauthenticated sign-in-required state.
-- [ ] 3.3 Preserve existing thumbnail, full-photo viewer, contribution, coordinate-review, and responsive gallery behavior.
+- [x] 3.1 Remove aggregate like-count data from public trip gallery items while keeping the signed-in viewer state private.
+- [x] 3.2 Render an accessible semi-transparent top-right photo-overlay toggle on eligible trip photo cards, including an unauthenticated sign-in-required state.
+- [x] 3.3 Preserve existing thumbnail, full-photo viewer, contribution, coordinate-review, and responsive gallery behavior.
 
 ## 4. Verification and documentation
 
-- [ ] 4.1 Run Prisma schema/migration validation, `npm run tsc`, and targeted ESLint for all changed non-`app` files.
-- [ ] 4.2 Ask for or perform manual browser checks as an anonymous visitor and as a signed-in user: like, unlike, refresh persistence, duplicate-click behavior, and an ineligible photo attempt.
-- [ ] 4.3 Ask the user to run `npm run build` locally; record the result and update the OpenSpec checklist, specs, backlog, and history workflow state as appropriate.
+- [x] 4.1 Re-run `npm run tsc` and targeted ESLint for changed files.
+- [ ] 4.2 Ask for or perform manual browser checks as an anonymous visitor and as a signed-in user: top-right overlay placement, sign-in-required state, like, unlike, refresh persistence, and duplicate-click behavior.
+- [ ] 4.3 Ask the user to run `npm run build` locally and record the result.

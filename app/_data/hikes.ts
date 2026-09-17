@@ -395,6 +395,32 @@ export type HikePhotoContributionCapability = {
   remainingPhotoCount: number | null;
 };
 
+export type HikePhotoLikeState = {
+  isLikedByViewer: boolean;
+};
+
+export type MyLikedHikePhoto = {
+  id: string;
+  likedAt: Date;
+  photo: {
+    id: string;
+    title: string;
+    description: string | null;
+    trips: { id: string; slug: string; title: string }[];
+  };
+};
+
+type MyLikedHikePhotoRecord = {
+  id: string;
+  createdAt: Date;
+  photo: {
+    id: string;
+    title: string;
+    description: string | null;
+    hikes: { hike: { id: string; slug: string; title: string } }[];
+  };
+};
+
 export type HikePhotoAcceptedCoordinate = {
   lat: number;
   lng: number;
@@ -1185,6 +1211,123 @@ export const getPublicHikeBySlug = async (slug: string): Promise<PublicHike | nu
   });
 
   return hike ? toPublicHike(hike) : null;
+};
+
+export const getPublicHikePhotoLikeStates = async ({
+  hikeId,
+  photoIds,
+}: {
+  hikeId: string;
+  photoIds: string[];
+}): Promise<Record<string, HikePhotoLikeState>> => {
+  const uniquePhotoIds = [...new Set(photoIds)];
+  if (uniquePhotoIds.length === 0) return {};
+
+  const session = await authSession();
+  if (!session) return {};
+
+  const { default: prisma } = await import("@/lib/prisma");
+  const eligibleAssociations = (await prisma.hikesToPhotos.findMany({
+    where: {
+      hikeId,
+      hike: { status: "PUBLISHED" },
+      photoId: { in: uniquePhotoIds },
+      photo: { status: "PUBLISHED" },
+    },
+    select: { photoId: true },
+  })) as { photoId: string }[];
+  const eligiblePhotoIds = eligibleAssociations.map(({ photoId }) => photoId);
+
+  if (eligiblePhotoIds.length === 0) return {};
+
+  const viewerLikes = (await prisma.photoLike.findMany({
+    where: { photoId: { in: eligiblePhotoIds }, userId: session.user.id },
+    select: { photoId: true },
+  })) as { photoId: string }[];
+  const likedPhotoIds = new Set(viewerLikes.map(({ photoId }) => photoId));
+
+  return Object.fromEntries(
+    eligiblePhotoIds.map((photoId) => [photoId, { isLikedByViewer: likedPhotoIds.has(photoId) }]),
+  );
+};
+
+export const getMyLikedHikePhotos = async (): Promise<MyLikedHikePhoto[]> => {
+  const userId = await getRequiredUserId();
+  const { default: prisma } = await import("@/lib/prisma");
+
+  const likes = (await prisma.photoLike.findMany({
+    where: {
+      userId,
+      photo: {
+        status: "PUBLISHED",
+        hikes: { some: { hike: { status: "PUBLISHED" } } },
+      },
+    },
+    orderBy: { createdAt: "desc" },
+    select: {
+      id: true,
+      createdAt: true,
+      photo: {
+        select: {
+          id: true,
+          title: true,
+          description: true,
+          hikes: {
+            where: { hike: { status: "PUBLISHED" } },
+            select: { hike: { select: { id: true, slug: true, title: true } } },
+          },
+        },
+      },
+    },
+  })) as MyLikedHikePhotoRecord[];
+
+  return likes.map(({ id, createdAt, photo }) => ({
+    id,
+    likedAt: createdAt,
+    photo: { ...photo, trips: photo.hikes.map(({ hike }) => hike) },
+  }));
+};
+
+const getEligiblePublishedHikePhoto = async ({ hikeId, photoId }: { hikeId: string; photoId: string }) => {
+  const { default: prisma } = await import("@/lib/prisma");
+  const association = await prisma.hikesToPhotos.findFirst({
+    where: {
+      hikeId,
+      photoId,
+      hike: { status: "PUBLISHED" },
+      photo: { status: "PUBLISHED" },
+    },
+    select: { hike: { select: { slug: true } } },
+  });
+
+  if (!association) throw new Error("Photo is not available to like");
+  return { prisma, hikeSlug: association.hike.slug };
+};
+
+export const likeHikePhoto = async ({ hikeId, photoId }: { hikeId: string; photoId: string }) => {
+  const session = await authSession();
+  if (!session) throw new Error("You must be signed in to like photos");
+
+  const { prisma, hikeSlug } = await getEligiblePublishedHikePhoto({ hikeId, photoId });
+  await prisma.photoLike.upsert({
+    where: { photoId_userId: { photoId, userId: session.user.id } },
+    create: { photoId, userId: session.user.id },
+    update: {},
+  });
+  revalidateHikePhotoAssociationPaths(hikeSlug);
+
+  return { liked: true };
+};
+
+export const unlikeHikePhoto = async ({ hikeId, photoId }: { hikeId: string; photoId: string }) => {
+  const session = await authSession();
+  if (!session) throw new Error("You must be signed in to like photos");
+
+  const { prisma, hikeSlug } = await getEligiblePublishedHikePhoto({ hikeId, photoId });
+  await prisma.photoLike.deleteMany({ where: { photoId, userId: session.user.id } });
+  revalidateHikePhotoAssociationPaths(hikeSlug);
+
+  return { liked: false };
 };
 
 export const isAcceptedHikeParticipant = async ({ hikeId, userId }: { hikeId: string; userId: string }) => {

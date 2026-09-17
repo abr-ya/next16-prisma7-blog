@@ -1,11 +1,14 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, FileSearch, ImageIcon, MapPin, Route } from "lucide-react";
+import { ChevronLeft, ChevronRight, FileSearch, Heart, ImageIcon, MapPin, Route } from "lucide-react";
+import Link from "next/link";
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
 import {
+  likeHikePhoto,
   refreshHikePhotoExifMetadata,
+  unlikeHikePhoto,
   type HikePhotoContributionCapability,
   type HikePhotoDetail,
 } from "@/app/_data/hikes";
@@ -19,12 +22,14 @@ import { toast } from "sonner";
 
 export type HikePhotoGalleryItem = {
   id: string;
+  hikeId: string;
   title: string;
   description: string | null;
   alt: string;
   thumbnailUrl: string | null;
   fullUrl: string | null;
   detail: HikePhotoDetail | null;
+  isLikedByViewer: boolean;
 };
 
 type HikePhotoGalleryProps = {
@@ -47,6 +52,7 @@ export const HikePhotoGallery = ({
   const [exifPhotoId, setExifPhotoId] = useState<string | null>(null);
   const [coordinatePhotoId, setCoordinatePhotoId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [isLikePending, startLikeTransition] = useTransition();
   const router = useRouter();
   const activePhoto = activeIndex === null ? null : photos[activeIndex];
   const exifPhoto = photos.find((photo) => photo.id === exifPhotoId) ?? null;
@@ -91,6 +97,22 @@ export const HikePhotoGallery = ({
     });
   };
 
+  const toggleLike = (photo: HikePhotoGalleryItem) => {
+    if (!canViewFullPhotos) return;
+
+    startLikeTransition(async () => {
+      try {
+        const result = photo.isLikedByViewer
+          ? await unlikeHikePhoto({ hikeId: photo.hikeId, photoId: photo.id })
+          : await likeHikePhoto({ hikeId: photo.hikeId, photoId: photo.id });
+        toast.success(result.liked ? "Photo liked" : "Like removed");
+        router.refresh();
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Could not update photo like");
+      }
+    });
+  };
+
   useEffect(() => {
     if (activeIndex === null || !canNavigate) return;
 
@@ -129,7 +151,7 @@ export const HikePhotoGallery = ({
 
               return (
                 <div key={photo.id} className="overflow-hidden rounded-md border">
-                  <div className="aspect-[4/3] bg-muted">
+                  <div className="relative aspect-[4/3] bg-muted">
                     {photo.thumbnailUrl ? (
                       isOpenable ? (
                         <button
@@ -147,6 +169,32 @@ export const HikePhotoGallery = ({
                       <div className="flex size-full items-center justify-center text-muted-foreground">
                         <ImageIcon className="size-6" />
                       </div>
+                    )}
+                    {canViewFullPhotos ? (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        disabled={isLikePending}
+                        aria-pressed={photo.isLikedByViewer}
+                        aria-label={photo.isLikedByViewer ? "Remove like" : "Like photo"}
+                        className="absolute top-2 right-2 rounded-full bg-black/45 text-red-400 shadow-sm backdrop-blur-sm hover:bg-black/65 hover:text-red-300"
+                        onClick={() => toggleLike(photo)}
+                      >
+                        <Heart className={photo.isLikedByViewer ? "fill-current" : undefined} />
+                      </Button>
+                    ) : (
+                      <Button
+                        asChild
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="absolute top-2 right-2 rounded-full bg-black/45 text-red-400 shadow-sm backdrop-blur-sm hover:bg-black/65 hover:text-red-300"
+                      >
+                        <Link href="/sign-in" aria-label="Sign in to like this photo">
+                          <Heart />
+                        </Link>
+                      </Button>
                     )}
                   </div>
                   <div className="grid gap-1 p-3">
