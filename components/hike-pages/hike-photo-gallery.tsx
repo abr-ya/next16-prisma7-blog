@@ -318,8 +318,8 @@ export const HikePhotoGallery = ({
                           size="sm"
                           variant="outline"
                           onClick={() => {
-                            onFocusMap(activePhoto.detail!.acceptedCoordinate!);
                             closeViewer();
+                            onFocusMap(activePhoto.detail!.acceptedCoordinate!);
                           }}
                         >
                           <MapPin />
