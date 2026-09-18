@@ -86,6 +86,31 @@ export const interpolateAlongTrackTimeline = (
   return null;
 };
 
+export const previewTrackTimeOffset = ({
+  timeline,
+  capturedAt,
+  offsetHours,
+}: {
+  timeline: TrackGpxTimedPoint[];
+  capturedAt: string;
+  offsetHours: -3 | -2 | -1 | 0 | 1 | 2 | 3;
+}) => {
+  const capturedAtMs = parseTimestamp(capturedAt);
+  const points = timeline
+    .map((point) => ({ ...point, ms: parseTimestamp(point.time) }))
+    .filter((point): point is TrackGpxTimedPoint & { ms: number } => point.ms !== null)
+    .sort((a, b) => a.ms - b.ms);
+  if (capturedAtMs === null || points.length === 0) return null;
+
+  const previewedAt = new Date(capturedAtMs + offsetHours * 60 * 60 * 1000).toISOString();
+  const previewedAtMs = Date.parse(previewedAt);
+  if (previewedAtMs < points[0].ms || previewedAtMs > points.at(-1)!.ms) {
+    return { previewedAt, coordinate: null };
+  }
+
+  return { previewedAt, coordinate: interpolateAlongTrackTimeline(points, previewedAt) };
+};
+
 export const midpointCoordinate = (
   from: TrackGpxCoordinate | null | undefined,
   to: TrackGpxCoordinate | null | undefined,

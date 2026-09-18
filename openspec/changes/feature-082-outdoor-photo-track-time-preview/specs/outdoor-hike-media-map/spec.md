@@ -28,7 +28,7 @@ The system SHALL provide an authorized viewer with a way to focus the current tr
 
 - **WHEN** a photo owner or administrator opens coordinate review for an inside-track-window candidate with usable timed track data
 - **THEN** the review shows a compact map fragment with the candidate's source track and the original proposed point
-- **AND** the reviewer can select temporary one-hour offsets from -2 through +2 hours
+- **AND** the reviewer can select temporary one-hour offsets from -3 through +3 hours
 - **AND** the map, previewed timestamp, and coordinate update to represent the selected offset on that same source track
 - **AND** neither the photo capture time nor any persisted candidate or coordinate changes until an existing explicit approval action is selected
 
@@ -49,4 +49,3 @@ The system SHALL provide an authorized viewer with a way to focus the current tr
 
 - **WHEN** a viewer is not the photo owner or an administrator
 - **THEN** the system does not expose private timed track geometry, offset controls, preview coordinates, or coordinate-review UI
-

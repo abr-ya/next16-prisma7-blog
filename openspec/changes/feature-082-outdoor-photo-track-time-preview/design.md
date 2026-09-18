@@ -23,7 +23,7 @@ Extend the authorized photo-detail projection only for an inside-track candidate
 
 ### Keep offsets client-only and bounded
 
-The review component will model offset hours as one of `-2`, `-1`, `0`, `1`, or `2`, derive a preview timestamp from the stored UTC instant, and call the existing pure interpolation helper. This provides immediate feedback without a server action or persistence path. A free-form offset or server-side candidate recomputation would change the review model and belongs to a later feature.
+The review component will model offset hours as one of `-3`, `-2`, `-1`, `0`, `1`, `2`, or `3`, derive a preview timestamp from the stored UTC instant, and call the existing pure interpolation helper. This provides immediate feedback without a server action or persistence path. A free-form offset or server-side candidate recomputation would change the review model and belongs to a later feature.
 
 ### Reuse the browser-only map path with a review-specific composition
 

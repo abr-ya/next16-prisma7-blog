@@ -49,7 +49,12 @@ import {
   type TrackTimeMatchTrackInput,
 } from "@/lib/outdoor-photo-track-time-matching";
 import type { TrackTimelineLookup } from "@/lib/outdoor-photo-track-time-coordinate";
-import { getTrackGpxMetadataState, type TrackGpxSummary, type TrackMapViewModel } from "@/lib/track-gpx-metadata";
+import {
+  getTrackGpxMetadataState,
+  type TrackGpxSummary,
+  type TrackGpxTimedPoint,
+  type TrackMapViewModel,
+} from "@/lib/track-gpx-metadata";
 
 export type HikeActionValues = {
   id?: string;
@@ -440,6 +445,10 @@ export type HikePhotoDetail = {
   canReviewCoordinate: boolean;
   isAdmin: boolean;
   candidates: TrackTimeMatchCandidate[];
+  previewByCandidateId: Record<
+    string,
+    { track: TrackMapViewModel; timeline: TrackGpxTimedPoint[]; capturedAt: string }
+  >;
 };
 
 export type PendingHikeInvitation = {
@@ -1451,6 +1460,37 @@ export const getHikePhotoDetail = async ({
         .filter((timezone): timezone is string => Boolean(timezone)),
     ),
   ];
+  const candidates = access.canReviewCoordinate
+    ? proposeTrackTimeMatchCandidates(toTrackTimeMatchPhotoInput(access.photo), trackInputs)
+    : [];
+  const previewByCandidateId: HikePhotoDetail["previewByCandidateId"] = {};
+
+  if (access.canReviewCoordinate) {
+    for (const candidate of candidates) {
+      if (candidate.type !== "INSIDE_TRACK_WINDOW" || !candidate.hasTimedTimeline) continue;
+      const track = (
+        access.hike.tracks as Array<{
+          track: {
+            id: string;
+            title: string;
+            metadata: Prisma.JsonValue | null;
+            fileAsset: { id: string; fileKey: string };
+          };
+        }>
+      ).find(({ track }) => track.id === candidate.trackId)?.track;
+      if (!track) continue;
+      const state = getTrackGpxMetadataState(track.metadata, {
+        fileAssetId: track.fileAsset.id,
+        fileKey: track.fileAsset.fileKey,
+      });
+      if (state.status !== "SUCCESS" || !state.timeline?.length || !state.mapGeometry.length) continue;
+      previewByCandidateId[candidate.id] = {
+        capturedAt: candidate.capturedAt,
+        timeline: state.timeline,
+        track: { title: track.title, bounds: state.summary.bounds, geometry: state.mapGeometry },
+      };
+    }
+  }
 
   return {
     hikeId: access.hike.id,
@@ -1461,9 +1501,8 @@ export const getHikePhotoDetail = async ({
     acceptedCoordinate,
     canReviewCoordinate: access.canReviewCoordinate,
     isAdmin: access.accessFlags.isAdmin,
-    candidates: access.canReviewCoordinate
-      ? proposeTrackTimeMatchCandidates(toTrackTimeMatchPhotoInput(access.photo), trackInputs)
-      : [],
+    candidates,
+    previewByCandidateId,
   };
 };
 
