@@ -72,7 +72,7 @@ These candidates track the hikes/tracks/photos initiative as small increments. T
 | Status | Candidate | Area | Summary |
 | --- | --- | --- | --- |
 | P0 Now | outdoor-photo-comments | outdoor/photos-social | Add signed-in comments on hike-linked photos (create/list, visibility through published trip association, and own edit/delete policy). Reuse the shared comment domain patterns from video comments rather than inventing a photo-only comment stack. |
-| P0 Now | outdoor-photo-capture-timezone-normalization | outdoor/photos-time | Fix unsafe handling of EXIF camera-local timestamps without `OffsetTimeOriginal`: preserve the wall-clock value without treating it as UTC, require authorized timezone confirmation before normalizing to UTC, and exclude unconfirmed timestamps from automatic track-time matching. Do not bulk-mutate existing photos; make existing inferred coordinates reviewable/recomputable after confirmation. |
+| In Progress | feature-083-outdoor-photo-capture-timezone-normalization | outdoor/photos-time | Preserve EXIF camera-local time without inventing UTC; use exactly one confirmed linked-track IANA timezone as a labelled default assumption, and allow owner/admin timezone confirmation when absent or incorrect. Do not bulk-mutate historical photos or silently rewrite inferred coordinates. |
 | Ready | admin-post-save-disabled-until-interaction | posts/admin | Analyze and fix admin post create/edit **Save changes** staying disabled until blur/scroll/console interaction. Reproduced more than once on `/admin/posts/new`. Likely `PostForm` validation gating (`mode: "onBlur"` + `disabled={!form.formState.isValid}`); confirm repro, then make save enable when required fields are valid without needing extra UI noise. |
 
 ## P1 Soon
