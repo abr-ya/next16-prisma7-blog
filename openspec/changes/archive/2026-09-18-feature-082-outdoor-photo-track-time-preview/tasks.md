@@ -15,4 +15,10 @@
 
 - [x] 3.1 Mark `outdoor-photo-track-time-preview` as In Progress under `feature-082-outdoor-photo-track-time-preview` in the outdoor backlog.
 - [x] 3.2 Run `openspec validate feature-082-outdoor-photo-track-time-preview --strict`, `npm run tsc`, targeted ESLint for changed non-`app` files, and `npm run lint` when changed `app` files require it.
-- [ ] 3.3 Ask the user to run `npm run build` locally and manually verify eligible inside-track preview offsets, outside-track behavior, approval non-persistence, manual correction, and unauthorized/non-eligible candidate boundaries.
+- [x] 3.3 Ask the user to run `npm run build` locally and manually verify eligible inside-track preview offsets, outside-track behavior, approval non-persistence, manual correction, and unauthorized/non-eligible candidate boundaries.
+
+## Validation Notes
+
+- `npm run tsc`, targeted ESLint, `openspec validate feature-082-outdoor-photo-track-time-preview --strict`, and `git diff --check` passed.
+- Manual browser verification passed before archive for the coordinate-review time-offset preview.
+- Local `npm run build` completed successfully on 2026-09-18. Next.js emitted non-fatal `Couldn't load fs` / `Couldn't load zlib` messages while collecting page data.
