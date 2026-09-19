@@ -94,6 +94,7 @@ const TrackMapLeaflet = ({
   focusCoordinate,
   previewCoordinate,
   containerClassName,
+  onSelectPhoto,
 }: {
   ariaLabel: string;
   tracks: TrackMapViewModel[];
@@ -102,6 +103,7 @@ const TrackMapLeaflet = ({
   focusCoordinate?: MapPoint | null;
   previewCoordinate?: MapPoint | null;
   containerClassName?: string;
+  onSelectPhoto?: (photoId: string) => void;
 }) => {
   const points = collectMapPoints(tracks, photoMarkers, noteMarkers);
   const photoMarkerGroups = groupHikePhotoMapMarkers(photoMarkers);
@@ -183,14 +185,19 @@ const TrackMapLeaflet = ({
                 <Popup>
                   <div className="grid max-h-64 max-w-64 gap-2 overflow-y-auto pr-1">
                     {group.photos.map((marker) => (
-                      <div key={marker.photoId} className="grid grid-cols-[4rem_1fr] items-center gap-2">
+                      <button
+                        key={marker.photoId}
+                        type="button"
+                        className="grid grid-cols-[4rem_1fr] items-center gap-2 rounded-sm text-left hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        onClick={() => onSelectPhoto?.(marker.photoId)}
+                      >
                         {marker.thumbnailUrl ? (
                           <img src={marker.thumbnailUrl} alt="" className="h-16 w-16 rounded-sm object-cover" />
                         ) : (
                           <div aria-hidden="true" className="h-16 w-16 rounded-sm bg-muted" />
                         )}
                         <div className="text-xs font-medium leading-snug">{marker.title}</div>
-                      </div>
+                      </button>
                     ))}
                   </div>
                 </Popup>
@@ -206,6 +213,7 @@ const TrackMapLeaflet = ({
               icon={photoIcon}
               position={toLatLng({ lat: marker.lat, lng: marker.lng })}
               title={marker.title}
+              eventHandlers={{ click: () => onSelectPhoto?.(marker.photoId) }}
             >
               <Tooltip direction="top" offset={[0, -12]} opacity={1}>
                 <div className="grid max-w-40 gap-1.5">

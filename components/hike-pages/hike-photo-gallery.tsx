@@ -2,7 +2,7 @@
 
 import { ChevronLeft, ChevronRight, FileSearch, Heart, ImageIcon, MapPin, Route } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState, useTransition } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
 import {
@@ -40,13 +40,14 @@ type HikePhotoGalleryProps = {
   photoContributionCapability?: HikePhotoContributionCapability | null;
 };
 
-export const HikePhotoGallery = ({
-  photos,
-  canViewFullPhotos,
-  canFocusMap,
-  onFocusMap,
-  photoContributionCapability,
-}: HikePhotoGalleryProps) => {
+export type HikePhotoGalleryHandle = {
+  openPhotoById: (photoId: string) => void;
+};
+
+export const HikePhotoGallery = forwardRef<HikePhotoGalleryHandle, HikePhotoGalleryProps>(function HikePhotoGallery(
+  { photos, canViewFullPhotos, canFocusMap, onFocusMap, photoContributionCapability },
+  ref,
+) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [showDetails, setShowDetails] = useState(false);
   const [exifPhotoId, setExifPhotoId] = useState<string | null>(null);
@@ -59,11 +60,23 @@ export const HikePhotoGallery = ({
   const coordinatePhoto = photos.find((photo) => photo.id === coordinatePhotoId) ?? null;
   const canNavigate = canViewFullPhotos && photos.length > 1;
 
+  const openPhotoById = (photoId: string) => {
+    const index = photos.findIndex((photo) => photo.id === photoId);
+    if (index === -1 || !canViewFullPhotos || !photos[index]?.fullUrl) {
+      toast.info("Sign in to view the full photo");
+      return;
+    }
+
+    openPhoto(index);
+  };
+
   const openPhoto = (index: number) => {
     if (!canViewFullPhotos || !photos[index]?.fullUrl) return;
     setShowDetails(false);
     setActiveIndex(index);
   };
+
+  useImperativeHandle(ref, () => ({ openPhotoById }));
 
   const closeViewer = () => {
     setActiveIndex(null);
@@ -393,4 +406,4 @@ export const HikePhotoGallery = ({
       </Dialog>
     </>
   );
-};
+});

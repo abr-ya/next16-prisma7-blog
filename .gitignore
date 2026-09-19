@@ -44,7 +44,9 @@ next-env.d.ts
 /generated
 
 # IDE and agents
+.agents
 .idea
 .vscode
+.claude
 .codex
 .cursor
