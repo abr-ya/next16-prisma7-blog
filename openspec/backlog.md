@@ -67,6 +67,7 @@ These candidates track the hikes/tracks/photos initiative as small increments. T
 | 22 | Candidate | outdoor-photo-albums-structure | outdoor/photos | Define and add album/grouping structure for photos after basic hike association and ordering are proven. |
 | 23 | Candidate | outdoor-photos-public-gallery | outdoor/photos | Consider a standalone public photo listing/detail experience only after hike-linked photos, ordering, and album/grouping behavior prove useful. |
 | Candidate | outdoor-trip-photo-contribution-quota-tiers | outdoor/trips-photos | Extend the default per-user trip photo contribution limit only after feature-072 is proven, using an explicitly designed user reputation model (for example published posts/trips and collected likes), abuse boundaries, explainable quota calculation, and safe recalculation behavior. |
+| Candidate | outdoor-my-photos-page | outdoor/photos | Add a public-site "My photos" page linked from the user menu where a signed-in user manages only their own photos (list across trips, EXIF refresh, coordinate review, deletion per existing photo policy). Route lives in the public navigation but stays session-gated with server-side owner checks; `/admin/photos` remains the administrator-only cross-user management surface as defined by the feature-073 access matrix. |
 
 ## P0 Now
 
