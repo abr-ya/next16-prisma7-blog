@@ -55,3 +55,53 @@ export const requireNoAuth = async () => {
 
   if (session) redirect("/");
 };
+
+/** Rejection signal for action-scoped guards below. */
+export class AuthorizationError extends Error {
+  constructor(message = "Not authorized") {
+    super(message);
+    this.name = "AuthorizationError";
+  }
+}
+
+/** Signed-in user for server actions and route handlers; throws instead of redirecting. */
+export const requireActionUser = async () => {
+  const session = await authSession();
+
+  if (!session) throw new AuthorizationError("Authentication required");
+
+  return session.user;
+};
+
+const isAdminById = async (userId: string) => {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { role: true },
+  });
+
+  return hasAdminRole(user?.role);
+};
+
+/** Explicit administrator control check for actions (non-redirect counterpart of `requireAdmin`). */
+export const requireAdminControl = async () => {
+  const user = await requireActionUser();
+
+  if (!(await isAdminById(user.id))) {
+    throw new AuthorizationError("Administrator access required");
+  }
+
+  return user;
+};
+
+/**
+ * Owner-or-admin scope check for audited workspace actions.
+ * `ownerId` must come from a server-loaded record, never from client input.
+ */
+export const requireOwnerOrAdmin = async (ownerId: string | null | undefined) => {
+  const user = await requireActionUser();
+
+  if (ownerId && ownerId === user.id) return { user, isAdmin: false };
+  if (await isAdminById(user.id)) return { user, isAdmin: true };
+
+  throw new AuthorizationError("You can only manage your own content");
+};

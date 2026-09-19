@@ -11,16 +11,15 @@ function revalidatePublicMarkdownBlogCaches() {
 
 export const getMdDocById = async (id: string) => {
   try {
-    const { authSession } = await import("@/lib/auth-utils");
-    const session = await authSession();
-
-    if (!session) throw new Error("Unauthorized: User Id not found");
+    const { requireAdminControl } = await import("@/lib/auth-utils");
+    await requireAdminControl();
 
     const { default: prisma } = await import("@/lib/prisma");
     const res = await prisma.mdDoc.findUnique({ where: { id } });
 
     return res;
   } catch (err) {
+    if (err instanceof Error && err.name === "AuthorizationError") throw err;
     console.error({ err });
     throw new Error("Something went wrong");
   }
@@ -28,10 +27,8 @@ export const getMdDocById = async (id: string) => {
 
 export const createMdDoc = async (params: MdDocFormValues) => {
   try {
-    const { authSession } = await import("@/lib/auth-utils");
-    const session = await authSession();
-
-    if (!session) throw new Error("Unauthorized: User Id not found");
+    const { requireAdminControl } = await import("@/lib/auth-utils");
+    await requireAdminControl();
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { id, previewImageUrl, ...rest } = params;
@@ -47,6 +44,7 @@ export const createMdDoc = async (params: MdDocFormValues) => {
 
     return res;
   } catch (err) {
+    if (err instanceof Error && err.name === "AuthorizationError") throw err;
     console.error({ err });
     throw new Error("Something went wrong (createMdDoc)");
   }
@@ -54,10 +52,8 @@ export const createMdDoc = async (params: MdDocFormValues) => {
 
 export const updateMdDoc = async (params: MdDocFormValues) => {
   try {
-    const { authSession } = await import("@/lib/auth-utils");
-    const session = await authSession();
-
-    if (!session) throw new Error("Unauthorized: User Id not found");
+    const { requireAdminControl } = await import("@/lib/auth-utils");
+    await requireAdminControl();
 
     const { id, previewImageUrl, ...rest } = params;
 
@@ -73,6 +69,7 @@ export const updateMdDoc = async (params: MdDocFormValues) => {
 
     return res;
   } catch (err) {
+    if (err instanceof Error && err.name === "AuthorizationError") throw err;
     console.error({ err });
     throw new Error("Something went wrong (updateMdDoc)");
   }
@@ -80,10 +77,8 @@ export const updateMdDoc = async (params: MdDocFormValues) => {
 
 export const deleteMdDoc = async (id: string) => {
   try {
-    const { authSession } = await import("@/lib/auth-utils");
-    const session = await authSession();
-
-    if (!session) throw new Error("Unauthorized: User Id not found");
+    const { requireAdminControl } = await import("@/lib/auth-utils");
+    await requireAdminControl();
 
     await prisma.mdDoc.delete({
       where: { id },
@@ -93,6 +88,7 @@ export const deleteMdDoc = async (id: string) => {
 
     return { success: true };
   } catch (err) {
+    if (err instanceof Error && err.name === "AuthorizationError") throw err;
     console.error({ err });
     throw new Error("Something went wrong (deleteMdDoc)");
   }

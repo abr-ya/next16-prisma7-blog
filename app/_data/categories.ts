@@ -1,7 +1,7 @@
 "use server";
 
 import { ICategory } from "@/hooks/use-category-dialog";
-import { authSession } from "@/lib/auth-utils";
+import { authSession, requireOwnerOrAdmin } from "@/lib/auth-utils";
 
 export const getCategories = async () => {
   try {
@@ -11,6 +11,7 @@ export const getCategories = async () => {
 
     const { default: prisma } = await import("@/lib/prisma");
     const res = await prisma.category.findMany({
+      where: { userId: session.user.id },
       orderBy: { createdAt: "desc" },
     });
 
@@ -37,6 +38,7 @@ export const createCategory = async (name: string) => {
 
     return res;
   } catch (err) {
+    if (err instanceof Error && err.name === "AuthorizationError") throw err;
     console.error({ err });
     throw new Error("Something went wrong");
   }
@@ -51,6 +53,13 @@ export const updateCategory = async ({ id, name }: ICategory) => {
     }
 
     const { default: prisma } = await import("@/lib/prisma");
+    const existing = await prisma.category.findUnique({
+      where: { id },
+      select: { userId: true },
+    });
+
+    if (existing) await requireOwnerOrAdmin(existing.userId);
+
     const res = await prisma.category.update({
       where: { id },
       data: { name },
@@ -58,6 +67,7 @@ export const updateCategory = async ({ id, name }: ICategory) => {
 
     return res;
   } catch (err) {
+    if (err instanceof Error && err.name === "AuthorizationError") throw err;
     console.error({ err });
     throw new Error("Something went wrong");
   }
