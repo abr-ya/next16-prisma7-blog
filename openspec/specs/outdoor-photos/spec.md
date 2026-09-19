@@ -287,7 +287,7 @@ The system SHALL allow only the photo owner or an administrator to review the ex
 
 ### Requirement: Photo detail metadata distinguishes accepted coordinate state
 
-The system SHALL expose an authorized photo-detail view with the current metadata state without treating a failed extraction, unreviewed inference, missing capture time, or unavailable track timeline as a coordinate. The detail view SHALL display an available capture timestamp with an explicit timezone context: a readable display, the stored UTC instant, and whether the EXIF value included UTC/offset evidence or lacked it. Coordinate review controls SHALL explain why a candidate cannot be automatically resolved and SHALL preserve the existing manual-correction path for authorized reviewers.
+The system SHALL expose an authorized photo-detail view with the current metadata state without treating a failed extraction, unreviewed inference, missing capture time, or unavailable track timeline as a coordinate. The detail view SHALL display an available capture timestamp with explicit timezone context: an EXIF UTC/offset instant when evidence exists, or the preserved camera-local wall-clock value when it does not. Coordinate review controls SHALL explain why a candidate cannot be automatically resolved and SHALL preserve the existing manual-correction path for authorized reviewers.
 
 #### Scenario: Candidate cannot resolve automatically
 
@@ -350,3 +350,31 @@ The system SHALL show the existing authorized `Add photo` action in the Photos s
 - **WHEN** an anonymous user or a signed-in user without contribution authority opens a published trip
 - **THEN** the page does not expose the `Add photo` action
 - **AND** existing photo-gallery visibility behavior remains unchanged
+
+### Requirement: Timezone-less camera capture time remains a wall-clock value
+
+The system SHALL preserve a photo capture time lacking EXIF UTC or offset evidence as an unconfirmed camera-local wall-clock value and SHALL NOT label it as stored UTC or use it as an absolute instant.
+
+#### Scenario: Camera omits an EXIF timezone
+
+- **WHEN** an uploaded photo has `DateTimeOriginal` or equivalent camera time without an offset or GPS UTC time
+- **THEN** the system displays the captured wall-clock value as timezone unconfirmed
+- **AND** it preserves that original value and its missing-timezone provenance
+- **AND** it does not invent an absolute UTC instant
+
+### Requirement: Authorized user can confirm a photo capture timezone
+
+The system SHALL let the photo owner or an administrator confirm or change an IANA timezone for an unconfirmed camera-local capture time, while preserving the original EXIF wall-clock evidence and recording the assumption provenance.
+
+#### Scenario: Owner confirms an IANA timezone
+
+- **WHEN** the photo owner selects a valid IANA timezone for an unconfirmed camera-local capture time
+- **THEN** the system derives the corresponding UTC instant using that timezone's rules at the capture date
+- **AND** it records that the instant comes from an owner-confirmed timezone assumption
+- **AND** it preserves the original camera-local EXIF value
+
+#### Scenario: Unrelated user attempts timezone confirmation
+
+- **WHEN** a user who is neither the photo owner nor an administrator attempts to confirm a photo timezone
+- **THEN** the system rejects the request
+- **AND** the photo capture-time data remains unchanged
