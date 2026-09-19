@@ -17,12 +17,14 @@ export const HikeTrackMap = ({
   noteMarkers = [],
   days,
   focusCoordinate,
+  onSelectPhoto,
 }: {
   tracks: TrackMapViewModel[];
   photoMarkers?: HikePhotoMapMarker[];
   noteMarkers?: HikeNoteMapMarker[];
   days: HikeMapDay[];
   focusCoordinate?: HikePhotoAcceptedCoordinate | null;
+  onSelectPhoto?: (photoId: string) => void;
 }) => {
   const [selectedDay, setSelectedDay] = useState(ALL_DAYS);
   const effectiveSelectedDay = focusCoordinate ? ALL_DAYS : selectedDay;
@@ -82,6 +84,7 @@ export const HikeTrackMap = ({
           photoMarkers={visiblePhotoMarkers}
           noteMarkers={visibleNoteMarkers}
           focusCoordinate={focusCoordinate}
+          onSelectPhoto={onSelectPhoto}
         />
       )}
     </div>

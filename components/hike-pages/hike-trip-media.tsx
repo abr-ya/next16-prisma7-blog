@@ -3,7 +3,11 @@
 import { useEffect, useRef, useState } from "react";
 
 import type { HikePhotoAcceptedCoordinate, HikePhotoContributionCapability } from "@/app/_data/hikes";
-import { HikePhotoGallery, type HikePhotoGalleryItem } from "@/components/hike-pages/hike-photo-gallery";
+import {
+  HikePhotoGallery,
+  type HikePhotoGalleryHandle,
+  type HikePhotoGalleryItem,
+} from "@/components/hike-pages/hike-photo-gallery";
 import { HikeTrackMap } from "@/components/hike-pages/hike-track-map";
 import type { HikeNoteMapMarker } from "@/lib/hike-notes";
 import type { HikePhotoMapMarker } from "@/lib/hikes";
@@ -31,6 +35,7 @@ export const HikeTripMedia = ({
 }) => {
   const [focusCoordinate, setFocusCoordinate] = useState<HikePhotoAcceptedCoordinate | null>(null);
   const mapSectionRef = useRef<HTMLElement>(null);
+  const photoGalleryRef = useRef<HikePhotoGalleryHandle>(null);
   const hasMap = tracks.length > 0 || photoMarkers.length > 0 || noteMarkers.length > 0;
 
   useEffect(() => {
@@ -48,6 +53,8 @@ export const HikeTripMedia = ({
     // Copying preserves a distinct focus request when the same photo is selected again.
     setFocusCoordinate({ ...coordinate });
   };
+
+  const selectMapPhoto = (photoId: string) => photoGalleryRef.current?.openPhotoById(photoId);
 
   return (
     <>
@@ -67,6 +74,7 @@ export const HikeTripMedia = ({
             noteMarkers={noteMarkers}
             days={getHikeMapDays(startDate, endDate)}
             focusCoordinate={focusCoordinate}
+            onSelectPhoto={selectMapPhoto}
           />
         </section>
       ) : null}
@@ -75,6 +83,7 @@ export const HikeTripMedia = ({
         canViewFullPhotos={canViewFullPhotos}
         canFocusMap={hasMap}
         onFocusMap={focusMap}
+        ref={photoGalleryRef}
         photoContributionCapability={photoContributionCapability}
       />
     </>

@@ -29,6 +29,7 @@ export const CombinedTrackMap = ({
   focusCoordinate,
   previewCoordinate,
   containerClassName,
+  onSelectPhoto,
 }: {
   tracks: TrackMapViewModel[];
   ariaLabel: string;
@@ -37,6 +38,7 @@ export const CombinedTrackMap = ({
   focusCoordinate?: { lat: number; lng: number } | null;
   previewCoordinate?: { lat: number; lng: number } | null;
   containerClassName?: string;
+  onSelectPhoto?: (photoId: string) => void;
 }) => (
   <TrackMapLeaflet
     ariaLabel={ariaLabel}
@@ -46,5 +48,6 @@ export const CombinedTrackMap = ({
     focusCoordinate={focusCoordinate}
     previewCoordinate={previewCoordinate}
     containerClassName={containerClassName}
+    onSelectPhoto={onSelectPhoto}
   />
 );
