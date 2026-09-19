@@ -91,6 +91,7 @@ Cancelled or deferred candidates do not reserve feature numbers.
 | feature-081 | feature-081-outdoor-trip-photo-details-map-focus | outdoor/maps-photos | Make an authorized trip-photo details action close the viewer, reveal and focus the current map, and focus the photo's accepted coordinate without altering map-layer visibility. |
 | feature-082 | feature-082-outdoor-photo-track-time-preview | outdoor/maps-photos | Add an owner-or-admin protected map preview for inside-track photo-coordinate candidates, with non-persistent capture-time offsets from -3 to +3 hours. |
 | feature-083 | feature-083-outdoor-photo-capture-timezone-normalization | outdoor/photos-time | Preserve timezone-less EXIF capture time as camera-local evidence; derive matching instants only from one linked-track timezone or explicit owner/admin IANA confirmation. |
+| feature-084 | feature-084-outdoor-trip-map-photo-lightbox | outdoor/maps-photos | Let a visibility-safe map photo marker open the existing trip photo viewer for the selected photo, including selectable grouped markers, while guest selection shows sign-in guidance without exposing full-photo access. |
 
 ## Fix History
 

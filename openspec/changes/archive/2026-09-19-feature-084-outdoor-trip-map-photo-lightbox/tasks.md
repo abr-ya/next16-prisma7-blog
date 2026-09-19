@@ -8,4 +8,4 @@
 
 - [x] 2.1 Mark the P0 candidate In Progress as `feature-084-outdoor-trip-map-photo-lightbox` in the backlog.
 - [x] 2.2 Run `npm run tsc`, targeted ESLint for changed map/gallery files, and `npm run lint` for changed app files.
-- [ ] 2.3 Ask the user to run `npm run build` locally and manually verify a single marker, grouped colocated markers, authenticated lightbox opening, and guest sign-in guidance.
+- [x] 2.3 Verify `npm run build` locally and manually check a single marker, grouped colocated markers, and authenticated lightbox opening. Done by the user on 2026-09-19 for authenticated viewers; guest sign-in guidance verification deferred to the `outdoor-map-photo-guest-lightbox-manual-qa` backlog candidate.
