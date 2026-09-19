@@ -20,11 +20,14 @@ import {
   getPhotoMapCoordinate,
   isValidGps,
   readPhotoExifMetadata,
+  withPhotoCaptureTimeNormalization,
   withPhotoMapCoordinate,
   type PhotoExifMetadata,
   type PhotoExifSummary,
   type PhotoMapCoordinate,
 } from "@/lib/photo-exif-metadata";
+import { derivePhotoCaptureInstantUtc } from "@/lib/photo-capture-timezone";
+import { normalizeTrackRecordingTimezone } from "@/lib/track-recording-timezone";
 import { parsePhotoExifMetadata } from "@/lib/photo-exif-parser";
 import type { HikePhotoMapMarker } from "@/lib/hikes";
 import { getHikeMapDays, getTimestampDayKey, getTrackDayKeys } from "@/lib/hike-map-days";
@@ -441,6 +444,8 @@ export type HikePhotoDetail = {
   captureSummary: PhotoExifSummary | null;
   adminExifMetadata: PhotoExifMetadata | null;
   linkedTrackTimezones: string[];
+  captureTimeAssumption: { timeZone: string; provenance: "TRACK_DEFAULT" | "USER_CONFIRMED" } | null;
+  timezoneConfirmationRequired: boolean;
   acceptedCoordinate: HikePhotoAcceptedCoordinate | null;
   canReviewCoordinate: boolean;
   isAdmin: boolean;
@@ -513,19 +518,45 @@ const toTrackTimeMatchPhotoInput = ({
   id,
   title,
   metadata,
+  linkedTrackTimezones = [],
 }: {
   id: string;
   title: string;
   metadata: Prisma.JsonValue | null;
+  linkedTrackTimezones?: string[];
 }): TrackTimeMatchPhotoInput => {
   const state = getPhotoExifMetadataState(metadata);
+  const summary = state.status === "SUCCESS" ? state.summary : null;
+  const confirmedNormalization = summary?.captureTimeNormalization ?? null;
+  const normalizedTrackTimezones = [
+    ...new Set(
+      linkedTrackTimezones
+        .map(normalizeTrackRecordingTimezone)
+        .filter((timezone): timezone is string => Boolean(timezone)),
+    ),
+  ];
+  const singleTrackTimezone = normalizedTrackTimezones.length === 1 ? normalizedTrackTimezones[0] : null;
+  const normalization =
+    confirmedNormalization ??
+    (summary?.captureTimeTimezoneEvidence === "MISSING" &&
+    singleTrackTimezone &&
+    summary.captureTimeProvenance?.localWallTime
+      ? {
+          timeZone: singleTrackTimezone,
+          provenance: "TRACK_DEFAULT" as const,
+          instantUtc: derivePhotoCaptureInstantUtc({
+            localWallTime: summary.captureTimeProvenance.localWallTime,
+            timeZone: singleTrackTimezone,
+          }),
+        }
+      : null);
 
   return {
     id,
     title,
-    capturedAt: state.status === "SUCCESS" ? state.summary.capturedAt : null,
-    captureTimeTimezoneEvidence: state.status === "SUCCESS" ? state.summary.captureTimeTimezoneEvidence : null,
-    hasDirectGps: state.status === "SUCCESS" ? Boolean(state.summary.gps) : false,
+    capturedAt: normalization?.instantUtc ?? summary?.capturedAt ?? null,
+    captureTimeTimezoneEvidence: summary?.captureTimeTimezoneEvidence ?? null,
+    hasDirectGps: Boolean(summary?.gps),
   };
 };
 
@@ -562,7 +593,7 @@ const toTrackTimeMatchTrackInput = ({
       endPoint: null,
       timeline: null,
       timezoneEvidence: null,
-      recordingTimezone: recordingTimezone ?? null,
+      recordingTimezone: normalizeTrackRecordingTimezone(recordingTimezone),
     };
   }
 
@@ -578,7 +609,7 @@ const toTrackTimeMatchTrackInput = ({
     endPoint: state.mapGeometry.at(-1) ?? null,
     timeline: state.timeline,
     timezoneEvidence: state.summary.time.timezoneEvidence,
-    recordingTimezone: recordingTimezone ?? null,
+    recordingTimezone: normalizeTrackRecordingTimezone(recordingTimezone),
   };
 };
 
@@ -870,6 +901,7 @@ const persistHikePhotoTrackTimeMatchCandidate = async ({
               id: true,
               title: true,
               slug: true,
+              recordingTimezone: true,
               metadata: true,
               fileAsset: {
                 select: {
@@ -912,12 +944,6 @@ const persistHikePhotoTrackTimeMatchCandidate = async ({
     throw new Error("Published photo is not attached to this hike");
   }
 
-  const photoInput = toTrackTimeMatchPhotoInput(photo);
-
-  if (photoInput.hasDirectGps) {
-    throw new Error("Photo already has direct EXIF GPS coordinates");
-  }
-
   const trackInputs: TrackTimeMatchTrackInput[] = (
     hike.tracks as Array<{
       track: {
@@ -930,6 +956,16 @@ const persistHikePhotoTrackTimeMatchCandidate = async ({
       };
     }>
   ).map((association) => toTrackTimeMatchTrackInput(association.track));
+  const photoInput = toTrackTimeMatchPhotoInput({
+    ...photo,
+    linkedTrackTimezones: trackInputs
+      .map((track) => track.recordingTimezone)
+      .filter((timezone): timezone is string => Boolean(timezone)),
+  });
+
+  if (photoInput.hasDirectGps) {
+    throw new Error("Photo already has direct EXIF GPS coordinates");
+  }
   const candidates = proposeTrackTimeMatchCandidates(photoInput, trackInputs);
   const candidate = candidates.find((entry) => entry.id === candidateId);
 
@@ -1144,6 +1180,59 @@ export const rejectHikePhotoMapCoordinate = async ({ hikeId, photoId }: { hikeId
   if (!access?.canReviewCoordinate) throw new Error("You cannot review this photo coordinate");
 
   return persistHikePhotoMapCoordinateRejection({ hikeId, photoId, reviewedByUserId: access.reviewedByUserId });
+};
+
+export const confirmHikePhotoCaptureTimezone = async ({
+  hikeId,
+  photoId,
+  timeZone,
+}: {
+  hikeId: string;
+  photoId: string;
+  timeZone: string;
+}) => {
+  const access = await getPhotoDetailAccess({ hikeId, photoId });
+  if (!access?.canReviewCoordinate) throw new Error("You cannot confirm this photo timezone");
+
+  const metadata = readPhotoExifMetadata(access.photo.metadata);
+  const summary = metadata?.summary;
+  if (
+    !metadata ||
+    !summary ||
+    summary.captureTimeTimezoneEvidence !== "MISSING" ||
+    !summary.captureTimeProvenance?.localWallTime
+  ) {
+    throw new Error("This photo does not have an unconfirmed camera-local capture time");
+  }
+  const normalizedTimezone = normalizeTrackRecordingTimezone(timeZone);
+  const instantUtc = derivePhotoCaptureInstantUtc({
+    localWallTime: summary.captureTimeProvenance.localWallTime,
+    timeZone: normalizedTimezone,
+  });
+  if (!normalizedTimezone || !instantUtc) {
+    throw new Error("Choose a valid IANA timezone with an unambiguous capture time");
+  }
+
+  let nextMetadata = withPhotoCaptureTimeNormalization(metadata, {
+    timeZone: normalizedTimezone,
+    provenance: "USER_CONFIRMED",
+    instantUtc,
+  });
+  const priorCoordinate = nextMetadata.mapCoordinate;
+  if (priorCoordinate?.source === "INFERRED_TRACK_TIME") {
+    nextMetadata = withPhotoMapCoordinate(nextMetadata, {
+      ...priorCoordinate,
+      status: "PENDING_REVIEW",
+      explanation: `${priorCoordinate.explanation ?? "Inferred coordinate"} Timezone changed; review this retained coordinate again.`,
+      reviewedAt: null,
+      reviewedByUserId: null,
+    });
+  }
+
+  const { default: prisma } = await import("@/lib/prisma");
+  await prisma.photo.update({ where: { id: photoId }, data: { metadata: nextMetadata as Prisma.InputJsonValue } });
+  revalidateHikePhotoAssociationPaths(access.hike.slug);
+  return { success: true, instantUtc };
 };
 
 export const refreshHikePhotoExifMetadata = async ({ hikeId, photoId }: { hikeId: string; photoId: string }) => {
@@ -1455,14 +1544,22 @@ export const getHikePhotoDetail = async ({
   ).map(({ track }) => toTrackTimeMatchTrackInput(track));
   const linkedTrackTimezones = [
     ...new Set(
-      (mapCoordinate?.trackIds ?? [])
-        .map((trackId) => trackInputs.find((track) => track.id === trackId)?.recordingTimezone ?? null)
-        .filter((timezone): timezone is string => Boolean(timezone)),
+      trackInputs.map((track) => track.recordingTimezone).filter((timezone): timezone is string => Boolean(timezone)),
     ),
   ];
-  const candidates = access.canReviewCoordinate
-    ? proposeTrackTimeMatchCandidates(toTrackTimeMatchPhotoInput(access.photo), trackInputs)
-    : [];
+  const photoInput = toTrackTimeMatchPhotoInput({ ...access.photo, linkedTrackTimezones });
+  const captureTimeAssumption =
+    metadataState.status === "SUCCESS" && metadataState.summary.captureTimeTimezoneEvidence === "MISSING"
+      ? metadataState.summary.captureTimeNormalization
+        ? {
+            timeZone: metadataState.summary.captureTimeNormalization.timeZone,
+            provenance: metadataState.summary.captureTimeNormalization.provenance,
+          }
+        : linkedTrackTimezones.length === 1
+          ? { timeZone: linkedTrackTimezones[0], provenance: "TRACK_DEFAULT" as const }
+          : null
+      : null;
+  const candidates = access.canReviewCoordinate ? proposeTrackTimeMatchCandidates(photoInput, trackInputs) : [];
   const previewByCandidateId: HikePhotoDetail["previewByCandidateId"] = {};
 
   if (access.canReviewCoordinate) {
@@ -1498,6 +1595,12 @@ export const getHikePhotoDetail = async ({
     captureSummary: metadataState.status === "SUCCESS" ? metadataState.summary : null,
     adminExifMetadata: access.accessFlags.isAdmin && metadataState.status === "SUCCESS" ? metadataState.metadata : null,
     linkedTrackTimezones,
+    captureTimeAssumption,
+    timezoneConfirmationRequired:
+      metadataState.status === "SUCCESS" &&
+      metadataState.summary.captureTimeTimezoneEvidence === "MISSING" &&
+      !metadataState.summary.captureTimeNormalization &&
+      linkedTrackTimezones.length !== 1,
     acceptedCoordinate,
     canReviewCoordinate: access.canReviewCoordinate,
     isAdmin: access.accessFlags.isAdmin,
