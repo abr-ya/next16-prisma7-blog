@@ -49,6 +49,21 @@ When promoting a backlog candidate:
 Completed features keep their numbers permanently in `openspec/feature-history.md`.
 Cancelled or deferred ideas should return to the unnumbered candidate pool unless already completed; cancelled candidates do not reserve feature numbers.
 
+## Fix Numbering
+
+Use a separate project-wide sequence for documented bug fixes that benefit from OpenSpec planning but are not product features.
+
+Format:
+
+`fix-<3 digits>-<area>-<short-action>`
+
+Examples:
+
+- `fix-001-admin-post-save-enable`
+- `fix-002-public-nav-route-focus`
+
+Small obvious fixes may still be implemented directly without a numbered change. When a fix has an OpenSpec change, assign the lowest unused `fix-XXX` number, use that name for the change directory and branch when possible, and track it in the dedicated Fixes section of `openspec/backlog.md`. Keep completed documented fixes in a dedicated `Fix History` section of `openspec/feature-history.md`; do not consume a `feature-XXX` number.
+
 ## Commit Messages
 
 Use product or code area scopes in commit messages, not workflow/tooling scopes that apply to the whole project.

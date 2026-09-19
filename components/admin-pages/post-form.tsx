@@ -68,7 +68,7 @@ export const PostForm = ({
       slug,
       tags,
     },
-    mode: "onBlur",
+    mode: "onChange",
   });
 
   const onSubmit = async (data: PostFormValues) => {

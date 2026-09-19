@@ -90,6 +90,13 @@ Cancelled or deferred candidates do not reserve feature numbers.
 | feature-080 | feature-080-outdoor-photo-likes | outdoor/photos-social | Add private signed-in likes for published trip photos, including duplicate prevention, visibility-safe server reads, a future own-liked-photo read, and a semi-transparent top-right heart control without public counts. |
 | feature-081 | feature-081-outdoor-trip-photo-details-map-focus | outdoor/maps-photos | Make an authorized trip-photo details action close the viewer, reveal and focus the current map, and focus the photo's accepted coordinate without altering map-layer visibility. |
 | feature-082 | feature-082-outdoor-photo-track-time-preview | outdoor/maps-photos | Add an owner-or-admin protected map preview for inside-track photo-coordinate candidates, with non-persistent capture-time offsets from -3 to +3 hours. |
+| feature-083 | feature-083-outdoor-photo-capture-timezone-normalization | outdoor/photos-time | Preserve timezone-less EXIF capture time as camera-local evidence; derive matching instants only from one linked-track timezone or explicit owner/admin IANA confirmation. |
+
+## Fix History
+
+| Fix | Change | Area | Summary |
+| --- | --- | --- | --- |
+| fix-001 | fix-001-admin-post-save-enable | posts/admin | Enable the admin post save action as soon as required fields become valid, without unrelated UI interaction. |
 
 ## Cancelled Candidate Notes
 
