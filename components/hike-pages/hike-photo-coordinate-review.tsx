@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import {
@@ -9,6 +9,8 @@ import {
   type HikePhotoDetail,
 } from "@/app/_data/hikes";
 import { Badge, Button, Input } from "@/components/index";
+import { CombinedTrackMap } from "@/components/track-pages/track-map";
+import { previewTrackTimeOffset } from "@/lib/outdoor-photo-track-time-coordinate";
 import { formatTrackRecordingDateTime, formatTrackTimezoneEvidence } from "@/lib/track-gpx-metadata";
 import { formatPhotoCaptureTimeContext } from "@/lib/photo-exif-metadata";
 
@@ -41,6 +43,7 @@ export const HikePhotoCoordinateReview = ({
   onChanged: () => void;
 }) => {
   const [isPending, startTransition] = useTransition();
+  const [offsets, setOffsets] = useState<Record<string, -3 | -2 | -1 | 0 | 1 | 2 | 3>>({});
 
   const approve = (candidateId: string) => {
     startTransition(async () => {
@@ -77,6 +80,60 @@ export const HikePhotoCoordinateReview = ({
       {detail.candidates.length > 0 ? (
         detail.candidates.map((candidate) => (
           <div key={candidate.id} className="grid gap-2 rounded-md border p-3 text-sm">
+            {(() => {
+              const preview = detail.previewByCandidateId[candidate.id];
+              const offset = offsets[candidate.id] ?? 0;
+              const previewResult = preview ? previewTrackTimeOffset({ ...preview, offsetHours: offset }) : null;
+
+              return preview && previewResult ? (
+                <div className="grid gap-2 rounded-md border bg-muted/30 p-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="font-medium">Temporary time preview</span>
+                    <div className="flex gap-1" aria-label="Capture-time preview offset">
+                      {([-3, -2, -1, 0, 1, 2, 3] as const).map((hours) => (
+                        <Button
+                          key={hours}
+                          type="button"
+                          size="sm"
+                          variant={offset === hours ? "secondary" : "outline"}
+                          onClick={() => setOffsets((current) => ({ ...current, [candidate.id]: hours }))}
+                        >
+                          {hours === 0 ? "Original" : `${hours > 0 ? "+" : ""}${hours}h`}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                  <p className="text-muted-foreground">Preview UTC: {previewResult.previewedAt}</p>
+                  {previewResult.coordinate ? (
+                    <>
+                      <p className="text-muted-foreground">
+                        Previewed {previewResult.coordinate.lat.toFixed(5)}, {previewResult.coordinate.lng.toFixed(5)}
+                      </p>
+                      <CombinedTrackMap
+                        ariaLabel="Track-time coordinate preview"
+                        tracks={[preview.track]}
+                        photoMarkers={[
+                          {
+                            photoId: candidate.id,
+                            title: "Original proposed location",
+                            ...candidate.proposedCoordinate!,
+                            thumbnailUrl: null,
+                            dayKeys: [],
+                          },
+                        ]}
+                        focusCoordinate={previewResult.coordinate}
+                        previewCoordinate={previewResult.coordinate}
+                        containerClassName="h-56 overflow-hidden rounded-md border bg-muted"
+                      />
+                    </>
+                  ) : (
+                    <p className="rounded-md border border-dashed p-3 text-muted-foreground">
+                      This offset is outside the recorded track time.
+                    </p>
+                  )}
+                </div>
+              ) : null;
+            })()}
             <div className="flex flex-wrap gap-1">
               <Badge variant="outline">
                 {candidateLabel(

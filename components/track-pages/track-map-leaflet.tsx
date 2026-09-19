@@ -14,6 +14,7 @@ const START_COLOR = "#16a34a";
 const END_COLOR = "#dc2626";
 const PHOTO_MARKER_COLOR = "#d97706";
 const NOTE_MARKER_COLOR = "#2563eb";
+const PREVIEW_MARKER_COLOR = "#7c3aed";
 
 const createEndpointIcon = (label: string, color: string) =>
   L.divIcon({
@@ -91,12 +92,16 @@ const TrackMapLeaflet = ({
   photoMarkers = [],
   noteMarkers = [],
   focusCoordinate,
+  previewCoordinate,
+  containerClassName,
 }: {
   ariaLabel: string;
   tracks: TrackMapViewModel[];
   photoMarkers?: HikePhotoMapMarker[];
   noteMarkers?: HikeNoteMapMarker[];
   focusCoordinate?: MapPoint | null;
+  previewCoordinate?: MapPoint | null;
+  containerClassName?: string;
 }) => {
   const points = collectMapPoints(tracks, photoMarkers, noteMarkers);
   const photoMarkerGroups = groupHikePhotoMapMarkers(photoMarkers);
@@ -112,7 +117,9 @@ const TrackMapLeaflet = ({
   const singleLast = singleTrack?.geometry.at(-1);
 
   return (
-    <div className="h-90 min-h-90 overflow-hidden rounded-md border bg-muted sm:h-110 sm:min-h-110">
+    <div
+      className={containerClassName ?? "h-90 min-h-90 overflow-hidden rounded-md border bg-muted sm:h-110 sm:min-h-110"}
+    >
       <MapContainer
         aria-label={ariaLabel}
         bounds={hasExtent ? toBoundsFromPoints(points) : undefined}
@@ -152,6 +159,17 @@ const TrackMapLeaflet = ({
             pathOptions={{ color: START_COLOR, fillColor: START_COLOR, fillOpacity: 0.8 }}
             radius={8}
           />
+        ) : null}
+        {previewCoordinate ? (
+          <CircleMarker
+            center={toLatLng(previewCoordinate)}
+            pathOptions={{ color: PREVIEW_MARKER_COLOR, fillColor: PREVIEW_MARKER_COLOR, fillOpacity: 0.9 }}
+            radius={8}
+          >
+            <Tooltip direction="top" offset={[0, -8]} opacity={1}>
+              Previewed location
+            </Tooltip>
+          </CircleMarker>
         ) : null}
         {photoMarkerGroups.map((group) => {
           if (group.photos.length > 1) {

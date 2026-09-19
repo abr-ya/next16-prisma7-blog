@@ -27,12 +27,16 @@ export const CombinedTrackMap = ({
   photoMarkers = [],
   noteMarkers = [],
   focusCoordinate,
+  previewCoordinate,
+  containerClassName,
 }: {
   tracks: TrackMapViewModel[];
   ariaLabel: string;
   photoMarkers?: HikePhotoMapMarker[];
   noteMarkers?: HikeNoteMapMarker[];
   focusCoordinate?: { lat: number; lng: number } | null;
+  previewCoordinate?: { lat: number; lng: number } | null;
+  containerClassName?: string;
 }) => (
   <TrackMapLeaflet
     ariaLabel={ariaLabel}
@@ -40,5 +44,7 @@ export const CombinedTrackMap = ({
     photoMarkers={photoMarkers}
     noteMarkers={noteMarkers}
     focusCoordinate={focusCoordinate}
+    previewCoordinate={previewCoordinate}
+    containerClassName={containerClassName}
   />
 );

@@ -89,6 +89,7 @@ Cancelled or deferred candidates do not reserve feature numbers.
 | feature-079 | feature-079-outdoor-trip-list-viewer-status | outdoor/trips-users | Show each viewer whether a published trip is their own, one where they are an accepted participant, or another public trip directly on its `/trips` card. |
 | feature-080 | feature-080-outdoor-photo-likes | outdoor/photos-social | Add private signed-in likes for published trip photos, including duplicate prevention, visibility-safe server reads, a future own-liked-photo read, and a semi-transparent top-right heart control without public counts. |
 | feature-081 | feature-081-outdoor-trip-photo-details-map-focus | outdoor/maps-photos | Make an authorized trip-photo details action close the viewer, reveal and focus the current map, and focus the photo's accepted coordinate without altering map-layer visibility. |
+| feature-082 | feature-082-outdoor-photo-track-time-preview | outdoor/maps-photos | Add an owner-or-admin protected map preview for inside-track photo-coordinate candidates, with non-persistent capture-time offsets from -3 to +3 hours. |
 
 ## Cancelled Candidate Notes
 
