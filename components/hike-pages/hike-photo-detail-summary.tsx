@@ -38,6 +38,7 @@ export const HikePhotoDetailSummary = ({
     ? `${captureSummary.captureTimeProvenance.localWallTime} (unconfirmed camera-local)`
     : (formatPhotoCapturedAtInTimezone(captureSummary?.capturedAt, linkedTrackTimezone) ??
       captureTimeContext?.storedUtc);
+  const normalization = captureSummary?.captureTimeNormalization;
   const exposure = captureSummary
     ? formatPhotoExposureTriplet({
         exposureTime: captureSummary.exposureTime,
@@ -54,6 +55,14 @@ export const HikePhotoDetailSummary = ({
           <dl className="grid gap-1 text-muted-foreground sm:grid-cols-2">
             <div>Captured: {primaryCapture ?? "Unavailable"}</div>
             {captureTimeContext ? <div>Captured (stored UTC): {captureTimeContext.storedUtc}</div> : null}
+            {normalization ? (
+              <div>
+                Matching time:{" "}
+                {formatPhotoCapturedAtInTimezone(normalization.instantUtc, normalization.timeZone) ??
+                  normalization.instantUtc}{" "}
+                ({normalization.provenance === "TRACK_DEFAULT" ? "linked-track default" : "owner/admin confirmed"})
+              </div>
+            ) : null}
             {captureSummary.captureTimeProvenance ? (
               <div>Capture source: {formatPhotoCaptureTimeSource(captureSummary.captureTimeProvenance.source)}</div>
             ) : null}

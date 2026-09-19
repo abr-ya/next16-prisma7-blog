@@ -14,6 +14,12 @@ export type PhotoCaptureTimeProvenance = {
   sourceFileAssetId: string;
 };
 
+export type PhotoCaptureTimeNormalization = {
+  timeZone: string;
+  provenance: "TRACK_DEFAULT" | "USER_CONFIRMED";
+  instantUtc: string;
+};
+
 export type PhotoExifGps = {
   lat: number;
   lng: number;
@@ -32,6 +38,7 @@ export type PhotoExifImageSummary = {
   capturedAt: string | null;
   captureTimeTimezoneEvidence?: PhotoCaptureTimezoneEvidence | null;
   captureTimeProvenance?: PhotoCaptureTimeProvenance | null;
+  captureTimeNormalization?: PhotoCaptureTimeNormalization | null;
   width: number | null;
   height: number | null;
   orientation: number | null;
@@ -48,6 +55,7 @@ export type PhotoExifSummary = {
   capturedAt: string | null;
   captureTimeTimezoneEvidence?: PhotoCaptureTimezoneEvidence | null;
   captureTimeProvenance?: PhotoCaptureTimeProvenance | null;
+  captureTimeNormalization?: PhotoCaptureTimeNormalization | null;
   width: number | null;
   height: number | null;
   orientation: number | null;
@@ -144,6 +152,12 @@ const isCaptureTimeProvenance = (value: unknown): value is PhotoCaptureTimeProve
   value.timezoneEvidence !== null &&
   typeof value.sourceFileAssetId === "string";
 
+const isCaptureTimeNormalization = (value: unknown): value is PhotoCaptureTimeNormalization =>
+  isRecord(value) &&
+  typeof value.timeZone === "string" &&
+  (value.provenance === "TRACK_DEFAULT" || value.provenance === "USER_CONFIRMED") &&
+  isIsoDateString(value.instantUtc);
+
 const isNullableFiniteNumber = (value: unknown): value is number | null => value === null || isFiniteNumber(value);
 
 const isOptionalNullableFiniteNumber = (value: unknown): boolean =>
@@ -169,6 +183,9 @@ const normalizeImageSummary = (value: unknown): PhotoExifImageSummary | null => 
     (value.captureTimeProvenance !== undefined &&
       value.captureTimeProvenance !== null &&
       !isCaptureTimeProvenance(value.captureTimeProvenance)) ||
+    (value.captureTimeNormalization !== undefined &&
+      value.captureTimeNormalization !== null &&
+      !isCaptureTimeNormalization(value.captureTimeNormalization)) ||
     !isNullableFiniteNumber(value.width) ||
     !isNullableFiniteNumber(value.height) ||
     !isNullableFiniteNumber(value.orientation) ||
@@ -192,6 +209,9 @@ const normalizeImageSummary = (value: unknown): PhotoExifImageSummary | null => 
       ? { captureTimeTimezoneEvidence: value.captureTimeTimezoneEvidence }
       : {}),
     ...(value.captureTimeProvenance !== undefined ? { captureTimeProvenance: value.captureTimeProvenance } : {}),
+    ...(value.captureTimeNormalization !== undefined
+      ? { captureTimeNormalization: value.captureTimeNormalization }
+      : {}),
     width: value.width,
     height: value.height,
     orientation: value.orientation,
@@ -214,6 +234,9 @@ const normalizeSummary = (value: unknown): PhotoExifSummary | null => {
     (value.captureTimeProvenance !== undefined &&
       value.captureTimeProvenance !== null &&
       !isCaptureTimeProvenance(value.captureTimeProvenance)) ||
+    (value.captureTimeNormalization !== undefined &&
+      value.captureTimeNormalization !== null &&
+      !isCaptureTimeNormalization(value.captureTimeNormalization)) ||
     !isNullableFiniteNumber(value.width) ||
     !isNullableFiniteNumber(value.height) ||
     !isNullableFiniteNumber(value.orientation) ||
@@ -236,6 +259,9 @@ const normalizeSummary = (value: unknown): PhotoExifSummary | null => {
       ? { captureTimeTimezoneEvidence: value.captureTimeTimezoneEvidence }
       : {}),
     ...(value.captureTimeProvenance !== undefined ? { captureTimeProvenance: value.captureTimeProvenance } : {}),
+    ...(value.captureTimeNormalization !== undefined
+      ? { captureTimeNormalization: value.captureTimeNormalization }
+      : {}),
     width: value.width,
     height: value.height,
     orientation: value.orientation,
@@ -485,6 +511,14 @@ export const withPhotoMapCoordinate = (
   ...metadata,
   mapCoordinate,
 });
+
+export const withPhotoCaptureTimeNormalization = (
+  metadata: PhotoExifMetadata,
+  normalization: PhotoCaptureTimeNormalization,
+): PhotoExifMetadata => {
+  if (!metadata.summary) return metadata;
+  return { ...metadata, summary: { ...metadata.summary, captureTimeNormalization: normalization } };
+};
 
 export const getPhotoMapCoordinate = (value: Prisma.JsonValue | null | undefined): PhotoMapCoordinate | null => {
   const metadata = readPhotoExifMetadata(value);

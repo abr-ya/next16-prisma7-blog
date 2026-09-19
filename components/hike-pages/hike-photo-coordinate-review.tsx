@@ -5,6 +5,7 @@ import { toast } from "sonner";
 
 import {
   acceptHikePhotoTrackTimeMatchCandidate,
+  confirmHikePhotoCaptureTimezone,
   rejectHikePhotoMapCoordinate,
   type HikePhotoDetail,
 } from "@/app/_data/hikes";
@@ -44,6 +45,19 @@ export const HikePhotoCoordinateReview = ({
 }) => {
   const [isPending, startTransition] = useTransition();
   const [offsets, setOffsets] = useState<Record<string, -3 | -2 | -1 | 0 | 1 | 2 | 3>>({});
+  const [timeZone, setTimeZone] = useState(detail.captureTimeAssumption?.timeZone ?? "");
+
+  const confirmTimezone = () => {
+    startTransition(async () => {
+      try {
+        await confirmHikePhotoCaptureTimezone({ hikeId: detail.hikeId, photoId: detail.photoId, timeZone });
+        toast.success("Photo timezone confirmed");
+        onChanged();
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Failed to confirm photo timezone");
+      }
+    });
+  };
 
   const approve = (candidateId: string) => {
     startTransition(async () => {
@@ -77,6 +91,36 @@ export const HikePhotoCoordinateReview = ({
           Approve an available candidate, or use a manual correction when an automatic location is unavailable.
         </p>
       </div>
+      {detail.captureTimeAssumption || detail.timezoneConfirmationRequired ? (
+        <div className="grid gap-2 rounded-md border border-dashed p-3 text-sm">
+          <p className="text-muted-foreground">
+            {detail.captureTimeAssumption
+              ? `Camera-local time is matched using ${detail.captureTimeAssumption.timeZone} (${detail.captureTimeAssumption.provenance === "TRACK_DEFAULT" ? "linked-track default; confirm if incorrect" : "owner/admin confirmed"}).`
+              : "Camera-local time needs an explicit IANA timezone before it can be matched to a track."}
+          </p>
+          <div className="flex flex-wrap items-end gap-2">
+            <label className="grid gap-1 text-xs font-medium">
+              IANA timezone
+              <Input
+                list="photo-capture-timezone-options"
+                value={timeZone}
+                onChange={(event) => setTimeZone(event.target.value)}
+                placeholder="Europe/Sofia"
+                autoComplete="off"
+              />
+            </label>
+            <Button type="button" size="sm" disabled={isPending || !timeZone.trim()} onClick={confirmTimezone}>
+              Confirm timezone
+            </Button>
+          </div>
+          <datalist id="photo-capture-timezone-options">
+            <option value="UTC" />
+            <option value="Europe/Sofia" />
+            <option value="Europe/Moscow" />
+            <option value="America/New_York" />
+          </datalist>
+        </div>
+      ) : null}
       {detail.candidates.length > 0 ? (
         detail.candidates.map((candidate) => (
           <div key={candidate.id} className="grid gap-2 rounded-md border p-3 text-sm">
@@ -157,7 +201,7 @@ export const HikePhotoCoordinateReview = ({
                 });
 
                 return context
-                  ? `Photo UTC: ${context.storedUtc} · ${context.timezoneEvidence}`
+                  ? `Photo time: ${context.storedUtc} · ${context.timezoneEvidence}`
                   : "Photo capture time is unavailable";
               })()}
             </p>

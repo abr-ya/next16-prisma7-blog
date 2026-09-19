@@ -43,12 +43,14 @@ import type { PhotoStatus } from "@/generated/prisma/enums";
 import { OUTDOOR_PHOTO_IMAGE_UPLOAD_MAX_COUNT, OUTDOOR_PHOTO_IMAGE_UPLOAD_MAX_SIZE } from "@/lib/file-upload-limits";
 import { formatHikeDateRange, formatHikeStatus, formatHikeType } from "@/lib/hikes";
 import {
-  formatPhotoCapturedAt,
+  formatPhotoCapturedAtInTimezone,
+  formatPhotoCapturedAtUtc,
   formatPhotoDimensions,
   formatPhotoExposureTriplet,
   formatPhotoGpsPresence,
   getPhotoExifMetadataState,
   type PhotoExifMetadataState,
+  type PhotoExifSummary,
 } from "@/lib/photo-exif-metadata";
 import { PHOTO_IMAGE_MAX_COUNT, formatPhotoStatus, photoStatusOptions } from "@/lib/photos";
 import { UploadDropzone } from "@/lib/uploadthing";
@@ -118,15 +120,36 @@ const getMetadataStatusVariant = (state: PhotoExifMetadataState) => {
   return "outline" as const;
 };
 
+const getCaptureTimeLines = (summary: PhotoExifSummary) => {
+  const localWallTime = summary.captureTimeProvenance?.localWallTime;
+  const lines: string[] = [];
+
+  if (localWallTime) {
+    lines.push(`Captured: ${localWallTime} (camera-local; timezone unconfirmed)`);
+  } else {
+    const capturedAtUtc = formatPhotoCapturedAtUtc(summary.capturedAt);
+    if (capturedAtUtc) lines.push(`Captured: ${capturedAtUtc}`);
+  }
+
+  const normalization = summary.captureTimeNormalization;
+  if (normalization) {
+    const derived = formatPhotoCapturedAtInTimezone(normalization.instantUtc, normalization.timeZone);
+    lines.push(
+      `Matching: ${derived ?? normalization.instantUtc} (${normalization.provenance === "TRACK_DEFAULT" ? "linked-track default" : "owner/admin confirmed"})`,
+    );
+  }
+
+  return lines;
+};
+
 const PhotoMetadataStatus = ({ photo }: { photo: PhotoListItem }) => {
   const state = getPhotoMetadataState(photo);
   const summaryLines: Array<readonly [string, string]> = [];
 
   if (state.status === "SUCCESS") {
-    const capturedAt = formatPhotoCapturedAt(state.summary.capturedAt);
     const camera = state.summary.cameraLabel;
 
-    if (capturedAt) summaryLines.push(["capturedAt", capturedAt]);
+    getCaptureTimeLines(state.summary).forEach((line, index) => summaryLines.push([`capturedAt-${index}`, line]));
     if (camera) summaryLines.push(["camera", camera]);
   }
 
@@ -456,7 +479,11 @@ export const PhotoFormDialog = ({
                 </div>
                 {metadataState.status === "SUCCESS" ? (
                   <div className="flex flex-wrap gap-3 text-muted-foreground">
-                    <span>{formatPhotoCapturedAt(metadataState.summary.capturedAt) ?? "No capture date"}</span>
+                    {getCaptureTimeLines(metadataState.summary).length > 0 ? (
+                      getCaptureTimeLines(metadataState.summary).map((line) => <span key={line}>{line}</span>)
+                    ) : (
+                      <span>No capture date</span>
+                    )}
                     <span>
                       {formatPhotoDimensions(metadataState.summary.width, metadataState.summary.height) ??
                         "No dimensions"}
@@ -599,7 +626,11 @@ const AdminPhotoUploadDialog = ({
             </div>
             {metadataState.status === "SUCCESS" ? (
               <div className="flex flex-wrap gap-3 text-muted-foreground">
-                <span>{formatPhotoCapturedAt(metadataState.summary.capturedAt) ?? "No capture date"}</span>
+                {getCaptureTimeLines(metadataState.summary).length > 0 ? (
+                  getCaptureTimeLines(metadataState.summary).map((line) => <span key={line}>{line}</span>)
+                ) : (
+                  <span>No capture date</span>
+                )}
                 <span>
                   {formatPhotoDimensions(metadataState.summary.width, metadataState.summary.height) ?? "No dimensions"}
                 </span>
