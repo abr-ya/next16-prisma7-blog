@@ -105,9 +105,7 @@ const revalidateFromTargetContext = (target: PhotoCommentTargetContext) => {
  * with id desc as a tiebreaker. Returns `null` when no published trip exists
  * so read helpers can short-circuit silently.
  */
-export const getPhotoCommentTargetContext = async (
-  photoId: string,
-): Promise<PhotoCommentTargetContext | null> => {
+export const getPhotoCommentTargetContext = async (photoId: string): Promise<PhotoCommentTargetContext | null> => {
   const { default: prisma } = await import("@/lib/prisma");
 
   const link = await prisma.hikesToPhotos.findFirst({
@@ -161,15 +159,11 @@ export const getPhotoCommentTargetContext = async (
  * Resolve the photo + its first published linked trip, throwing when no
  * published trip exists. Used by every mutation helper.
  */
-export const getPhotoWithPublishedTripOrThrow = async (
-  photoId: string,
-): Promise<PhotoCommentTargetContext> => {
+export const getPhotoWithPublishedTripOrThrow = async (photoId: string): Promise<PhotoCommentTargetContext> => {
   const target = await getPhotoCommentTargetContext(photoId);
 
   if (!target) {
-    throw new AuthorizationError(
-      "Comments are only available on photos linked to a published trip",
-    );
+    throw new AuthorizationError("Comments are only available on photos linked to a published trip");
   }
 
   return target;
@@ -219,8 +213,6 @@ const toPhotoCommentListItem = (
   comment: PhotoCommentListRecord,
   target: PhotoCommentTargetContext,
 ): CommentListItem => {
-  const photoId = comment.photo?.id ?? comment.photoId ?? "";
-
   return {
     id: comment.id,
     content: comment.content,
@@ -239,9 +231,7 @@ const toPhotoCommentListItem = (
   };
 };
 
-export const getPhotoCommentListItems = async (
-  photoId: string,
-): Promise<CommentListItem[]> => {
+export const getPhotoCommentListItems = async (photoId: string): Promise<CommentListItem[]> => {
   const target = await getPhotoCommentTargetContext(photoId);
 
   if (!target) return [];
