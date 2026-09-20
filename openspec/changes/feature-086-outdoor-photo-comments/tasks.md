@@ -2,13 +2,13 @@
 
 ## 1. Schema and migration
 
-- [ ] 1.1 Add `photoId String?`, `photo Photo? @relation(fields: [photoId], references: [id], onDelete: Cascade)`, and indexes `@@index([photoId, createdAt])` and `@@index([userId, photoId])` to the `Comment` model in `prisma/schema.prisma`, and add `comments Comment[]` to the `Photo` model; verify `npx prisma format` succeeds and `npx prisma validate` reports no errors.
-- [ ] 1.2 Generate a migration scaffold via `npx prisma migrate dev --create-only --name add_photo_comments` and hand-edit `prisma/migrations/20260920HHMMSS_add_photo_comments/migration.sql` to add the raw-SQL `ALTER TABLE ... ADD CONSTRAINT comment_single_target_chk CHECK (("videoId" IS NULL) <> ("photoId" IS NULL))` plus both index `CREATE INDEX` statements and the `FOREIGN KEY` clause; verify by reading the final `migration.sql` and confirming every existing row satisfies the constraint (existing rows have `videoId` non-null).
-- [ ] 1.3 Apply the migration locally via `npx prisma migrate dev` and run `npx prisma generate`; verify the generated client under `generated/prisma/` exposes `photoId` on `Comment` and that `psql` or the Prisma Studio view shows the new column, indexes, and `comment_single_target_chk` constraint.
+- [x] 1.1 Add `photoId String?`, `photo Photo? @relation(fields: [photoId], references: [id], onDelete: Cascade)`, and indexes `@@index([photoId, createdAt])` and `@@index([userId, photoId])` to the `Comment` model in `prisma/schema.prisma`, and add `comments Comment[]` to the `Photo` model; verify `npx prisma format` succeeds and `npx prisma validate` reports no errors.
+- [x] 1.2 Generate a migration scaffold via `npx prisma migrate dev --create-only --name add_photo_comments` and hand-edit `prisma/migrations/20260920HHMMSS_add_photo_comments/migration.sql` to add the raw-SQL `ALTER TABLE ... ADD CONSTRAINT comment_single_target_chk CHECK (("videoId" IS NULL) <> ("photoId" IS NULL))` plus both index `CREATE INDEX` statements and the `FOREIGN KEY` clause; verify by reading the final `migration.sql` and confirming every existing row satisfies the constraint (existing rows have `videoId` non-null).
+- [x] 1.3 Apply the migration locally via `npx prisma migrate dev` and run `npx prisma generate`; verify the generated client under `generated/prisma/` exposes `photoId` on `Comment` and that `psql` or the Prisma Studio view shows the new column, indexes, and `comment_single_target_chk` constraint.
 
 ## 2. Shared comment target type
 
-- [ ] 2.1 Extend `CommentTargetType` in `lib/comments.ts` from `"video" | "post" | "md-doc"` to `"video" | "post" | "md-doc" | "photo"`; verify `npm run tsc` passes and no other module needs updating (the `CommentListItem.target.type` union flows automatically).
+- [x] 2.1 Extend `CommentTargetType` in `lib/comments.ts` from `"video" | "post" | "md-doc"` to `"video" | "post" | "md-doc" | "photo"`; verify `npm run tsc` passes and no other module needs updating (the `CommentListItem.target.type` union flows automatically).
 
 ## 3. Photo-comment server actions
 
