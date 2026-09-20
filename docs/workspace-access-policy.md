@@ -78,6 +78,7 @@ not an admin-only shell).
 | `respondToHikeInvitation` | U (invitee) | Invitation `userId` must equal caller |
 | `contributePhotoToHike` | P, O, A | Trip-scoped contribution only; file assets re-checked `ownerUserId` |
 | `likeHikePhoto` / `unlike` | U | Own like row; published association only |
+| `createPhotoComment`, `updatePhotoComment`, `deletePhotoComment` | U | Require real session; owner-scoped via `userId`; read helpers gate on published-trip association (feature-086 photo comments mirror `feature-006`/`feature-035` video comments) |
 
 ### Outdoor photos, coordinates, EXIF
 | Action | Allowed | Rule |
@@ -111,6 +112,7 @@ not an admin-only shell).
 - `outdoor-trip-participants`: participation grants exactly `contributePhotoToHike` (and invitation response), no workspace or admin access — preserved.
 - `files-admin` / `file-sharing-structure`: visibility-based download rules unchanged; admin lifecycle stays admin-only.
 - Content-tags governance (`feature-055+` specs): admin-only — unchanged.
+- `outdoor-photo-comments` (feature-086): photo-comment mutations follow the same owner-scoped session boundary as video comments, plus a published-trip association gate for read helpers; no administrator override is exposed for personal comment mutations here.
 
 ## Known deviations to close in this change
 

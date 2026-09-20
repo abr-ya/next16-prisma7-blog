@@ -102,8 +102,9 @@ const revalidateFromTargetContext = (target: PhotoCommentTargetContext) => {
  * Resolve the photo + its first published linked trip for comment helpers.
  *
  * Ordering is deterministic: the most recently linked published trip wins,
- * with id desc as a tiebreaker. Returns `null` when no published trip exists
- * so read helpers can short-circuit silently.
+ * with `hikeId` desc as a tiebreaker (part of the composite PK since
+ * `HikesToPhotos` has no scalar `id`). Returns `null` when no published
+ * trip exists so read helpers can short-circuit silently.
  */
 export const getPhotoCommentTargetContext = async (photoId: string): Promise<PhotoCommentTargetContext | null> => {
   const { default: prisma } = await import("@/lib/prisma");
@@ -115,7 +116,7 @@ export const getPhotoCommentTargetContext = async (photoId: string): Promise<Pho
         status: "PUBLISHED",
       },
     },
-    orderBy: [{ assignedAt: "desc" }, { id: "desc" }],
+    orderBy: [{ assignedAt: "desc" }, { hikeId: "desc" }],
     select: {
       hike: {
         select: {

@@ -48,7 +48,7 @@ See `proposal.md` for motivation. The relevant constraints:
 
 ### 3. Published-trip-slug as the comment target href
 
-- **Decision**: Each photo comment's `CommentListItem.target.href` is `/trips/[slug]` of the photo's first published linked trip (most recent `HikesToPhotos.assignedAt` desc, then `id` desc as a stable tiebreaker).
+- **Decision**: Each photo comment's `CommentListItem.target.href` is `/trips/[slug]` of the photo's first published linked trip (most recent `HikesToPhotos.assignedAt` desc, then `hikeId` desc as a stable tiebreaker — `HikesToPhotos` has composite PK `[hikeId, photoId]` and no scalar `id`).
 - **Why**: The photo lives inside a trip page; the trip page is the canonical public surface that re-resolves comments on revalidation. A photo-only anchor (`/trips/[slug]#photo-[id]`) was considered but rejected for this slice — the lightbox surface already lives inside `/trips/[slug]`, and a plain trip href is enough for the shared comment list item contract.
 - **Alternative considered**: Anchor-based href `#photo-[id]` so deep-linking opens the lightbox at a specific photo. Deferred to a follow-up because it requires lightbox open-from-hash logic that is out of scope here.
 
@@ -99,7 +99,7 @@ See `proposal.md` for motivation. The relevant constraints:
 
 - **Risk**: PostgreSQL `CHECK` constraint naming collision if the constraint name already exists → Mitigation: use a uniquely named constraint (`comment_single_target_chk`) and document it in the migration; verify with `psql \d comment` after the first apply.
 - **Risk**: Existing video-comment helper paths might inadvertently accept a `photoId` and bypass the visibility gate → Mitigation: keep the new photo-comment helpers in a separate file and never pass them through any video-comments function; the DB constraint catches double-target bugs but the helpers themselves should never write both columns.
-- **Risk**: A photo linked to multiple published trips could resolve to different slugs depending on order → Mitigation: deterministic ordering by `HikesToPhotos.assignedAt desc, id desc` and treat the resolved slug as the single revalidation target; the comment's `target.href` is informational for the shared list and does not affect revalidation.
+- **Risk**: A photo linked to multiple published trips could resolve to different slugs depending on order → Mitigation: deterministic ordering by `HikesToPhotos.assignedAt desc, hikeId desc` and treat the resolved slug as the single revalidation target; the comment's `target.href` is informational for the shared list and does not affect revalidation.
 - **Risk**: Mounting the comment section inside the lightbox increases dialog render work for trips with many photos → Mitigation: only render the section when `activeIndex !== null` and only fetch comments for the active photo; existing `router.refresh()` pattern keeps counts in sync without re-fetching all photos.
 - **Trade-off**: Adding the second overlay (comments) inside the same dialog makes the bottom-right toggle area busier → Accepted: two-button toggle ("Photo details" / "Show comments") is cleaner than always-visible panels inside the constrained dialog height; matches the existing EXIF/Coordinate dialog pattern at the gallery level.
 - **Trade-off**: The check constraint increases migration write cost marginally on Postgres → Accepted: negligible at this scale; constraint validation runs once on apply.

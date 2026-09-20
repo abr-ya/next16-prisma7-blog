@@ -6,11 +6,7 @@ import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 
-import {
-  createPhotoComment,
-  deletePhotoComment,
-  updatePhotoComment,
-} from "@/app/_data/photo-comments";
+import { createPhotoComment, deletePhotoComment, updatePhotoComment } from "@/app/_data/photo-comments";
 import { CommentComposer } from "@/components/comments/comment-composer";
 import { CommentList } from "@/components/comments/comment-list";
 import { ConfirmDialog } from "@/components/common/confirm-dialog";
@@ -148,13 +144,7 @@ export const HikePhotoCommentComposer = ({
 
     return (
       <>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={() => startEditing(comment)}
-          aria-label="Edit comment"
-        >
+        <Button type="button" variant="ghost" size="sm" onClick={() => startEditing(comment)} aria-label="Edit comment">
           <Pencil />
           Edit
         </Button>
@@ -219,13 +209,7 @@ export const HikePhotoCommentComposer = ({
                 {editing.value.trim().length}/{MAX_COMMENT_CONTENT_LENGTH}
               </p>
               <div className="flex gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={cancelEditing}
-                  disabled={isMutating}
-                >
+                <Button type="button" variant="outline" size="sm" onClick={cancelEditing} disabled={isMutating}>
                   <X />
                   Cancel
                 </Button>
