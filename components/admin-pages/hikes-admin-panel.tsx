@@ -1259,10 +1259,12 @@ export const HikesAdminPanel = ({
   hikes,
   tracks,
   photos,
+  isAdmin,
 }: {
   hikes: HikeListItem[];
   tracks: HikeTrackOption[];
   photos: HikePhotoOption[];
+  isAdmin: boolean;
 }) => {
   const router = useRouter();
   const [formOpen, setFormOpen] = useState(false);
@@ -1349,33 +1351,37 @@ export const HikesAdminPanel = ({
         id: "actions",
         cell: ({ row }) => (
           <div className="flex justify-end gap-2">
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              title="Manage notes"
-              onClick={() => setManagingNotesHike(row.original)}
-            >
-              <NotebookPen className="size-4" />
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              title="Manage tracks"
-              onClick={() => setManagingTracksHike(row.original)}
-            >
-              <Route className="size-4" />
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              title="Manage photos"
-              onClick={() => setManagingPhotosHike(row.original)}
-            >
-              <ImageIcon className="size-4" />
-            </Button>
+            {isAdmin ? (
+              <>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  title="Manage notes"
+                  onClick={() => setManagingNotesHike(row.original)}
+                >
+                  <NotebookPen className="size-4" />
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  title="Manage tracks"
+                  onClick={() => setManagingTracksHike(row.original)}
+                >
+                  <Route className="size-4" />
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  title="Manage photos"
+                  onClick={() => setManagingPhotosHike(row.original)}
+                >
+                  <ImageIcon className="size-4" />
+                </Button>
+              </>
+            ) : null}
             <Button
               type="button"
               variant="ghost"
@@ -1401,7 +1407,7 @@ export const HikesAdminPanel = ({
         ),
       },
     ],
-    [],
+    [isAdmin],
   );
 
   const handleCreateClick = () => {
@@ -1443,33 +1449,37 @@ export const HikesAdminPanel = ({
           if (!open) setEditingHike(null);
         }}
       />
-      <HikeTracksDialog
-        hike={managingTracksHike}
-        tracks={tracks}
-        open={Boolean(managingTracksHike)}
-        onChanged={() => router.refresh()}
-        onOpenChange={(open) => {
-          if (!open) setManagingTracksHike(null);
-        }}
-      />
-      <HikePhotosDialog
-        hike={managingPhotosHike}
-        photos={photos}
-        open={Boolean(managingPhotosHike)}
-        onChanged={() => router.refresh()}
-        onOpenChange={(open) => {
-          if (!open) setManagingPhotosHike(null);
-        }}
-      />
-      <HikeNotesDialog
-        key={managingNotesHike?.id ?? "closed"}
-        hike={managingNotesHike}
-        open={Boolean(managingNotesHike)}
-        onChanged={() => router.refresh()}
-        onOpenChange={(open) => {
-          if (!open) setManagingNotesHike(null);
-        }}
-      />
+      {isAdmin ? (
+        <>
+          <HikeTracksDialog
+            hike={managingTracksHike}
+            tracks={tracks}
+            open={Boolean(managingTracksHike)}
+            onChanged={() => router.refresh()}
+            onOpenChange={(open) => {
+              if (!open) setManagingTracksHike(null);
+            }}
+          />
+          <HikePhotosDialog
+            hike={managingPhotosHike}
+            photos={photos}
+            open={Boolean(managingPhotosHike)}
+            onChanged={() => router.refresh()}
+            onOpenChange={(open) => {
+              if (!open) setManagingPhotosHike(null);
+            }}
+          />
+          <HikeNotesDialog
+            key={managingNotesHike?.id ?? "closed"}
+            hike={managingNotesHike}
+            open={Boolean(managingNotesHike)}
+            onChanged={() => router.refresh()}
+            onOpenChange={(open) => {
+              if (!open) setManagingNotesHike(null);
+            }}
+          />
+        </>
+      ) : null}
       <ConfirmDialog
         open={Boolean(deleteTarget)}
         onOpenChange={(open) => {

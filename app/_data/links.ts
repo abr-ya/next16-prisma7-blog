@@ -29,8 +29,13 @@ export const createLink = async (name: string, description: string, url: string)
 
 export const getAllLinks = async () => {
   try {
+    const session = await authSession();
+
+    if (!session) throw new Error("Unauthorized: User Id not found");
+
     const { default: prisma } = await import("@/lib/prisma");
     const res = await prisma.link.findMany({
+      where: { userId: session.user.id },
       orderBy: { createdAt: "desc" },
     });
 

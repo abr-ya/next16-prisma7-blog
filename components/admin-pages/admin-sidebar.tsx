@@ -28,13 +28,7 @@ import {
 } from "@/components/ui/sidebar";
 import { IUser } from "@/app/_interfaces/user.interface";
 
-// Menu items
-const items = [
-  {
-    title: "Home",
-    url: "/",
-    icon: House,
-  },
+const personalWorkspaceItems = [
   {
     title: "Dashboard",
     url: "/admin",
@@ -56,16 +50,6 @@ const items = [
     icon: ExternalLink,
   },
   {
-    title: "MD Docs",
-    url: "/admin/md-docs",
-    icon: FileText,
-  },
-  {
-    title: "Files",
-    url: "/admin/files",
-    icon: File,
-  },
-  {
     title: "Trips",
     url: "/admin/trips",
     icon: Map,
@@ -76,37 +60,24 @@ const items = [
     icon: Route,
   },
   {
-    title: "Photos",
-    url: "/admin/photos",
-    icon: Images,
-  },
-  {
-    title: "Content Tags",
-    url: "/admin/content-tags",
-    icon: Tags,
-    adminOnly: true,
-  },
-  {
-    title: "Database",
-    url: "/admin/database",
-    icon: Database,
-    adminOnly: true,
-  },
-  {
     title: "Videos",
     url: "/admin/videos",
     icon: Video,
-  },
-  {
-    title: "Video Channels",
-    url: "/admin/video-channels",
-    icon: ListVideo,
   },
   {
     title: "Saved Posts",
     url: "/admin/saved-posts",
     icon: Search,
   },
+];
+
+const administratorControlItems = [
+  { title: "MD Docs", url: "/admin/md-docs", icon: FileText },
+  { title: "Video Channels", url: "/admin/video-channels", icon: ListVideo },
+  { title: "Photos", url: "/admin/photos", icon: Images },
+  { title: "Files", url: "/admin/files", icon: File },
+  { title: "Content Tags", url: "/admin/content-tags", icon: Tags },
+  { title: "Database", url: "/admin/database", icon: Database },
 ];
 
 interface AdminSidebarProps {
@@ -124,9 +95,40 @@ export const AdminSidebar = ({ user, isAdmin = false }: AdminSidebarProps) => (
           <div className="mb-3 text-sm text-muted-foreground">{user ? `Hello, ${user.name}!` : "Not signed in"}</div>
 
           <SidebarMenu>
-            {items
-              .filter((item) => !item.adminOnly || isAdmin)
-              .map((item) => (
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild>
+                <a href="/">
+                  <House />
+                  <span>Home</span>
+                </a>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
+      <SidebarGroup>
+        <SidebarGroupLabel>Personal workspace</SidebarGroupLabel>
+        <SidebarGroupContent>
+          <SidebarMenu>
+            {personalWorkspaceItems.map((item) => (
+              <SidebarMenuItem key={item.title}>
+                <SidebarMenuButton asChild>
+                  <a href={item.url}>
+                    <item.icon />
+                    <span>{item.title}</span>
+                  </a>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            ))}
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
+      {isAdmin ? (
+        <SidebarGroup>
+          <SidebarGroupLabel>Administrator controls</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {administratorControlItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <a href={item.url}>
@@ -136,9 +138,10 @@ export const AdminSidebar = ({ user, isAdmin = false }: AdminSidebarProps) => (
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
-          </SidebarMenu>
-        </SidebarGroupContent>
-      </SidebarGroup>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      ) : null}
     </SidebarContent>
   </Sidebar>
 );

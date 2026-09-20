@@ -15,9 +15,6 @@ import prisma from "@/lib/prisma";
 
 const f = createUploadthing();
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const legacyImageAuth = (_req: Request) => ({ id: "fakeId" }); // Existing image route behavior.
-
 const getUploadSession = async (req: Request) => {
   const session = await auth.api.getSession({ headers: req.headers });
 
@@ -55,14 +52,11 @@ export const ourFileRouter = {
   })
     // Set permissions and file types for this FileRoute
     .middleware(async ({ req }) => {
-      // This code runs on your server before upload
-      const user = await legacyImageAuth(req);
-
-      // If you throw, the user will not be able to upload
-      if (!user) throw new UploadThingError("Unauthorized");
+      // Session-gated like the other uploaders (feature-073 access policy).
+      const session = await getUploadSession(req);
 
       // Whatever is returned here is accessible in onUploadComplete as `metadata`
-      return { userId: user.id };
+      return { userId: session.user.id };
     })
     .onUploadComplete(async ({ metadata, file }) => {
       // This code RUNS ON YOUR SERVER after upload

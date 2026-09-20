@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import type { FileAsset } from "@/generated/prisma/client";
 import type { FileAssetPurpose, FileAssetStatus, FileAssetVisibility } from "@/generated/prisma/enums";
 import { authSession } from "@/lib/auth-utils";
+import { hasAdminRole } from "@/lib/auth-roles";
 import { GENERAL_FILE_USER_STORAGE_LIMIT_BYTES } from "@/lib/file-upload-limits";
 import prisma from "@/lib/prisma";
 
@@ -273,7 +274,7 @@ const assertOwnerOrAdminAccess = async (fileAsset: FileAsset, userId?: string) =
   });
 
   const isOwner = fileAsset.ownerUserId === userId;
-  const isAdmin = user?.role === "admin";
+  const isAdmin = hasAdminRole(user?.role);
 
   if (!isOwner && !isAdmin) {
     throw new Error("Access denied");

@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import type { VideoChannel } from "@/generated/prisma/client";
 import type { VideoChannelVisibility } from "@/generated/prisma/enums";
-import { authSession } from "@/lib/auth-utils";
+import { authSession, requireAdminControl } from "@/lib/auth-utils";
 
 export type VideoChannelActionValues = {
   id?: string;
@@ -130,7 +130,7 @@ export const createVideoChannel = async ({
   visibility = DEFAULT_VIDEO_CHANNEL_VISIBILITY,
 }: VideoChannelActionValues) => {
   try {
-    await getRequiredUserId();
+    await requireAdminControl();
     const { default: prisma } = await import("@/lib/prisma");
 
     const channel = await prisma.videoChannel.create({
@@ -146,6 +146,7 @@ export const createVideoChannel = async ({
 
     return channel;
   } catch (err) {
+    if (err instanceof Error && err.name === "AuthorizationError") throw err;
     console.error({ err });
     throw new Error("Something went wrong (createVideoChannel)");
   }
@@ -161,7 +162,7 @@ export const updateVideoChannel = async ({
   try {
     if (!id) throw new Error("Video channel id is required");
 
-    await getRequiredUserId();
+    await requireAdminControl();
     const { default: prisma } = await import("@/lib/prisma");
 
     const channel = await prisma.videoChannel.update({
@@ -178,6 +179,7 @@ export const updateVideoChannel = async ({
 
     return channel;
   } catch (err) {
+    if (err instanceof Error && err.name === "AuthorizationError") throw err;
     console.error({ err });
     throw new Error("Something went wrong (updateVideoChannel)");
   }
@@ -185,7 +187,7 @@ export const updateVideoChannel = async ({
 
 export const deleteVideoChannel = async (id: string) => {
   try {
-    await getRequiredUserId();
+    await requireAdminControl();
     const { default: prisma } = await import("@/lib/prisma");
 
     await prisma.videoChannel.delete({
@@ -196,6 +198,7 @@ export const deleteVideoChannel = async (id: string) => {
 
     return { success: true };
   } catch (err) {
+    if (err instanceof Error && err.name === "AuthorizationError") throw err;
     console.error({ err });
     throw new Error("Something went wrong (deleteVideoChannel)");
   }

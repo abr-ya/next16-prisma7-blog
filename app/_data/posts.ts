@@ -83,10 +83,14 @@ export const getPostById = async (id: string) => {
       include: postContentTagsInclude,
     });
 
+    const { requireOwnerOrAdmin } = await import("@/lib/auth-utils");
+    if (res) await requireOwnerOrAdmin(res.userId);
+
     return res as Post & {
       contentTags: { tag: { name: string; slug: string } }[];
     };
   } catch (err) {
+    if (err instanceof Error && err.name === "AuthorizationError") throw err;
     console.error({ err });
     throw new Error("Something went wrong");
   }
@@ -145,11 +149,20 @@ export const updatePost = async (params: PostFormValues) => {
     };
 
     const { default: prisma } = await import("@/lib/prisma");
+    const { requireOwnerOrAdmin } = await import("@/lib/auth-utils");
+
+    const existingPost = await prisma.post.findUnique({
+      where: { id },
+      select: { userId: true },
+    });
+
+    if (!existingPost) throw new Error("Something went wrong (updatePost action)");
+    await requireOwnerOrAdmin(existingPost.userId);
+
     const res = await prisma.post.update({
       where: { id },
       data: {
         ...data,
-        userId: session.user.id,
         status: data.status as PostStatus,
         contentTags: {
           deleteMany: {},
@@ -161,6 +174,7 @@ export const updatePost = async (params: PostFormValues) => {
     await syncPostImages(res.id, data.content, session.user.id);
     return res;
   } catch (err) {
+    if (err instanceof Error && err.name === "AuthorizationError") throw err;
     console.error({ err });
     throw new Error("Something went wrong (updatePost action)");
   }
@@ -246,6 +260,28 @@ export const updatePostViews = async (id: string) => {
 
 export const connectLinkToPost = async (postId: string, linkId: string) => {
   try {
+    const { requireOwnerOrAdmin, AuthorizationError } = await import("@/lib/auth-utils");
+
+    const targetPost = await prisma.post.findUnique({
+      where: { id: postId },
+      select: { userId: true },
+    });
+
+    if (!targetPost) throw new AuthorizationError("Post not found");
+
+    const { user, isAdmin } = await requireOwnerOrAdmin(targetPost.userId);
+
+    if (!isAdmin) {
+      const link = await prisma.link.findUnique({
+        where: { id: linkId },
+        select: { userId: true },
+      });
+
+      if (!link || link.userId !== user.id) {
+        throw new AuthorizationError("You can only attach your own links");
+      }
+    }
+
     const post = await prisma.post.update({
       where: { id: postId },
       data: {
