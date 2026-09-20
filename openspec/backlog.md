@@ -74,7 +74,9 @@ These candidates track the hikes/tracks/photos initiative as small increments. T
 
 | Status | Candidate | Area | Summary |
 | --- | --- | --- | --- |
-| P0 Now | outdoor-photo-comments | outdoor/photos-social | Add signed-in comments on hike-linked photos (create/list, visibility through published trip association, and own edit/delete policy). Reuse the shared comment domain patterns from video comments rather than inventing a photo-only comment stack. |
+| P0 Now | comments-shared-ui-foundation | comments/ui | Extract reusable client-side comment list, author/date/content presentation, empty state, and authenticated composer/own-mutation controls from the current public video implementation. Keep video server actions and observable video behavior unchanged; expose target-specific callbacks/adapters rather than prematurely merging target data access. This implements the UI-extraction follow-up defined by feature-018 and prepares a second consumer without a photo-only comment UI. |
+| P0 Now | outdoor-photo-comments | outdoor/photos-social | Add signed-in comments on hike-linked photos using the shared comment UI foundation: create/list plus own edit/delete. Add photo as a normalized shared comment target and enforce server-side visibility through the published trip association. Reuse the video comment validation, safe text rendering, ownership, and revalidation patterns; do not implement a cross-target feed or moderation here. |
+| P0 Now | public-comments-unified-feed-mvp | comments/public | Replace the `/comments` placeholder with an MVP unified feed of comments on all supported visible targets (initially public videos and published trip photos): newest-first pagination, author/content/date, target label/link and safe preview where available, plus an authenticated `Mine` view. Reuse normalized shared comment list items; exclude creation, mutation controls, moderation, and additional target domains from this feed slice. |
 
 ## Fixes
 
