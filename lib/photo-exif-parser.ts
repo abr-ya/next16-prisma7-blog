@@ -305,11 +305,13 @@ const parseOneImage = async (input: PhotoExifParseImageInput): Promise<ParsedIma
   };
 };
 
-const buildSummary = (images: PhotoExifImageSummary[]): PhotoExifSummary => {
+export const buildPhotoExifSummary = (images: PhotoExifImageSummary[]): PhotoExifSummary => {
   const primary = images[0];
   const gpsImage = images.find((image) => image.gps);
 
-  const captureImage = images.find((image) => image.capturedAt);
+  // A timezone-less EXIF wall-clock time deliberately has no UTC `capturedAt`,
+  // but remains valid provenance for a later linked-track timezone assumption.
+  const captureImage = images.find((image) => image.capturedAt || image.captureTimeProvenance);
 
   return {
     capturedAt: captureImage?.capturedAt ?? null,
@@ -358,7 +360,7 @@ export const parsePhotoExifMetadata = async ({
 
     return createSuccessfulPhotoExifMetadata({
       sourceImages,
-      summary: buildSummary(imageSummaries),
+      summary: buildPhotoExifSummary(imageSummaries),
       images: imageSummaries,
       raw: primaryRaw,
     });
