@@ -100,6 +100,7 @@ Cancelled or deferred candidates do not reserve feature numbers.
 | Fix | Change | Area | Summary |
 | --- | --- | --- | --- |
 | fix-001 | fix-001-admin-post-save-enable | posts/admin | Enable the admin post save action as soon as required fields become valid, without unrelated UI interaction. |
+| fix-002 | fix-002-outdoor-photo-capture-summary-time | outdoor/photos-time | Preserve timezone-less EXIF capture-time provenance in photo summaries so the existing single-linked-track timezone flow can derive candidates safely. |
 
 ## Cancelled Candidate Notes
 

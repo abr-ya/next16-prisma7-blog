@@ -81,7 +81,6 @@ These candidates track the hikes/tracks/photos initiative as small increments. T
 
 | Status | Fix | Area | Summary |
 | --- | --- | --- | --- |
-| In Progress | fix-002-outdoor-photo-capture-summary-time | outdoor/photos-time | Preserve a valid timezone-less EXIF `DateTimeOriginal` or `CreateDate` as camera-local capture-time provenance in the photo summary. This restores existing single-linked-track timezone inference and candidate generation without inventing UTC or accepting `ModifyDate` as capture time. |
 
 ## P1 Soon
 
