@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint \"./app/**/*.{js,ts,tsx}\" --quiet",
     "fix": "eslint \"./app/**/*.{js,ts,tsx}\" --fix",
+    "check:workspace-access-policy": "tsx scripts/check-workspace-access-policy.ts",
     "postinstall": "prisma generate",
     "tsc": "tsc --noEmit"
   },

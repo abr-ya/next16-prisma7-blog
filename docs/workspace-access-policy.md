@@ -123,7 +123,7 @@ not an admin-only shell).
 7. Closed (task 2.3): md-docs create/update/delete/read-by-id require administrator control; public doc reads unchanged.
 8. Closed (task 2.3): `assertOwnerOrAdminAccess` uses `hasAdminRole` — `app/_data/files.ts`.
 9. Closed (task 2.3): legacy `imageUploader` requires a real session — `app/api/uploadthing/core.ts`.
-10. Open (phase 3): sidebar shows admin-only destinations to non-admins; enforcement moves from helper-level redirects to consistent page/action guards with Personal/ Administrator navigation split.
+10. Closed (tasks 3.1–3.3): the sidebar separates Personal workspace from Administrator controls and hides the latter for non-admins. Administrator-only route pages redirect before loading protected records (`/admin/md-docs*` and `/admin/video-channels` now guard at the page boundary; photos, files, content tags, and database already did).
 11. Closed (task 2.4): dashboard/category reads are owner-scoped. `getAllContentTags` stays an ungated shared-vocabulary read (tag names are not per-user protected records; governance mutations remain admin-only).
 
 ## Unaudited (out of scope here)

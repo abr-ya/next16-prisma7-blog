@@ -1,11 +1,13 @@
 import { getAllMdDocs } from "@/app/_data/getMdDocs";
 import { AdminPageLayout, MdDocsTable } from "@/components/index";
 import { Button } from "@/components/ui/button";
+import { requireAdmin } from "@/lib/auth-utils";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
 const MdDocsAdminPage = async () => {
+  await requireAdmin();
   const posts = await getAllMdDocs();
 
   const breadItems = [

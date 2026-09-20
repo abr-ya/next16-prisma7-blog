@@ -1,9 +1,11 @@
 import { getAllVideoChannels } from "@/app/_data/video-channels";
 import { AdminPageLayout, VideoChannelCreateDialog, VideoChannelsTable } from "@/components/index";
+import { requireAdmin } from "@/lib/auth-utils";
 
 export const dynamic = "force-dynamic";
 
 const VideoChannelsPage = async () => {
+  await requireAdmin();
   const channels = await getAllVideoChannels();
 
   const breadItems = [

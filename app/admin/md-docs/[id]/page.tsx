@@ -1,7 +1,9 @@
 import { Breadcrumbs, MdDocForm } from "@/components/index";
 import type { MdDoc as IMdDoc } from "@/generated/prisma/client";
+import { requireAdmin } from "@/lib/auth-utils";
 
 const MdDocAdminPage = async ({ params }: { params: Promise<{ id: string }> }) => {
+  await requireAdmin();
   const { id } = await params;
   console.log("MdDocAdminPage, id: ", id);
 

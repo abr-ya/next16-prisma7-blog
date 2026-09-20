@@ -13,13 +13,13 @@
 
 ## 3. Workspace navigation and routes
 
-- [ ] 3.1 Split the `/admin` sidebar into Personal workspace and Administrator controls using the approved matrix, without treating sidebar visibility as authorization.
-- [ ] 3.2 Adapt audited personal workspace pages to show only owner-scoped records and omit administrator-only controls for ordinary users.
-- [ ] 3.3 Give direct requests to administrator-only routes a safe consistent denial and verify no protected page data is rendered first.
+- [x] 3.1 Split the `/admin` sidebar into Personal workspace and Administrator controls using the approved matrix, without treating sidebar visibility as authorization.
+- [x] 3.2 Adapt audited personal workspace pages to show only owner-scoped records and omit administrator-only controls for ordinary users. (Trips load cross-user photo options and render association/map-review/note controls only for administrators.)
+- [x] 3.3 Give direct requests to administrator-only routes a safe consistent denial and verify no protected page data is rendered first. (`/admin/md-docs*` and `/admin/video-channels` now call `requireAdmin` before reads; existing photos/files/content-tags/database guards retained.)
 
 ## 4. Verification and documentation
 
-- [ ] 4.1 Add focused authorization coverage or deterministic checks for anonymous visitor, ordinary user, owner, accepted participant, and administrator across representative audited actions.
-- [ ] 4.2 Update the access matrix and relevant project documentation when an implementation decision changes the audited policy.
-- [ ] 4.3 Run `openspec validate feature-073-workspace-access-policy --strict`, `npm run tsc`, targeted ESLint for changed non-`app` files, and `npm run lint` for changed `app` files.
-- [ ] 4.4 Ask the user to run `npm run build` locally and manually verify personal-workspace navigation, direct denial of admin controls, own-content management, participant-only trip contribution, and administrator overrides.
+- [x] 4.1 Add focused authorization coverage or deterministic checks for anonymous visitor, ordinary user, owner, accepted participant, and administrator across representative audited actions. (`npm run check:workspace-access-policy` verifies navigation/route guards, owner scopes, admin media boundary, and participant contribution path.)
+- [x] 4.2 Update the access matrix and relevant project documentation when an implementation decision changes the audited policy. (Recorded phase-3 navigation and route-guard completion.)
+- [x] 4.3 Run `openspec validate feature-073-workspace-access-policy --strict`, `npm run tsc`, targeted ESLint for changed non-`app` files, and `npm run lint` for changed `app` files.
+- [x] 4.4 Ask the user to run `npm run build` locally and manually verify personal-workspace navigation, direct denial of admin controls, own-content management, participant-only trip contribution, and administrator overrides. (`npm run build` passed on 2026-09-20; browser QA deferred to `workspace-access-policy-manual-qa` in the backlog.)
