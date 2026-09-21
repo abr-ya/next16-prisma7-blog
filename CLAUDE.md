@@ -129,6 +129,7 @@ For Prisma schema changes: validate schema, run `npx prisma generate`, and caref
 ## Token Economy
 
 - Prefer targeted reads over broad scans
+- For broad multi-file exploration (mapping visibility rules across many files, locating a pattern across the repo, finding all references to a domain), delegate to the **Explore** subagent with a focused brief — do not fan out reads yourself
 - Use `rg`, `find`, `sed` with exact paths
 - Do not re-read large files, `node_modules`, `.next`, or `generated/prisma` unnecessarily
 - Summarize findings briefly before editing
