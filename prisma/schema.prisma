@@ -115,11 +115,15 @@ model Comment {
   createdAt DateTime @default(now())
   videoId   String?
   video     Video?   @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  photoId   String?
+  photo     Photo?   @relation(fields: [photoId], references: [id], onDelete: Cascade)
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([videoId, createdAt])
   @@index([userId, videoId])
+  @@index([photoId, createdAt])
+  @@index([userId, photoId])
 }
 
 // Updated Posts model - start
@@ -304,20 +308,20 @@ model HikeNote {
 }
 
 model Track {
-  id          String          @id @default(uuid())
-  title       String
-  slug        String          @unique
-  description String?
-  status      TrackStatus     @default(DRAFT)
-  fileAssetId String          @unique
-  fileAsset   FileAsset       @relation(fields: [fileAssetId], references: [id], onDelete: Restrict)
-  metadata    Json?
+  id                String          @id @default(uuid())
+  title             String
+  slug              String          @unique
+  description       String?
+  status            TrackStatus     @default(DRAFT)
+  fileAssetId       String          @unique
+  fileAsset         FileAsset       @relation(fields: [fileAssetId], references: [id], onDelete: Restrict)
+  metadata          Json?
   recordingTimezone String?
-  userId      String
-  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  hikes       HikesToTracks[]
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @default(now()) @updatedAt
+  userId            String
+  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  hikes             HikesToTracks[]
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @default(now()) @updatedAt
 
   @@index([status])
   @@index([userId])
@@ -345,6 +349,7 @@ model Photo {
   images      PhotoImage[]
   hikes       HikesToPhotos[]
   likes       PhotoLike[]
+  comments    Comment[]
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @default(now()) @updatedAt
 

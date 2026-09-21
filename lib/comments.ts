@@ -1,4 +1,4 @@
-export type CommentTargetType = "video" | "post" | "md-doc";
+export type CommentTargetType = "video" | "post" | "md-doc" | "photo";
 
 export type CommentListItem = {
   id: string;

@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, FileSearch, Heart, ImageIcon, MapPin, Route } from "lucide-react";
+import { ChevronLeft, ChevronRight, FileSearch, Heart, ImageIcon, MapPin, MessageCircle, Route } from "lucide-react";
 import Link from "next/link";
 import { forwardRef, useEffect, useImperativeHandle, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
@@ -12,11 +12,13 @@ import {
   type HikePhotoContributionCapability,
   type HikePhotoDetail,
 } from "@/app/_data/hikes";
+import { HikePhotoCommentSection } from "@/components/hike-pages/hike-photo-comment-composer";
 import { Button, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/index";
 import { HikePhotoCoordinateReview } from "@/components/hike-pages/hike-photo-coordinate-review";
 import { HikePhotoContributionButton } from "@/components/hike-pages/hike-photo-contribution-form";
 import { HikePhotoDetailSummary } from "@/components/hike-pages/hike-photo-detail-summary";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import type { CommentListItem } from "@/lib/comments";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -30,6 +32,9 @@ export type HikePhotoGalleryItem = {
   fullUrl: string | null;
   detail: HikePhotoDetail | null;
   isLikedByViewer: boolean;
+  commentCount: number;
+  initialComments: CommentListItem[];
+  currentUserId?: string | null;
 };
 
 type HikePhotoGalleryProps = {
@@ -44,12 +49,20 @@ export type HikePhotoGalleryHandle = {
   openPhotoById: (photoId: string) => void;
 };
 
+const formatPhotoCommentCount = (count: number) => {
+  if (count === 0) return "No comments";
+  if (count === 1) return "1 comment";
+
+  return `${count} comments`;
+};
+
 export const HikePhotoGallery = forwardRef<HikePhotoGalleryHandle, HikePhotoGalleryProps>(function HikePhotoGallery(
   { photos, canViewFullPhotos, canFocusMap, onFocusMap, photoContributionCapability },
   ref,
 ) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [showDetails, setShowDetails] = useState(false);
+  const [showComments, setShowComments] = useState(false);
   const [exifPhotoId, setExifPhotoId] = useState<string | null>(null);
   const [coordinatePhotoId, setCoordinatePhotoId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -59,6 +72,7 @@ export const HikePhotoGallery = forwardRef<HikePhotoGalleryHandle, HikePhotoGall
   const exifPhoto = photos.find((photo) => photo.id === exifPhotoId) ?? null;
   const coordinatePhoto = photos.find((photo) => photo.id === coordinatePhotoId) ?? null;
   const canNavigate = canViewFullPhotos && photos.length > 1;
+  const showOverlay = showDetails || showComments;
 
   const openPhotoById = (photoId: string) => {
     const index = photos.findIndex((photo) => photo.id === photoId);
@@ -73,6 +87,7 @@ export const HikePhotoGallery = forwardRef<HikePhotoGalleryHandle, HikePhotoGall
   const openPhoto = (index: number) => {
     if (!canViewFullPhotos || !photos[index]?.fullUrl) return;
     setShowDetails(false);
+    setShowComments(false);
     setActiveIndex(index);
   };
 
@@ -81,17 +96,20 @@ export const HikePhotoGallery = forwardRef<HikePhotoGalleryHandle, HikePhotoGall
   const closeViewer = () => {
     setActiveIndex(null);
     setShowDetails(false);
+    setShowComments(false);
   };
 
   const showPrevious = () => {
     if (activeIndex === null || photos.length === 0) return;
     setShowDetails(false);
+    setShowComments(false);
     setActiveIndex((activeIndex - 1 + photos.length) % photos.length);
   };
 
   const showNext = () => {
     if (activeIndex === null || photos.length === 0) return;
     setShowDetails(false);
+    setShowComments(false);
     setActiveIndex((activeIndex + 1) % photos.length);
   };
 
@@ -133,11 +151,13 @@ export const HikePhotoGallery = forwardRef<HikePhotoGalleryHandle, HikePhotoGall
       if (event.key === "ArrowLeft") {
         event.preventDefault();
         setShowDetails(false);
+        setShowComments(false);
         setActiveIndex((current) => (current === null ? current : (current - 1 + photos.length) % photos.length));
       }
       if (event.key === "ArrowRight") {
         event.preventDefault();
         setShowDetails(false);
+        setShowComments(false);
         setActiveIndex((current) => (current === null ? current : (current + 1) % photos.length));
       }
     };
@@ -249,6 +269,12 @@ export const HikePhotoGallery = forwardRef<HikePhotoGalleryHandle, HikePhotoGall
                     {photo.description ? (
                       <p className="line-clamp-2 text-sm text-muted-foreground">{photo.description}</p>
                     ) : null}
+                    {canViewFullPhotos ? (
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <MessageCircle className="size-3.5" />
+                        <span>{formatPhotoCommentCount(photo.commentCount)}</span>
+                      </div>
+                    ) : null}
                   </div>
                 </div>
               );
@@ -342,16 +368,50 @@ export const HikePhotoGallery = forwardRef<HikePhotoGalleryHandle, HikePhotoGall
                     ) : null}
                   </div>
                 ) : null}
-                {activePhoto.detail && !showDetails ? (
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="secondary"
-                    className="absolute right-3 bottom-3"
-                    onClick={() => setShowDetails(true)}
-                  >
-                    Photo details
-                  </Button>
+                {showComments ? (
+                  <div className="absolute inset-x-3 bottom-3 max-h-[calc(100%-1.5rem)] overflow-y-auto rounded-md bg-white/95 p-3 text-foreground shadow-lg backdrop-blur-sm sm:max-w-xl">
+                    <div className="mb-3 flex justify-end">
+                      <Button type="button" size="sm" variant="secondary" onClick={() => setShowComments(false)}>
+                        Hide comments
+                      </Button>
+                    </div>
+                    <HikePhotoCommentSection
+                      photoId={activePhoto.id}
+                      initialComments={activePhoto.initialComments}
+                      isAuthenticated={Boolean(activePhoto.currentUserId)}
+                      currentUserId={activePhoto.currentUserId ?? null}
+                      canViewFullPhotos={canViewFullPhotos}
+                    />
+                  </div>
+                ) : null}
+                {!showOverlay && (activePhoto.detail || activePhoto.commentCount > 0 || canViewFullPhotos) ? (
+                  <div className="absolute right-3 bottom-3 flex flex-wrap justify-end gap-2">
+                    {activePhoto.detail ? (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => {
+                          setShowDetails(true);
+                          setShowComments(false);
+                        }}
+                      >
+                        Photo details
+                      </Button>
+                    ) : null}
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => {
+                        setShowComments(true);
+                        setShowDetails(false);
+                      }}
+                    >
+                      <MessageCircle />
+                      {activePhoto.commentCount > 0 ? formatPhotoCommentCount(activePhoto.commentCount) : "Comments"}
+                    </Button>
+                  </div>
                 ) : null}
               </div>
             </>
