@@ -26,14 +26,35 @@ The feed deliberately does **not** reuse the per-domain read helpers for filteri
 
 ## Decisions
 
-### Decision: Direct query, no current-visibility filtering
+### Decision: One unified `getCommentListItems` action (no current-visibility filtering)
 
-The feed helper `getPublicCommentsFeed` (`app/_data/public-comments-feed.ts`) issues a single `prisma.comment.findMany` that joins `user`, `video`, and `photo` (with the photo's first image for the preview and the most recent `hikesToPhotos.hike.slug` for the trip href). The query selects every comment where `videoId` or `photoId` is set, regardless of current video visibility or trip status. Each row is normalized into a `CommentListItem` via a local adapter that mirrors the shape used by `getPublicVideoCommentListItems` / `getPhotoCommentListItems`.
+The shared module `app/_data/comments.ts` exports a single read action `getCommentListItems(query)` that handles both the per-target and the feed use case. It issues a single `prisma.comment.findMany` that joins `user`, `video` (id/title/thumbnailUrl), and `photo` (id/title + first image fileAsset.url + most recent `hikesToPhotos.hike.slug`), with no current-visibility filters. Each row is normalized to `CommentListItem` via a local adapter.
 
-- **Why no visibility filter:** every existing `Comment` row was created under a per-domain creation-time gate that required a public surface (`createVideoComment` requires `video.visibility = PUBLIC`; `createPhotoComment` requires a `PUBLISHED` trip link). A comment in the table is therefore proof that the page was public at write time. If the target later became hidden, the link in the feed will simply not open on the target page; the feed does not need to second-guess this.
-- **Why a single query, not fan-out through per-domain helpers:** the per-domain helpers filter by current visibility, so reusing them would silently apply the "drop if hidden now" rule we are explicitly not applying here. Inlining the same conversion shape (author + target.title/href/previewImageUrl) into the feed helper is small, keeps visibility logic out of the feed, and avoids an N+1 fan-out cost.
+```ts
+getCommentListItems({
+  videoId?,          // per-target: that video's comments
+  photoId?,          // per-target: that photo's comments
+  page?, pageSize?,  // pagination (feed)
+  viewerId?, view?: "all" | "mine",  // author narrowing (feed)
+  order?: "asc" | "desc",  // asc for per-target, desc for feed
+}) → { items, total, page, pageSize, totalPages }
+```
+
+- **Why no visibility filter:** every existing `Comment` row was created under a per-domain creation-time gate that required a public surface (`createVideoComment` requires `video.visibility = PUBLIC`; `createPhotoComment` requires a `PUBLISHED` trip link). A comment in the table is therefore proof that the page was public at write time. If the target later became hidden, the link in the feed will simply not open on the target page; the feed does not need to second-guess this. The target page is responsible for showing an explicit "no longer available" message rather than redirecting.
+- **Why one function, not fan-out through per-domain helpers:** the per-domain helpers filter by current visibility, so reusing them would silently apply the "drop if hidden now" rule we are explicitly not applying here. Inlining the same conversion shape (author + target.title/href/previewImageUrl) into a shared module is small, keeps visibility logic out of the read path, and lets future per-target callers opt into the same trust-creation-gate model without rewriting the join.
 - **Photo href:** for photo comments we use the most recently assigned trip's slug (any status) — if no trip link exists at all (should not happen in practice given the creation gate), the item is skipped rather than rendered with a broken href.
-- **`OR: [{ videoId: { not: null } }, { photoId: { not: null } }]`** keeps the result set to the two supported target types and silently drops any malformed legacy row that has both nulls.
+- **`OR: [{ videoId: { not: null } }, { photoId: { not: null } }]`** (used when neither `videoId` nor `photoId` is supplied) keeps the result set to the two supported target types and silently drops any malformed legacy row that has both nulls.
+- **Pagination default:** when neither `page` nor `pageSize` is supplied (per-target use case), the helper returns all matching rows in one call, with `total === items.length`, `totalPages === 1`, `page === 1`, and `pageSize === total`. Feed callers explicitly pass `page`/`pageSize` to opt into pagination.
+
+### Decision: Existing per-target helpers stay as-is in this slice
+
+For the duration of feature-087, `getPublicVideoCommentListItems` (in `app/_data/video-comments.ts`) and `getPhotoCommentListItems` (in `app/_data/photo-comments.ts`) are **not** refactored to call `getCommentListItems`. Reasons:
+
+- Feature-086 callers (video detail page, trip photo viewer) already work; this slice must not silently change their behavior.
+- The new shared module is intentionally additive — it ships the unified function and the feed page, and stops short of touching working code paths.
+- Migrating callers and removing the old helpers is its own follow-up feature (see `openspec/backlog.md` → `comments-helper-refactor`). That slice will (a) update the per-target callers to call `getCommentListItems({ videoId })` / `getCommentListItems({ photoId })`, (b) drop the per-domain `*ListItems` exports, and (c) clean up unused imports/select shapes.
+
+There is therefore a brief overlap where two helpers cover overlapping functionality; this is acceptable and bounded.
 
 ### Decision: Page size and pagination semantics
 
