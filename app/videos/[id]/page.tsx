@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { getPublicVideoBookmarks } from "@/app/_data/video-bookmarks";
-import { getPublicVideoCommentListItems } from "@/app/_data/video-comments";
+import { getCommentListItems } from "@/app/_data/comments";
 import { getPublicVideoById } from "@/app/_data/videos";
 import { Badge, Button } from "@/components/index";
 import { VideoBookmarkManager } from "@/components/video-pages/video-bookmark-manager";
@@ -50,7 +50,7 @@ const PublicVideoPage = async ({ params }: PublicVideoPageProps) => {
 
   const session = await authSession();
   const bookmarks = session ? await getPublicVideoBookmarks(video.id) : [];
-  const comments = await getPublicVideoCommentListItems(video.id);
+  const { items: comments } = await getCommentListItems({ videoId: video.id, order: "asc" });
   const providerLabel = formatVideoProvider(video.provider);
   const durationLabel = formatVideoDuration(video.durationSeconds);
 
