@@ -96,6 +96,7 @@ Cancelled or deferred candidates do not reserve feature numbers.
 | feature-084 | feature-084-outdoor-trip-map-photo-lightbox | outdoor/maps-photos | Let a visibility-safe map photo marker open the existing trip photo viewer for the selected photo, including selectable grouped markers, while guest selection shows sign-in guidance without exposing full-photo access. |
 | feature-085 | feature-085-comments-shared-ui-foundation | comments/ui | Extract reusable public comment list and composer UI from the video detail surface while preserving video-specific server actions, visibility, and observable behavior. |
 | feature-086 | feature-086-outdoor-photo-comments | outdoor/photos-social | Add signed-in hike-linked photo comments using the shared comment UI foundation: create/list plus own edit/delete, with a single nullable `photoId` + CHECK constraint and a server-side published-trip visibility gate. |
+| feature-087 | feature-087-public-comments-unified-feed-mvp | comments/public | Replace the `/comments` placeholder with a read-only public MVP feed of comments on supported visible targets (public videos, photos linked to a published trip), newest-first paginated with `?page=` and an authenticated `Mine` view via `?view=mine`; reuse the shared normalized `CommentListItem` shape and `CommentList` building block; trust the per-domain creation-time visibility gate instead of current-visibility filtering; defer additional target domains, mutation controls, moderation, and the D/E/F browser QA scenarios to follow-ups. |
 
 ## Fix History
 

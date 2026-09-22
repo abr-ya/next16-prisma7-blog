@@ -1,5 +1,3 @@
-"use server";
-
 import type { Prisma } from "@/generated/prisma/client";
 import type { CommentListItem } from "@/lib/comments";
 
