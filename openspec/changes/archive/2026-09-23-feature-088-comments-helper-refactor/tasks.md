@@ -21,7 +21,7 @@
 - [x] 4.1 Run `npm run tsc` and confirm zero TypeScript errors.
 - [x] 4.2 Run targeted ESLint over all four changed files (`app/videos/[id]/page.tsx`, `app/(site-top-nav)/hikes/[slug]/page.tsx`, `app/_data/video-comments.ts`, `app/_data/photo-comments.ts`) and confirm zero warnings.
 - [x] 4.3 Run `npm run build` and confirm the build completes successfully with `/videos/[id]` and `/hikes/[slug]` (or `/trips/[slug]`) still appearing in the route list.
-- [ ] 4.4 Manual smoke check in a local browser: open a public video detail page that has at least one comment and confirm the comment list is rendered in the same ascending order with the same author/content/date/target fields as before this slice. Open a published-trip photo detail (viewer) page that has at least one comment and confirm the same. Open `/comments` and confirm the unified feed is unchanged. (Deferred to user — running dev server is already up from feature-087.)
+- [x] 4.4 Manual smoke check in a local browser: open a public video detail page that has at least one comment and confirm the comment list is rendered in the same ascending order with the same author/content/date/target fields as before this slice. Open a published-trip photo detail (viewer) page that has at least one comment and confirm the same. Open `/comments` and confirm the unified feed is unchanged. (User confirmed in the browser on 2026-09-23 — comment lists on `/videos/[id]`, `/hikes/[slug]` (photo viewer), and `/comments` render the same order, fields, and unified feed as before the refactor.)
 
 ## 5. Backlog and documentation bookkeeping
 
