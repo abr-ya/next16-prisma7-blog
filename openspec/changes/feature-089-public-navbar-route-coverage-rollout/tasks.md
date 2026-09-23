@@ -2,39 +2,39 @@
 
 ## 1. Rename the public shell route group
 
-- [ ] 1.1 Rename `app/(site-top-nav)` to `app/(public)` via `git mv` (single commit, no content change yet); verify `ls "app/(public)"` shows the same children the old path had (`docs`, `hikes`, `profile`, `tracks`, `trips`, `layout.tsx`) and that the old path no longer exists.
-- [ ] 1.2 Run `npm run tsc` after the rename and confirm zero new TypeScript errors (existing shell-consuming routes continue to resolve their parent layout).
-- [ ] 1.3 Run `rg -F '"(site-top-nav)"' app components lib` and confirm zero matches — no source code references the renamed group by string.
+- [x] 1.1 Rename `app/(site-top-nav)` to `app/(public)` via `git mv` (single commit, no content change yet); verify `ls "app/(public)"` shows the same children the old path had (`docs`, `hikes`, `profile`, `tracks`, `trips`, `layout.tsx`) and that the old path no longer exists.
+- [x] 1.2 Run `npm run tsc` after the rename and confirm zero new TypeScript errors (existing shell-consuming routes continue to resolve their parent layout).
+- [x] 1.3 Run `rg -F '"(site-top-nav)"' app components lib` and confirm zero matches — no source code references the renamed group by string.
 
 ## 2. Move the home page into the public shell
 
-- [ ] 2.1 `git mv app/page.tsx app/(public)/page.tsx` and confirm `app/page.tsx` no longer exists.
-- [ ] 2.2 Run `npm run tsc` and confirm zero new TypeScript errors.
+- [x] 2.1 `git mv app/page.tsx app/(public)/page.tsx` and confirm `app/page.tsx` no longer exists.
+- [x] 2.2 Run `npm run tsc` and confirm zero new TypeScript errors.
 - [ ] 2.3 In the browser, open `/` and confirm the shared public navbar is now rendered above the existing hero / `AboutSection` / `RecentDocuments` content; confirm `/` still resolves (URL preserved).
 
 ## 3. Move the comments page into the public shell
 
-- [ ] 3.1 `git mv app/comments/page.tsx app/(public)/comments/page.tsx` and confirm `app/comments/page.tsx` no longer exists.
-- [ ] 3.2 In the moved `app/(public)/comments/page.tsx`, switch from `PageLayout` (with default `showBackLink`) to a clean `PageLayout` call that does not pass `showBackLink` (post-cleanup it cannot anyway); confirm the rest of the page body is unchanged.
-- [ ] 3.3 Run `npm run tsc` and confirm zero new TypeScript errors.
+- [x] 3.1 `git mv app/comments/page.tsx app/(public)/comments/page.tsx` and confirm `app/comments/page.tsx` no longer exists.
+- [x] 3.2 In the moved `app/(public)/comments/page.tsx`, switch from `PageLayout` (with default `showBackLink`) to a clean `PageLayout` call that does not pass `showBackLink` (post-cleanup it cannot anyway); confirm the rest of the page body is unchanged.
+- [x] 3.3 Run `npm run tsc` and confirm zero new TypeScript errors.
 - [ ] 3.4 In the browser, open `/comments` and confirm the shared public navbar is rendered and no `← Back to Home` link appears at the top of the content area.
 
 ## 4. Move the blog route family into the public shell
 
-- [ ] 4.1 `git mv app/blog/page.tsx app/(public)/blog/page.tsx`.
-- [ ] 4.2 `git mv "app/blog/[slug]/page.tsx" "app/(public)/blog/[slug]/page.tsx"`.
-- [ ] 4.3 `git rm app/blog/layout.tsx` after both page moves and confirm `app/blog/` no longer exists at the top level (verify `ls app/blog` is empty or absent); confirm `app/blog/links` and any other admin/admin-style subdirectories of blog are NOT touched (verify with `git status`).
-- [ ] 4.4 Run `npm run tsc` and confirm zero new TypeScript errors.
-- [ ] 4.5 Run `npx eslint "app/(public)/blog/page.tsx" "app/(public)/blog/[slug]/page.tsx" --quiet` and confirm zero warnings.
+- [x] 4.1 `git mv app/blog/page.tsx app/(public)/blog/page.tsx`.
+- [x] 4.2 `git mv "app/blog/[slug]/page.tsx" "app/(public)/blog/[slug]/page.tsx"`.
+- [x] 4.3 `git rm app/blog/layout.tsx` after both page moves and confirm `app/blog/` no longer exists at the top level (verify `ls app/blog` is empty or absent); confirm `app/blog/links` and any other admin/admin-style subdirectories of blog are NOT touched (verify with `git status`).
+- [x] 4.4 Run `npm run tsc` and confirm zero new TypeScript errors.
+- [x] 4.5 Run `npx eslint "app/(public)/blog/page.tsx" "app/(public)/blog/[slug]/page.tsx" --quiet` and confirm zero warnings.
 - [ ] 4.6 In the browser, open `/blog` and one `/blog/[slug]` (with a visible published slug) and confirm the shared public navbar is rendered and existing content is unchanged.
 
 ## 5. Move the videos route family into the public shell
 
-- [ ] 5.1 `git mv app/videos/page.tsx app/(public)/videos/page.tsx`.
-- [ ] 5.2 `git mv "app/videos/[id]/page.tsx" "app/(public)/videos/[id]/page.tsx"`.
-- [ ] 5.3 `git rm app/videos/layout.tsx` after both page moves and confirm `app/videos/` no longer exists at the top level; confirm any `app/videos/...` admin subdirectories are NOT touched (verify with `git status`).
-- [ ] 5.4 Run `npm run tsc` and confirm zero new TypeScript errors.
-- [ ] 5.5 Run `npx eslint "app/(public)/videos/page.tsx" "app/(public)/videos/[id]/page.tsx" --quiet` and confirm zero warnings.
+- [x] 5.1 `git mv app/videos/page.tsx app/(public)/videos/page.tsx`.
+- [x] 5.2 `git mv "app/videos/[id]/page.tsx" "app/(public)/videos/[id]/page.tsx"`.
+- [x] 5.3 `git rm app/videos/layout.tsx` after both page moves and confirm `app/videos/` no longer exists at the top level; confirm any `app/videos/...` admin subdirectories are NOT touched (verify with `git status`).
+- [x] 5.4 Run `npm run tsc` and confirm zero new TypeScript errors.
+- [x] 5.5 Run `npx eslint "app/(public)/videos/page.tsx" "app/(public)/videos/[id]/page.tsx" --quiet` and confirm zero warnings.
 - [ ] 5.6 In the browser, open `/videos` and one `/videos/[id]` (with a visible public video) and confirm the shared public navbar is rendered and existing content is unchanged.
 
 ## 6. Drop the legacy back-link affordance from `PageLayout`

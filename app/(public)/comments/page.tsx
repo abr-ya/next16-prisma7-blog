@@ -75,7 +75,7 @@ const CommentsPage = async ({ searchParams }: CommentsPageProps) => {
   const showPagination = totalPages > 1;
 
   return (
-    <PageLayout title="Comments">
+    <PageLayout title="Comments" showBackLink={false}>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground">
           {total > 0 ? `${total} comment${total === 1 ? "" : "s"} · newest first` : "Newest comments first."}
