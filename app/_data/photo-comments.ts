@@ -4,7 +4,6 @@ import { revalidatePath } from "next/cache";
 
 import type { Prisma } from "@/generated/prisma/client";
 import { AuthorizationError, requireActionUser } from "@/lib/auth-utils";
-import type { CommentListItem } from "@/lib/comments";
 
 const MAX_COMMENT_CONTENT_LENGTH = 2000;
 
@@ -20,41 +19,6 @@ export type PhotoCommentTargetContext = {
   photoTitle: string;
   previewImageUrl: string | null;
 };
-
-export type PhotoCommentListRecord = Prisma.CommentGetPayload<{
-  select: {
-    id: true;
-    photoId: true;
-    content: true;
-    createdAt: true;
-    userId: true;
-    user: {
-      select: {
-        id: true;
-        name: true;
-        image: true;
-      };
-    };
-    photo: {
-      select: {
-        id: true;
-        title: true;
-        images: {
-          select: {
-            sortOrder: true;
-            fileAsset: {
-              select: {
-                url: true;
-              };
-            };
-          };
-          orderBy: { sortOrder: "asc" };
-          take: 1;
-        };
-      };
-    };
-  };
-}>;
 
 const photoCommentSelect = {
   id: true,
@@ -182,64 +146,6 @@ const normalizeCommentContent = (value: string) => {
   }
 
   return normalizedValue;
-};
-
-export const getPhotoComments = async (photoId: string): Promise<PhotoCommentListRecord[]> => {
-  try {
-    const { default: prisma } = await import("@/lib/prisma");
-
-    return prisma.comment.findMany({
-      where: {
-        photoId,
-        photo: {
-          hikes: {
-            some: {
-              hike: {
-                status: "PUBLISHED",
-              },
-            },
-          },
-        },
-      },
-      select: photoCommentSelect,
-      orderBy: { createdAt: "asc" },
-    });
-  } catch (err) {
-    console.error({ err });
-    throw new Error("Something went wrong (getPhotoComments)");
-  }
-};
-
-const toPhotoCommentListItem = (
-  comment: PhotoCommentListRecord,
-  target: PhotoCommentTargetContext,
-): CommentListItem => {
-  return {
-    id: comment.id,
-    content: comment.content,
-    createdAt: comment.createdAt.toISOString(),
-    author: {
-      id: comment.user.id,
-      displayName: comment.user.name,
-      image: comment.user.image,
-    },
-    target: {
-      type: "photo",
-      title: target.photoTitle,
-      href: `/trips/${target.tripSlug}`,
-      previewImageUrl: target.previewImageUrl,
-    },
-  };
-};
-
-export const getPhotoCommentListItems = async (photoId: string): Promise<CommentListItem[]> => {
-  const target = await getPhotoCommentTargetContext(photoId);
-
-  if (!target) return [];
-
-  const comments = await getPhotoComments(photoId);
-
-  return comments.map((comment) => toPhotoCommentListItem(comment, target));
 };
 
 export const createPhotoComment = async (values: PhotoCommentActionValues) => {

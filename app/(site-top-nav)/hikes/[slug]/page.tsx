@@ -10,7 +10,7 @@ import {
   getPublicHikePhotoLikeStates,
   getPublicHikeBySlug,
 } from "@/app/_data/hikes";
-import { getPhotoCommentListItems } from "@/app/_data/photo-comments";
+import { getCommentListItems } from "@/app/_data/comments";
 import { HikeParticipantManager } from "@/components/hike-pages/hike-participant-manager";
 import type { HikePhotoGalleryItem } from "@/components/hike-pages/hike-photo-gallery";
 import { HikeTripMedia } from "@/components/hike-pages/hike-trip-media";
@@ -75,7 +75,9 @@ export const TripPage = async ({ params }: HikePageProps) => {
   const galleryPhotos: HikePhotoGalleryItem[] = await Promise.all(
     hike.photos.map(async ({ photo }) => {
       const preview = photo.images.at(0)?.fileAsset;
-      const initialComments = canViewFullPhotos ? await getPhotoCommentListItems(photo.id) : [];
+      const initialComments = canViewFullPhotos
+        ? (await getCommentListItems({ photoId: photo.id, order: "asc" })).items
+        : [];
 
       return {
         id: photo.id,

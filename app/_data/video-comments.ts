@@ -4,7 +4,6 @@ import { revalidatePath } from "next/cache";
 
 import type { Prisma } from "@/generated/prisma/client";
 import { authSession } from "@/lib/auth-utils";
-import type { CommentListItem } from "@/lib/comments";
 
 const MAX_COMMENT_CONTENT_LENGTH = 2000;
 
@@ -13,30 +12,6 @@ export type VideoCommentActionValues = {
   videoId: string;
   content: string;
 };
-
-export type PublicVideoComment = Prisma.CommentGetPayload<{
-  select: {
-    id: true;
-    videoId: true;
-    content: true;
-    createdAt: true;
-    userId: true;
-    user: {
-      select: {
-        id: true;
-        name: true;
-        image: true;
-      };
-    };
-    video: {
-      select: {
-        id: true;
-        title: true;
-        thumbnailUrl: true;
-      };
-    };
-  };
-}>;
 
 const videoCommentSelect = {
   id: true,
@@ -92,53 +67,6 @@ const getPublicVideoOrThrow = async (videoId: string) => {
   if (!video) throw new Error("Public video not found");
 
   return video;
-};
-
-export const getPublicVideoComments = async (videoId: string): Promise<PublicVideoComment[]> => {
-  try {
-    const { default: prisma } = await import("@/lib/prisma");
-
-    return prisma.comment.findMany({
-      where: {
-        videoId,
-        video: {
-          visibility: "PUBLIC",
-        },
-      },
-      select: videoCommentSelect,
-      orderBy: { createdAt: "asc" },
-    });
-  } catch (err) {
-    console.error({ err });
-    throw new Error("Something went wrong (getPublicVideoComments)");
-  }
-};
-
-const toVideoCommentListItem = (comment: PublicVideoComment): CommentListItem => {
-  const videoId = comment.video?.id ?? comment.videoId ?? "";
-
-  return {
-    id: comment.id,
-    content: comment.content,
-    createdAt: comment.createdAt.toISOString(),
-    author: {
-      id: comment.user.id,
-      displayName: comment.user.name,
-      image: comment.user.image,
-    },
-    target: {
-      type: "video",
-      title: comment.video?.title ?? "Video",
-      href: `/videos/${videoId}`,
-      previewImageUrl: comment.video?.thumbnailUrl ?? null,
-    },
-  };
-};
-
-export const getPublicVideoCommentListItems = async (videoId: string): Promise<CommentListItem[]> => {
-  const comments = await getPublicVideoComments(videoId);
-
-  return comments.map(toVideoCommentListItem);
 };
 
 export const createVideoComment = async (values: VideoCommentActionValues) => {
