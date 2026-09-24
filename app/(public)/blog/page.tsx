@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 
-import { getAllPosts } from "../_data/posts";
+import { getAllPosts } from "@/app/_data/posts";
 import { About, Pagination, PostCard } from "@/components/index";
-import { IPostWithUserAndCategory } from "../_interfaces/post.interface";
+import { IPostWithUserAndCategory } from "@/app/_interfaces/post.interface";
 import { buildPageMetadata } from "@/lib/site-metadata";
 
 export const dynamic = "force-dynamic";

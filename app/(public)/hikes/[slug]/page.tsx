@@ -100,7 +100,6 @@ export const TripPage = async ({ params }: HikePageProps) => {
     <PageLayout
       title={hike.title}
       className="pt-6"
-      showBackLink={false}
       contentWidth="wide"
       headerAction={participantManagement ? <HikeParticipantManager management={participantManagement} /> : null}
     >

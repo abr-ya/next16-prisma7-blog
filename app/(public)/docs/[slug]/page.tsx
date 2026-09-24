@@ -41,7 +41,7 @@ const MdDocPage = async ({ params }: MdDocPageProps) => {
   if (!post) notFound();
 
   return (
-    <PageLayout title={post.title} className="pt-6" showBackLink={false}>
+    <PageLayout title={post.title} className="pt-6">
       <PostArticle data={post} />
     </PageLayout>
   );
