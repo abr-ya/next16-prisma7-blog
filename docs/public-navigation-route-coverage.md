@@ -1,21 +1,21 @@
 # Public Navigation Route Coverage
 
-This inventory tracks where the shared public navbar is currently mounted, where it is intended to be mounted, and which route families must stay outside the public navbar shell. Routes that use the shared top navigation live under the URL-neutral `app/(site-top-nav)` route group.
+This inventory tracks where the shared public navbar is currently mounted, where it is intended to be mounted, and which route families must stay outside the public navbar shell. Routes that use the shared top navigation live under the URL-neutral `app/(public)` route group.
 
 ## Primary Public Routes
 
 | Route family | Current navbar state | Intended state | Feature 040 state | Notes |
 | --- | --- | --- | --- | --- |
-| `/` | Not covered | Covered by shared public shell | Deferred | Home keeps its current hero/content layout in feature 040. |
-| `/blog` | Covered by `app/blog/layout.tsx` | Covered by shared public shell | Existing layout preserved | Consolidation is deferred to the rollout slice. |
-| `/blog/[slug]` | Covered by `app/blog/layout.tsx` | Covered by shared public shell | Existing layout preserved | Consolidation is deferred to the rollout slice. |
-| `/docs` | Covered by `app/(site-top-nav)/layout.tsx` | Covered by shared public shell | Covered as pilot | Docs listing validates the reusable shell on a public listing route. |
-| `/docs/[slug]` | Covered by `app/(site-top-nav)/layout.tsx` | Covered by shared public shell | Covered as pilot | Docs detail validates the reusable shell on a public detail route. |
-| `/videos` | Covered by `app/videos/layout.tsx` | Covered by shared public shell | Existing layout preserved | Consolidation is deferred to the rollout slice. |
-| `/videos/[id]` | Covered by `app/videos/layout.tsx` | Covered by shared public shell | Existing layout preserved | Consolidation is deferred to the rollout slice. |
-| `/tracks` | Covered by `app/(site-top-nav)/layout.tsx` | Covered by shared public shell | Covered in feature 048 | Public tracks listing uses the shared shell. |
-| `/tracks/[slug]` | Covered by `app/(site-top-nav)/layout.tsx` | Covered by shared public shell | Covered in feature 048 | Public track detail uses the shared shell. |
-| `/comments` | Not covered | Covered by shared public shell | Deferred | Comments remains unchanged until the rollout slice. |
+| `/` | Covered by shared public shell | Covered by shared public shell | Covered by shared public shell | |
+| `/blog` | Covered by shared public shell | Covered by shared public shell | Covered by shared public shell | |
+| `/blog/[slug]` | Covered by shared public shell | Covered by shared public shell | Covered by shared public shell | |
+| `/docs` | Covered by `app/(public)/layout.tsx` | Covered by shared public shell | Covered as pilot | Docs listing validates the reusable shell on a public listing route. |
+| `/docs/[slug]` | Covered by `app/(public)/layout.tsx` | Covered by shared public shell | Covered as pilot | Docs detail validates the reusable shell on a public detail route. |
+| `/videos` | Covered by shared public shell | Covered by shared public shell | Covered by shared public shell | |
+| `/videos/[id]` | Covered by shared public shell | Covered by shared public shell | Covered by shared public shell | |
+| `/tracks` | Covered by `app/(public)/layout.tsx` | Covered by shared public shell | Covered in feature 048 | Public tracks listing uses the shared shell. |
+| `/tracks/[slug]` | Covered by `app/(public)/layout.tsx` | Covered by shared public shell | Covered in feature 048 | Public track detail uses the shared shell. |
+| `/comments` | Covered by shared public shell | Covered by shared public shell | Covered by shared public shell | |
 
 ## Excluded Route Families
 
@@ -31,4 +31,4 @@ This inventory tracks where the shared public navbar is currently mounted, where
 
 ## Follow-up Rollout
 
-The follow-up `public-navbar-route-coverage-rollout` candidate should move deferred primary public routes into `app/(site-top-nav)`, then consolidate Blog/Videos layout wiring after the Docs pilot is proven. As each route moves, check for legacy page-level back navigation, duplicate navigation controls, and oversized top spacing introduced by older standalone layouts.
+Applied via feature-089-public-navbar-route-coverage-rollout: home, blog, videos, and comments moved under the shared `app/(public)` shell; the `PageLayout.showBackLink` affordance was dropped from the component and its call sites.

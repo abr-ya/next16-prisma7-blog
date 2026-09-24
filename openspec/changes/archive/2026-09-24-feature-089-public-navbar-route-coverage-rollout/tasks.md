@@ -54,14 +54,14 @@
 
 ## 8. Documentation and inventory update
 
-- [ ] 8.1 Update `docs/public-navigation-route-coverage.md`: in the Primary Public Routes table, set the `Current navbar state` and `Feature 040 state` cells for `/`, `/blog`, `/blog/[slug]`, `/videos`, `/videos/[id]`, `/comments` to `Covered by shared public shell` and remove the `Consolidation is deferred to the rollout slice` / `Home keeps its current hero/content layout` / `Comments remains unchanged until the rollout slice` notes; replace the `Follow-up Rollout` section with a one-line summary pointing to the applied feature.
+- [x] 8.1 Update `docs/public-navigation-route-coverage.md`: in the Primary Public Routes table, set the `Current navbar state` and `Feature 040 state` cells for `/`, `/blog`, `/blog/[slug]`, `/videos`, `/videos/[id]`, `/comments` to `Covered by shared public shell` and remove the `Consolidation is deferred to the rollout slice` / `Home keeps its current hero/content layout` / `Comments remains unchanged until the rollout slice` notes; replace the `Follow-up Rollout` section with a one-line summary pointing to the applied feature. (Also renamed the stale `(site-top-nav)` path reference in the docs/tracks rows and the intro paragraph to `(public)` to reflect the rename from task 1.)
 
 ## 9. Backlog and history bookkeeping
 
-- [ ] 9.1 In `openspec/backlog.md`, move the `public-navbar-route-coverage-rollout` row from `Ready` (in P1 Soon) to the Done numbered-features history section by appending a `feature-089 | feature-089-public-navbar-route-coverage-rollout | navigation/public | …` row to the Completed Features table in `openspec/feature-history.md`, summarising the rollout: home/blog/videos/comments moved under the renamed `(public)` shell, `app/blog/layout.tsx` and `app/videos/layout.tsx` deleted as duplicates, and `PageLayout.showBackLink` removed along with the seven call sites that disabled it.
-- [ ] 9.2 Run `openspec validate feature-089-public-navbar-route-coverage-rollout --strict` and confirm zero errors.
+- [x] 9.1 In `openspec/backlog.md`, move the `public-navbar-route-coverage-rollout` row from `Ready` (in P1 Soon) to the Done numbered-features history section by appending a `feature-089 | feature-089-public-navbar-route-coverage-rollout | navigation/public | …` row to the Completed Features table in `openspec/feature-history.md`, summarising the rollout: home/blog/videos/comments moved under the renamed `(public)` shell, `app/blog/layout.tsx` and `app/videos/layout.tsx` deleted as duplicates, and `PageLayout.showBackLink` removed along with the seven call sites that disabled it.
+- [x] 9.2 Run `openspec validate feature-089-public-navbar-route-coverage-rollout --strict` and confirm zero errors.
 
 ## 10. OpenSpec archive
 
-- [ ] 10.1 Run `opsx:sync feature-089-public-navbar-route-coverage-rollout` to apply the `public-navigation` delta to the main spec (only the `specs/public-navigation/spec.md` delta exists, per status JSON). Confirm the new MODIFIED/ADDED requirements are present in `openspec/specs/public-navigation/spec.md` after sync.
-- [ ] 10.2 Run `opsx:archive feature-089-public-navbar-route-coverage-rollout` and confirm the change is moved to `openspec/changes/archive/2026-09-23-feature-089-public-navbar-route-coverage-rollout/` along with `.openspec.yaml` and the three (now four) artifact files.
+- [x] 10.1 Run `opsx:sync feature-089-public-navbar-route-coverage-rollout` to apply the `public-navigation` delta to the main spec (only the `specs/public-navigation/spec.md` delta exists, per status JSON). Confirm the new MODIFIED/ADDED requirements are present in `openspec/specs/public-navigation/spec.md` after sync.
+- [x] 10.2 Run `opsx:archive feature-089-public-navbar-route-coverage-rollout` and confirm the change is moved to `openspec/changes/archive/2026-09-23-feature-089-public-navbar-route-coverage-rollout/` along with `.openspec.yaml` and the three (now four) artifact files.
