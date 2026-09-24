@@ -25,7 +25,7 @@ const DocsPage = async () => {
   }
 
   return (
-    <PageLayout title="Markdown Blog Page" className="pt-6" showBackLink={false}>
+    <PageLayout title="Markdown Blog Page" className="pt-6">
       <DocsList docs={docs} loadError={loadError} />
     </PageLayout>
   );

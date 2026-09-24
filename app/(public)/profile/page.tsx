@@ -40,7 +40,7 @@ export default async function ProfilePage() {
   const avatarFallback = avatarFallbackText(profile.user.name);
 
   return (
-    <PageLayout title="Profile" showBackLink={false} contentWidth="wide">
+    <PageLayout title="Profile" contentWidth="wide">
       <div className="grid gap-6 pb-10">
         <Card>
           <CardContent className="flex flex-wrap items-center gap-4 pt-6">

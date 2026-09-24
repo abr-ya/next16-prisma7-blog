@@ -59,7 +59,7 @@ const TrackPage = async ({ params }: TrackPageProps) => {
   if (!track) notFound();
 
   return (
-    <PageLayout title={track.title} className="pt-6" showBackLink={false}>
+    <PageLayout title={track.title} className="pt-6">
       <article className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 pb-10">
         <div className="flex flex-wrap gap-2">
           <Badge variant="secondary">

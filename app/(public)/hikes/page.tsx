@@ -20,7 +20,7 @@ export const TripsPage = async () => {
   const hikes = await getPublicHikes();
 
   return (
-    <PageLayout title="Trips" className="pt-6" showBackLink={false} contentWidth="wide">
+    <PageLayout title="Trips" className="pt-6" contentWidth="wide">
       <div className="flex w-full flex-col gap-6 pb-10">
         {hikes.length > 0 ? (
           <div className="grid gap-4 md:grid-cols-3">

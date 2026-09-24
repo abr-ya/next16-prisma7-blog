@@ -33,7 +33,7 @@ const TracksPage = async () => {
   const tracks = await getPublicTracks();
 
   return (
-    <PageLayout title="Tracks" className="pt-6" showBackLink={false}>
+    <PageLayout title="Tracks" className="pt-6">
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 pb-10">
         {tracks.length > 0 ? (
           <div className="grid gap-4 md:grid-cols-2">
