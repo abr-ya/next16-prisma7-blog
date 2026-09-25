@@ -20,6 +20,7 @@ model User {
   emailVerified                  Boolean           @default(false)
   image                          String?
   role                           String            @default("user")
+  trustLevel                     UserTrustLevel    @default(NEW)
   banned                         Boolean           @default(false)
   banReason                      String?
   banExpires                     DateTime?
@@ -42,6 +43,8 @@ model User {
   tracks                         Track[]
   photos                         Photo[]
   photoLikes                     PhotoLike[]
+  trustChangesReceived           TrustChangeLog[]  @relation("TrustChangeLogTarget")
+  trustChangesActored            TrustChangeLog[]  @relation("TrustChangeLogActor")
 
   @@unique([email])
   @@map("user")
@@ -204,6 +207,22 @@ enum PostStatus {
 enum ContentTagStatus {
   ACTIVE
   NEEDS_REVIEW
+}
+
+enum UserTrustLevel {
+  NEW
+  VERIFIED
+  TRUSTED
+  RESTRICTED
+}
+
+enum TrustChangeSource {
+  SYSTEM_INIT
+  OAUTH_SIGNUP
+  EMAIL_VERIFIED
+  ADMIN_MANUAL
+  AUTO_PROMOTION
+  ADMIN_REVERT
 }
 
 // Updated Posts model - finish
@@ -594,3 +613,23 @@ model Log {
 }
 
 // Logging model - finish
+
+// Trust change log - start
+model TrustChangeLog {
+  id           String            @id @default(uuid())
+  targetUserId String
+  targetUser   User              @relation("TrustChangeLogTarget", fields: [targetUserId], references: [id], onDelete: Cascade)
+  actorUserId  String?
+  actor        User?             @relation("TrustChangeLogActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+  fromLevel    UserTrustLevel
+  toLevel      UserTrustLevel
+  source       TrustChangeSource
+  reason       String?
+  createdAt    DateTime          @default(now())
+
+  @@index([targetUserId, createdAt])
+  @@index([actorUserId, createdAt])
+  @@map("TrustChangeLog")
+}
+
+// Trust change log - finish
