@@ -106,6 +106,7 @@ Cancelled or deferred candidates do not reserve feature numbers.
 | --- | --- | --- | --- |
 | fix-001 | fix-001-admin-post-save-enable | posts/admin | Enable the admin post save action as soon as required fields become valid, without unrelated UI interaction. |
 | fix-002 | fix-002-outdoor-photo-capture-summary-time | outdoor/photos-time | Preserve timezone-less EXIF capture-time provenance in photo summaries so the existing single-linked-track timezone flow can derive candidates safely. |
+| fix-004 | fix-004-photo-coordinate-approve-close | outdoor/maps-photos | Tighten `HikePhotoCoordinateReview.onChanged` to `(reason: "approved" \| "refresh") => void` so the parent gallery can close the coordinate-review dialog on successful automatic Approve or manual correction while keeping it open on Confirm timezone, Reject map coordinate, and any server-action failure; no server action or schema changes. |
 
 ## Cancelled Candidate Notes
 

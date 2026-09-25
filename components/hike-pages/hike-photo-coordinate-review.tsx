@@ -15,6 +15,8 @@ import { previewTrackTimeOffset } from "@/lib/outdoor-photo-track-time-coordinat
 import { formatTrackRecordingDateTime, formatTrackTimezoneEvidence } from "@/lib/track-gpx-metadata";
 import { formatPhotoCaptureTimeContext } from "@/lib/photo-exif-metadata";
 
+type ChangeReason = "approved" | "refresh";
+
 const candidateLabel = (type: HikePhotoDetail["candidates"][number]["type"], previousDayFinish?: boolean) =>
   type === "INSIDE_TRACK_WINDOW"
     ? "Inside track window"
@@ -41,7 +43,7 @@ export const HikePhotoCoordinateReview = ({
   onChanged,
 }: {
   detail: HikePhotoDetail;
-  onChanged: () => void;
+  onChanged: (reason: ChangeReason) => void;
 }) => {
   const [isPending, startTransition] = useTransition();
   const [offsets, setOffsets] = useState<Record<string, -3 | -2 | -1 | 0 | 1 | 2 | 3>>({});
@@ -52,7 +54,7 @@ export const HikePhotoCoordinateReview = ({
       try {
         await confirmHikePhotoCaptureTimezone({ hikeId: detail.hikeId, photoId: detail.photoId, timeZone });
         toast.success("Photo timezone confirmed");
-        onChanged();
+        onChanged("refresh");
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "Failed to confirm photo timezone");
       }
@@ -64,7 +66,7 @@ export const HikePhotoCoordinateReview = ({
       try {
         await acceptHikePhotoTrackTimeMatchCandidate({ hikeId: detail.hikeId, photoId: detail.photoId, candidateId });
         toast.success("Map coordinate approved");
-        onChanged();
+        onChanged("approved");
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "Failed to approve map coordinate");
       }
@@ -76,7 +78,7 @@ export const HikePhotoCoordinateReview = ({
       try {
         await rejectHikePhotoMapCoordinate({ hikeId: detail.hikeId, photoId: detail.photoId });
         toast.success("Map coordinate rejected");
-        onChanged();
+        onChanged("refresh");
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "Failed to reject map coordinate");
       }
@@ -244,7 +246,7 @@ const ManualCoordinateForm = ({
 }: {
   detail: HikePhotoDetail;
   disabled: boolean;
-  onChanged: () => void;
+  onChanged: (reason: ChangeReason) => void;
 }) => {
   const [isPending, startTransition] = useTransition();
 
@@ -266,7 +268,7 @@ const ManualCoordinateForm = ({
           lng,
         });
         toast.success("Manual map coordinate approved");
-        onChanged();
+        onChanged("approved");
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "Failed to approve manual coordinate");
       }

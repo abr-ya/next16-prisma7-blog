@@ -459,7 +459,12 @@ export const HikePhotoGallery = forwardRef<HikePhotoGalleryHandle, HikePhotoGall
           {coordinatePhoto?.detail ? (
             <HikePhotoCoordinateReview
               detail={coordinatePhoto.detail}
-              onChanged={() => startTransition(() => router.refresh())}
+              onChanged={(reason) => {
+                startTransition(() => {
+                  router.refresh();
+                  if (reason === "approved") setCoordinatePhotoId(null);
+                });
+              }}
             />
           ) : null}
         </DialogContent>
