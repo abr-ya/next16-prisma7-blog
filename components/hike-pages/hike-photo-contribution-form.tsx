@@ -47,6 +47,7 @@ export const HikePhotoContributionButton = ({ capability }: { capability: HikePh
         onOpenChange={setOpen}
         dialogTitle="Add photo to trip"
         submitLabel="Add photo"
+        multiImageOptIn={{ label: "Add more images to this photo (up to 3)" }}
         onSubmit={submit}
       />
     </>
