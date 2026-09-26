@@ -2,12 +2,12 @@
 
 ## 1. Extend the shared CommentList building block
 
-- [x] 1.1 Add an optional `renderTarget?: (comment: CommentListItem) => ReactNode` prop to `CommentList` in `components/comments/comment-list.tsx`, parallel to the existing `renderActions`. Verify TypeScript sees the new prop and the existing call sites still type-check unchanged.
-- [x] 1.2 Render the `renderTarget` output inside the existing `flex items-center gap-2` row beneath the comment text, only when a renderer is provided. Verify the article shell, avatar row, and existing `renderActions` rendering keep their previous markup and classes.
+- [x] 1.1 Add an optional `showSourceLink?: boolean` prop to `CommentList` in `components/comments/comment-list.tsx`, parallel to the existing `renderActions`. Verify TypeScript sees the new prop and the existing call sites (video detail page, trip photo viewer) still type-check unchanged. Note: a server page cannot pass a function to a client component, so the source-link renderer has to live inside `CommentList` itself rather than be supplied per call site.
+- [x] 1.2 When `showSourceLink` is `true`, render a small `next/link` to `comment.target.href` (with an `ExternalLink` icon and "View source" label) inside the existing `flex items-center gap-2` row beneath the comment text. Verify the article shell, avatar row, and existing `renderActions` rendering keep their previous markup and classes when `showSourceLink` is unset or `false`.
 
 ## 2. Wire the source link on the public /comments feed
 
-- [x] 2.1 In `app/(public)/comments/page.tsx`, pass a `renderTarget` to `CommentList` that returns a `next/link` (`Link` from `next/link`) pointing at `comment.target.href` with a short, accessible label such as `View on {type}`. Verify the existing pagination, view toggle, and empty state render paths are untouched.
+- [x] 2.1 In `app/(public)/comments/page.tsx`, set `showSourceLink` on the `<CommentList>` invocation so the public feed exposes the source link on every visible card. Verify the existing pagination, view toggle, and empty state render paths are untouched.
 
 ## 3. Validation
 
