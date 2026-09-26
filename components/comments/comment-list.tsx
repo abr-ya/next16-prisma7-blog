@@ -1,6 +1,8 @@
 "use client";
 
 import { format } from "date-fns";
+import Link from "next/link";
+import { ExternalLink } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { CommentText } from "@/components/common/comment-text";
@@ -10,6 +12,7 @@ import type { CommentListItem } from "@/lib/comments";
 type CommentListProps = {
   comments: CommentListItem[];
   emptyState: ReactNode;
+  showSourceLink?: boolean;
   renderActions?: (comment: CommentListItem) => ReactNode;
 };
 
@@ -31,7 +34,7 @@ const avatarFallbackText = (name?: string | null): string => {
 
 const formatCommentDate = (value: string) => format(new Date(value), "PPP");
 
-export const CommentList = ({ comments, emptyState, renderActions }: CommentListProps) => {
+export const CommentList = ({ comments, emptyState, showSourceLink, renderActions }: CommentListProps) => {
   if (comments.length === 0) return <>{emptyState}</>;
 
   return (
@@ -39,6 +42,7 @@ export const CommentList = ({ comments, emptyState, renderActions }: CommentList
       {comments.map((comment) => {
         const authorName = comment.author.displayName || "Anonymous";
         const actions = renderActions?.(comment);
+        const hasExtras = showSourceLink || Boolean(actions);
 
         return (
           <article key={comment.id} className="rounded-md border p-4">
@@ -62,7 +66,20 @@ export const CommentList = ({ comments, emptyState, renderActions }: CommentList
                   value={comment.content}
                   className="whitespace-pre-wrap wrap-break-word text-sm text-muted-foreground"
                 />
-                {actions ? <div className="flex items-center gap-2">{actions}</div> : null}
+                {hasExtras ? (
+                  <div className="flex items-center gap-2">
+                    {showSourceLink ? (
+                      <Link
+                        href={comment.target.href}
+                        className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground underline-offset-4 hover:underline hover:text-foreground focus-visible:underline focus-visible:outline-none"
+                      >
+                        <ExternalLink className="size-3" aria-hidden />
+                        View source
+                      </Link>
+                    ) : null}
+                    {actions}
+                  </div>
+                ) : null}
               </div>
             </div>
           </article>

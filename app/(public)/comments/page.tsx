@@ -82,7 +82,7 @@ const CommentsPage = async ({ searchParams }: CommentsPageProps) => {
         </p>
         {viewerId ? <FeedViewToggle currentView={view} currentPage={page} /> : null}
       </div>
-      <CommentList comments={items} emptyState={emptyState} />
+      <CommentList comments={items} emptyState={emptyState} showSourceLink />
       {showPagination ? (
         <nav className="mt-8 flex flex-row items-center justify-center gap-6" aria-label="Comments pages">
           <Button
