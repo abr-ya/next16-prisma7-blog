@@ -10,6 +10,7 @@ import type { CommentListItem } from "@/lib/comments";
 type CommentListProps = {
   comments: CommentListItem[];
   emptyState: ReactNode;
+  renderTarget?: (comment: CommentListItem) => ReactNode;
   renderActions?: (comment: CommentListItem) => ReactNode;
 };
 
@@ -31,14 +32,16 @@ const avatarFallbackText = (name?: string | null): string => {
 
 const formatCommentDate = (value: string) => format(new Date(value), "PPP");
 
-export const CommentList = ({ comments, emptyState, renderActions }: CommentListProps) => {
+export const CommentList = ({ comments, emptyState, renderTarget, renderActions }: CommentListProps) => {
   if (comments.length === 0) return <>{emptyState}</>;
 
   return (
     <div className="grid gap-3">
       {comments.map((comment) => {
         const authorName = comment.author.displayName || "Anonymous";
+        const target = renderTarget?.(comment);
         const actions = renderActions?.(comment);
+        const hasExtras = Boolean(target) || Boolean(actions);
 
         return (
           <article key={comment.id} className="rounded-md border p-4">
@@ -62,7 +65,12 @@ export const CommentList = ({ comments, emptyState, renderActions }: CommentList
                   value={comment.content}
                   className="whitespace-pre-wrap wrap-break-word text-sm text-muted-foreground"
                 />
-                {actions ? <div className="flex items-center gap-2">{actions}</div> : null}
+                {hasExtras ? (
+                  <div className="flex items-center gap-2">
+                    {target}
+                    {actions}
+                  </div>
+                ) : null}
               </div>
             </div>
           </article>

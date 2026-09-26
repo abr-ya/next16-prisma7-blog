@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
 
 import { FEED_PAGE_SIZE, getCommentListItems, type CommentListView } from "@/app/_data/comments";
 import { Button } from "@/components/index";
@@ -8,6 +8,7 @@ import { CommentList } from "@/components/comments/comment-list";
 import { FeedViewToggle } from "@/components/comments/feed/feed-view-toggle";
 import { PageLayout } from "@/components/layout/page-layout";
 import { authSession } from "@/lib/auth-utils";
+import type { CommentListItem } from "@/lib/comments";
 import { buildPageMetadata } from "@/lib/site-metadata";
 import { cn } from "@/lib/utils";
 
@@ -65,6 +66,16 @@ const CommentsPage = async ({ searchParams }: CommentsPageProps) => {
     order: "desc",
   });
 
+  const renderCommentTarget = (comment: CommentListItem) => (
+    <Link
+      href={comment.target.href}
+      className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground underline-offset-4 hover:underline hover:text-foreground focus-visible:underline focus-visible:outline-none"
+    >
+      <ExternalLink className="size-3" aria-hidden />
+      View source
+    </Link>
+  );
+
   const emptyState =
     view === "mine" ? (
       <p className="text-muted-foreground">You haven&apos;t left any comments yet.</p>
@@ -82,7 +93,7 @@ const CommentsPage = async ({ searchParams }: CommentsPageProps) => {
         </p>
         {viewerId ? <FeedViewToggle currentView={view} currentPage={page} /> : null}
       </div>
-      <CommentList comments={items} emptyState={emptyState} />
+      <CommentList comments={items} emptyState={emptyState} renderTarget={renderCommentTarget} />
       {showPagination ? (
         <nav className="mt-8 flex flex-row items-center justify-center gap-6" aria-label="Comments pages">
           <Button
