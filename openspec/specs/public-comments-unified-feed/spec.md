@@ -6,7 +6,7 @@ Provides the public `/comments` page as a read-only, newest-first, paginated fee
 
 ### Requirement: Public unified comments feed page
 
-The system SHALL render the public `/comments` page as a unified feed of comments across every supported visible target, listing each comment's content, author display name, author avatar when available, created date, and a target label that links to the underlying public target page. The page SHALL only show comments whose target is visible to the current viewer, and SHALL enforce that visibility server-side.
+The system SHALL render the public `/comments` page as a unified feed of comments across every supported visible target, listing each comment's content, author display name, author avatar when available, and created date. The page SHALL only show comments whose target is visible to the current viewer, and SHALL enforce that visibility server-side.
 
 #### Scenario: Anonymous visitor sees video and trip-photo comments only
 
@@ -16,9 +16,10 @@ The system SHALL render the public `/comments` page as a unified feed of comment
 
 #### Scenario: Each card links to the underlying target
 
-- **WHEN** any comment is rendered
+- **WHEN** any comment is rendered on `/comments`
 - **THEN** the card exposes the target's normalized `type`, `title`, and `href`
-- **AND** the title is rendered as a link to that `href`
+- **AND** a clickable source link visible on the card navigates to that `href`
+- **AND** the source link is the only interactive navigation on the card so accessibility is preserved
 
 ### Requirement: Newest-first feed ordering
 
