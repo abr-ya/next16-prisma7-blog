@@ -10,7 +10,7 @@
 
 - [x] 2.1 Add or update focused coverage for the dialog policy and its trip-only invocation where the repository's existing test approach permits; verify default, opt-in, and unaffected-admin cases. No automated test harness exists in this repository; the behavior is covered by the required manual browser check below.
 - [x] 2.2 Run `npm run tsc` and targeted ESLint for changed non-`app` files; verify both complete successfully.
-- [x] 2.3 Run `npm run lint` if an `app` file changes, and ask the user to run `npm run build` locally; verify or record the result. No `app` file changed. User ran the local build on 2026-09-26; it was blocked by a network failure fetching the Geist font from `fonts.gstatic.com`, followed by Turbopack's unresolved internal font-module error.
+- [x] 2.3 Run `npm run lint` if an `app` file changes, and ask the user to run `npm run build` locally; verify or record the result. No `app` file changed. User reran the local build on 2026-09-26: it completed successfully, including TypeScript, page-data collection, static-page generation, and page-optimization finalization. Turbopack emitted non-fatal `Couldn't load fs` and `Couldn't load zlib` messages during page-data/static-page work.
 - [x] 2.4 Manually verify in a browser as an authorized trip contributor: one image can be uploaded by default, two and three require opt-in, and the administrator photo create/edit form still accepts its existing one-to-three image range. Verified by the user on 2026-09-26.
 
 ## 3. Planning and backlog
