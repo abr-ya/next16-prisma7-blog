@@ -4,7 +4,7 @@
 
 ### Requirement: Offset-backed EXIF preserves source camera time
 
-The system SHALL preserve the source camera-local date and time and the numeric EXIF offset when an image supplies both an EXIF capture timestamp and offset, alongside the derived UTC instant. It SHALL identify whether capture time came from GPS UTC, offset-backed EXIF, or timezone-less EXIF, and SHALL not infer an IANA timezone from a numeric offset alone.
+The system SHALL preserve the source camera-local date and time whenever an image supplies an EXIF camera timestamp, and SHALL preserve the numeric EXIF offset when one is supplied, alongside the derived UTC instant. When GPS UTC and a camera timestamp coexist, the system SHALL retain the GPS-derived UTC instant as comparable context without discarding the camera-local value. It SHALL identify whether capture time came from GPS UTC, offset-backed EXIF, or timezone-less EXIF, and SHALL not infer an IANA timezone from a numeric offset alone.
 
 #### Scenario: EXIF contains camera time and offset
 
@@ -18,9 +18,15 @@ The system SHALL preserve the source camera-local date and time and the numeric 
 - **THEN** the system retains that value as an unconfirmed camera-local wall-clock time under the existing timezone-confirmation model
 - **AND** it does not invent a numeric offset, IANA timezone, or UTC instant
 
-#### Scenario: EXIF provides GPS UTC capture time
+#### Scenario: EXIF provides GPS UTC capture time and camera-local time
 
-- **WHEN** EXIF provides an authoritative GPS date and time
+- **WHEN** EXIF provides an authoritative GPS date and time and `DateTimeOriginal` or an equivalent camera timestamp
+- **THEN** the system retains the camera-local value for primary presentation and the GPS-derived UTC instant as separate comparable context
+- **AND** it does not infer an EXIF offset when none was supplied
+
+#### Scenario: EXIF provides only GPS UTC capture time
+
+- **WHEN** EXIF provides an authoritative GPS date and time without a camera timestamp
 - **THEN** the system retains the GPS-derived UTC instant and its GPS provenance
 - **AND** it does not misrepresent that UTC source as an EXIF camera-local time with an offset
 
@@ -46,10 +52,10 @@ The authorized trip-photo details SHALL present an available source camera-local
 - **THEN** the details identify the camera time as timezone unconfirmed
 - **AND** they do not select a track timezone or derive an absolute UTC instant automatically
 
-#### Scenario: Legacy offset-backed metadata lacks camera-local source values
+#### Scenario: Legacy metadata lacks camera-local source values
 
-- **WHEN** an owner or administrator opens a photo whose existing offset-backed metadata has a UTC instant but lacks preserved camera-local time or offset
-- **THEN** the details recommend refreshing EXIF metadata to restore source camera-time presentation when the original file still provides it
+- **WHEN** an owner or administrator opens a photo whose existing metadata has a UTC instant but lacks preserved camera-local time while the original file may provide it
+- **THEN** the details present a direct EXIF-refresh action to restore source camera-time presentation
 - **AND** the recommendation does not alter the stored UTC instant, metadata, or coordinate state until an authorized refresh is requested
 
 #### Scenario: Read-only viewer sees safe capture context

@@ -446,6 +446,8 @@ export type HikePhotoDetail = {
   linkedTrackTimezones: string[];
   captureTimeAssumption: { timeZone: string; provenance: "TRACK_DEFAULT" | "USER_CONFIRMED" } | null;
   timezoneConfirmationRequired: boolean;
+  canRefreshExif: boolean;
+  requiresCameraTimeRefresh: boolean;
   acceptedCoordinate: HikePhotoAcceptedCoordinate | null;
   canReviewCoordinate: boolean;
   isAdmin: boolean;
@@ -1512,6 +1514,7 @@ const getPhotoDetailAccess = async ({ hikeId, photoId }: { hikeId: string; photo
     photo,
     accessFlags,
     canReviewCoordinate: canReviewHikePhotoCoordinate(accessFlags),
+    canRefreshExif: canRefreshHikePhotoExif(accessFlags),
     reviewedByUserId: session.user.id,
   };
 };
@@ -1601,6 +1604,11 @@ export const getHikePhotoDetail = async ({
       metadataState.summary.captureTimeTimezoneEvidence === "MISSING" &&
       !metadataState.summary.captureTimeNormalization &&
       linkedTrackTimezones.length !== 1,
+    canRefreshExif: access.canRefreshExif,
+    requiresCameraTimeRefresh:
+      metadataState.status === "SUCCESS" &&
+      Boolean(metadataState.summary.captureTimeProvenance?.instantUtc) &&
+      !metadataState.summary.captureTimeProvenance?.localWallTime,
     acceptedCoordinate,
     canReviewCoordinate: access.canReviewCoordinate,
     isAdmin: access.accessFlags.isAdmin,

@@ -113,13 +113,13 @@ export const HikePhotoGallery = forwardRef<HikePhotoGalleryHandle, HikePhotoGall
     setActiveIndex((activeIndex + 1) % photos.length);
   };
 
-  const refreshExif = () => {
-    if (!exifPhoto?.detail) return;
-    const detail = exifPhoto.detail;
+  const refreshExif = (photo = exifPhoto) => {
+    if (!photo?.detail) return;
+    const detail = photo.detail;
 
     startTransition(async () => {
       try {
-        await refreshHikePhotoExifMetadata({ hikeId: detail.hikeId, photoId: exifPhoto.id });
+        await refreshHikePhotoExifMetadata({ hikeId: detail.hikeId, photoId: photo.id });
         toast.success("EXIF metadata refreshed");
         router.refresh();
       } catch (error) {
@@ -349,6 +349,10 @@ export const HikePhotoGallery = forwardRef<HikePhotoGalleryHandle, HikePhotoGall
                       acceptedCoordinate={activePhoto.detail.acceptedCoordinate}
                       linkedTrackTimezones={activePhoto.detail.linkedTrackTimezones}
                       adminExifMetadata={activePhoto.detail.adminExifMetadata}
+                      showCameraTimeRefreshRecommendation={
+                        activePhoto.detail.canRefreshExif && activePhoto.detail.requiresCameraTimeRefresh
+                      }
+                      onRefreshExif={activePhoto.detail.canRefreshExif ? () => refreshExif(activePhoto) : undefined}
                     />
                     {canFocusMap && activePhoto.detail.acceptedCoordinate ? (
                       <div className="mt-4 flex justify-end">
@@ -434,9 +438,12 @@ export const HikePhotoGallery = forwardRef<HikePhotoGalleryHandle, HikePhotoGall
                 acceptedCoordinate={exifPhoto.detail.acceptedCoordinate}
                 linkedTrackTimezones={exifPhoto.detail.linkedTrackTimezones}
                 adminExifMetadata={exifPhoto.detail.adminExifMetadata}
+                showCameraTimeRefreshRecommendation={
+                  exifPhoto.detail.canRefreshExif && exifPhoto.detail.requiresCameraTimeRefresh
+                }
               />
               <div className="flex justify-end">
-                <Button type="button" disabled={isPending} onClick={refreshExif}>
+                <Button type="button" disabled={isPending} onClick={() => refreshExif()}>
                   <FileSearch />
                   {isPending ? "Refreshing..." : "Refresh EXIF"}
                 </Button>

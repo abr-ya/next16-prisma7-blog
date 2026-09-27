@@ -10,6 +10,7 @@ export type PhotoCaptureTimeProvenance = {
   source: PhotoCaptureTimeSource;
   instantUtc: string | null;
   localWallTime: string | null;
+  exifOffsetMinutes?: number | null;
   timezoneEvidence: PhotoCaptureTimezoneEvidence;
   sourceFileAssetId: string;
 };
@@ -147,6 +148,7 @@ const isCaptureTimeProvenance = (value: unknown): value is PhotoCaptureTimeProve
   isNullableString(value.instantUtc) &&
   (value.instantUtc === null || isIsoDateString(value.instantUtc)) &&
   isNullableString(value.localWallTime) &&
+  isOptionalNullableFiniteNumber(value.exifOffsetMinutes) &&
   isOptionalCaptureTimeTimezoneEvidence(value.timezoneEvidence) &&
   value.timezoneEvidence !== undefined &&
   value.timezoneEvidence !== null &&
@@ -610,6 +612,26 @@ export const formatPhotoCapturedAtInTimezone = (value?: string | null, timeZone?
   } catch {
     return null;
   }
+};
+
+export const formatPhotoCameraLocalTime = (value?: string | null) => {
+  if (!value) return null;
+
+  const match = value.trim().match(/^(\d{4})[:.-](\d{2})[:.-](\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?/);
+  if (!match) return value.trim() || null;
+
+  const [, year, month, day, hour, minute, second] = match;
+  return `${year}-${month}-${day} ${hour}:${minute}${second ? `:${second}` : ""}`;
+};
+
+export const formatExifOffset = (offsetMinutes?: number | null) => {
+  if (!isFiniteNumber(offsetMinutes) || !Number.isInteger(offsetMinutes) || Math.abs(offsetMinutes) > 14 * 60) {
+    return null;
+  }
+
+  const sign = offsetMinutes < 0 ? "-" : "+";
+  const absolute = Math.abs(offsetMinutes);
+  return `${sign}${String(Math.floor(absolute / 60)).padStart(2, "0")}:${String(absolute % 60).padStart(2, "0")}`;
 };
 
 export const formatPhotoCaptureTimeSource = (value?: PhotoCaptureTimeSource | null) =>

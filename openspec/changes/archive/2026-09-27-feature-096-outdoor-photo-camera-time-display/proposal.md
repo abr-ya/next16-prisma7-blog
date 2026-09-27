@@ -6,10 +6,10 @@ People expect a photo's capture time to mean the camera-local time shown when it
 
 ## What Changes
 
-- Preserve the original camera-local EXIF timestamp and its numeric offset when both are available, alongside the existing derived UTC instant.
+- Preserve the original camera-local EXIF timestamp and its numeric offset when available, including when GPS UTC supplies the authoritative comparable instant.
 - In authorized trip-photo details, show camera-local capture time as the primary value; show stored UTC and the applicable timezone/offset as supporting context.
 - When EXIF lacks an offset, retain the existing unconfirmed wall-clock value and surface an unambiguous linked-track IANA timezone as a proposed assumption. Let only the photo owner or an administrator confirm or replace that timezone through the existing safe confirmation workflow.
-- Identify legacy offset-backed metadata that has UTC but lacks preserved camera-local time/offset, and recommend authorized EXIF refresh so the original can be restored from the file when available.
+- Identify legacy metadata that has a UTC instant but lacks preserved camera-local time/offset, and give owners/admins a direct EXIF-refresh action so the original can be restored from the file when available.
 
 ### Non-goals
 
