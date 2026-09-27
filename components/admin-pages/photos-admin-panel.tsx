@@ -45,8 +45,10 @@ import { formatHikeDateRange, formatHikeStatus, formatHikeType } from "@/lib/hik
 import {
   formatPhotoCapturedAtInTimezone,
   formatPhotoCapturedAtUtc,
+  formatPhotoCameraLocalTime,
   formatPhotoDimensions,
   formatPhotoExposureTriplet,
+  formatExifOffset,
   formatPhotoGpsPresence,
   getPhotoExifMetadataState,
   type PhotoExifMetadataState,
@@ -121,11 +123,19 @@ const getMetadataStatusVariant = (state: PhotoExifMetadataState) => {
 };
 
 const getCaptureTimeLines = (summary: PhotoExifSummary) => {
-  const localWallTime = summary.captureTimeProvenance?.localWallTime;
+  const provenance = summary.captureTimeProvenance;
+  const localWallTime = formatPhotoCameraLocalTime(provenance?.localWallTime);
+  const exifOffset = formatExifOffset(provenance?.exifOffsetMinutes);
   const lines: string[] = [];
 
   if (localWallTime) {
-    lines.push(`Captured: ${localWallTime} (camera-local; timezone unconfirmed)`);
+    lines.push(
+      provenance?.source === "EXIF_OFFSET" && exifOffset
+        ? `Captured: ${localWallTime} (camera-local; EXIF ${exifOffset})`
+        : provenance?.source === "GPS_UTC"
+          ? `Captured: ${localWallTime} (camera-local; GPS UTC context)`
+          : `Captured: ${localWallTime} (camera-local; timezone unconfirmed)`,
+    );
   } else {
     const capturedAtUtc = formatPhotoCapturedAtUtc(summary.capturedAt);
     if (capturedAtUtc) lines.push(`Captured: ${capturedAtUtc}`);

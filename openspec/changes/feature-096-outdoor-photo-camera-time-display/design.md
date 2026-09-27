@@ -22,19 +22,19 @@ See `proposal.md` for motivation. Current extraction reads `DateTimeOriginal` an
 
 ### 1. Extend versioned EXIF metadata additively
 
-The capture-time provenance record will preserve the EXIF camera wall-clock string whenever it is the selected capture source and add an optional numeric offset field for offset-backed EXIF. The existing `instantUtc`, source, and timezone-evidence fields remain intact. Metadata normalization accepts old records without the new optional fields; new or refreshed extraction writes the richer shape.
+The capture-time provenance record will preserve the EXIF camera wall-clock string whenever `DateTimeOriginal` or its equivalent is available and add an optional numeric offset field for offset-backed EXIF. GPS UTC remains the authoritative comparable instant when present, but it no longer discards an available camera-local presentation value. The existing `instantUtc`, source, and timezone-evidence fields remain intact. Metadata normalization accepts old records without the new optional fields; new or refreshed extraction writes the richer shape.
 
 Alternative: reconstruct the camera-local value only from stored UTC in the viewer. Rejected because an offset is not an IANA timezone and the old metadata may not retain which EXIF offset generated UTC.
 
 ### 2. Render camera time first, UTC second
 
-The shared formatter will produce labelled source camera time, offset/IANA context, and stored UTC separately. Offset-backed EXIF uses the preserved source value and offset as the primary display. GPS UTC falls back to UTC as primary. Offset-free EXIF remains the primary wall-clock display marked unconfirmed, with existing normalized/track-proposal context distinguished from source evidence.
+The shared formatter will produce labelled source camera time, offset/IANA context, and stored UTC separately. Offset-backed EXIF uses the preserved source value and offset as the primary display. When a GPS UTC instant and a camera wall-clock value coexist, the camera value is primary and GPS UTC is the separate comparable context. GPS UTC without a camera value falls back to UTC as primary. Offset-free EXIF remains the primary wall-clock display marked unconfirmed, with existing normalized/track-proposal context distinguished from source evidence.
 
 Alternative: use UTC as the sole display. Rejected because it hides the time the photographer recorded and makes common trip-photo review unnecessarily difficult.
 
 ### 3. Reuse owner/admin controls and distinguish legacy recovery
 
-Only the photo owner and administrators will receive the existing timezone-confirmation controls and a refresh recommendation. A legacy recovery condition is explicit: an offset-backed source has a stored instant but no preserved camera-local value or offset. Refresh remains user-initiated, replaces metadata through the existing file-reading path, and never rewrites coordinates automatically.
+Only the photo owner and administrators will receive the existing timezone-confirmation controls and a refresh recommendation. A legacy recovery condition is explicit: metadata has a comparable UTC instant but no preserved camera-local value. Refresh remains user-initiated, replaces metadata through the existing file-reading path, and never rewrites coordinates automatically.
 
 Alternative: automatically reparse all historical images. Rejected because it expands storage/network work, may fail for unavailable originals, and changes metadata without owner/admin review.
 

@@ -124,34 +124,43 @@ const parseExifDateTimeParts = (value: string) => {
 const toCapturedAt = (
   value: unknown,
   offsetValue?: unknown,
-): { value: string | null; localWallTime: string | null; evidence: PhotoCaptureTimezoneEvidence } | null => {
+): {
+  value: string | null;
+  localWallTime: string | null;
+  evidence: PhotoCaptureTimezoneEvidence;
+  exifOffsetMinutes?: number | null;
+} | null => {
   if (typeof value === "string") {
-    const parts = parseExifDateTimeParts(value);
+    const trimmed = value.trim();
+    const inlineOffset = trimmed.match(/([+-]\d{2}:?\d{2})$/)?.[1];
+    const parts = parseExifDateTimeParts(trimmed);
 
     if (parts) {
-      const offsetMinutes = parseExifOffsetMinutes(offsetValue);
+      const offsetMinutes = parseExifOffsetMinutes(offsetValue) ?? parseExifOffsetMinutes(inlineOffset);
       const utcMillis = Date.UTC(parts.year, parts.month - 1, parts.day, parts.hours, parts.minutes, parts.seconds);
 
       if (offsetMinutes !== null) {
         return {
           value: new Date(utcMillis - offsetMinutes * 60_000).toISOString(),
-          localWallTime: null,
+          localWallTime: trimmed.replace(/(?:Z|[+-]\d{2}:?\d{2})$/i, "").trim(),
           evidence: "UTC_OR_OFFSET",
+          exifOffsetMinutes: offsetMinutes,
         };
       }
 
-      return { value: null, localWallTime: value.trim(), evidence: "MISSING" };
+      return { value: null, localWallTime: trimmed, evidence: "MISSING" };
     }
 
     if (!Number.isNaN(Date.parse(value))) {
-      const hasOffset = /(?:Z|[+-]\d{2}:?\d{2})$/i.test(value.trim());
-      if (!hasOffset) return { value: null, localWallTime: value.trim(), evidence: "MISSING" };
+      const hasOffset = /(?:Z|[+-]\d{2}:?\d{2})$/i.test(trimmed);
+      if (!hasOffset) return { value: null, localWallTime: trimmed, evidence: "MISSING" };
 
-      const normalized = new Date(value).toISOString();
+      const normalized = new Date(trimmed).toISOString();
       return {
         value: normalized,
-        localWallTime: null,
+        localWallTime: trimmed.replace(/(?:Z|[+-]\d{2}:?\d{2})$/i, "").trim() || null,
         evidence: "UTC_OR_OFFSET",
+        ...(inlineOffset ? { exifOffsetMinutes: parseExifOffsetMinutes(inlineOffset) } : {}),
       };
     }
 
@@ -259,24 +268,34 @@ const parseOneImage = async (input: PhotoExifParseImageInput): Promise<ParsedIma
   const orientation = toNullableNumber(parsed?.Orientation);
   const originalOffset = parsed?.OffsetTimeOriginal ?? parsed?.OffsetTime;
   const digitizedOffset = parsed?.OffsetTimeDigitized ?? parsed?.OffsetTime;
-  const captured =
-    toGpsCapturedAt(parsed?.GPSDateStamp, parsed?.GPSTimeStamp) ??
-    toCapturedAt(parsed?.DateTimeOriginal, originalOffset) ??
-    toCapturedAt(parsed?.CreateDate, digitizedOffset);
+  const gpsCaptured = toGpsCapturedAt(parsed?.GPSDateStamp, parsed?.GPSTimeStamp);
+  const cameraCaptured =
+    toCapturedAt(parsed?.DateTimeOriginal, originalOffset) ?? toCapturedAt(parsed?.CreateDate, digitizedOffset);
+  const captured = gpsCaptured
+    ? {
+        ...gpsCaptured,
+        ...(cameraCaptured?.localWallTime ? { localWallTime: cameraCaptured.localWallTime } : {}),
+        ...(cameraCaptured && "exifOffsetMinutes" in cameraCaptured && cameraCaptured.exifOffsetMinutes !== undefined
+          ? { exifOffsetMinutes: cameraCaptured.exifOffsetMinutes }
+          : {}),
+      }
+    : cameraCaptured;
   const exposureTime = toNullableNumber(parsed?.ExposureTime);
   const fNumber = toNullableNumber(parsed?.FNumber);
   const focalLength = toNullableNumber(parsed?.FocalLength);
   const gps = toGps(parsed?.latitude, parsed?.longitude);
   const provenance = captured
     ? {
-        source:
-          parsed?.GPSDateStamp && parsed?.GPSTimeStamp
-            ? ("GPS_UTC" as const)
-            : captured.evidence === "UTC_OR_OFFSET"
-              ? ("EXIF_OFFSET" as const)
-              : ("EXIF_WALL_CLOCK" as const),
+        source: gpsCaptured
+          ? ("GPS_UTC" as const)
+          : captured.evidence === "UTC_OR_OFFSET"
+            ? ("EXIF_OFFSET" as const)
+            : ("EXIF_WALL_CLOCK" as const),
         instantUtc: captured.evidence === "UTC_OR_OFFSET" ? captured.value : null,
         localWallTime: captured.localWallTime,
+        ...("exifOffsetMinutes" in captured && captured.exifOffsetMinutes !== undefined
+          ? { exifOffsetMinutes: captured.exifOffsetMinutes }
+          : {}),
         timezoneEvidence: captured.evidence,
         sourceFileAssetId: input.fileAssetId,
       }

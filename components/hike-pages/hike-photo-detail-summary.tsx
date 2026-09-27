@@ -1,9 +1,11 @@
 import type { HikePhotoAcceptedCoordinate } from "@/app/_data/hikes";
-import { Badge } from "@/components/index";
+import { Badge, Button } from "@/components/index";
 import {
   formatPhotoCapturedAtInTimezone,
+  formatPhotoCameraLocalTime,
   formatPhotoCaptureTimeContext,
   formatPhotoCaptureTimeSource,
+  formatExifOffset,
   formatPhotoDimensions,
   formatPhotoExposureTriplet,
   formatPhotoGpsPresence,
@@ -23,19 +25,30 @@ export const HikePhotoDetailSummary = ({
   acceptedCoordinate,
   linkedTrackTimezones,
   adminExifMetadata,
+  showCameraTimeRefreshRecommendation = false,
+  onRefreshExif,
 }: {
   captureSummary: PhotoExifSummary | null;
   acceptedCoordinate: HikePhotoAcceptedCoordinate | null;
   linkedTrackTimezones: string[];
   adminExifMetadata: PhotoExifMetadata | null;
+  showCameraTimeRefreshRecommendation?: boolean;
+  onRefreshExif?: () => void;
 }) => {
   const linkedTrackTimezone = linkedTrackTimezones.length === 1 ? linkedTrackTimezones[0] : null;
   const captureTimeContext = formatPhotoCaptureTimeContext({
     capturedAt: captureSummary?.capturedAt,
     timezoneEvidence: captureSummary?.captureTimeTimezoneEvidence,
   });
-  const primaryCapture = captureSummary?.captureTimeProvenance?.localWallTime
-    ? `${captureSummary.captureTimeProvenance.localWallTime} (unconfirmed camera-local)`
+  const provenance = captureSummary?.captureTimeProvenance;
+  const sourceCameraTime = formatPhotoCameraLocalTime(provenance?.localWallTime);
+  const exifOffset = formatExifOffset(provenance?.exifOffsetMinutes);
+  const primaryCapture = sourceCameraTime
+    ? provenance?.source === "EXIF_OFFSET" && exifOffset
+      ? `${sourceCameraTime} (camera-local, EXIF ${exifOffset})`
+      : provenance?.source === "GPS_UTC"
+        ? `${sourceCameraTime} (camera-local; GPS UTC below)`
+        : `${sourceCameraTime} (unconfirmed camera-local)`
     : (formatPhotoCapturedAtInTimezone(captureSummary?.capturedAt, linkedTrackTimezone) ??
       captureTimeContext?.storedUtc);
   const normalization = captureSummary?.captureTimeNormalization;
@@ -68,6 +81,19 @@ export const HikePhotoDetailSummary = ({
             ) : null}
             {linkedTrackTimezone ? <div>Linked track timezone: {linkedTrackTimezone}</div> : null}
             {captureTimeContext ? <div>Timezone evidence: {captureTimeContext.timezoneEvidence}</div> : null}
+            {showCameraTimeRefreshRecommendation ? (
+              <div className="flex flex-wrap items-center gap-2 sm:col-span-2">
+                <span>
+                  Refresh EXIF metadata to restore the original camera-local time. This does not change the current UTC
+                  time or map coordinate until you refresh.
+                </span>
+                {onRefreshExif ? (
+                  <Button type="button" size="sm" variant="outline" onClick={onRefreshExif}>
+                    Refresh EXIF
+                  </Button>
+                ) : null}
+              </div>
+            ) : null}
             <div>Camera: {captureSummary.cameraLabel ?? "Unavailable"}</div>
             <div>Dimensions: {formatPhotoDimensions(captureSummary.width, captureSummary.height) ?? "Unavailable"}</div>
             <div>Exposure: {exposure ?? "Unavailable"}</div>
