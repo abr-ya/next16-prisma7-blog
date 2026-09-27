@@ -22,6 +22,7 @@ export const PhotoUploadDialog = ({
   initialValues = emptyValues,
   beforeDescription,
   afterUpload,
+  multiImageOptIn,
   onSubmit,
 }: {
   open: boolean;
@@ -31,14 +32,21 @@ export const PhotoUploadDialog = ({
   initialValues?: PhotoUploadDialogValues;
   beforeDescription?: ReactNode;
   afterUpload?: (isDirty: boolean) => ReactNode;
+  multiImageOptIn?: { label: string };
   onSubmit: (values: PhotoUploadDialogValues) => Promise<void>;
 }) => {
   const [values, setValues] = useState<PhotoUploadDialogValues>(initialValues);
+  const [isMultiImageEnabled, setIsMultiImageEnabled] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const isDirty = JSON.stringify(values) !== JSON.stringify(initialValues);
+  const maxImageCount = multiImageOptIn && !isMultiImageEnabled ? 1 : OUTDOOR_PHOTO_IMAGE_UPLOAD_MAX_COUNT;
+  const canDisableMultiImage = values.images.length <= 1;
 
   useEffect(() => {
-    if (open) setValues(initialValues);
+    if (open) {
+      setValues(initialValues);
+      setIsMultiImageEnabled(false);
+    }
   }, [initialValues, open]);
 
   const submit = async () => {
@@ -81,6 +89,22 @@ export const PhotoUploadDialog = ({
           </label>
           <div className="grid gap-2">
             <span className="text-sm font-medium">Images</span>
+            {multiImageOptIn ? (
+              <div className="grid gap-1">
+                <label className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={isMultiImageEnabled}
+                    disabled={isSubmitting || (isMultiImageEnabled && !canDisableMultiImage)}
+                    onChange={(event) => setIsMultiImageEnabled(event.target.checked)}
+                  />
+                  {multiImageOptIn.label}
+                </label>
+                {isMultiImageEnabled && !canDisableMultiImage ? (
+                  <p className="text-xs text-muted-foreground">Remove extra images before returning to one image.</p>
+                ) : null}
+              </div>
+            ) : null}
             {values.images.length ? (
               <div className="grid gap-2 sm:grid-cols-3">
                 {values.images.map((image, index) => (
@@ -125,9 +149,20 @@ export const PhotoUploadDialog = ({
             endpoint="outdoorPhotoImageUploader"
             content={{
               label: "Drop or click to upload outdoor photo images",
-              allowedContent: `Upload 1-${OUTDOOR_PHOTO_IMAGE_UPLOAD_MAX_COUNT} images, up to ${OUTDOOR_PHOTO_IMAGE_UPLOAD_MAX_SIZE} each.`,
+              allowedContent: `Upload 1-${maxImageCount} image${maxImageCount === 1 ? "" : "s"}, up to ${OUTDOOR_PHOTO_IMAGE_UPLOAD_MAX_SIZE} each.`,
             }}
             appearance={{ button: "rounded-lg", container: "rounded-lg border" }}
+            onBeforeUploadBegin={(files) => {
+              const remainingImageCount = maxImageCount - values.images.length;
+              if (files.length <= remainingImageCount) return files;
+
+              toast.error(
+                remainingImageCount > 0
+                  ? `You can upload ${remainingImageCount} more image${remainingImageCount === 1 ? "" : "s"}.`
+                  : `This photo can use at most ${maxImageCount} image${maxImageCount === 1 ? "" : "s"}.`,
+              );
+              return files.slice(0, Math.max(0, remainingImageCount));
+            }}
             onUploadError={(error) => {
               toast.error(error.message || "Uploading photo images failed");
             }}
@@ -145,8 +180,8 @@ export const PhotoUploadDialog = ({
                 const nextImages = Array.from(
                   new Map([...current.images, ...uploadedImages].map((image) => [image.fileAssetId, image])).values(),
                 );
-                if (nextImages.length > OUTDOOR_PHOTO_IMAGE_UPLOAD_MAX_COUNT) {
-                  toast.error(`Photos can use at most ${OUTDOOR_PHOTO_IMAGE_UPLOAD_MAX_COUNT} images`);
+                if (nextImages.length > maxImageCount) {
+                  toast.error(`Photos can use at most ${maxImageCount} image${maxImageCount === 1 ? "" : "s"}`);
                   return current;
                 }
                 return { ...current, images: nextImages };
