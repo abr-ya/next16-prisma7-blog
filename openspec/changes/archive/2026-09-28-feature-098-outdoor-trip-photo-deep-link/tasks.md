@@ -9,5 +9,5 @@
 ## 2. Validation and tracking
 
 - [x] 2.1 Run `npm run tsc`, targeted ESLint for the changed trip-media/gallery files, and `npm run lint`; verify each applicable command passes.
-- [ ] 2.2 Run `openspec validate feature-098-outdoor-trip-photo-deep-link --strict`, ask the user to run `npm run build` locally, and manually verify valid direct opening, Previous/Next URL updates without route refresh, close behavior, invalid/cross-trip IDs, guest behavior, and browser back/forward navigation. Strict validation passed; local `npm run build` passed before the History API change on 2026-09-28 and should be rerun. Browser verification remains.
+- [x] 2.2 Run `openspec validate feature-098-outdoor-trip-photo-deep-link --strict`, ask the user to run `npm run build` locally, and manually verify valid direct opening, Previous/Next URL updates without route refresh, close behavior, invalid/cross-trip IDs, guest behavior, and browser back/forward navigation. Strict validation passed; local `npm run build` and browser verification passed on 2026-09-28.
 - [x] 2.3 Keep `feature-098-outdoor-trip-photo-deep-link` marked In Progress in `openspec/backlog.md` until implementation is complete.
