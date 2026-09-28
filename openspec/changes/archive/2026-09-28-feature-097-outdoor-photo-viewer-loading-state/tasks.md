@@ -9,5 +9,5 @@
 ## 2. Validation and tracking
 
 - [x] 2.1 Run `npm run tsc`, targeted ESLint for `components/hike-pages/hike-photo-gallery.tsx`, and `npm run lint`; verify each applicable command passes.
-- [ ] 2.2 Run `openspec validate feature-097-outdoor-photo-viewer-loading-state --strict`, ask the user to run `npm run build` locally, and manually verify first-open loading, rapid previous/next changes, and image-load failure as an authenticated user. Strict validation passed; local `npm run build` passed on 2026-09-28. Browser verification remains.
-- [ ] 2.3 Keep `feature-097-outdoor-photo-viewer-loading-state` marked In Progress in `openspec/backlog.md` until implementation is complete.
+- [x] 2.2 Run `openspec validate feature-097-outdoor-photo-viewer-loading-state --strict`, ask the user to run `npm run build` locally, and manually verify first-open loading, rapid previous/next changes, and image-load failure as an authenticated user. Strict validation passed; local `npm run build` passed on 2026-09-28; authenticated browser verification confirmed the loading indicator on 2026-09-28.
+- [x] 2.3 Keep `feature-097-outdoor-photo-viewer-loading-state` marked In Progress in `openspec/backlog.md` until implementation is complete.
