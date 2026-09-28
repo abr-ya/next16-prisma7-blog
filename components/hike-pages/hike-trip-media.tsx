@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 
 import type { HikePhotoAcceptedCoordinate, HikePhotoContributionCapability } from "@/app/_data/hikes";
 import {
@@ -35,7 +35,6 @@ export const HikeTripMedia = ({
   photoContributionCapability?: HikePhotoContributionCapability | null;
 }) => {
   const [focusCoordinate, setFocusCoordinate] = useState<HikePhotoAcceptedCoordinate | null>(null);
-  const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const mapSectionRef = useRef<HTMLElement>(null);
@@ -63,9 +62,10 @@ export const HikeTripMedia = ({
 
   const updateSelectedPhotoUrl = useCallback(
     (photoId: string | null) => {
-      if (selectedPhotoId === photoId) return;
+      const currentSearchParams = new URLSearchParams(window.location.search);
+      if (currentSearchParams.get("photo") === photoId) return;
 
-      const nextSearchParams = new URLSearchParams(searchParams.toString());
+      const nextSearchParams = new URLSearchParams(currentSearchParams);
       if (photoId) {
         nextSearchParams.set("photo", photoId);
       } else {
@@ -73,9 +73,9 @@ export const HikeTripMedia = ({
       }
 
       const query = nextSearchParams.toString();
-      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+      window.history.replaceState(window.history.state, "", query ? `${pathname}?${query}` : pathname);
     },
-    [pathname, router, searchParams, selectedPhotoId],
+    [pathname],
   );
 
   useEffect(() => {

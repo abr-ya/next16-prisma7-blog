@@ -8,7 +8,7 @@ Visitors cannot currently share a stable link that opens a particular photo with
 
 - Accept an optional `photo` query parameter on published `/trips/[slug]` pages and open the matching linked photo in the existing viewer.
 - Validate the requested photo against the current trip's visible gallery items; invalid, unavailable, or cross-trip IDs leave the page and viewer in their normal state.
-- Keep the URL synchronized with viewer navigation using a non-scrolling replacement, and remove the parameter when the viewer closes.
+- Keep the URL synchronized with viewer navigation through the native History API, without route navigation or a scroll reset, and remove the parameter when the viewer closes.
 - Preserve guest behavior: a guest may arrive through a valid deep link but receives the existing sign-in guidance rather than a full-size image or protected URL.
 
 ### Non-goals

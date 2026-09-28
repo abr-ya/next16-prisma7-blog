@@ -50,7 +50,7 @@ The system SHALL show associated published photos on published hike detail pages
 #### Scenario: Viewer navigation updates a valid photo deep link
 
 - **WHEN** an authenticated visitor changes the selected photo in the viewer or closes the viewer
-- **THEN** the current trip URL updates without a full page navigation or scroll reset
+- **THEN** the current trip URL updates through the native History API without a route navigation or scroll reset
 - **AND** it identifies the active linked photo while the viewer is open
 - **AND** it removes the `photo` parameter when the viewer closes
 

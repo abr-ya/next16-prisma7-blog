@@ -2,7 +2,7 @@
 
 ## Context
 
-See `proposal.md` for motivation. `TripPage` currently builds the visible gallery server-side, while `HikeTripMedia` and `HikePhotoGallery` are client components that open a selected photo through an imperative gallery handle. The gallery already owns viewer selection, keyboard navigation, and the Next router used for refreshes.
+See `proposal.md` for motivation. `TripPage` currently builds the visible gallery server-side, while `HikeTripMedia` and `HikePhotoGallery` are client components that open a selected photo through an imperative gallery handle. The gallery already owns viewer selection and keyboard navigation; changing the query through router navigation can unnecessarily refresh the route's server-backed data in development.
 
 ## Goals / Non-Goals
 
@@ -21,9 +21,9 @@ See `proposal.md` for motivation. `TripPage` currently builds the visible galler
 
 ### 1. Keep query parsing and URL synchronization in the client media boundary
 
-`HikeTripMedia` will read the current `photo` search parameter and coordinate it with the gallery handle. The gallery will notify its parent when its selected photo changes or closes; the parent will use a shallow, non-scrolling URL replacement.
+`HikeTripMedia` will read the current `photo` search parameter and coordinate it with the gallery handle. The gallery will notify its parent when its selected photo changes or closes; the parent will update the query with `window.history.replaceState`, which Next integrates with `useSearchParams` without initiating a route navigation.
 
-Alternative: parse the parameter in the server page and pass an initial ID only. Rejected because viewer navigation and closing still require client URL synchronization and can otherwise race with hydration.
+Alternative: use `router.replace` with `scroll: false`. Rejected because it is still route navigation and can refresh server-backed page work when only local viewer state changed.
 
 ### 2. Validate against the rendered gallery collection
 
@@ -41,7 +41,7 @@ Alternative: redirect guests or remove the parameter. Rejected because it makes 
 
 - [Risk] URL changes could re-open a just-closed viewer → Mitigation: keep selection-to-URL and URL-to-selection effects identity-aware and avoid redundant updates.
 - [Risk] A cross-trip ID could disclose photo existence → Mitigation: resolve only against the already visible gallery collection and leave the page unchanged on mismatch.
-- [Risk] Browser back/forward can change the query parameter → Mitigation: respond to search-parameter changes through the same validated selection path.
+- [Risk] Browser back/forward can change the query parameter from an earlier or later page state → Mitigation: respond to search-parameter changes through the same validated selection path. Individual viewer selections deliberately replace rather than add history entries.
 
 ## Migration Plan
 
