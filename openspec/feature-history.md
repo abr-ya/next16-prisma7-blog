@@ -101,6 +101,7 @@ Cancelled or deferred candidates do not reserve feature numbers.
 | feature-089 | feature-089-public-navbar-route-coverage-rollout | navigation/public | Move home, blog, videos, and comments under the renamed `(public)` shell; drop duplicate `app/blog/layout.tsx` and `app/videos/layout.tsx`; remove the legacy `PageLayout.showBackLink` prop and its call sites. |
 | feature-095 | feature-095-outdoor-trip-photo-multi-image-opt-in | outdoor/trips-photos | Make public trip photo contributions single-image by default, with an explicit opt-in for two or three images in one photo record; preserve the existing one-to-three image model, authorization, quota, and administrator photo workflow. |
 | feature-096 | feature-096-outdoor-photo-camera-time-display | outdoor/photos-time | Preserve and prioritize EXIF camera-local capture time and its numeric offset, including alongside GPS UTC; show UTC as comparable context, reuse existing timezone confirmation for offset-free time, and give owners/admins a direct EXIF refresh action for legacy metadata that lacks camera-local time. |
+| feature-097 | feature-097-outdoor-photo-viewer-loading-state | outdoor/hikes-photos | Add visible loading and generic failure states to the authenticated trip-photo viewer so a previous full-size photo cannot appear as a newly selected one while the next image loads; preserve usable previous/next controls and existing access boundaries. |
 
 ## Fix History
 

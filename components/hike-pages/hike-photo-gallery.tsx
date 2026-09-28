@@ -1,6 +1,17 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, FileSearch, Heart, ImageIcon, MapPin, MessageCircle, Route } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  FileSearch,
+  Heart,
+  ImageIcon,
+  ImageOff,
+  LoaderCircle,
+  MapPin,
+  MessageCircle,
+  Route,
+} from "lucide-react";
 import Link from "next/link";
 import { forwardRef, useEffect, useImperativeHandle, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
@@ -49,6 +60,8 @@ export type HikePhotoGalleryHandle = {
   openPhotoById: (photoId: string) => void;
 };
 
+type FullPhotoImageState = { photoId: string; status: "loaded" | "error" } | null;
+
 const formatPhotoCommentCount = (count: number) => {
   if (count === 0) return "No comments";
   if (count === 1) return "1 comment";
@@ -65,6 +78,7 @@ export const HikePhotoGallery = forwardRef<HikePhotoGalleryHandle, HikePhotoGall
   const [showComments, setShowComments] = useState(false);
   const [exifPhotoId, setExifPhotoId] = useState<string | null>(null);
   const [coordinatePhotoId, setCoordinatePhotoId] = useState<string | null>(null);
+  const [fullPhotoImageState, setFullPhotoImageState] = useState<FullPhotoImageState>(null);
   const [isPending, startTransition] = useTransition();
   const [isLikePending, startLikeTransition] = useTransition();
   const router = useRouter();
@@ -73,6 +87,8 @@ export const HikePhotoGallery = forwardRef<HikePhotoGalleryHandle, HikePhotoGall
   const coordinatePhoto = photos.find((photo) => photo.id === coordinatePhotoId) ?? null;
   const canNavigate = canViewFullPhotos && photos.length > 1;
   const showOverlay = showDetails || showComments;
+  const fullPhotoImageStatus =
+    activePhoto && fullPhotoImageState?.photoId === activePhoto.id ? fullPhotoImageState.status : "loading";
 
   const openPhotoById = (photoId: string) => {
     const index = photos.findIndex((photo) => photo.id === photoId);
@@ -88,6 +104,7 @@ export const HikePhotoGallery = forwardRef<HikePhotoGalleryHandle, HikePhotoGall
     if (!canViewFullPhotos || !photos[index]?.fullUrl) return;
     setShowDetails(false);
     setShowComments(false);
+    setFullPhotoImageState(null);
     setActiveIndex(index);
   };
 
@@ -97,12 +114,14 @@ export const HikePhotoGallery = forwardRef<HikePhotoGalleryHandle, HikePhotoGall
     setActiveIndex(null);
     setShowDetails(false);
     setShowComments(false);
+    setFullPhotoImageState(null);
   };
 
   const showPrevious = () => {
     if (activeIndex === null || photos.length === 0) return;
     setShowDetails(false);
     setShowComments(false);
+    setFullPhotoImageState(null);
     setActiveIndex((activeIndex - 1 + photos.length) % photos.length);
   };
 
@@ -110,6 +129,7 @@ export const HikePhotoGallery = forwardRef<HikePhotoGalleryHandle, HikePhotoGall
     if (activeIndex === null || photos.length === 0) return;
     setShowDetails(false);
     setShowComments(false);
+    setFullPhotoImageState(null);
     setActiveIndex((activeIndex + 1) % photos.length);
   };
 
@@ -152,12 +172,14 @@ export const HikePhotoGallery = forwardRef<HikePhotoGalleryHandle, HikePhotoGall
         event.preventDefault();
         setShowDetails(false);
         setShowComments(false);
+        setFullPhotoImageState(null);
         setActiveIndex((current) => (current === null ? current : (current - 1 + photos.length) % photos.length));
       }
       if (event.key === "ArrowRight") {
         event.preventDefault();
         setShowDetails(false);
         setShowComments(false);
+        setFullPhotoImageState(null);
         setActiveIndex((current) => (current === null ? current : (current + 1) % photos.length));
       }
     };
@@ -308,10 +330,34 @@ export const HikePhotoGallery = forwardRef<HikePhotoGalleryHandle, HikePhotoGall
               <div className="relative flex min-h-[50vh] items-center justify-center">
                 {activePhoto.fullUrl ? (
                   <img
+                    key={activePhoto.id}
                     src={activePhoto.fullUrl}
                     alt={activePhoto.alt}
-                    className="max-h-[min(80vh,900px)] max-w-full object-contain"
+                    className={cn(
+                      "max-h-[min(80vh,900px)] max-w-full object-contain",
+                      fullPhotoImageStatus === "loaded" ? undefined : "invisible",
+                    )}
+                    onLoad={() => setFullPhotoImageState({ photoId: activePhoto.id, status: "loaded" })}
+                    onError={() => setFullPhotoImageState({ photoId: activePhoto.id, status: "error" })}
                   />
+                ) : null}
+                {fullPhotoImageStatus === "loading" ? (
+                  <div
+                    className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-sm text-white/80"
+                    aria-live="polite"
+                  >
+                    <LoaderCircle className="size-6 animate-spin" aria-hidden="true" />
+                    <span>Loading photo…</span>
+                  </div>
+                ) : null}
+                {fullPhotoImageStatus === "error" ? (
+                  <div
+                    className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-center text-sm text-white/80"
+                    role="alert"
+                  >
+                    <ImageOff className="size-6" aria-hidden="true" />
+                    <span>This photo could not be loaded. Try another photo.</span>
+                  </div>
                 ) : null}
                 {canNavigate ? (
                   <>
