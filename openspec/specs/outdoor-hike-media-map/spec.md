@@ -202,7 +202,7 @@ The system SHALL allow authenticated admins to attach, detach, and order photo r
 
 ### Requirement: Public hike pages show linked published photos
 
-The system SHALL show associated published photos on published hike detail pages while preserving separate guest thumbnail access, authenticated full-photo access, existing photo visibility, image file, and metadata boundaries. The authenticated large-photo viewer SHALL visibly distinguish a selected image that is loading or has failed from an already loaded image, and SHALL NOT leave a previous selection presented as the newly selected photo.
+The system SHALL show associated published photos on published hike detail pages while preserving separate guest thumbnail access, authenticated full-photo access, existing photo visibility, image file, and metadata boundaries. The authenticated large-photo viewer SHALL visibly distinguish a selected image that is loading or has failed from an already loaded image, and SHALL NOT leave a previous selection presented as the newly selected photo. A published trip URL MAY identify one linked photo through its `photo` query parameter, and the viewer SHALL synchronize that valid selected photo with the URL without weakening full-photo access rules.
 
 #### Scenario: Visitor opens hike with linked published photos
 
@@ -238,6 +238,31 @@ The system SHALL show associated published photos on published hike detail pages
 - **THEN** the viewer replaces the loading state with an understandable error state for that selection
 - **AND** it keeps available navigation controls usable
 - **AND** it does not expose a provider URL or internal storage error
+
+#### Scenario: Signed-in visitor opens a valid photo deep link
+
+- **WHEN** an authenticated visitor opens `/trips/[slug]?photo={photoId}` for a photo linked to that published trip and eligible for the existing viewer
+- **THEN** the page opens the existing viewer with that photo selected
+- **AND** the viewer retains its current loading, navigation, details, comments, and access behavior
+
+#### Scenario: Viewer navigation updates a valid photo deep link
+
+- **WHEN** an authenticated visitor changes the selected photo in the viewer or closes the viewer
+- **THEN** the current trip URL updates through the native History API without a route navigation or scroll reset
+- **AND** it identifies the active linked photo while the viewer is open
+- **AND** it removes the `photo` parameter when the viewer closes
+
+#### Scenario: Photo deep link is invalid for the current trip
+
+- **WHEN** a visitor opens a published trip URL whose `photo` parameter is missing, malformed, not linked to that trip, unavailable, or otherwise ineligible for the viewer
+- **THEN** the page remains on the published trip in its normal state
+- **AND** it does not open a viewer, redirect to another trip, or expose photo metadata or protected image access
+
+#### Scenario: Guest opens a valid photo deep link
+
+- **WHEN** an anonymous visitor opens a valid published trip photo deep link
+- **THEN** the page follows the existing sign-in guidance for the selected photo
+- **AND** it does not expose a full-size image URL, bytes, provider URL, or protected photo details
 
 #### Scenario: Visitor opens hike with no public linked photos
 

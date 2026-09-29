@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
 
 import type { HikePhotoAcceptedCoordinate, HikePhotoContributionCapability } from "@/app/_data/hikes";
 import {
@@ -34,9 +35,12 @@ export const HikeTripMedia = ({
   photoContributionCapability?: HikePhotoContributionCapability | null;
 }) => {
   const [focusCoordinate, setFocusCoordinate] = useState<HikePhotoAcceptedCoordinate | null>(null);
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const mapSectionRef = useRef<HTMLElement>(null);
   const photoGalleryRef = useRef<HikePhotoGalleryHandle>(null);
   const hasMap = tracks.length > 0 || photoMarkers.length > 0 || noteMarkers.length > 0;
+  const selectedPhotoId = searchParams.get("photo");
 
   useEffect(() => {
     if (!focusCoordinate) return;
@@ -55,6 +59,35 @@ export const HikeTripMedia = ({
   };
 
   const selectMapPhoto = (photoId: string) => photoGalleryRef.current?.openPhotoById(photoId);
+
+  const updateSelectedPhotoUrl = useCallback(
+    (photoId: string | null) => {
+      const currentSearchParams = new URLSearchParams(window.location.search);
+      if (currentSearchParams.get("photo") === photoId) return;
+
+      const nextSearchParams = new URLSearchParams(currentSearchParams);
+      if (photoId) {
+        nextSearchParams.set("photo", photoId);
+      } else {
+        nextSearchParams.delete("photo");
+      }
+
+      const query = nextSearchParams.toString();
+      window.history.replaceState(window.history.state, "", query ? `${pathname}?${query}` : pathname);
+    },
+    [pathname],
+  );
+
+  useEffect(() => {
+    if (!selectedPhotoId) {
+      photoGalleryRef.current?.closeViewer();
+      return;
+    }
+
+    if (!photos.some((photo) => photo.id === selectedPhotoId)) return;
+
+    photoGalleryRef.current?.openPhotoById(selectedPhotoId);
+  }, [photos, selectedPhotoId]);
 
   return (
     <>
@@ -83,6 +116,7 @@ export const HikeTripMedia = ({
         canViewFullPhotos={canViewFullPhotos}
         canFocusMap={hasMap}
         onFocusMap={focusMap}
+        onSelectedPhotoChange={updateSelectedPhotoUrl}
         ref={photoGalleryRef}
         photoContributionCapability={photoContributionCapability}
       />

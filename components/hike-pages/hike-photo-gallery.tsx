@@ -53,11 +53,13 @@ type HikePhotoGalleryProps = {
   canViewFullPhotos: boolean;
   canFocusMap: boolean;
   onFocusMap: (coordinate: NonNullable<HikePhotoDetail["acceptedCoordinate"]>) => void;
+  onSelectedPhotoChange?: (photoId: string | null) => void;
   photoContributionCapability?: HikePhotoContributionCapability | null;
 };
 
 export type HikePhotoGalleryHandle = {
   openPhotoById: (photoId: string) => void;
+  closeViewer: () => void;
 };
 
 type FullPhotoImageState = { photoId: string; status: "loaded" | "error" } | null;
@@ -70,7 +72,7 @@ const formatPhotoCommentCount = (count: number) => {
 };
 
 export const HikePhotoGallery = forwardRef<HikePhotoGalleryHandle, HikePhotoGalleryProps>(function HikePhotoGallery(
-  { photos, canViewFullPhotos, canFocusMap, onFocusMap, photoContributionCapability },
+  { photos, canViewFullPhotos, canFocusMap, onFocusMap, onSelectedPhotoChange, photoContributionCapability },
   ref,
 ) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
@@ -97,6 +99,8 @@ export const HikePhotoGallery = forwardRef<HikePhotoGalleryHandle, HikePhotoGall
       return;
     }
 
+    if (activeIndex === index) return;
+
     openPhoto(index);
   };
 
@@ -106,31 +110,37 @@ export const HikePhotoGallery = forwardRef<HikePhotoGalleryHandle, HikePhotoGall
     setShowComments(false);
     setFullPhotoImageState(null);
     setActiveIndex(index);
+    onSelectedPhotoChange?.(photos[index]!.id);
   };
-
-  useImperativeHandle(ref, () => ({ openPhotoById }));
 
   const closeViewer = () => {
     setActiveIndex(null);
     setShowDetails(false);
     setShowComments(false);
     setFullPhotoImageState(null);
+    onSelectedPhotoChange?.(null);
   };
+
+  useImperativeHandle(ref, () => ({ openPhotoById, closeViewer }));
 
   const showPrevious = () => {
     if (activeIndex === null || photos.length === 0) return;
+    const nextIndex = (activeIndex - 1 + photos.length) % photos.length;
     setShowDetails(false);
     setShowComments(false);
     setFullPhotoImageState(null);
-    setActiveIndex((activeIndex - 1 + photos.length) % photos.length);
+    setActiveIndex(nextIndex);
+    onSelectedPhotoChange?.(photos[nextIndex]!.id);
   };
 
   const showNext = () => {
     if (activeIndex === null || photos.length === 0) return;
+    const nextIndex = (activeIndex + 1) % photos.length;
     setShowDetails(false);
     setShowComments(false);
     setFullPhotoImageState(null);
-    setActiveIndex((activeIndex + 1) % photos.length);
+    setActiveIndex(nextIndex);
+    onSelectedPhotoChange?.(photos[nextIndex]!.id);
   };
 
   const refreshExif = (photo = exifPhoto) => {
@@ -170,23 +180,17 @@ export const HikePhotoGallery = forwardRef<HikePhotoGalleryHandle, HikePhotoGall
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "ArrowLeft") {
         event.preventDefault();
-        setShowDetails(false);
-        setShowComments(false);
-        setFullPhotoImageState(null);
-        setActiveIndex((current) => (current === null ? current : (current - 1 + photos.length) % photos.length));
+        showPrevious();
       }
       if (event.key === "ArrowRight") {
         event.preventDefault();
-        setShowDetails(false);
-        setShowComments(false);
-        setFullPhotoImageState(null);
-        setActiveIndex((current) => (current === null ? current : (current + 1) % photos.length));
+        showNext();
       }
     };
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [activeIndex, canNavigate, photos.length]);
+  }, [activeIndex, canNavigate, showNext, showPrevious]);
 
   if (photos.length === 0 && !photoContributionCapability) return null;
 
