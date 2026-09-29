@@ -103,6 +103,7 @@ Cancelled or deferred candidates do not reserve feature numbers.
 | feature-096 | feature-096-outdoor-photo-camera-time-display | outdoor/photos-time | Preserve and prioritize EXIF camera-local capture time and its numeric offset, including alongside GPS UTC; show UTC as comparable context, reuse existing timezone confirmation for offset-free time, and give owners/admins a direct EXIF refresh action for legacy metadata that lacks camera-local time. |
 | feature-097 | feature-097-outdoor-photo-viewer-loading-state | outdoor/hikes-photos | Add visible loading and generic failure states to the authenticated trip-photo viewer so a previous full-size photo cannot appear as a newly selected one while the next image loads; preserve usable previous/next controls and existing access boundaries. |
 | feature-098 | feature-098-outdoor-trip-photo-deep-link | outdoor/trips-photos | Add stable `?photo={photoId}` deep links for published trip photos, synchronize viewer selection through the native History API without route navigation, and preserve existing validation and full-photo access boundaries. |
+| feature-099 | feature-099-outdoor-my-tracks-page | outdoor/tracks | Add a private `/my/tracks` page from the signed-in user menu where users upload and manage only their own GPX tracks independently of trips, while preserving current owner, file, parse, and public-visibility rules. |
 
 ## Fix History
 
