@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import type { Prisma } from "@/generated/prisma/client";
 import type { FileAssetStatus, FileAssetVisibility, HikeType, TrackStatus } from "@/generated/prisma/enums";
 import { authSession } from "@/lib/auth-utils";
+import { requireTrustGatedAction } from "@/lib/auth-trust-gates.server";
 import { createSlug } from "@/lib/slug-generator";
 import { parseTrackGpxMetadata } from "@/lib/track-gpx-parser";
 import { requireTrackRecordingTimezone } from "@/lib/track-recording-timezone";
@@ -413,7 +414,7 @@ export const getPublicTrackBySlug = async (slug: string): Promise<PublicTrack | 
 };
 
 export const createTrack = async (values: TrackActionValues) => {
-  const userId = await getRequiredUserId();
+  const { id: userId } = await requireTrustGatedAction("track-upload");
   const data = getTrackData(values);
   const { default: prisma } = await import("@/lib/prisma");
 

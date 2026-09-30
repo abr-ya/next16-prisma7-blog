@@ -13,6 +13,7 @@ import type {
 } from "@/generated/prisma/enums";
 import { authSession, currentUserRole, requireAdmin } from "@/lib/auth-utils";
 import { hasAdminRole } from "@/lib/auth-roles";
+import { requireTrustGatedAction } from "@/lib/auth-trust-gates.server";
 import { normalizePhotoInput } from "@/lib/photos";
 import { createSlug } from "@/lib/slug-generator";
 import {
@@ -1405,13 +1406,12 @@ const getEligiblePublishedHikePhoto = async ({ hikeId, photoId }: { hikeId: stri
 };
 
 export const likeHikePhoto = async ({ hikeId, photoId }: { hikeId: string; photoId: string }) => {
-  const session = await authSession();
-  if (!session) throw new Error("You must be signed in to like photos");
+  const user = await requireTrustGatedAction("like");
 
   const { prisma, hikeSlug } = await getEligiblePublishedHikePhoto({ hikeId, photoId });
   await prisma.photoLike.upsert({
-    where: { photoId_userId: { photoId, userId: session.user.id } },
-    create: { photoId, userId: session.user.id },
+    where: { photoId_userId: { photoId, userId: user.id } },
+    create: { photoId, userId: user.id },
     update: {},
   });
   revalidateHikePhotoAssociationPaths(hikeSlug);
@@ -1420,11 +1420,10 @@ export const likeHikePhoto = async ({ hikeId, photoId }: { hikeId: string; photo
 };
 
 export const unlikeHikePhoto = async ({ hikeId, photoId }: { hikeId: string; photoId: string }) => {
-  const session = await authSession();
-  if (!session) throw new Error("You must be signed in to like photos");
+  const user = await requireTrustGatedAction("like");
 
   const { prisma, hikeSlug } = await getEligiblePublishedHikePhoto({ hikeId, photoId });
-  await prisma.photoLike.deleteMany({ where: { photoId, userId: session.user.id } });
+  await prisma.photoLike.deleteMany({ where: { photoId, userId: user.id } });
   revalidateHikePhotoAssociationPaths(hikeSlug);
 
   return { liked: false };
@@ -1665,8 +1664,7 @@ export const contributePhotoToHike = async ({
   description,
   fileAssetIds,
 }: HikePhotoContributionValues) => {
-  const session = await authSession();
-  if (!session) throw new Error("You must be signed in to add photos");
+  const user = await requireTrustGatedAction("photo-upload");
 
   const data = normalizePhotoInput({ title, description, status: "PUBLISHED", fileAssetIds });
   const { default: prisma } = await import("@/lib/prisma");
@@ -1681,16 +1679,15 @@ export const contributePhotoToHike = async ({
   if (!hike) throw new Error("Trip is not available for photo contributions");
 
   const isAdmin = hasAdminRole(role);
-  const isCreator = hike.userId === session.user.id;
-  const isParticipant =
-    !isCreator && !isAdmin && (await isAcceptedHikeParticipant({ hikeId, userId: session.user.id }));
+  const isCreator = hike.userId === user.id;
+  const isParticipant = !isCreator && !isAdmin && (await isAcceptedHikeParticipant({ hikeId, userId: user.id }));
   if (!isAdmin && !isCreator && !isParticipant) throw new Error("You cannot add photos to this trip");
 
   await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     if (!isAdmin) {
-      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`${hikeId}:${session.user.id}`}))`;
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`${hikeId}:${user.id}`}))`;
       const contributedCount = await tx.hikesToPhotos.count({
-        where: { hikeId, photo: { userId: session.user.id } },
+        where: { hikeId, photo: { userId: user.id } },
       });
 
       if (contributedCount >= 10) throw new Error("You have reached the 10-photo limit for this trip");
@@ -1699,7 +1696,7 @@ export const contributePhotoToHike = async ({
     const fileAssets = await tx.fileAsset.findMany({
       where: {
         id: { in: data.fileAssetIds },
-        ownerUserId: session.user.id,
+        ownerUserId: user.id,
         purpose: "OUTDOOR_PHOTO_IMAGE",
         status: ACTIVE_FILE_STATUS,
       },
@@ -1723,7 +1720,7 @@ export const contributePhotoToHike = async ({
         title: data.title,
         description: data.description,
         status: "PUBLISHED",
-        userId: session.user.id,
+        userId: user.id,
         images: {
           create: data.fileAssetIds.map((fileAssetId, sortOrder) => ({ fileAssetId, sortOrder })),
         },
@@ -2181,7 +2178,7 @@ export const deleteHikeNote = async (id: string) => {
 };
 
 export const createHike = async (values: HikeActionValues) => {
-  const userId = await getRequiredUserId();
+  const { id: userId } = await requireTrustGatedAction("trip-create");
   const data = getHikeData(values);
   const { default: prisma } = await import("@/lib/prisma");
 

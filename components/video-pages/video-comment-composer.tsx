@@ -72,7 +72,7 @@ export const VideoCommentComposer = ({ videoId, initialComments, isAuthenticated
             maxLength={MAX_COMMENT_CONTENT_LENGTH}
             submitLabel="Add comment"
             onSubmit={handleCreate}
-            onSubmitError={() => toast.error("Comment was not added")}
+            onSubmitError={(error) => toast.error(error instanceof Error ? error.message : "Comment was not added")}
           />
         ) : null}
       </CardContent>

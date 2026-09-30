@@ -3,7 +3,9 @@
 import { revalidatePath } from "next/cache";
 
 import type { Prisma } from "@/generated/prisma/client";
-import { AuthorizationError, requireActionUser } from "@/lib/auth-utils";
+import { requireTrustGatedAction } from "@/lib/auth-trust-gates.server";
+import { AuthorizationError } from "@/lib/auth-utils";
+import { createCommentWithRateLimit } from "@/lib/comment-creation-rate-limit.server";
 
 const MAX_COMMENT_CONTENT_LENGTH = 2000;
 
@@ -150,17 +152,19 @@ const normalizeCommentContent = (value: string) => {
 
 export const createPhotoComment = async (values: PhotoCommentActionValues) => {
   try {
-    const user = await requireActionUser();
+    const user = await requireTrustGatedAction("comment");
     const target = await getPhotoWithPublishedTripOrThrow(values.photoId);
-    const { default: prisma } = await import("@/lib/prisma");
-
-    const comment = await prisma.comment.create({
-      data: {
-        photoId: target.photoId,
-        userId: user.id,
-        content: normalizeCommentContent(values.content),
-      },
-      select: photoCommentSelect,
+    const comment = await createCommentWithRateLimit({
+      userId: user.id,
+      create: (tx) =>
+        tx.comment.create({
+          data: {
+            photoId: target.photoId,
+            userId: user.id,
+            content: normalizeCommentContent(values.content),
+          },
+          select: photoCommentSelect,
+        }),
     });
 
     revalidateFromTargetContext(target);
@@ -177,7 +181,7 @@ export const updatePhotoComment = async (values: PhotoCommentActionValues) => {
   try {
     if (!values.id) throw new Error("Comment id is required");
 
-    const user = await requireActionUser();
+    const user = await requireTrustGatedAction("comment");
     const target = await getPhotoWithPublishedTripOrThrow(values.photoId);
     const { default: prisma } = await import("@/lib/prisma");
 
@@ -221,7 +225,7 @@ export const updatePhotoComment = async (values: PhotoCommentActionValues) => {
 
 export const deletePhotoComment = async (id: string) => {
   try {
-    const user = await requireActionUser();
+    const user = await requireTrustGatedAction("comment");
     const { default: prisma } = await import("@/lib/prisma");
 
     const existingComment = await prisma.comment.findFirst({

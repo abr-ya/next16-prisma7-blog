@@ -31,6 +31,6 @@ Account trust levels already exist but currently do not affect what a signed-in 
 ## Non-goals
 
 - Limiting reads of public content, hiding existing published content, or changing sign-in flow.
-- Blocking updates or deletion of existing user-owned content in this slice.
+- Blocking updates or deletion of existing user-owned trips, photos, or tracks in this slice; comment edits and deletions are gated because they are supported comment mutations.
 - Applying a count quota to verified accounts, promoting users, or changing their trust status.
 - Adding a client-only gate that could substitute for server authorization.

@@ -13,7 +13,7 @@ type CommentComposerProps = {
   submitLabel: string;
   disabled?: boolean;
   onSubmit: (content: string) => Promise<void>;
-  onSubmitError?: () => void;
+  onSubmitError?: (error: unknown) => void;
 };
 
 export const CommentComposer = ({
@@ -41,8 +41,8 @@ export const CommentComposer = ({
     try {
       await onSubmit(trimmedContent);
       setContent("");
-    } catch {
-      onSubmitError?.();
+    } catch (error) {
+      onSubmitError?.(error);
     } finally {
       setIsSubmitting(false);
     }
