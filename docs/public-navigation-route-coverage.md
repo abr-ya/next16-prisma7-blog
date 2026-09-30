@@ -15,6 +15,7 @@ This inventory tracks where the shared public navbar is currently mounted, where
 | `/videos/[id]` | Covered by shared public shell | Covered by shared public shell | Covered by shared public shell | |
 | `/tracks` | Covered by `app/(public)/layout.tsx` | Covered by shared public shell | Covered in feature 048 | Public tracks listing uses the shared shell. |
 | `/tracks/[slug]` | Covered by `app/(public)/layout.tsx` | Covered by shared public shell | Covered in feature 048 | Public track detail uses the shared shell. |
+| `/my/tracks` | Covered by `app/(public)/layout.tsx` | Covered by shared public shell | Covered in feature 099 | Authenticated personal-track workspace; direct access requires a session. |
 | `/comments` | Covered by shared public shell | Covered by shared public shell | Covered by shared public shell | |
 
 ## Excluded Route Families

@@ -358,6 +358,7 @@ const fetchTrackGpxContent = async (url: string) => {
 
 const revalidateTrackPaths = () => {
   revalidatePath("/admin/tracks");
+  revalidatePath("/my/tracks");
   revalidatePath("/admin/files");
   revalidatePath("/tracks");
   revalidatePath("/hikes");

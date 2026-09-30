@@ -500,7 +500,7 @@ const TrackFormDialog = ({
   );
 };
 
-export const TracksAdminPanel = ({ tracks }: { tracks: TrackListItem[] }) => {
+export const TrackManagementPanel = ({ tracks }: { tracks: TrackListItem[] }) => {
   const router = useRouter();
   const [formOpen, setFormOpen] = useState(false);
   const [editingTrack, setEditingTrack] = useState<TrackListItem | null>(null);
@@ -806,3 +806,6 @@ export const TracksAdminPanel = ({ tracks }: { tracks: TrackListItem[] }) => {
     </div>
   );
 };
+
+// Kept as a compatibility export for the existing administrator workspace route.
+export const TracksAdminPanel = TrackManagementPanel;
