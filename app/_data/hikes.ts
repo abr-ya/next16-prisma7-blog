@@ -14,6 +14,7 @@ import type {
 import { authSession, currentUserRole, requireAdmin } from "@/lib/auth-utils";
 import { hasAdminRole } from "@/lib/auth-roles";
 import { requireTrustGatedAction } from "@/lib/auth-trust-gates.server";
+import { assertVerifiedResourceQuota, reconcileVerifiedUserTrust } from "@/lib/auth-trust-quotas.server";
 import { normalizePhotoInput } from "@/lib/photos";
 import { createSlug } from "@/lib/slug-generator";
 import {
@@ -1398,21 +1399,27 @@ const getEligiblePublishedHikePhoto = async ({ hikeId, photoId }: { hikeId: stri
       hike: { status: "PUBLISHED" },
       photo: { status: "PUBLISHED" },
     },
-    select: { hike: { select: { slug: true } } },
+    select: { hike: { select: { slug: true } }, photo: { select: { userId: true } } },
   });
 
   if (!association) throw new Error("Photo is not available to like");
-  return { prisma, hikeSlug: association.hike.slug };
+  return { hikeSlug: association.hike.slug, ownerUserId: association.photo.userId };
 };
 
 export const likeHikePhoto = async ({ hikeId, photoId }: { hikeId: string; photoId: string }) => {
   const user = await requireTrustGatedAction("like");
 
-  const { prisma, hikeSlug } = await getEligiblePublishedHikePhoto({ hikeId, photoId });
-  await prisma.photoLike.upsert({
-    where: { photoId_userId: { photoId, userId: user.id } },
-    create: { photoId, userId: user.id },
-    update: {},
+  const { hikeSlug, ownerUserId } = await getEligiblePublishedHikePhoto({ hikeId, photoId });
+  if (ownerUserId === user.id) throw new Error("You cannot like your own photo");
+
+  const { default: prisma } = await import("@/lib/prisma");
+  await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+    await tx.photoLike.upsert({
+      where: { photoId_userId: { photoId, userId: user.id } },
+      create: { photoId, userId: user.id },
+      update: {},
+    });
+    await reconcileVerifiedUserTrust(tx, ownerUserId);
   });
   revalidateHikePhotoAssociationPaths(hikeSlug);
 
@@ -1422,7 +1429,8 @@ export const likeHikePhoto = async ({ hikeId, photoId }: { hikeId: string; photo
 export const unlikeHikePhoto = async ({ hikeId, photoId }: { hikeId: string; photoId: string }) => {
   const user = await requireTrustGatedAction("like");
 
-  const { prisma, hikeSlug } = await getEligiblePublishedHikePhoto({ hikeId, photoId });
+  const { hikeSlug } = await getEligiblePublishedHikePhoto({ hikeId, photoId });
+  const { default: prisma } = await import("@/lib/prisma");
   await prisma.photoLike.deleteMany({ where: { photoId, userId: user.id } });
   revalidateHikePhotoAssociationPaths(hikeSlug);
 
@@ -1684,6 +1692,8 @@ export const contributePhotoToHike = async ({
   if (!isAdmin && !isCreator && !isParticipant) throw new Error("You cannot add photos to this trip");
 
   await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+    await assertVerifiedResourceQuota(tx, user, "photo");
+
     if (!isAdmin) {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`${hikeId}:${user.id}`}))`;
       const contributedCount = await tx.hikesToPhotos.count({
@@ -2178,17 +2188,16 @@ export const deleteHikeNote = async (id: string) => {
 };
 
 export const createHike = async (values: HikeActionValues) => {
-  const { id: userId } = await requireTrustGatedAction("trip-create");
+  const user = await requireTrustGatedAction("trip-create");
+  const userId = user.id;
   const data = getHikeData(values);
   const { default: prisma } = await import("@/lib/prisma");
 
   await ensureSlugAvailable({ slug: data.slug });
 
-  const hike = await prisma.hike.create({
-    data: {
-      ...data,
-      userId,
-    },
+  const hike = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+    await assertVerifiedResourceQuota(tx, user, "trip");
+    return tx.hike.create({ data: { ...data, userId } });
   });
 
   revalidateHikePaths(hike.slug);

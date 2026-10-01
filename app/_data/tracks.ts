@@ -6,6 +6,7 @@ import type { Prisma } from "@/generated/prisma/client";
 import type { FileAssetStatus, FileAssetVisibility, HikeType, TrackStatus } from "@/generated/prisma/enums";
 import { authSession } from "@/lib/auth-utils";
 import { requireTrustGatedAction } from "@/lib/auth-trust-gates.server";
+import { createWithinVerifiedResourceQuota } from "@/lib/auth-trust-quotas.server";
 import { createSlug } from "@/lib/slug-generator";
 import { parseTrackGpxMetadata } from "@/lib/track-gpx-parser";
 import { requireTrackRecordingTimezone } from "@/lib/track-recording-timezone";
@@ -414,20 +415,21 @@ export const getPublicTrackBySlug = async (slug: string): Promise<PublicTrack | 
 };
 
 export const createTrack = async (values: TrackActionValues) => {
-  const { id: userId } = await requireTrustGatedAction("track-upload");
+  const user = await requireTrustGatedAction("track-upload");
+  const userId = user.id;
   const data = getTrackData(values);
-  const { default: prisma } = await import("@/lib/prisma");
-
   await ensureSlugAvailable({ slug: data.slug });
   await ensureEligibleTrackFileAsset({ fileAssetId: data.fileAssetId, userId });
 
-  const track = await prisma.track.create({
-    data: {
-      ...data,
-      userId,
-    },
-    include: trackListInclude,
-  });
+  const track = await createWithinVerifiedResourceQuota(user, "track", (tx) =>
+    tx.track.create({
+      data: {
+        ...data,
+        userId,
+      },
+      include: trackListInclude,
+    }),
+  );
 
   revalidateTrackPaths();
 
