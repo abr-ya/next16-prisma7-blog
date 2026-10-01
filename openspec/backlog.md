@@ -123,7 +123,6 @@ The single `account-trust-levels` Ready candidate above was too large for one re
 | Status | Feature | Depends on | Summary |
 | --- | --- | --- | --- |
 | Done | `feature-090-account-trust-schema-and-lifecycle` | none | Schema: `User.trustLevel` enum + column, `TrustChangeLog` model + `TrustChangeSource` enum, migration backfill, better-auth `databaseHooks` auto-init (`NEW` for email/password, `VERIFIED` for Google/GitHub), audit log writes, and pure/server read helpers in `lib/auth-trust.ts` / `lib/auth-trust.server.ts`. No mutation gates, no quotas, no admin UI. |
-| In Progress | `feature-092-trust-quotas-and-auto-promotion` | feature-090, feature-091 | Verified quotas: ≤3 live trips, ≤30 photos, ≤10 tracks per verified user (slot frees on delete). Auto-promote `VERIFIED` → `TRUSTED` at 10 photo likes; restricted accounts must not auto-promote. Narrow migration removes pre-slice self-like rows. Admin can manually set `TRUSTED` or `RESTRICTED` directly. |
 | Paused | `feature-093-admin-users-table` | feature-090, feature-092 | Admin-only `/admin/users`: paginated table, email search, current trust status badge, status-change action with confirm dialog. Show name, email, registration date, role, trust status, current trip/photo/track counts, current total photo likes. Exclude broader account management. |
 
 ## P2 Later
