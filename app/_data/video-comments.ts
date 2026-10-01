@@ -3,7 +3,9 @@
 import { revalidatePath } from "next/cache";
 
 import type { Prisma } from "@/generated/prisma/client";
-import { authSession } from "@/lib/auth-utils";
+import { requireTrustGatedAction } from "@/lib/auth-trust-gates.server";
+import { AuthorizationError } from "@/lib/auth-utils";
+import { createCommentWithRateLimit } from "@/lib/comment-creation-rate-limit.server";
 
 const MAX_COMMENT_CONTENT_LENGTH = 2000;
 
@@ -36,11 +38,7 @@ const videoCommentSelect = {
 } satisfies Prisma.CommentSelect;
 
 const getRequiredUserId = async () => {
-  const session = await authSession();
-
-  if (!session) throw new Error("Unauthorized: User Id not found");
-
-  return session.user.id;
+  return (await requireTrustGatedAction("comment")).id;
 };
 
 const normalizeCommentContent = (value: string) => {
@@ -73,21 +71,24 @@ export const createVideoComment = async (values: VideoCommentActionValues) => {
   try {
     const userId = await getRequiredUserId();
     const video = await getPublicVideoOrThrow(values.videoId);
-    const { default: prisma } = await import("@/lib/prisma");
-
-    const comment = await prisma.comment.create({
-      data: {
-        videoId: video.id,
-        userId,
-        content: normalizeCommentContent(values.content),
-      },
-      select: videoCommentSelect,
+    const comment = await createCommentWithRateLimit({
+      userId,
+      create: (tx) =>
+        tx.comment.create({
+          data: {
+            videoId: video.id,
+            userId,
+            content: normalizeCommentContent(values.content),
+          },
+          select: videoCommentSelect,
+        }),
     });
 
     revalidatePath(`/videos/${video.id}`);
 
     return comment;
   } catch (err) {
+    if (err instanceof AuthorizationError) throw err;
     console.error({ err });
     throw new Error("Something went wrong (createVideoComment)");
   }
@@ -125,6 +126,7 @@ export const updateVideoComment = async (values: VideoCommentActionValues) => {
 
     return comment;
   } catch (err) {
+    if (err instanceof AuthorizationError) throw err;
     console.error({ err });
     throw new Error("Something went wrong (updateVideoComment)");
   }
@@ -155,6 +157,7 @@ export const deleteVideoComment = async (id: string) => {
 
     return { success: true };
   } catch (err) {
+    if (err instanceof AuthorizationError) throw err;
     console.error({ err });
     throw new Error("Something went wrong (deleteVideoComment)");
   }
