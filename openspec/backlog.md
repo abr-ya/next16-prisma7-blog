@@ -125,7 +125,6 @@ The single `account-trust-levels` Ready candidate above was too large for one re
 | Status | Feature | Depends on | Summary |
 | --- | --- | --- | --- |
 | Done | `feature-090-account-trust-schema-and-lifecycle` | none | Schema: `User.trustLevel` enum + column, `TrustChangeLog` model + `TrustChangeSource` enum, migration backfill, better-auth `databaseHooks` auto-init (`NEW` for email/password, `VERIFIED` for Google/GitHub), audit log writes, and pure/server read helpers in `lib/auth-trust.ts` / `lib/auth-trust.server.ts`. No mutation gates, no quotas, no admin UI. |
-| In Progress | `feature-093-admin-users-table` | feature-090, feature-092 | Admin-only read-only `/admin/users` directory: paginated table and email search showing name, email, registration date, role, and current trust status. Trust-status changes, resource counts, photo-like totals, audit history, and broader account management are deferred to separate candidates. |
 
 ## P2 Later
 
