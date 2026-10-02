@@ -22,9 +22,9 @@ See `proposal.md` for motivation and `specs/account-trust-admin-users/spec.md` f
 
 ### Server-side directory query with bounded pagination
 
-Create a server-only user-directory query that calls the existing administrator guard and selects only `id`, `name`, `email`, `createdAt`, `role`, and `trustLevel`. It will accept normalized email-search and page inputs, order results deterministically, return the requested page plus total pagination metadata, and constrain invalid or out-of-range page values to a safe page.
+Create a server-only user-directory query that calls the existing administrator guard and selects only `id`, `name`, `email`, `createdAt`, `role`, `trustLevel`, and linked `Account.providerId` values. It will accept normalized email-search and page inputs, order results deterministically, return the requested page plus total pagination metadata, and constrain invalid or out-of-range page values to a safe page.
 
-This prevents a browser payload containing every account and avoids exposing fields such as sessions, account tokens, bans, audit rows, or related resources. A client-side table over all users was considered because it matches several existing admin tables, but it does not scale or minimize administrative data exposure as well.
+This prevents a browser payload containing every account and avoids exposing fields such as sessions, account tokens, bans, audit rows, or related resources. Provider IDs are sufficient for human-readable sign-in-method labels and do not expose OAuth credentials. A client-side table over all users was considered because it matches several existing admin tables, but it does not scale or minimize administrative data exposure as well.
 
 ### Route-owned URL state and presentational client table
 
@@ -39,6 +39,10 @@ Add Users to `administratorControlItems` only. The existing admin-shell role cal
 ### Read-only representation of trust and role
 
 The table will use descriptive labels/badges for persisted role and trust values but will provide no interactive control. This lets administrators see the trust rollout state while leaving mutations to a later, separately specified change.
+
+### Multiple sign-in methods rather than a primary provider
+
+The table will render a read-only badge for every distinct linked `Account.providerId`. It will map the currently supported `credential`, `google`, and `github` values to Email/password, Google, and GitHub, and retain a safe fallback label for an unexpected provider. Selecting a single provider was rejected because Better Auth can link multiple account rows to one user and a primary-method rule would hide valid account state.
 
 ## Risks / Trade-offs
 

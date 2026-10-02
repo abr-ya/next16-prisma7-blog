@@ -23,13 +23,18 @@ The system SHALL provide a read-only administrator user directory at `/admin/use
 
 ### Requirement: Directory account fields are read-only
 
-The directory SHALL display each listed user's name, email address, registration date, role, and current trust status. The directory SHALL not provide controls to mutate a user, change a role or trust status, view trust history, or show resource-count or photo-like statistics.
+The directory SHALL display each listed user's name, email address, registration date, role, current trust status, and linked sign-in methods. A user with more than one linked provider SHALL show every linked method. The directory SHALL not provide controls to mutate a user, change a role or trust status, view trust history, or show resource-count or photo-like statistics.
 
 #### Scenario: Administrator views a user row
 
 - **WHEN** an administrator views an account in the directory
-- **THEN** the row shows the user's name, email, registration date, role, and current trust status
+- **THEN** the row shows the user's name, email, registration date, role, current trust status, and every linked sign-in method
 - **AND** no edit, trust-status-change, resource-statistics, or audit-history control is shown
+
+#### Scenario: User has multiple linked sign-in methods
+
+- **WHEN** an administrator views an account linked to more than one supported sign-in provider
+- **THEN** the row shows each linked method without selecting a single primary method
 
 ### Requirement: Paginated email search
 
