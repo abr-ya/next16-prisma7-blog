@@ -8,19 +8,25 @@ Defines reusable activity types for individual GPX tracks, with safe administrat
 
 ### Requirement: Administrators manage reusable track activity types
 
-The system SHALL allow administrators to create activity types with a unique display name, rename them, and change whether they are active, while preserving each type's stable identity and existing track assignments.
+The system SHALL allow administrators to create activity types with a unique English default name, an optional Russian name, rename either name, and change whether they are active, while preserving each type's stable identity and existing track assignments.
 
 #### Scenario: Administrator creates an activity type
 
-- **WHEN** an administrator submits a non-empty activity-type name that is not already in use under the system's normalized name comparison
+- **WHEN** an administrator submits a non-empty English activity-type name that is not already in use under the system's normalized English-name comparison
 - **THEN** the system creates an active activity type
 - **AND** it makes the type available for track classification
 
 #### Scenario: Duplicate activity-type name is rejected
 
-- **WHEN** an administrator submits a name that conflicts with an existing activity type under the system's normalized name comparison
+- **WHEN** an administrator submits an English name that conflicts with an existing activity type under the system's normalized English-name comparison
 - **THEN** the system rejects the mutation with a validation error
 - **AND** it does not create or rename an activity type
+
+#### Scenario: Russian name falls back to English
+
+- **WHEN** a Russian-interface viewer reads an activity type without a Russian name
+- **THEN** the system displays its English name
+- **AND** it does not treat the missing translation as an invalid classification
 
 #### Scenario: Administrator deactivates an assigned type
 

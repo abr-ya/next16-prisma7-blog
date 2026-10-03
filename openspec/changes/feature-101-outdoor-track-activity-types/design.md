@@ -24,7 +24,7 @@ See [proposal.md](./proposal.md) for motivation. `Track` currently stores GPX, v
 
 ### Use a dedicated relational catalog and nullable foreign key
 
-Add `TrackActivityType` with a unique normalized name/key, editable display name, `isActive` flag, and timestamps. Add nullable `Track.activityTypeId` referencing that table with a restrictive delete policy. This gives types stable identities across renames and permits deactivation without losing existing assignments.
+Add `TrackActivityType` with a unique normalized key, required `nameEn`, optional `nameRu`, `isActive` flag, and timestamps. Add nullable `Track.activityTypeId` referencing that table with a restrictive delete policy. This gives types stable identities across renames and permits deactivation without losing existing assignments.
 
 Alternative considered: a Prisma enum on `Track`. Rejected because administrators need to add, rename, and deactivate values without a schema migration or deployment.
 
@@ -48,9 +48,15 @@ An unused type may be deleted directly. For an assigned type, the administrator 
 
 Alternative considered: cascade deletion and silently clear tracks. Rejected because it destroys meaningful classification without an administrator decision.
 
+### Localize catalog names with English as the fallback
+
+Administrators maintain the required English name and optional Russian translation for every type. UI reads the Russian value only for Russian locale when it is non-empty; otherwise it displays English. The unique key is derived from the normalized English name, so Russian translations do not affect identity, URLs, or future slug suggestions.
+
+Alternative considered: storing localized names in JSON. Rejected because this feature supports exactly two existing interface locales and explicit columns make validation and administration simpler.
+
 ### Seed a small initial catalog without coupling to legacy enums
 
-The data migration seeds a reviewable starter set such as Walking, Running, Cycling, Skiing, Rowing, and Other. Names are managed records rather than enum values, so administrators can adjust the catalog later. The seed is idempotent and does not modify tracks or trip types.
+The data migration seeds a reviewable starter set such as Walking, Running, Cycling, Skiing, Rowing, and Other, with Russian translations. Names are managed records rather than enum values, so administrators can adjust the catalog later. The seed is idempotent and does not modify tracks or trip types.
 
 Alternative considered: leave the catalog empty. Rejected because first-use setup would make the track form appear broken and delay the feature's practical value.
 
@@ -64,7 +70,7 @@ Alternative considered: leave the catalog empty. Rejected because first-use setu
 
 ## Migration Plan
 
-1. Add the catalog table and nullable `Track.activityTypeId` in a new forward Prisma migration, including indexes and restrictive referential behavior.
-2. Seed the initial catalog with conflict-safe inserts; leave every existing track relation `NULL`.
+1. Keep the applied catalog migration immutable; add a second forward migration that renames `name` to `nameEn`, adds nullable `nameRu`, and preserves existing English values.
+2. Add Russian translations for starter rows with conflict-safe updates; leave every existing track relation `NULL`.
 3. Deploy server validation and management UI together so a type can never be selected without server enforcement.
 4. Roll back application behavior by hiding the new controls if necessary; preserve the new nullable column and catalog records rather than deleting classifications or rewriting the migration history.

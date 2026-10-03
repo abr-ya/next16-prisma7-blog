@@ -6,7 +6,7 @@ Track owners need a consistent way to classify their GPX records by activity wit
 
 ## What Changes
 
-- Add reusable, administrator-managed track activity types with a stable identity, display name, active state, and timestamps.
+- Add reusable, administrator-managed track activity types with a stable identity, English default name, optional Russian name, active state, and timestamps.
 - Add an optional track-to-activity-type relationship; existing and newly created tracks may remain unclassified.
 - Let a track owner select or clear an active activity type while creating or editing only their own track.
 - Add administrator-only activity-type management for creating, renaming, activating or deactivating, and safely deleting activity types.
@@ -26,7 +26,7 @@ Track owners need a consistent way to classify their GPX records by activity wit
 
 ## Impact
 
-- Affected data: a new activity-type model and a nullable foreign key on `Track`; the forward migration leaves existing rows unclassified.
+- Affected data: a new activity-type model with `nameEn` and optional `nameRu`, plus a nullable foreign key on `Track`; the forward migrations leave existing rows unclassified.
 - Affected routes and UI: `/admin/tracks` and `/my/tracks` gain type selection; a new administrator-only activity-type management surface is added under `/admin`.
 - Affected server boundaries: track create/update validation must accept only active types, while activity-type mutations require administrator authorization and preserve owner-scoped track rules.
 - No public track type display, public filtering, trip-type replacement, automatic type inference, GPX parsing changes, or new dependencies are included.
