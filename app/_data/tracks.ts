@@ -26,6 +26,7 @@ export type TrackActionValues = {
   description?: string | null;
   status?: TrackStatus;
   fileAssetId?: string | null;
+  activityTypeId?: string | null;
 };
 
 type PublicTrackRecord = Prisma.TrackGetPayload<{
@@ -141,7 +142,7 @@ const normalizeTrackSlug = (title: string, value?: string | null) => {
   return slug;
 };
 
-const getTrackData = ({ title, slug, description, status, fileAssetId }: TrackActionValues) => {
+const getTrackData = async ({ title, slug, description, status, fileAssetId, activityTypeId }: TrackActionValues) => {
   const normalizedTitle = normalizeRequiredText(title, "Title");
   const normalizedStatus = status ?? DEFAULT_TRACK_STATUS;
   const normalizedFileAssetId = normalizeRequiredText(fileAssetId ?? "", "GPX file");
@@ -150,12 +151,22 @@ const getTrackData = ({ title, slug, description, status, fileAssetId }: TrackAc
     throw new Error("Track status is invalid");
   }
 
+  const normalizedActivityTypeId = activityTypeId?.trim() || null;
+  if (normalizedActivityTypeId) {
+    const { default: prisma } = await import("@/lib/prisma");
+    const activityType = await prisma.trackActivityType.findFirst({
+      where: { id: normalizedActivityTypeId, isActive: true },
+    });
+    if (!activityType) throw new Error("Activity type is unavailable");
+  }
+
   return {
     title: normalizedTitle,
     slug: normalizeTrackSlug(normalizedTitle, slug),
     description: normalizeOptionalText(description),
     status: normalizedStatus,
     fileAssetId: normalizedFileAssetId,
+    activityTypeId: normalizedActivityTypeId,
   };
 };
 
@@ -212,6 +223,7 @@ const ensureEligibleTrackFileAsset = async ({
 };
 
 const trackListInclude = {
+  activityType: true,
   fileAsset: true,
   user: {
     select: {
@@ -417,7 +429,7 @@ export const getPublicTrackBySlug = async (slug: string): Promise<PublicTrack | 
 export const createTrack = async (values: TrackActionValues) => {
   const user = await requireTrustGatedAction("track-upload");
   const userId = user.id;
-  const data = getTrackData(values);
+  const data = await getTrackData(values);
   await ensureSlugAvailable({ slug: data.slug });
   await ensureEligibleTrackFileAsset({ fileAssetId: data.fileAssetId, userId });
 
@@ -442,7 +454,7 @@ export const updateTrack = async (values: TrackActionValues) => {
   }
 
   const userId = await getRequiredUserId();
-  const data = getTrackData(values);
+  const data = await getTrackData(values);
   const { default: prisma } = await import("@/lib/prisma");
   const existingTrack = await prisma.track.findFirst({
     where: { id: values.id, userId },

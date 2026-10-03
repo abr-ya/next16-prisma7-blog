@@ -11,6 +11,7 @@ import {
   Map,
   Images,
   Route,
+  List,
   Search,
   Tags,
   Users,
@@ -79,6 +80,7 @@ const administratorControlItems = [
   { title: "Photos", url: "/admin/photos", icon: Images },
   { title: "Files", url: "/admin/files", icon: File },
   { title: "Content Tags", url: "/admin/content-tags", icon: Tags },
+  { title: "Track Types", url: "/admin/track-activity-types", icon: List },
   { title: "Database", url: "/admin/database", icon: Database },
 ];
 

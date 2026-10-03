@@ -336,6 +336,8 @@ model Track {
   fileAsset         FileAsset       @relation(fields: [fileAssetId], references: [id], onDelete: Restrict)
   metadata          Json?
   recordingTimezone String?
+  activityTypeId    String?
+  activityType      TrackActivityType? @relation(fields: [activityTypeId], references: [id], onDelete: Restrict)
   userId            String
   user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   hikes             HikesToTracks[]
@@ -344,6 +346,20 @@ model Track {
 
   @@index([status])
   @@index([userId])
+  @@index([activityTypeId])
+}
+
+model TrackActivityType {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  nameEn    String
+  nameRu    String?
+  isActive  Boolean  @default(true)
+  tracks    Track[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@index([isActive])
 }
 
 model HikesToTracks {
