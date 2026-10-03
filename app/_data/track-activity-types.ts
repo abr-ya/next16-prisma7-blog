@@ -37,7 +37,9 @@ export const createTrackActivityType = async ({ nameEn, nameRu }: TrackActivityT
   if (!normalizedNameEn) throw new Error("English activity type name is required");
   const normalizedNameRu = normalizeName(nameRu ?? "") || null;
   const { default: prisma } = await import("@/lib/prisma");
-  const result = await prisma.trackActivityType.create({ data: { nameEn: normalizedNameEn, nameRu: normalizedNameRu, key: toKey(normalizedNameEn) } });
+  const result = await prisma.trackActivityType.create({
+    data: { nameEn: normalizedNameEn, nameRu: normalizedNameRu, key: toKey(normalizedNameEn) },
+  });
   revalidate();
   return result;
 };
@@ -49,7 +51,10 @@ export const updateTrackActivityType = async ({ id, nameEn, nameRu }: TrackActiv
   if (!normalizedNameEn) throw new Error("English activity type name is required");
   const normalizedNameRu = normalizeName(nameRu ?? "") || null;
   const { default: prisma } = await import("@/lib/prisma");
-  const result = await prisma.trackActivityType.update({ where: { id }, data: { nameEn: normalizedNameEn, nameRu: normalizedNameRu, key: toKey(normalizedNameEn) } });
+  const result = await prisma.trackActivityType.update({
+    where: { id },
+    data: { nameEn: normalizedNameEn, nameRu: normalizedNameRu, key: toKey(normalizedNameEn) },
+  });
   revalidate();
   return result;
 };
@@ -66,15 +71,20 @@ export const deleteTrackActivityType = async ({ id, replacementId }: { id: strin
   await requireAdminControl();
   const { default: prisma } = await import("@/lib/prisma");
   await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-    const type = await tx.trackActivityType.findUnique({ where: { id }, select: { _count: { select: { tracks: true } } } });
+    const type = await tx.trackActivityType.findUnique({
+      where: { id },
+      select: { _count: { select: { tracks: true } } },
+    });
     if (!type) throw new Error("Activity type not found");
-    if (type._count.tracks && replacementId === undefined) throw new Error("Reassign or clear classified tracks before deleting this type");
+    if (type._count.tracks && replacementId === undefined)
+      throw new Error("Reassign or clear classified tracks before deleting this type");
     if (replacementId) {
       if (replacementId === id) throw new Error("Choose a different replacement type");
       const replacement = await tx.trackActivityType.findFirst({ where: { id: replacementId, isActive: true } });
       if (!replacement) throw new Error("Replacement activity type must be active");
     }
-    if (type._count.tracks) await tx.track.updateMany({ where: { activityTypeId: id }, data: { activityTypeId: replacementId ?? null } });
+    if (type._count.tracks)
+      await tx.track.updateMany({ where: { activityTypeId: id }, data: { activityTypeId: replacementId ?? null } });
     await tx.trackActivityType.delete({ where: { id } });
   });
   revalidate();

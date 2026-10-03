@@ -12,7 +12,12 @@ import {
   setTrackActivityTypeActive,
   updateTrackActivityType,
 } from "@/app/_data/track-activity-types";
-import { Badge, Button, Card, CardContent, CardHeader, CardTitle, ConfirmDialog, Input } from "@/components";
+import { ConfirmDialog } from "@/components/common/confirm-dialog";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 type ActivityTypeRow = TrackActivityType & { _count: { tracks: number } };
 
@@ -21,9 +26,14 @@ export const TrackActivityTypesAdminPanel = ({ activityTypes }: { activityTypes:
   const [nameEn, setNameEn] = useState("");
   const [nameRu, setNameRu] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<ActivityTypeRow | null>(null);
+  const [deleteReplacement, setDeleteReplacement] = useState("clear");
   const [isPending, startTransition] = useTransition();
 
   const refresh = () => router.refresh();
+  const openDelete = (activityType: ActivityTypeRow) => {
+    setDeleteReplacement("clear");
+    setDeleteTarget(activityType);
+  };
   const run = (action: () => Promise<void>, success: string) =>
     startTransition(async () => {
       try {
@@ -69,7 +79,7 @@ export const TrackActivityTypesAdminPanel = ({ activityTypes }: { activityTypes:
             activityType={activityType}
             pending={isPending}
             run={run}
-            onDelete={setDeleteTarget}
+            onDelete={openDelete}
           />
         ))}
       </div>
@@ -78,16 +88,44 @@ export const TrackActivityTypesAdminPanel = ({ activityTypes }: { activityTypes:
         onOpenChange={(open) => !open && setDeleteTarget(null)}
         title={deleteTarget ? `Delete ${deleteTarget.nameEn}?` : "Delete activity type?"}
         description={
-          deleteTarget?._count.tracks
-            ? "This type is assigned to tracks. Reassign or clear those tracks before deleting it."
-            : "This type is unused and can be deleted."
+          deleteTarget?._count.tracks ? (
+            <div className="grid gap-3">
+              <span>
+                This type is assigned to {deleteTarget._count.tracks} track(s). Choose how to preserve those records.
+              </span>
+              <Select value={deleteReplacement} onValueChange={setDeleteReplacement}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="clear">Clear classification</SelectItem>
+                  {activityTypes
+                    .filter((type) => type.id !== deleteTarget.id && type.isActive)
+                    .map((type) => (
+                      <SelectItem key={type.id} value={type.id}>
+                        Reassign to {type.nameEn}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+          ) : (
+            "This type is unused and can be deleted."
+          )
         }
         confirmLabel="Delete"
         confirmVariant="destructive"
         isPending={isPending}
         onConfirm={() => {
           if (!deleteTarget) return;
-          run(async () => await deleteTrackActivityType({ id: deleteTarget.id }), "Activity type deleted");
+          run(
+            async () =>
+              await deleteTrackActivityType({
+                id: deleteTarget.id,
+                replacementId: deleteReplacement === "clear" ? null : deleteReplacement,
+              }),
+            "Activity type deleted",
+          );
           setDeleteTarget(null);
         }}
       />
@@ -109,8 +147,8 @@ const ActivityTypeEditor = ({
   const [nameEn, setNameEn] = useState(activityType.nameEn);
   const [nameRu, setNameRu] = useState(activityType.nameRu ?? "");
   return (
-    <Card>
-      <CardContent className="grid gap-3 pt-6 md:grid-cols-[1fr_1fr_auto_auto] md:items-center">
+    <Card className="py-0">
+      <CardContent className="grid gap-3 p-4 md:grid-cols-[1fr_1fr_auto_auto] md:items-center">
         <Input value={nameEn} onChange={(event) => setNameEn(event.target.value)} aria-label="English name" />
         <Input
           value={nameRu}

@@ -4,12 +4,14 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import type { ColumnDef } from "@tanstack/react-table";
 import { ArrowUpDown, Clock3, Edit, FileUp, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useT } from "next-i18next/client";
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 import z from "zod";
 
 import { markDiscardedTrackGpxFileAssetsPendingDelete } from "@/app/_actions/files";
+import { navigationNamespace } from "@/app/i18n/settings";
 import {
   createTrack,
   deleteTrack,
@@ -113,6 +115,8 @@ const getParseStatusVariant = (state: TrackGpxMetadataState) => {
 };
 
 const uniqueIds = (ids: string[]) => Array.from(new Set(ids));
+const formatActivityTypeName = (activityType: TrackActivityType, language?: string) =>
+  language === "ru" ? activityType.nameRu || activityType.nameEn : activityType.nameEn;
 
 const TrackParseStatus = ({ track }: { track: TrackListItem }) => {
   const state = getTrackParseState(track);
@@ -169,6 +173,8 @@ const TrackFormDialog = ({
   parsingTrackId: string | null;
   onSaved: () => void;
 }) => {
+  const { i18n } = useT(navigationNamespace);
+  const activeLanguage = i18n.resolvedLanguage ?? i18n.language;
   const form = useForm<TrackFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues,
@@ -344,7 +350,7 @@ const TrackFormDialog = ({
                           <SelectItem value="unclassified">Unclassified</SelectItem>
                           {activityTypes.map((activityType) => (
                             <SelectItem key={activityType.id} value={activityType.id}>
-                              {activityType.nameEn}
+                              {formatActivityTypeName(activityType, activeLanguage)}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -543,6 +549,8 @@ export const TrackManagementPanel = ({
   activityTypes: TrackActivityType[];
 }) => {
   const router = useRouter();
+  const { i18n } = useT(navigationNamespace);
+  const activeLanguage = i18n.resolvedLanguage ?? i18n.language;
   const [formOpen, setFormOpen] = useState(false);
   const [editingTrack, setEditingTrack] = useState<TrackListItem | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<TrackListItem | null>(null);
@@ -598,7 +606,13 @@ export const TrackManagementPanel = ({
       {
         id: "activityType",
         header: "Type",
-        cell: ({ row }) => <Badge variant="outline">{row.original.activityType?.nameEn ?? "Unclassified"}</Badge>,
+        cell: ({ row }) => (
+          <Badge variant="outline">
+            {row.original.activityType
+              ? formatActivityTypeName(row.original.activityType, activeLanguage)
+              : "Unclassified"}
+          </Badge>
+        ),
       },
       {
         accessorKey: "title",
@@ -721,7 +735,7 @@ export const TrackManagementPanel = ({
         ),
       },
     ],
-    [handleParse, parsingTrackId],
+    [activeLanguage, handleParse, parsingTrackId],
   );
 
   const handleTimezoneSave = () => {

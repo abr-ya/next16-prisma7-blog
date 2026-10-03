@@ -154,7 +154,9 @@ const getTrackData = async ({ title, slug, description, status, fileAssetId, act
   const normalizedActivityTypeId = activityTypeId?.trim() || null;
   if (normalizedActivityTypeId) {
     const { default: prisma } = await import("@/lib/prisma");
-    const activityType = await prisma.trackActivityType.findFirst({ where: { id: normalizedActivityTypeId, isActive: true } });
+    const activityType = await prisma.trackActivityType.findFirst({
+      where: { id: normalizedActivityTypeId, isActive: true },
+    });
     if (!activityType) throw new Error("Activity type is unavailable");
   }
 
