@@ -13,6 +13,7 @@ import {
   Route,
   Search,
   Tags,
+  Users,
   Video,
 } from "lucide-react";
 
@@ -72,6 +73,7 @@ const personalWorkspaceItems = [
 ];
 
 const administratorControlItems = [
+  { title: "Users", url: "/admin/users", icon: Users },
   { title: "MD Docs", url: "/admin/md-docs", icon: FileText },
   { title: "Video Channels", url: "/admin/video-channels", icon: ListVideo },
   { title: "Photos", url: "/admin/photos", icon: Images },
