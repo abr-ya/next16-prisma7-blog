@@ -535,7 +535,13 @@ const TrackFormDialog = ({
   );
 };
 
-export const TrackManagementPanel = ({ tracks, activityTypes }: { tracks: TrackListItem[]; activityTypes: TrackActivityType[] }) => {
+export const TrackManagementPanel = ({
+  tracks,
+  activityTypes,
+}: {
+  tracks: TrackListItem[];
+  activityTypes: TrackActivityType[];
+}) => {
   const router = useRouter();
   const [formOpen, setFormOpen] = useState(false);
   const [editingTrack, setEditingTrack] = useState<TrackListItem | null>(null);
