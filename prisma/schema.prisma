@@ -352,7 +352,8 @@ model Track {
 model TrackActivityType {
   id        String   @id @default(uuid())
   key       String   @unique
-  name      String
+  nameEn    String
+  nameRu    String?
   isActive  Boolean  @default(true)
   tracks    Track[]
   createdAt DateTime @default(now())

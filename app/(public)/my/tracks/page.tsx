@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { getAllTracks } from "@/app/_data/tracks";
+import { getActiveTrackActivityTypes } from "@/app/_data/track-activity-types";
 import { TrackManagementPanel } from "@/components/admin-pages/tracks-admin-panel";
 import { PageLayout } from "@/components/layout/page-layout";
 import { requireAuth } from "@/lib/auth-utils";
@@ -16,11 +17,11 @@ export const metadata: Metadata = buildPageMetadata({
 
 const MyTracksPage = async () => {
   await requireAuth();
-  const tracks = await getAllTracks();
+  const [tracks, activityTypes] = await Promise.all([getAllTracks(), getActiveTrackActivityTypes()]);
 
   return (
     <PageLayout title="My tracks" contentWidth="wide" className="pt-6">
-      <TrackManagementPanel tracks={tracks} />
+      <TrackManagementPanel tracks={tracks} activityTypes={activityTypes} />
     </PageLayout>
   );
 };

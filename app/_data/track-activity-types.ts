@@ -9,11 +9,11 @@ import { requireAdminControl } from "@/lib/auth-utils";
 const normalizeName = (value: string) => value.trim().replace(/\s+/g, " ");
 const toKey = (value: string) => normalizeName(value).toLocaleLowerCase("en-US");
 
-export type TrackActivityTypeValues = { id?: string; name: string };
+export type TrackActivityTypeValues = { id?: string; nameEn: string; nameRu?: string | null };
 
 export const getActiveTrackActivityTypes = async () => {
   const { default: prisma } = await import("@/lib/prisma");
-  return prisma.trackActivityType.findMany({ where: { isActive: true }, orderBy: { name: "asc" } });
+  return prisma.trackActivityType.findMany({ where: { isActive: true }, orderBy: { nameEn: "asc" } });
 };
 
 export const getAdminTrackActivityTypes = async () => {
@@ -21,7 +21,7 @@ export const getAdminTrackActivityTypes = async () => {
   const { default: prisma } = await import("@/lib/prisma");
   return prisma.trackActivityType.findMany({
     include: { _count: { select: { tracks: true } } },
-    orderBy: [{ isActive: "desc" }, { name: "asc" }],
+    orderBy: [{ isActive: "desc" }, { nameEn: "asc" }],
   });
 };
 
@@ -31,23 +31,25 @@ const revalidate = () => {
   revalidatePath("/my/tracks");
 };
 
-export const createTrackActivityType = async ({ name }: TrackActivityTypeValues) => {
+export const createTrackActivityType = async ({ nameEn, nameRu }: TrackActivityTypeValues) => {
   await requireAdminControl();
-  const normalizedName = normalizeName(name);
-  if (!normalizedName) throw new Error("Activity type name is required");
+  const normalizedNameEn = normalizeName(nameEn);
+  if (!normalizedNameEn) throw new Error("English activity type name is required");
+  const normalizedNameRu = normalizeName(nameRu ?? "") || null;
   const { default: prisma } = await import("@/lib/prisma");
-  const result = await prisma.trackActivityType.create({ data: { name: normalizedName, key: toKey(normalizedName) } });
+  const result = await prisma.trackActivityType.create({ data: { nameEn: normalizedNameEn, nameRu: normalizedNameRu, key: toKey(normalizedNameEn) } });
   revalidate();
   return result;
 };
 
-export const updateTrackActivityType = async ({ id, name }: TrackActivityTypeValues) => {
+export const updateTrackActivityType = async ({ id, nameEn, nameRu }: TrackActivityTypeValues) => {
   await requireAdminControl();
   if (!id) throw new Error("Activity type id is required");
-  const normalizedName = normalizeName(name);
-  if (!normalizedName) throw new Error("Activity type name is required");
+  const normalizedNameEn = normalizeName(nameEn);
+  if (!normalizedNameEn) throw new Error("English activity type name is required");
+  const normalizedNameRu = normalizeName(nameRu ?? "") || null;
   const { default: prisma } = await import("@/lib/prisma");
-  const result = await prisma.trackActivityType.update({ where: { id }, data: { name: normalizedName, key: toKey(normalizedName) } });
+  const result = await prisma.trackActivityType.update({ where: { id }, data: { nameEn: normalizedNameEn, nameRu: normalizedNameRu, key: toKey(normalizedNameEn) } });
   revalidate();
   return result;
 };

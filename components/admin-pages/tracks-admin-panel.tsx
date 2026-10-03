@@ -41,6 +41,7 @@ import {
   SelectValue,
 } from "@/components/index";
 import type { TrackStatus } from "@/generated/prisma/enums";
+import type { TrackActivityType } from "@/generated/prisma/client";
 import { formatFileSize, TRACK_GPX_UPLOAD_MAX_SIZE } from "@/lib/file-upload-limits";
 import { formatHikeDateRange, formatHikeStatus, formatHikeType } from "@/lib/hikes";
 import { UploadDropzone } from "@/lib/uploadthing";
@@ -68,6 +69,7 @@ const formSchema = z.object({
   status: z.enum(["DRAFT", "PUBLISHED"]),
   fileAssetId: z.string().min(1, { message: "GPX file is required" }),
   fileAssetName: z.string().optional(),
+  activityTypeId: z.string().optional(),
 });
 
 type TrackFormValues = z.infer<typeof formSchema>;
@@ -79,6 +81,7 @@ const defaultValues: TrackFormValues = {
   status: "DRAFT",
   fileAssetId: "",
   fileAssetName: "",
+  activityTypeId: "",
 };
 
 const formatDate = (value: Date | string) =>
@@ -151,6 +154,7 @@ const TrackParseStatus = ({ track }: { track: TrackListItem }) => {
 
 const TrackFormDialog = ({
   track,
+  activityTypes,
   open,
   onOpenChange,
   onParse,
@@ -158,6 +162,7 @@ const TrackFormDialog = ({
   onSaved,
 }: {
   track: TrackListItem | null;
+  activityTypes: TrackActivityType[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onParse: (track: TrackListItem) => void;
@@ -196,6 +201,7 @@ const TrackFormDialog = ({
         status: track.status,
         fileAssetId: track.fileAssetId,
         fileAssetName: track.fileAsset.name,
+        activityTypeId: track.activityTypeId ?? "",
       });
     } else {
       form.reset(defaultValues);
@@ -273,6 +279,7 @@ const TrackFormDialog = ({
       description: values.description,
       status: values.status as TrackStatus,
       fileAssetId: values.fileAssetId,
+      activityTypeId: values.activityTypeId || null,
     };
 
     try {
@@ -314,6 +321,34 @@ const TrackFormDialog = ({
                       <FormControl>
                         <Input {...field} />
                       </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="activityTypeId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Activity type</FormLabel>
+                      <Select
+                        onValueChange={(value) => field.onChange(value === "unclassified" ? "" : value)}
+                        value={field.value || "unclassified"}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="w-full">
+                            <SelectValue />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="unclassified">Unclassified</SelectItem>
+                          {activityTypes.map((activityType) => (
+                            <SelectItem key={activityType.id} value={activityType.id}>
+                              {activityType.nameEn}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -500,7 +535,7 @@ const TrackFormDialog = ({
   );
 };
 
-export const TrackManagementPanel = ({ tracks }: { tracks: TrackListItem[] }) => {
+export const TrackManagementPanel = ({ tracks, activityTypes }: { tracks: TrackListItem[]; activityTypes: TrackActivityType[] }) => {
   const router = useRouter();
   const [formOpen, setFormOpen] = useState(false);
   const [editingTrack, setEditingTrack] = useState<TrackListItem | null>(null);
@@ -554,6 +589,11 @@ export const TrackManagementPanel = ({ tracks }: { tracks: TrackListItem[] }) =>
 
   const columns = useMemo<ColumnDef<TrackListItem>[]>(
     () => [
+      {
+        id: "activityType",
+        header: "Type",
+        cell: ({ row }) => <Badge variant="outline">{row.original.activityType?.nameEn ?? "Unclassified"}</Badge>,
+      },
       {
         accessorKey: "title",
         header: ({ column }) => (
@@ -733,6 +773,7 @@ export const TrackManagementPanel = ({ tracks }: { tracks: TrackListItem[] }) =>
       <DataTable data={tracks} columns={columns} pagination={{ pageSize: 10 }} />
       <TrackFormDialog
         track={editingTrack}
+        activityTypes={activityTypes}
         open={formOpen}
         onParse={handleParse}
         parsingTrackId={parsingTrackId}
