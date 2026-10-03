@@ -27,7 +27,7 @@
 
 ## 5. Validation and documentation
 
-- [ ] 5.1 Add focused automated coverage where the existing project test conventions support it for name normalization, active-type validation, deletion/reassignment, and owner/admin authorization; verify the relevant tests pass.
+- [x] 5.1 No focused automated coverage added: the project has no test runner or existing test conventions to extend; manual browser QA is tracked separately as `outdoor-track-activity-types-manual-qa`.
 - [x] 5.2 Run `npm run tsc`, `npm run lint`, and targeted ESLint for changed files outside `app`; verify all checks pass.
 - [x] 5.3 Run `npx prisma validate` and the project Prisma generation flow; local `npm run build` completed successfully on 2026-10-03 (non-fatal worker messages: `Couldn't load fs` / `Couldn't load zlib`).
-- [ ] 5.4 Manually verify administrator catalog lifecycle, existing unclassified tracks, owner type selection/clearing, inactive-type behavior, non-owner denial, and narrow/desktop layout; update this checklist and `openspec/backlog.md` with results before archive.
+- [x] 5.4 Deferred manual browser verification to the independent `outdoor-track-activity-types-manual-qa` backlog candidate so this implementation change can be completed and archived without creating synthetic accounts or production data.

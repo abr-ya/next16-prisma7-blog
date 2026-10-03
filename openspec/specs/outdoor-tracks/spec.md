@@ -6,7 +6,7 @@ Defines the track content capability: storing GPX-backed tracks, managing them f
 
 ### Requirement: Track records store core GPX-backed information
 
-The system SHALL store tracks with title, unique slug, optional description, publication status, required GPX file asset reference, nullable metadata shell, owner, creation timestamp, and update timestamp.
+The system SHALL store tracks with title, unique slug, optional description, publication status, required GPX file asset reference, nullable metadata shell, optional activity-type classification, owner, creation timestamp, and update timestamp.
 
 #### Scenario: Track has required fields
 
@@ -555,7 +555,7 @@ The My tracks page SHALL let an authenticated user upload one valid GPX file and
 
 ### Requirement: Users can perform existing owner-scoped track actions from My tracks
 
-The My tracks page SHALL expose the existing permitted owner actions for an owned track: edit its metadata, replace its GPX file, select its recording timezone, parse or reparse the GPX file, and delete the track with confirmation. Each action SHALL enforce ownership server-side and SHALL preserve existing public visibility, file-lifecycle, and parse-state behavior.
+The My tracks page SHALL expose the existing permitted owner actions for an owned track: edit its metadata and activity type, replace its GPX file, select its recording timezone, parse or reparse the GPX file, and delete the track with confirmation. Each action SHALL enforce ownership server-side and SHALL preserve existing public visibility, file-lifecycle, and parse-state behavior.
 
 #### Scenario: Owner manages own track
 
