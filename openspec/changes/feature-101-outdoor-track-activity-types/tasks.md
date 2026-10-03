@@ -2,9 +2,9 @@
 
 ## 1. Data model and migration
 
-- [ ] 1.1 Add the `TrackActivityType` Prisma model and nullable `Track.activityTypeId` relation with a unique normalized identity, active state, timestamps, index, and restrictive deletion behavior; verify `npx prisma validate` succeeds.
-- [ ] 1.2 Create a new forward Prisma migration that adds the catalog and nullable relation, seeds the agreed starter activity types idempotently, and leaves existing tracks unclassified; verify no applied migration is modified and existing track rows retain `NULL` activity types.
-- [ ] 1.3 Regenerate the Prisma client through the project flow and verify the generated types expose the new relation without manual changes under `generated/prisma`.
+- [x] 1.1 Add the `TrackActivityType` Prisma model and nullable `Track.activityTypeId` relation with a unique normalized identity, active state, timestamps, index, and restrictive deletion behavior; verify `npx prisma validate` succeeds.
+- [x] 1.2 Create a new forward Prisma migration that adds the catalog and nullable relation, seeds the agreed starter activity types idempotently, and leaves existing tracks unclassified; verify no applied migration is modified and existing track rows retain `NULL` activity types.
+- [x] 1.3 Regenerate the Prisma client through the project flow and verify the generated types expose the new relation without manual changes under `generated/prisma`.
 
 ## 2. Server-side catalog and track classification
 
