@@ -8,8 +8,7 @@ The shared `(public)` route group already supplies server-rendered navigation an
 
 **Goals:**
 
-- Add a coherent `/about` route family that works for anonymous and signed-in visitors.
-- Keep guide structure and section destinations in one typed, reusable definition to prevent overview cards and detail pages from drifting.
+- Add public `/about` and `/about/account-levels` pages that work for anonymous and signed-in visitors.
 - Localize all guide-owned copy with the active public locale.
 - Make the trust-level explanation accurate at release time without exposing any private user or admin data.
 
@@ -27,11 +26,9 @@ The overview, account-level page, and section pages will be server pages under `
 
 Alternative considered: place explanatory text inside each existing section page. Rejected because it would clutter content-first routes and make the project overview hard to discover as a coherent whole.
 
-### Model section guide metadata once and reuse it
+### Keep section-specific orientation pages in follow-up slices
 
-A small code-owned guide definition will enumerate the stable section slug, locale keys, and current public destination for Blog, Docs, Videos, Trips, Tracks, and Comments. The overview and dynamic section route will read it; unknown slugs will use the standard not-found behavior.
-
-Alternative considered: one independently authored route file per section. Rejected because repeated static layout and links would drift when section routes change.
+The overview will link directly to existing public destinations. Focused Blog/Docs/Videos and Trips/Tracks/Comments orientation pages are separate follow-up changes, so this first guide release can validate the shared route and localization structure without shipping all editorial copy at once.
 
 ### Keep trust copy policy-derived and release-gated
 
@@ -49,7 +46,7 @@ Alternative considered: expose the guide only from the home page. Rejected becau
 
 - [Trust rules evolve after copy is written] → Review the guide copy against the final gate and quota behavior before release; update the guide in the same change when policy wording changes.
 - [Navbar becomes crowded on narrow viewports] → Reuse the existing wrapping navigation layout and verify the guide item on desktop and mobile widths.
-- [Guide destinations become stale after route migrations] → Centralize current destinations in the guide definition and cover each link in manual route checks.
+- [Overview destinations become stale after route migrations] → Keep the small set of links code-owned and cover each link in manual route checks.
 - [Localized copy is incomplete] → Require both locale resources and exercise the existing default-language fallback.
 
 ## Migration Plan
