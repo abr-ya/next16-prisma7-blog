@@ -14,4 +14,4 @@
 
 - [x] 3.1 Run `npm run tsc` and record a passing result.
 - [x] 3.2 Run targeted ESLint for changed `app` and `components` files (and `npm run lint` when its scope covers the changed files) and record a passing result.
-- [ ] 3.3 Run `npm run build` locally and manually verify administrator preview success plus anonymous and ordinary-user denial; record the result in the change notes or implementation handoff.
+- [x] 3.3 `npm run build` passed locally on 2026-10-04; an administrator verified that a draft photo renders in **Manage photos** through `/files/[id]/thumbnail`. Runtime denial checks for anonymous and ordinary-user viewers are deferred to `outdoor-admin-thumbnail-access-manual-qa`.
