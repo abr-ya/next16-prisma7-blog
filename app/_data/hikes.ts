@@ -88,7 +88,7 @@ export type HikePhotoOption = {
   previewImage: {
     id: string;
     name: string;
-    url: string;
+    thumbnailUrl: string;
   } | null;
 };
 
@@ -842,7 +842,6 @@ export const getHikePhotoOptions = async (): Promise<HikePhotoOption[]> => {
             select: {
               id: true,
               name: true,
-              url: true,
             },
           },
         },
@@ -857,7 +856,13 @@ export const getHikePhotoOptions = async (): Promise<HikePhotoOption[]> => {
     status: photo.status,
     trackTimeMatch: toTrackTimeMatchPhotoInput(photo),
     mapCoordinate: getPhotoMapCoordinate(photo.metadata),
-    previewImage: photo.images.at(0)?.fileAsset ?? null,
+    previewImage: photo.images.at(0)?.fileAsset
+      ? {
+          id: photo.images[0].fileAsset.id,
+          name: photo.images[0].fileAsset.name,
+          thumbnailUrl: `/files/${photo.images[0].fileAsset.id}/thumbnail`,
+        }
+      : null,
   }));
 };
 

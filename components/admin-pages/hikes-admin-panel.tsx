@@ -744,7 +744,11 @@ const HikePhotosDialog = ({
       <div className="flex min-w-0 items-center gap-3">
         <div className="flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-md border bg-muted">
           {photo.previewImage ? (
-            <img src={photo.previewImage.url} alt={photo.previewImage.name} className="size-full object-cover" />
+            <img
+              src={photo.previewImage.thumbnailUrl}
+              alt={photo.previewImage.name}
+              className="size-full object-cover"
+            />
           ) : (
             <ImageIcon className="size-5 text-muted-foreground" />
           )}

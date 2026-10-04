@@ -311,7 +311,10 @@ export const getFileAssetForDownload = async (fileId: string, userId?: string) =
   return fileAsset;
 };
 
-/** Guest-safe thumbnail access for published hike-linked outdoor photo images only. */
+/**
+ * Guest-safe thumbnail access for published hike-linked outdoor photo images,
+ * plus administrator previews of active outdoor photo images in admin workflows.
+ */
 export const getFileAssetForThumbnail = async (fileId: string) => {
   const fileAsset = await prisma.fileAsset.findUnique({
     where: {
@@ -324,11 +327,30 @@ export const getFileAssetForThumbnail = async (fileId: string) => {
     throw new Error("File not found");
   }
 
-  if (!isPublishedHikePhotoImageAsset(fileAsset)) {
+  if (!fileAsset.mimeType.startsWith("image/")) {
     throw new Error("Access denied");
   }
 
-  if (!fileAsset.mimeType.startsWith("image/")) {
+  if (isPublishedHikePhotoImageAsset(fileAsset)) {
+    return fileAsset;
+  }
+
+  if (fileAsset.purpose !== "OUTDOOR_PHOTO_IMAGE") {
+    throw new Error("Access denied");
+  }
+
+  const session = await authSession();
+
+  if (!session) {
+    throw new Error("Access denied");
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { role: true },
+  });
+
+  if (!hasAdminRole(user?.role)) {
     throw new Error("Access denied");
   }
 
