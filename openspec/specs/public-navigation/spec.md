@@ -17,19 +17,21 @@ The system SHALL render the shared public navbar using valid navigation menu str
 
 ### Requirement: Public navbar preserves existing navigation controls
 
-The system SHALL preserve the existing shared public navbar controls for back navigation, search placeholder access, and authentication-aware user access while also exposing links to all primary public content sections: Home, Blog, Docs, Videos, Trips, Tracks, and Comments.
+The system SHALL preserve the existing shared public navbar controls for back navigation, search placeholder access, and authentication-aware user access while also exposing links to all primary public content sections: Home, Blog, Docs, Videos, Trips, Tracks, and Comments. The navbar SHALL additionally expose a localized destination to the public project guide at `/about` without replacing or changing the existing primary section targets.
 
 #### Scenario: Visitor sees public navigation controls
 
 - **WHEN** a visitor opens a public content page that includes the shared public navbar
 - **THEN** the navbar shows links to Home, Blog, Docs, Videos, Trips, Tracks, and Comments
 - **AND** each section link points to its matching current public route
+- **AND** the navbar shows a localized project-guide destination that points to `/about`
 - **AND** the navbar shows a login entry point
 
 #### Scenario: Signed-in user sees account menu
 
 - **WHEN** a signed-in user opens a public content page that includes the shared public navbar
 - **THEN** the navbar shows links to Home, Blog, Docs, Videos, Trips, Tracks, and Comments
+- **AND** the navbar shows a localized project-guide destination that points to `/about`
 - **AND** the navbar shows the authenticated account menu
 
 #### Scenario: Existing utility controls remain available
