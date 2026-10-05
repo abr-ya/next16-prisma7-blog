@@ -71,6 +71,7 @@ Use product or code area scopes in commit messages, not workflow/tooling scopes 
 - Prefer scopes such as `localization`, `public-nav`, `videos`, `admin`, `auth`, `docs`, or `content-tags`.
 - Do not use `openspec` as the scope merely because the change edits OpenSpec artifacts; this project uses OpenSpec throughout, so that scope adds little signal.
 - Example: prefer `docs(localization): propose feature-039 public navbar language switcher` over `docs(openspec): ...`.
+- Start the commit subject after the colon with a capital letter (for example, `docs(localization): Propose feature-039 public navbar language switcher`).
 
 ## Token Economy
 
