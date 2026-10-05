@@ -1,0 +1,30 @@
+{
+  "overview": {
+    "title": "About this project",
+    "intro": "A personal space for writing, reference material, videos, outdoor trips, and shared conversation.",
+    "accountTitle": "Account levels",
+    "accountDescription": "Learn how account trust levels shape participation.",
+    "accountAction": "Learn about account levels",
+    "sectionsTitle": "Explore the site",
+    "sectionsDescription": "Choose a section to read, watch, follow trips, or join the conversation.",
+    "blog": "Blog",
+    "docs": "Docs",
+    "videos": "Videos",
+    "trips": "Trips",
+    "tracks": "Tracks",
+    "comments": "Comments",
+    "openSection": "Open section"
+  },
+  "accountLevels": {
+    "title": "Account levels",
+    "intro": "Account trust levels describe participation permissions. They are separate from the administrator role.",
+    "new": { "title": "New", "description": "New accounts can read public content while verification is still required for participation." },
+    "verified": { "title": "Verified", "description": "Verified accounts can participate in supported social and outdoor actions. They can have up to 3 trips, 30 photos, and 10 tracks at one time." },
+    "trusted": { "title": "Trusted", "description": "Trusted accounts keep ordinary participation capabilities without the verified-account resource limits. Eligible verified accounts can be promoted through positive activity on the site." },
+    "restricted": { "title": "Restricted", "description": "Restricted accounts can read public content but cannot use trust-gated participation actions." },
+    "roleTitle": "Trust level and role are different",
+    "roleDescription": "Trust levels describe ordinary account participation. Administrator access is a separate role and is not assigned by this guide.",
+    "signIn": "Sign in",
+    "signUp": "Create an account"
+  }
+}

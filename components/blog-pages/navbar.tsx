@@ -24,6 +24,7 @@ const publicNavItems = [
   { href: "/trips", labelKey: "trips" },
   { href: "/tracks", labelKey: "tracks" },
   { href: "/comments", labelKey: "comments" },
+  { href: "/about", labelKey: "about" },
 ];
 
 const subscribeToHydration = () => () => {};

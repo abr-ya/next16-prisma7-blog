@@ -8,13 +8,13 @@ Defines concise, localized public guide pages that explain the project, orient v
 
 ### Requirement: Public project-guide overview is available
 
-The system SHALL provide a public project-guide overview at `/about`. It SHALL explain the site's purpose in concise static copy and link visitors to the account-level guide and to each supported section orientation page. The overview SHALL be available to anonymous and signed-in visitors through the shared public shell.
+The system SHALL provide a public project-guide overview at `/about`. It SHALL explain the site's purpose in concise static copy and link visitors to the account-level guide and existing public content destinations. The overview SHALL be available to anonymous and signed-in visitors through the shared public shell.
 
 #### Scenario: Anonymous visitor opens the overview
 
 - **WHEN** an anonymous visitor opens `/about`
 - **THEN** the page renders the project overview without requiring authentication
-- **AND** it links to the account-level guide and every supported section orientation page
+- **AND** it links to the account-level guide and existing public content destinations
 - **AND** it renders the shared public navigation
 
 #### Scenario: Signed-in visitor opens the overview
@@ -22,23 +22,6 @@ The system SHALL provide a public project-guide overview at `/about`. It SHALL e
 - **WHEN** a signed-in visitor opens `/about`
 - **THEN** the page remains publicly readable
 - **AND** the shared navigation preserves authenticated account access
-
-### Requirement: Section orientation pages direct visitors to public content
-
-The system SHALL provide concise public orientation pages at `/about/blog`, `/about/docs`, `/about/videos`, `/about/trips`, `/about/tracks`, and `/about/comments`. Each page SHALL state the purpose of its corresponding content area and provide a link to that area's existing public destination. The guide SHALL not duplicate the target area's listing, search, filters, or protected controls.
-
-#### Scenario: Visitor opens a section orientation page
-
-- **WHEN** a visitor opens any supported `/about/{section}` route
-- **THEN** the page renders a concise explanation of that section
-- **AND** it provides a link to the corresponding existing public section route
-- **AND** it does not render a duplicate content listing or management controls
-
-#### Scenario: Visitor follows a section destination
-
-- **WHEN** a visitor activates a destination link from a section orientation page
-- **THEN** the system navigates to the current public route for that section
-- **AND** the existing route's visibility and authentication boundaries remain in force
 
 ### Requirement: Account-level guide describes enforced participation policy
 

@@ -3,3 +3,4 @@ export type SupportedLanguage = (typeof supportedLanguages)[number];
 
 export const fallbackLanguage: SupportedLanguage = "en";
 export const navigationNamespace = "navigation";
+export const guideNamespace = "guide";
