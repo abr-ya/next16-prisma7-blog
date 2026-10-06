@@ -111,6 +111,8 @@ Cancelled or deferred candidates do not reserve feature numbers.
 | feature-093 | feature-093-admin-users-table | admin/users | Add an administrator-only, read-only `/admin/users` directory with server-side email search and pagination, name/email/registration/role/trust fields, and all linked sign-in methods. Trust mutations and resource statistics are deferred to separate candidates. |
 | feature-102 | feature-102-admin-photos-preview-images | outdoor/admin-photos | Replace direct original provider URLs in administrator trip **Manage photos** rows with the app-owned thumbnail route. Preserve guest thumbnails for published trip-linked photos, and allow active draft or unlinked outdoor-photo thumbnails only to administrators. TypeScript, lint, and local production build passed; administrator browser verification passed on 2026-10-04. Deferred anonymous and ordinary-user denial QA is tracked as `outdoor-admin-thumbnail-access-manual-qa`. |
 
+| feature-103 | feature-103-admin-post-regenerate-slug | posts/admin | Add an explicit administrator-controlled **Regenerate slug** form control that derives a non-empty replacement from the current post title without auto-changing manually entered slugs, saving automatically, or changing existing URL behavior. TypeScript, targeted lint, local production build, and user browser verification passed on 2026-10-05. |
+
 ## Fix History
 
 | Fix | Change | Area | Summary |

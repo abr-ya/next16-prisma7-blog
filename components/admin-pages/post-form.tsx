@@ -86,6 +86,14 @@ export const PostForm = ({
     router.push("/admin/posts");
   };
 
+  const handleRegenerateSlug = () => {
+    const slug = createSlug(form.getValues("title"));
+
+    if (slug) {
+      form.setValue("slug", slug, { shouldDirty: true, shouldValidate: true });
+    }
+  };
+
   return (
     <Form {...form}>
       <form className="grid grid-cols-2 gap-6" onSubmit={form.handleSubmit(onSubmit)}>
@@ -122,9 +130,14 @@ export const PostForm = ({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Slug</FormLabel>
-                <FormControl>
-                  <Input {...field} />
-                </FormControl>
+                <div className="flex gap-2">
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <Button type="button" variant="outline" onClick={handleRegenerateSlug}>
+                    Regenerate slug
+                  </Button>
+                </div>
                 <FormMessage />
               </FormItem>
             )}
