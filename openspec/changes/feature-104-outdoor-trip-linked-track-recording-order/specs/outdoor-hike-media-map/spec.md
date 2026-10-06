@@ -22,6 +22,8 @@ The system SHALL present linked trip tracks in ascending order of their stored s
 
 - **WHEN** an authenticated administrator opens the trip track-management surface for a trip with attached dated and undated tracks
 - **THEN** its attached-track list uses the same chronological and undated fallback order as the public trip detail
+- **AND** each attached track with successful stored recording time metadata displays its recording start and finish range with its selected recording timezone
+- **AND** an attached track without successful stored recording time metadata displays no invented or manually derived date
 - **AND** existing attach and detach authorization and behavior remain unchanged
 
 #### Scenario: Stored time metadata remains unavailable

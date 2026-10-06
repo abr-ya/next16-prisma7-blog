@@ -75,7 +75,14 @@ import {
 import { formatPhotoStatus } from "@/lib/photos";
 import { createSlug } from "@/lib/slug-generator";
 import { formatTrackStatus } from "@/lib/tracks";
-import { formatTrackRecordingDateTime, formatTrackTimezoneEvidence } from "@/lib/track-gpx-metadata";
+import {
+  formatTrackRecordingDateTime,
+  formatTrackRecordingTimeRange,
+  formatTrackTimezoneEvidence,
+  getTrackGpxMetadataState,
+  type TrackGpxTimeSummary,
+} from "@/lib/track-gpx-metadata";
+import { formatTrackRecordingTimezone } from "@/lib/track-recording-timezone";
 
 const formSchema = z
   .object({
@@ -131,6 +138,17 @@ const formatCandidateTrackContext = (candidate: TrackTimeMatchCandidate) => {
   }
 
   return `${formatTrackRecordingDateTime(candidate.previousTrackEnd, candidate.previousRecordingTimezone)} (${candidate.previousRecordingTimezone ?? "UTC (unconfirmed)"}) – ${formatTrackRecordingDateTime(candidate.nextTrackStart, candidate.nextRecordingTimezone)} (${candidate.nextRecordingTimezone ?? "UTC (unconfirmed)"})`;
+};
+
+const getAttachedTrackRecordingTime = (association?: HikeListItem["tracks"][number]): TrackGpxTimeSummary | null => {
+  if (!association) return null;
+
+  const state = getTrackGpxMetadataState(association.track.metadata, {
+    fileAssetId: association.track.fileAsset.id,
+    fileKey: association.track.fileAsset.fileKey,
+  });
+
+  return state.status === "SUCCESS" ? state.summary.time : null;
 };
 
 const isCoordinate = (value: unknown): value is { lat: number; lng: number } =>
@@ -427,11 +445,26 @@ const HikeTracksDialog = ({
   const [, startChanging] = useTransition();
   const associatedTrackIds = useMemo(() => new Set(attachedTrackIds), [attachedTrackIds]);
   const attachedTracks = attachedTrackIds
-    .map(
-      (trackId) =>
-        hike?.tracks.find(({ track }) => track.id === trackId)?.track ?? tracks.find((track) => track.id === trackId),
-    )
-    .filter((track): track is HikeTrackOption => Boolean(track));
+    .map((trackId) => {
+      const association = hike?.tracks.find(({ track }) => track.id === trackId);
+      const track = association?.track ?? tracks.find((candidate) => candidate.id === trackId);
+      if (!track) return null;
+
+      return {
+        track,
+        recordingTime: getAttachedTrackRecordingTime(association),
+        recordingTimezone: association?.track.recordingTimezone ?? null,
+      };
+    })
+    .filter(
+      (
+        attachedTrack,
+      ): attachedTrack is {
+        track: HikeTrackOption;
+        recordingTime: TrackGpxTimeSummary | null;
+        recordingTimezone: string | null;
+      } => Boolean(attachedTrack),
+    );
   const availableTracks = tracks.filter((track) => !associatedTrackIds.has(track.id));
 
   useEffect(() => {
@@ -493,16 +526,28 @@ const HikeTracksDialog = ({
             <h3 className="text-sm font-medium">Attached tracks</h3>
             {attachedTracks.length > 0 ? (
               <div className="grid gap-2">
-                {attachedTracks.map((track) => (
+                {attachedTracks.map(({ track, recordingTime, recordingTimezone }) => (
                   <div
                     key={track.id}
                     className="flex flex-wrap items-center justify-between gap-3 rounded-md border p-3"
                   >
                     <div className="min-w-0">
                       <div className="truncate font-medium">{track.title}</div>
-                      <Badge variant={track.status === "PUBLISHED" ? "default" : "secondary"}>
-                        {formatTrackStatus(track.status)}
-                      </Badge>
+                      <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                        <Badge variant={track.status === "PUBLISHED" ? "default" : "secondary"}>
+                          {formatTrackStatus(track.status)}
+                        </Badge>
+                        {recordingTime ? (
+                          <>
+                            <Badge variant="outline">
+                              {formatTrackRecordingTimeRange(recordingTime, recordingTimezone)}
+                            </Badge>
+                            <Badge variant={recordingTimezone ? "secondary" : "outline"}>
+                              {formatTrackRecordingTimezone(recordingTimezone)}
+                            </Badge>
+                          </>
+                        ) : null}
+                      </div>
                     </div>
                     <Button
                       type="button"

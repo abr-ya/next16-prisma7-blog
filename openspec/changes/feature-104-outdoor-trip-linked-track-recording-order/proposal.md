@@ -8,6 +8,7 @@ Visitors and administrators currently see linked trip tracks in reverse associat
 
 - Order linked track cards on published trip detail pages by successful parsed GPX recording start instant, ascending.
 - Apply the same chronological order in the administrator **Manage tracks** trip dialog.
+- Show the stored recording date-time range and selected recording timezone on attached administrator track cards when successful parsed time metadata is available.
 - Put tracks without a usable stored recording start after dated tracks, retaining their existing reverse-association order as a stable fallback.
 - Preserve each track's existing selected recording-timezone display, visibility boundaries, association actions, and map behavior.
 

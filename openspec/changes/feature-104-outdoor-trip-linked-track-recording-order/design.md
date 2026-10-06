@@ -10,6 +10,7 @@ See [proposal.md](./proposal.md) for motivation. Both existing trip query projec
 
 - Derive one deterministic trip-associated-track order from persisted successful GPX metadata.
 - Use that result for both public track cards and the administrator attached-track list.
+- Reuse the existing stored parsed time formatter and recording-timezone label for administrator attached-track cards.
 - Preserve reverse `assignedAt` ordering only as the stable fallback for tracks lacking a usable recording start.
 
 **Non-Goals:**
@@ -30,6 +31,10 @@ Alternative considered: adding a `recordingStart` database column and ordering i
 The public `PublicHike` mapping will order linked associations before rendering cards and map inputs. The administrator dialog will render its attached list from the selected hike's ordered associations, while continuing to use the all-track option list only for unattached candidates. This prevents the client from reconstructing the order against a global list.
 
 Alternative considered: independently sorting both UI components. That risks divergence in metadata validity and fallback behavior.
+
+### Show date-time context on dated administrator cards
+
+The administrator attached-track card will reuse the existing parsed time summary and recording-timezone formatting already used by public linked-track cards. It will render no time value when successful parsed time metadata is absent, so the UI does not imply a manually supplied date.
 
 ### Treat the instant as ordering data and timezone as presentation data
 
