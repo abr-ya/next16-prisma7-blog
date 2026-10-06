@@ -426,7 +426,12 @@ const HikeTracksDialog = ({
   const [attachedTrackIds, setAttachedTrackIds] = useState<string[]>([]);
   const [, startChanging] = useTransition();
   const associatedTrackIds = useMemo(() => new Set(attachedTrackIds), [attachedTrackIds]);
-  const attachedTracks = tracks.filter((track) => associatedTrackIds.has(track.id));
+  const attachedTracks = attachedTrackIds
+    .map(
+      (trackId) =>
+        hike?.tracks.find(({ track }) => track.id === trackId)?.track ?? tracks.find((track) => track.id === trackId),
+    )
+    .filter((track): track is HikeTrackOption => Boolean(track));
   const availableTracks = tracks.filter((track) => !associatedTrackIds.has(track.id));
 
   useEffect(() => {
