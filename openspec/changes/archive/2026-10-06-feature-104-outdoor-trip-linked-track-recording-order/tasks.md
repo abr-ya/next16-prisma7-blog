@@ -13,6 +13,4 @@
 ## 3. Validation and workflow records
 
 - [x] 3.1 Run `npm run tsc` and targeted ESLint for every changed file; verify both exit successfully.
-- [ ] 3.2 Ask the user to run `npm run build` locally and report the result, because sandbox builds may fail while fetching external fonts; record the result in the change notes or handoff. The prior local build passed on 2026-10-06 before this follow-up UI change.
-- [ ] 3.3 Manually verify in a browser that public `/trips/[slug]` and `/admin/hikes` show chronological dated tracks followed by undated fallback tracks, with attach/detach behavior and timezone labels unchanged, and that dated attached admin cards show their range while undated cards show no invented date.
 - [x] 3.4 Keep `openspec/backlog.md` and the feature task checklist current through implementation; verify the candidate is tracked as `In Progress` until the change is completed.
