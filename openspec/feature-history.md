@@ -114,6 +114,7 @@ Cancelled or deferred candidates do not reserve feature numbers.
 | feature-103 | feature-103-admin-post-regenerate-slug | posts/admin | Add an explicit administrator-controlled **Regenerate slug** form control that derives a non-empty replacement from the current post title without auto-changing manually entered slugs, saving automatically, or changing existing URL behavior. TypeScript, targeted lint, local production build, and user browser verification passed on 2026-10-05. |
 
 | feature-104 | feature-104-outdoor-trip-linked-track-recording-order | outdoor/trips-tracks | Order linked trip tracks by their stored successful GPX recording start on public and administrator surfaces; undated tracks follow in reverse association order. Administrator cards show the stored recording range and timezone when available. TypeScript, targeted lint, and user public/admin browser verification passed on 2026-10-06. |
+| feature-105 | feature-105-outdoor-trip-linked-photo-capture-order | outdoor/trips-photos | Default published trip photo galleries and lightbox navigation to reliable stored capture-time order, with an always-visible localized `Capture time` / `Manual order` selector. `photoOrder` shares URL state with `photo` through native history replacement; undated photos sort last and show a persistent localized alert. TypeScript, targeted lint, and local production build passed; available gallery sorting was user-verified in dev on 2026-10-07. |
 
 ## Fix History
 

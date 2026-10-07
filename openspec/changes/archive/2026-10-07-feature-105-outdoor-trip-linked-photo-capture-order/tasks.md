@@ -18,6 +18,6 @@
 ## 4. Validation and workflow records
 
 - [x] 4.1 Run `npm run tsc` and targeted ESLint for every changed file; verify both exit successfully.
-- [ ] 4.2 Ask the user to run `npm run build` locally and report the result, because sandbox builds may fail while fetching external fonts; record the result in the change notes or handoff.
-- [ ] 4.3 Manually verify a published trip in EN and RU: default chronology, manual-mode card/lightbox sequence, persistent undated alert, disabled selector state, and `photo` plus `photoOrder` URL replacement with no visible route reload.
-- [ ] 4.4 Keep `openspec/backlog.md` and the feature task checklist current through implementation; verify the feature remains `In Progress` until completion.
+- [x] 4.2 Ask the user to run `npm run build` locally and report the result, because sandbox builds may fail while fetching external fonts; record the result in the change notes or handoff. User reported a successful local production build on 2026-10-07.
+- [x] 4.3 Manually verify a published trip in EN and RU: default chronology, manual-mode card/lightbox sequence, persistent undated alert, disabled selector state, and `photo` plus `photoOrder` URL replacement with no visible route reload. User verified the available gallery sorting in dev on 2026-10-07; no current photo lacks a reliable date, so the undated-card case remains data-unavailable rather than synthesized.
+- [x] 4.4 Keep `openspec/backlog.md` and the feature task checklist current through implementation; verify the feature remains `In Progress` until completion.
