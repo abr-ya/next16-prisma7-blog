@@ -350,6 +350,43 @@ const publicHikeInclude = {
   },
 } satisfies Prisma.HikeInclude;
 
+type HikeTrackAssociationWithStoredMetadata = {
+  track: {
+    metadata: Prisma.JsonValue | null;
+    fileAsset: { id: string; fileKey: string };
+  };
+};
+
+const getStoredTrackRecordingStart = (association: HikeTrackAssociationWithStoredMetadata) => {
+  const state = getTrackGpxMetadataState(association.track.metadata, {
+    fileAssetId: association.track.fileAsset.id,
+    fileKey: association.track.fileAsset.fileKey,
+  });
+
+  if (state.status !== "SUCCESS" || !state.summary.time) return null;
+
+  const timestamp = Date.parse(state.summary.time.start);
+  return Number.isFinite(timestamp) ? timestamp : null;
+};
+
+const orderHikeTrackAssociations = <T extends HikeTrackAssociationWithStoredMetadata>(associations: T[]): T[] =>
+  associations
+    .map((association, fallbackIndex) => ({
+      association,
+      fallbackIndex,
+      recordingStart: getStoredTrackRecordingStart(association),
+    }))
+    .sort((left, right) => {
+      if (left.recordingStart !== null && right.recordingStart !== null) {
+        return left.recordingStart - right.recordingStart || left.fallbackIndex - right.fallbackIndex;
+      }
+
+      if (left.recordingStart !== null) return -1;
+      if (right.recordingStart !== null) return 1;
+      return left.fallbackIndex - right.fallbackIndex;
+    })
+    .map(({ association }) => association);
+
 export type HikeListItem = Prisma.HikeGetPayload<{
   include: typeof hikeListInclude;
 }>;
@@ -620,10 +657,11 @@ const toTrackTimeMatchTrackInput = ({
 const toPublicHike = (hike: PublicHikeRecord): PublicHike => {
   const hikeDays = getHikeMapDays(hike.startDate, hike.endDate);
   const hikeDayKeys = new Set(hikeDays.map(({ key }) => key));
+  const tracks = orderHikeTrackAssociations(hike.tracks);
 
   return {
     ...hike,
-    tracks: hike.tracks.map((association) => {
+    tracks: tracks.map((association) => {
       const { metadata, fileAsset, ...track } = association.track;
       const parsedState = getTrackGpxMetadataState(metadata, {
         fileAssetId: fileAsset.id,
@@ -816,11 +854,13 @@ export const getAllHikes = async (): Promise<HikeListItem[]> => {
   const userId = await getRequiredUserId();
   const { default: prisma } = await import("@/lib/prisma");
 
-  return prisma.hike.findMany({
+  const hikes = (await prisma.hike.findMany({
     where: { userId },
     include: hikeListInclude,
     orderBy: [{ startDate: "desc" }, { createdAt: "desc" }],
-  });
+  })) as HikeListItem[];
+
+  return hikes.map((hike) => ({ ...hike, tracks: orderHikeTrackAssociations(hike.tracks) }));
 };
 
 export const getHikePhotoOptions = async (): Promise<HikePhotoOption[]> => {
@@ -870,10 +910,12 @@ export const getHikeById = async (id: string): Promise<HikeListItem | null> => {
   const userId = await getRequiredUserId();
   const { default: prisma } = await import("@/lib/prisma");
 
-  return prisma.hike.findFirst({
+  const hike = await prisma.hike.findFirst({
     where: { id, userId },
     include: hikeListInclude,
   });
+
+  return hike ? { ...hike, tracks: orderHikeTrackAssociations(hike.tracks) } : null;
 };
 
 const persistHikePhotoTrackTimeMatchCandidate = async ({
