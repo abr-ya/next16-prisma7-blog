@@ -84,6 +84,7 @@ export const TripPage = async ({ params }: HikePageProps) => {
         hikeId: hike.id,
         title: photo.title,
         description: photo.description,
+        captureInstant: photo.captureInstant,
         alt: preview?.name || photo.title,
         thumbnailUrl: preview ? `/files/${preview.id}/thumbnail` : null,
         fullUrl: canViewFullPhotos && preview ? `/files/${preview.id}/download?disposition=inline` : null,

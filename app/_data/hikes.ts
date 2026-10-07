@@ -425,7 +425,7 @@ export type PublicHike = Omit<PublicHikeRecord, "tracks" | "photos" | "notes"> &
     photoId: string;
     position: number;
     assignedAt: Date;
-    photo: Omit<PublicHikeRecord["photos"][number]["photo"], "metadata">;
+    photo: Omit<PublicHikeRecord["photos"][number]["photo"], "metadata"> & { captureInstant: string | null };
   }[];
   photoMapMarkers: HikePhotoMapMarker[];
   noteMapMarkers: HikeNoteMapMarker[];
@@ -601,6 +601,19 @@ const toTrackTimeMatchPhotoInput = ({
   };
 };
 
+const getReliablePhotoCaptureInstant = (metadata: Prisma.JsonValue | null) => {
+  const state = getPhotoExifMetadataState(metadata);
+  if (state.status !== "SUCCESS") return null;
+
+  const summary = state.summary;
+  const instant =
+    summary.captureTimeNormalization?.instantUtc ??
+    summary.captureTimeProvenance?.instantUtc ??
+    (summary.captureTimeTimezoneEvidence === "UTC_OR_OFFSET" ? summary.capturedAt : null);
+
+  return instant && Number.isFinite(Date.parse(instant)) ? instant : null;
+};
+
 const toTrackTimeMatchTrackInput = ({
   id,
   title,
@@ -700,6 +713,7 @@ const toPublicHike = (hike: PublicHikeRecord): PublicHike => {
         description: association.photo.description,
         status: association.photo.status,
         images: association.photo.images,
+        captureInstant: getReliablePhotoCaptureInstant(association.photo.metadata),
       },
     })),
     photoMapMarkers: hike.photos.flatMap(({ photo }) => {
