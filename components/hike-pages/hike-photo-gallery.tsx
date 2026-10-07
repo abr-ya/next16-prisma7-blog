@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  CircleAlert,
   ChevronLeft,
   ChevronRight,
   FileSearch,
@@ -13,6 +14,7 @@ import {
   Route,
 } from "lucide-react";
 import Link from "next/link";
+import { useT } from "next-i18next/client";
 import { forwardRef, useEffect, useImperativeHandle, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
@@ -30,6 +32,7 @@ import { HikePhotoContributionButton } from "@/components/hike-pages/hike-photo-
 import { HikePhotoDetailSummary } from "@/components/hike-pages/hike-photo-detail-summary";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { CommentListItem } from "@/lib/comments";
+import { tripsNamespace } from "@/app/i18n/settings";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -38,6 +41,7 @@ export type HikePhotoGalleryItem = {
   hikeId: string;
   title: string;
   description: string | null;
+  captureInstant: string | null;
   alt: string;
   thumbnailUrl: string | null;
   fullUrl: string | null;
@@ -55,6 +59,9 @@ type HikePhotoGalleryProps = {
   onFocusMap: (coordinate: NonNullable<HikePhotoDetail["acceptedCoordinate"]>) => void;
   onSelectedPhotoChange?: (photoId: string | null) => void;
   photoContributionCapability?: HikePhotoContributionCapability | null;
+  photoOrder: "capture" | "manual";
+  canChangePhotoOrder: boolean;
+  onPhotoOrderChange: (photoOrder: "capture" | "manual") => void;
 };
 
 export type HikePhotoGalleryHandle = {
@@ -72,10 +79,21 @@ const formatPhotoCommentCount = (count: number) => {
 };
 
 export const HikePhotoGallery = forwardRef<HikePhotoGalleryHandle, HikePhotoGalleryProps>(function HikePhotoGallery(
-  { photos, canViewFullPhotos, canFocusMap, onFocusMap, onSelectedPhotoChange, photoContributionCapability },
+  {
+    photos,
+    canViewFullPhotos,
+    canFocusMap,
+    onFocusMap,
+    onSelectedPhotoChange,
+    photoContributionCapability,
+    photoOrder,
+    canChangePhotoOrder,
+    onPhotoOrderChange,
+  },
   ref,
 ) {
-  const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const { t } = useT(tripsNamespace);
+  const [activePhotoId, setActivePhotoId] = useState<string | null>(null);
   const [showDetails, setShowDetails] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [exifPhotoId, setExifPhotoId] = useState<string | null>(null);
@@ -84,7 +102,8 @@ export const HikePhotoGallery = forwardRef<HikePhotoGalleryHandle, HikePhotoGall
   const [isPending, startTransition] = useTransition();
   const [isLikePending, startLikeTransition] = useTransition();
   const router = useRouter();
-  const activePhoto = activeIndex === null ? null : photos[activeIndex];
+  const activeIndex = activePhotoId ? photos.findIndex((photo) => photo.id === activePhotoId) : null;
+  const activePhoto = activeIndex === null || activeIndex === -1 ? null : photos[activeIndex];
   const exifPhoto = photos.find((photo) => photo.id === exifPhotoId) ?? null;
   const coordinatePhoto = photos.find((photo) => photo.id === coordinatePhotoId) ?? null;
   const canNavigate = canViewFullPhotos && photos.length > 1;
@@ -99,7 +118,7 @@ export const HikePhotoGallery = forwardRef<HikePhotoGalleryHandle, HikePhotoGall
       return;
     }
 
-    if (activeIndex === index) return;
+    if (activePhotoId === photoId) return;
 
     openPhoto(index);
   };
@@ -109,12 +128,12 @@ export const HikePhotoGallery = forwardRef<HikePhotoGalleryHandle, HikePhotoGall
     setShowDetails(false);
     setShowComments(false);
     setFullPhotoImageState(null);
-    setActiveIndex(index);
+    setActivePhotoId(photos[index]!.id);
     onSelectedPhotoChange?.(photos[index]!.id);
   };
 
   const closeViewer = () => {
-    setActiveIndex(null);
+    setActivePhotoId(null);
     setShowDetails(false);
     setShowComments(false);
     setFullPhotoImageState(null);
@@ -124,22 +143,22 @@ export const HikePhotoGallery = forwardRef<HikePhotoGalleryHandle, HikePhotoGall
   useImperativeHandle(ref, () => ({ openPhotoById, closeViewer }));
 
   const showPrevious = () => {
-    if (activeIndex === null || photos.length === 0) return;
+    if (activeIndex === null || activeIndex === -1 || photos.length === 0) return;
     const nextIndex = (activeIndex - 1 + photos.length) % photos.length;
     setShowDetails(false);
     setShowComments(false);
     setFullPhotoImageState(null);
-    setActiveIndex(nextIndex);
+    setActivePhotoId(photos[nextIndex]!.id);
     onSelectedPhotoChange?.(photos[nextIndex]!.id);
   };
 
   const showNext = () => {
-    if (activeIndex === null || photos.length === 0) return;
+    if (activeIndex === null || activeIndex === -1 || photos.length === 0) return;
     const nextIndex = (activeIndex + 1) % photos.length;
     setShowDetails(false);
     setShowComments(false);
     setFullPhotoImageState(null);
-    setActiveIndex(nextIndex);
+    setActivePhotoId(photos[nextIndex]!.id);
     onSelectedPhotoChange?.(photos[nextIndex]!.id);
   };
 
@@ -199,9 +218,40 @@ export const HikePhotoGallery = forwardRef<HikePhotoGalleryHandle, HikePhotoGall
       <section className="grid gap-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-base font-semibold">Photos</h2>
-          {photoContributionCapability ? (
-            <HikePhotoContributionButton capability={photoContributionCapability} />
-          ) : null}
+          <div className="flex flex-wrap items-center gap-2">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="inline-flex" tabIndex={canChangePhotoOrder ? -1 : 0}>
+                  <div className="flex rounded-md border p-0.5" role="group" aria-label={t("photoOrderLabel")}>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={photoOrder === "capture" ? "secondary" : "ghost"}
+                      disabled={!canChangePhotoOrder}
+                      aria-pressed={photoOrder === "capture"}
+                      onClick={() => onPhotoOrderChange("capture")}
+                    >
+                      {t("photoOrderCapture")}
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={photoOrder === "manual" ? "secondary" : "ghost"}
+                      disabled={!canChangePhotoOrder}
+                      aria-pressed={photoOrder === "manual"}
+                      onClick={() => onPhotoOrderChange("manual")}
+                    >
+                      {t("photoOrderManual")}
+                    </Button>
+                  </div>
+                </div>
+              </TooltipTrigger>
+              {!canChangePhotoOrder ? <TooltipContent>{t("photoOrderUnchanged")}</TooltipContent> : null}
+            </Tooltip>
+            {photoContributionCapability ? (
+              <HikePhotoContributionButton capability={photoContributionCapability} />
+            ) : null}
+          </div>
         </div>
         {photos.length > 0 ? (
           <div className="grid gap-4 md:grid-cols-3">
@@ -258,7 +308,23 @@ export const HikePhotoGallery = forwardRef<HikePhotoGalleryHandle, HikePhotoGall
                   </div>
                   <div className="grid gap-1 p-3">
                     <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0 font-medium">{photo.title}</div>
+                      <div className="flex min-w-0 items-center gap-1.5 font-medium">
+                        {!photo.captureInstant ? (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span
+                                className="shrink-0 text-red-600"
+                                tabIndex={0}
+                                aria-label={t("photoCaptureDateUnavailableLabel")}
+                              >
+                                <CircleAlert className="size-4" aria-hidden="true" />
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent>{t("photoCaptureDateUnavailable")}</TooltipContent>
+                          </Tooltip>
+                        ) : null}
+                        <span className="truncate">{photo.title}</span>
+                      </div>
                       {photo.detail?.canReviewCoordinate ? (
                         <div className="flex shrink-0 gap-1">
                           <Tooltip>

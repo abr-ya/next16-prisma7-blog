@@ -1,0 +1,8 @@
+{
+  "photoOrderLabel": "Порядок фотографий",
+  "photoOrderCapture": "По времени съёмки",
+  "photoOrderManual": "Ручной порядок",
+  "photoOrderUnchanged": "Выбранный порядок уже применён.",
+  "photoCaptureDateUnavailableLabel": "Дата съёмки недоступна",
+  "photoCaptureDateUnavailable": "Дата съёмки недоступна. В хронологическом порядке это фото находится после фото с датой."
+}

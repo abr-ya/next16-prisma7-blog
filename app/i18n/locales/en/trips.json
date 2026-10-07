@@ -1,0 +1,8 @@
+{
+  "photoOrderLabel": "Photo order",
+  "photoOrderCapture": "Capture time",
+  "photoOrderManual": "Manual order",
+  "photoOrderUnchanged": "The selected ordering is already applied.",
+  "photoCaptureDateUnavailableLabel": "Capture date unavailable",
+  "photoCaptureDateUnavailable": "Capture date is unavailable. In chronological order, this photo appears after dated photos."
+}
