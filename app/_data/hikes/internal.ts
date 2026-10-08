@@ -252,15 +252,35 @@ export const toTrackTimeMatchPhotoInput = ({
   };
 };
 
-const getReliablePhotoCaptureInstant = (metadata: Prisma.JsonValue | null) => {
+const getReliablePhotoCaptureInstant = (metadata: Prisma.JsonValue | null, linkedTrackTimezones: string[] = []) => {
   const state = getPhotoExifMetadataState(metadata);
   if (state.status !== "SUCCESS") return null;
 
   const summary = state.summary;
+  const normalizedTrackTimezones = [
+    ...new Set(
+      linkedTrackTimezones
+        .map(normalizeTrackRecordingTimezone)
+        .filter((timezone): timezone is string => Boolean(timezone)),
+    ),
+  ];
+  const singleTrackTimezone = normalizedTrackTimezones.length === 1 ? normalizedTrackTimezones[0] : null;
+  const trackDefaultInstant =
+    !summary.captureTimeNormalization &&
+    summary.captureTimeTimezoneEvidence === "MISSING" &&
+    singleTrackTimezone &&
+    summary.captureTimeProvenance?.localWallTime
+      ? derivePhotoCaptureInstantUtc({
+          localWallTime: summary.captureTimeProvenance.localWallTime,
+          timeZone: singleTrackTimezone,
+        })
+      : null;
+  const utcOffsetFallback = summary.captureTimeTimezoneEvidence === "UTC_OR_OFFSET" ? summary.capturedAt : null;
   const instant =
     summary.captureTimeNormalization?.instantUtc ??
     summary.captureTimeProvenance?.instantUtc ??
-    (summary.captureTimeTimezoneEvidence === "UTC_OR_OFFSET" ? summary.capturedAt : null);
+    trackDefaultInstant ??
+    utcOffsetFallback;
 
   return instant && Number.isFinite(Date.parse(instant)) ? instant : null;
 };
@@ -322,6 +342,9 @@ export const toPublicHike = (hike: PublicHikeRecord): PublicHike => {
   const hikeDays = getHikeMapDays(hike.startDate, hike.endDate);
   const hikeDayKeys = new Set(hikeDays.map(({ key }) => key));
   const tracks = orderHikeTrackAssociations(hike.tracks);
+  const linkedTrackTimezones = tracks
+    .map((association) => normalizeTrackRecordingTimezone(association.track.recordingTimezone))
+    .filter((timezone): timezone is string => Boolean(timezone));
 
   return {
     ...hike,
@@ -364,7 +387,7 @@ export const toPublicHike = (hike: PublicHikeRecord): PublicHike => {
         description: association.photo.description,
         status: association.photo.status,
         images: association.photo.images,
-        captureInstant: getReliablePhotoCaptureInstant(association.photo.metadata),
+        captureInstant: getReliablePhotoCaptureInstant(association.photo.metadata, linkedTrackTimezones),
       },
     })),
     photoMapMarkers: hike.photos.flatMap(({ photo }) => {

@@ -5,6 +5,7 @@ export {
   attachPhotoToHike,
   attachTrackToHike,
   cancelHikeInvitation,
+  clearHikePhotoCaptureTimezone,
   confirmHikePhotoCaptureTimezone,
   contributePhotoToHike,
   createHike,

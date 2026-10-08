@@ -12,5 +12,8 @@
   "addTripQuotaReached": "You've reached the limit of published trips for verified accounts.",
   "addTripSuccessPublished": "Trip published",
   "addTripSuccessDraft": "Trip saved as draft",
-  "addTripError": "Failed to create trip"
+  "addTripError": "Failed to create trip",
+  "photoTimezoneResetError": "Failed to clear timezone",
+  "photoTimezoneResetNoPermission": "You cannot clear this photo timezone",
+  "photoTimezoneResetNoNormalization": "This photo has no capture-time normalization to reset"
 }

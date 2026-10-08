@@ -12,5 +12,8 @@
   "addTripQuotaReached": "Вы достигли лимита опубликованных походов для верифицированных аккаунтов.",
   "addTripSuccessPublished": "Поход опубликован",
   "addTripSuccessDraft": "Поход сохранён как черновик",
-  "addTripError": "Не удалось создать поход"
+  "addTripError": "Не удалось создать поход",
+  "photoTimezoneResetError": "Не удалось сбросить часовой пояс",
+  "photoTimezoneResetNoPermission": "Вы не можете сбросить часовой пояс этого фото",
+  "photoTimezoneResetNoNormalization": "У этого фото нечего сбрасывать"
 }
