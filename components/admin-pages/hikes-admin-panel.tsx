@@ -1,6 +1,5 @@
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
 import type { ColumnDef } from "@tanstack/react-table";
 import {
   ArrowDown,
@@ -18,9 +17,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, useTransition } from "react";
-import { useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
-import z from "zod";
 
 import {
   acceptHikePhotoTrackTimeMatchCandidate,
@@ -50,12 +47,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
   Input,
   Select,
   SelectContent,
@@ -63,8 +54,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/index";
+import { dateInputValue } from "@/components/forms/trips";
+import { HikeFormDialog } from "@/components/dialogs/trips";
 import type { HikeNoteStatus, HikeStatus, HikeType } from "@/generated/prisma/enums";
-import { formatHikeStatus, formatHikeType, hikeStatusOptions, hikeTypeOptions } from "@/lib/hikes";
+import { formatHikeStatus, formatHikeType } from "@/lib/hikes";
 import { formatHikeNoteStatus, hikeNoteStatusOptions } from "@/lib/hike-notes";
 import { formatPhotoCaptureTimeContext, formatPhotoMapCoordinateStatus } from "@/lib/photo-exif-metadata";
 import {
@@ -73,7 +66,6 @@ import {
   type TrackTimeMatchTrackInput,
 } from "@/lib/outdoor-photo-track-time-matching";
 import { formatPhotoStatus } from "@/lib/photos";
-import { createSlug } from "@/lib/slug-generator";
 import { formatTrackStatus } from "@/lib/tracks";
 import {
   formatTrackRecordingDateTime,
@@ -83,41 +75,6 @@ import {
   type TrackGpxTimeSummary,
 } from "@/lib/track-gpx-metadata";
 import { formatTrackRecordingTimezone } from "@/lib/track-recording-timezone";
-
-const formSchema = z
-  .object({
-    title: z.string().min(1, { message: "Title is required" }),
-    slug: z.string().min(1, { message: "Slug is required" }),
-    description: z.string().optional(),
-    startDate: z.string().min(1, { message: "Start date is required" }),
-    endDate: z.string().min(1, { message: "End date is required" }),
-    type: z.enum(["HIKING", "MOUNTAIN", "WATER", "SKI", "BIKE", "OTHER"]),
-    status: z.enum(["DRAFT", "PUBLISHED"]),
-  })
-  .refine((values) => new Date(values.endDate) >= new Date(values.startDate), {
-    message: "End date must be the same as or later than start date",
-    path: ["endDate"],
-  });
-
-type HikeFormValues = z.infer<typeof formSchema>;
-
-const defaultValues: HikeFormValues = {
-  title: "",
-  slug: "",
-  description: "",
-  startDate: "",
-  endDate: "",
-  type: "HIKING",
-  status: "DRAFT",
-};
-
-const dateInputValue = (value: Date | string) => {
-  const date = value instanceof Date ? value : new Date(value);
-
-  if (Number.isNaN(date.getTime())) return "";
-
-  return date.toISOString().slice(0, 10);
-};
 
 const formatDate = (value: Date | string) =>
   new Intl.DateTimeFormat("en", {
@@ -213,219 +170,6 @@ const toTrackTimeMatchTracks = (hike: HikeListItem | null): TrackTimeMatchTrackI
         timezoneEvidence,
       };
     }) ?? [];
-
-const HikeFormDialog = ({
-  hike,
-  open,
-  onOpenChange,
-}: {
-  hike: HikeListItem | null;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}) => {
-  const form = useForm<HikeFormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues,
-    mode: "onBlur",
-  });
-  const isEditing = Boolean(hike);
-
-  useEffect(() => {
-    if (!open) return;
-
-    if (hike) {
-      form.reset({
-        title: hike.title,
-        slug: hike.slug,
-        description: hike.description ?? "",
-        startDate: dateInputValue(hike.startDate),
-        endDate: dateInputValue(hike.endDate),
-        type: hike.type,
-        status: hike.status,
-      });
-    } else {
-      form.reset(defaultValues);
-    }
-  }, [form, hike, open]);
-
-  const titleValue = useWatch({ control: form.control, name: "title" });
-
-  const handleGenerateSlug = () => {
-    const slug = createSlug(titleValue);
-
-    if (slug) {
-      form.setValue("slug", slug, { shouldDirty: true, shouldValidate: true });
-    }
-  };
-
-  const onSubmit = async (values: HikeFormValues) => {
-    try {
-      if (hike) {
-        await updateHike({
-          id: hike.id,
-          ...values,
-          type: values.type as HikeType,
-          status: values.status as HikeStatus,
-        });
-        toast.success("Trip updated");
-      } else {
-        await createHike({ ...values, type: values.type as HikeType, status: values.status as HikeStatus });
-        toast.success("Trip created");
-      }
-
-      onOpenChange(false);
-      form.reset(defaultValues);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to save hike");
-    }
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>{isEditing ? "Edit hike" : "Create hike"}</DialogTitle>
-        </DialogHeader>
-        <Form {...form}>
-          <form className="grid gap-4" onSubmit={form.handleSubmit(onSubmit)}>
-            <div className="grid gap-4 md:grid-cols-2">
-              <FormField
-                control={form.control}
-                name="title"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Title</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="slug"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Slug</FormLabel>
-                    <div className="flex gap-2">
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <Button type="button" variant="outline" onClick={handleGenerateSlug}>
-                        Generate
-                      </Button>
-                    </div>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Description</FormLabel>
-                  <FormControl>
-                    <textarea
-                      {...field}
-                      className="border-input focus-visible:border-ring focus-visible:ring-ring/50 min-h-28 w-full rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <div className="grid gap-4 md:grid-cols-2">
-              <FormField
-                control={form.control}
-                name="startDate"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Start date</FormLabel>
-                    <FormControl>
-                      <Input {...field} type="date" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="endDate"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>End date</FormLabel>
-                    <FormControl>
-                      <Input {...field} type="date" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            <div className="grid gap-4 md:grid-cols-2">
-              <FormField
-                control={form.control}
-                name="type"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Type</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger className="w-full">
-                          <SelectValue />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {hikeTypeOptions.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="status"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Status</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger className="w-full">
-                          <SelectValue />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {hikeStatusOptions.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            <div className="flex justify-end">
-              <Button type="submit" disabled={form.formState.isSubmitting}>
-                {form.formState.isSubmitting ? "Saving..." : "Save hike"}
-              </Button>
-            </div>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
-  );
-};
 
 const HikeTracksDialog = ({
   hike,
@@ -1501,6 +1245,25 @@ export const HikesAdminPanel = ({
         onOpenChange={(open) => {
           setFormOpen(open);
           if (!open) setEditingHike(null);
+        }}
+        onSubmit={async (values) => {
+          if (editingHike) {
+            await updateHike({
+              id: editingHike.id,
+              ...values,
+              type: values.type as HikeType,
+              status: values.status as HikeStatus,
+            });
+            toast.success("Trip updated");
+          } else {
+            await createHike({
+              ...values,
+              type: values.type as HikeType,
+              status: values.status as HikeStatus,
+            });
+            toast.success("Trip created");
+          }
+          router.refresh();
         }}
       />
       {isAdmin ? (

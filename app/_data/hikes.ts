@@ -13,8 +13,13 @@ import type {
 } from "@/generated/prisma/enums";
 import { authSession, currentUserRole, requireAdmin } from "@/lib/auth-utils";
 import { hasAdminRole } from "@/lib/auth-roles";
+import { AUTH_TRUST_LEVELS } from "@/lib/auth-trust";
 import { requireTrustGatedAction } from "@/lib/auth-trust-gates.server";
-import { assertVerifiedResourceQuota, reconcileVerifiedUserTrust } from "@/lib/auth-trust-quotas.server";
+import {
+  assertVerifiedResourceQuota,
+  reconcileVerifiedUserTrust,
+  VERIFIED_RESOURCE_LIMITS,
+} from "@/lib/auth-trust-quotas.server";
 import { normalizePhotoInput } from "@/lib/photos";
 import { createSlug } from "@/lib/slug-generator";
 import {
@@ -1374,6 +1379,50 @@ export const getPublicHikeBySlug = async (slug: string): Promise<PublicHike | nu
   });
 
   return hike ? toPublicHike(hike) : null;
+};
+
+/**
+ * Read-only projection used by the public `/trips` listing to render an
+ * accurate disabled state for the trip-creation entry point. Reasons are
+ * intentionally narrow (no trust level, quota count, or other account data)
+ * because this projection is consumed by anonymous viewers.
+ *
+ * `createHike` remains the authoritative server gate: a stale projection
+ * only results in an actionable submission error, never in a hidden privilege
+ * bypass.
+ */
+export type PublicTripCreationCapability =
+  | { eligible: true }
+  | { eligible: false; reason: "anonymous" | "insufficient-trust" | "verified-trip-quota-reached" };
+
+export const getPublicTripCreationCapability = async (): Promise<PublicTripCreationCapability> => {
+  const session = await authSession();
+
+  if (!session) return { eligible: false, reason: "anonymous" };
+
+  const { default: prisma } = await import("@/lib/prisma");
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { role: true, trustLevel: true },
+  });
+
+  if (hasAdminRole(user?.role)) return { eligible: true };
+
+  const trustLevel = user?.trustLevel ?? AUTH_TRUST_LEVELS.NEW;
+
+  if (trustLevel !== AUTH_TRUST_LEVELS.VERIFIED && trustLevel !== AUTH_TRUST_LEVELS.TRUSTED) {
+    return { eligible: false, reason: "insufficient-trust" };
+  }
+
+  if (trustLevel === AUTH_TRUST_LEVELS.VERIFIED) {
+    const tripCount = await prisma.hike.count({ where: { userId: session.user.id } });
+
+    if (tripCount >= VERIFIED_RESOURCE_LIMITS.trip) {
+      return { eligible: false, reason: "verified-trip-quota-reached" };
+    }
+  }
+
+  return { eligible: true };
 };
 
 export const getPublicHikePhotoLikeStates = async ({
