@@ -8,9 +8,9 @@
 
 ## 2. Public Trips creation entry point
 
-- [ ] 2.1 Add an always-visible public `/trips` `Add Trip` control backed by the capability; verify disabled controls render adjacent localized feedback for anonymous, insufficient-trust, and verified-quota states.
-- [ ] 2.2 Add the eligible public creation-dialog flow using the shared full trip form and existing creation mutation; verify Published success navigates to `/trips/[slug]`, Draft success navigates to `/admin/trips`, and server errors leave no partial trip.
-- [ ] 2.3 Add EN/RU Trips resources for the new public action, disabled explanations, dialog, and feedback with English fallback; verify no administrator-only labels or controls leak onto the public page.
+- [x] 2.1 Add an always-visible public `/trips` `Add Trip` control backed by the capability; verify disabled controls render adjacent localized feedback for anonymous, insufficient-trust, and verified-quota states.
+- [x] 2.2 Add the eligible public creation-dialog flow using the shared full trip form and existing creation mutation; verify Published success navigates to `/trips/[slug]`, Draft success navigates to `/admin/trips`, and server errors leave no partial trip.
+- [x] 2.3 Add EN/RU Trips resources for the new public action, disabled explanations, dialog, and feedback with English fallback; verify no administrator-only labels or controls leak onto the public page.
 
 ## 3. Validation and workflow records
 

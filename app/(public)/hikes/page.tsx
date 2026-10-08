@@ -3,9 +3,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { permanentRedirect } from "next/navigation";
 
-import { getPublicHikes } from "@/app/_data/hikes";
+import { getPublicHikes, getPublicTripCreationCapability } from "@/app/_data/hikes";
 import { Badge, Button, Card, CardContent, CardHeader, CardTitle } from "@/components/index";
 import { PageLayout } from "@/components/layout/page-layout";
+import { PublicTripAddControl } from "@/components/hike-pages/public-trip-add-control";
 import { buildPageMetadata, getTextMetadataDescription } from "@/lib/site-metadata";
 import { formatHikeDateRange, formatHikeType } from "@/lib/hikes";
 
@@ -17,10 +18,15 @@ export const tripsMetadata: Metadata = buildPageMetadata({
 });
 
 export const TripsPage = async () => {
-  const hikes = await getPublicHikes();
+  const [hikes, capability] = await Promise.all([getPublicHikes(), getPublicTripCreationCapability()]);
 
   return (
-    <PageLayout title="Trips" className="pt-6" contentWidth="wide">
+    <PageLayout
+      title="Trips"
+      className="pt-6"
+      contentWidth="wide"
+      headerAction={<PublicTripAddControl capability={capability} />}
+    >
       <div className="flex w-full flex-col gap-6 pb-10">
         {hikes.length > 0 ? (
           <div className="grid gap-4 md:grid-cols-3">
