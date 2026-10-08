@@ -4,6 +4,7 @@ import {
   CircleAlert,
   ChevronLeft,
   ChevronRight,
+  Clock,
   FileSearch,
   Heart,
   ImageIcon,
@@ -28,6 +29,7 @@ import {
 import { HikePhotoCommentSection } from "@/components/hike-pages/hike-photo-comment-composer";
 import { Button, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/index";
 import { HikePhotoCoordinateReview } from "@/components/hike-pages/hike-photo-coordinate-review";
+import { HikePhotoTimezoneConfirm } from "@/components/hike-pages/hike-photo-timezone-confirm";
 import { HikePhotoContributionButton } from "@/components/hike-pages/hike-photo-contribution-form";
 import { HikePhotoDetailSummary } from "@/components/hike-pages/hike-photo-detail-summary";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -98,6 +100,7 @@ export const HikePhotoGallery = forwardRef<HikePhotoGalleryHandle, HikePhotoGall
   const [showComments, setShowComments] = useState(false);
   const [exifPhotoId, setExifPhotoId] = useState<string | null>(null);
   const [coordinatePhotoId, setCoordinatePhotoId] = useState<string | null>(null);
+  const [timezonePhotoId, setTimezonePhotoId] = useState<string | null>(null);
   const [fullPhotoImageState, setFullPhotoImageState] = useState<FullPhotoImageState>(null);
   const [isPending, startTransition] = useTransition();
   const [isLikePending, startLikeTransition] = useTransition();
@@ -106,6 +109,7 @@ export const HikePhotoGallery = forwardRef<HikePhotoGalleryHandle, HikePhotoGall
   const activePhoto = activeIndex === null || activeIndex === -1 ? null : photos[activeIndex];
   const exifPhoto = photos.find((photo) => photo.id === exifPhotoId) ?? null;
   const coordinatePhoto = photos.find((photo) => photo.id === coordinatePhotoId) ?? null;
+  const timezonePhoto = photos.find((photo) => photo.id === timezonePhotoId) ?? null;
   const canNavigate = canViewFullPhotos && photos.length > 1;
   const showOverlay = showDetails || showComments;
   const fullPhotoImageStatus =
@@ -341,6 +345,22 @@ export const HikePhotoGallery = forwardRef<HikePhotoGalleryHandle, HikePhotoGall
                             </TooltipTrigger>
                             <TooltipContent>EXIF metadata</TooltipContent>
                           </Tooltip>
+                          {photo.detail.captureTimeAssumption || photo.detail.timezoneConfirmationRequired ? (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  aria-label={t("photoTimezoneButton")}
+                                  onClick={() => setTimezonePhotoId(photo.id)}
+                                >
+                                  <Clock />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>{t("photoTimezoneButton")}</TooltipContent>
+                            </Tooltip>
+                          ) : null}
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <Button
@@ -586,6 +606,29 @@ export const HikePhotoGallery = forwardRef<HikePhotoGalleryHandle, HikePhotoGall
                 startTransition(() => {
                   router.refresh();
                   if (reason === "approved") setCoordinatePhotoId(null);
+                });
+              }}
+            />
+          ) : null}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={Boolean(timezonePhoto)} onOpenChange={(open) => (!open ? setTimezonePhotoId(null) : undefined)}>
+        <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle>
+              {timezonePhoto
+                ? t("photoTimezoneDialogTitleWithPhoto", { title: timezonePhoto.title })
+                : t("photoTimezoneDialogTitle")}
+            </DialogTitle>
+            <DialogDescription>{t("photoTimezoneDialogDescription")}</DialogDescription>
+          </DialogHeader>
+          {timezonePhoto?.detail ? (
+            <HikePhotoTimezoneConfirm
+              detail={timezonePhoto.detail}
+              onChanged={() => {
+                startTransition(() => {
+                  router.refresh();
                 });
               }}
             />
