@@ -100,6 +100,7 @@ These candidates track the hikes/tracks/photos initiative as small increments. T
 
 | Status | Fix | Area | Summary |
 | --- | --- | --- | --- |
+| Candidate | fix-005-photo-confirm-timezone-redundant-reset | outdoor/photos-time | `confirmHikePhotoCaptureTimezone` always resets an `INFERRED_TRACK_TIME` coordinate to `PENDING_REVIEW` when the user confirms a timezone, even when the new UTC instant is identical to the previously inferred one (same single-track TRACK_DEFAULT timezone, same camera-local wall clock). The matching candidate and proposed coordinate are unchanged, so the owner still has to re-Approve the same coordinate in the GPX coordinates dialog. Skip the reset only when the new instant equals the would-be inferred instant; keep the existing reset for genuinely different timezones that shift the match. Reproduced on 2026-10-08 against feature-108 with a Nikon D750 photo linked to a `Europe/Moscow` track.
 
 ## P1 Soon
 
