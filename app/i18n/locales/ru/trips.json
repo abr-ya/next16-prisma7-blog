@@ -4,5 +4,13 @@
   "photoOrderManual": "Ручной порядок",
   "photoOrderUnchanged": "Выбранный порядок уже применён.",
   "photoCaptureDateUnavailableLabel": "Дата съёмки недоступна",
-  "photoCaptureDateUnavailable": "Дата съёмки недоступна. В хронологическом порядке это фото находится после фото с датой."
+  "photoCaptureDateUnavailable": "Дата съёмки недоступна. В хронологическом порядке это фото находится после фото с датой.",
+  "addTrip": "Добавить поход",
+  "addTripAnonymous": "Войдите, чтобы добавить поход",
+  "addTripSignIn": "Войти",
+  "addTripInsufficientTrust": "Создание похода требует верифицированного или доверенного аккаунта.",
+  "addTripQuotaReached": "Вы достигли лимита опубликованных походов для верифицированных аккаунтов.",
+  "addTripSuccessPublished": "Поход опубликован",
+  "addTripSuccessDraft": "Поход сохранён как черновик",
+  "addTripError": "Не удалось создать поход"
 }
