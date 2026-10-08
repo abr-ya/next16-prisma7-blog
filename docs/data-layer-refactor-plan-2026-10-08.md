@@ -58,6 +58,8 @@ app/_data/<scope>/
 
 This shape works for `hikes` and is expected to be reusable for `tracks`, `photos`, `files`, `videos`, and `posts` whenever they reach the threshold.
 
+> **Convention note (hikes split, 2026-10-08).** The `Prisma.HikeInclude` const objects (`hikeListInclude`, `publicHikeInclude`) and the `ACTIVE_FILE_STATUS` constant that one of them references live in `types.ts` instead of `internal.ts`. Reason: `HikeListItem = Prisma.HikeGetPayload<{ include: typeof hikeListInclude }>` is a type that consumes the include at type-position, and `PublicHikeRecord` does the same for `publicHikeInclude`. If the includes lived in `internal.ts`, `types.ts` would have to import from `internal.ts`, and `internal.ts` already needs `PublicHike` and `HikeActionValues` from `types.ts` — a cycle. The includes are intrinsically tied to the types they feed, so they ride along with `types.ts`. The same pattern applies to any future split where a `Prisma.*GetPayload<{ include: typeof ... }>` type is in play.
+
 ### Import-path compatibility
 
 Every existing consumer imports via `@/app/_data/hikes`. The split keeps that path alive by re-exporting every public symbol from `app/_data/hikes/index.ts`. Internal-only helpers (`internal.ts`) are not re-exported unless something else already depends on them.
@@ -76,21 +78,23 @@ Every existing consumer imports via `@/app/_data/hikes`. The split keeps that pa
 ```
 app/_data/hikes/
 ├── index.ts          # re-export of every public symbol from types/queries/mutations
-├── types.ts          # HikeActionValues, HikeListItem, PublicHike, … (move all types here)
-├── internal.ts       # normalize*, getRequired*, ensureSlugAvailable, revalidate*, to*, hikeListInclude, publicHikeInclude, helpers used by ≥2 modules
-├── queries.ts        # all read functions above
+├── types.ts          # HikeActionValues, HikeListItem, PublicHike, hikeListInclude, publicHikeInclude, … (move all types and Prisma-include constants here)
+├── internal.ts       # normalize*, getRequired*, ensureSlugAvailable, revalidate*, to*, helpers used by ≥2 modules
+├── queries.ts        # all read functions above, plus getPhotoDetailAccess (see below)
 └── mutations.ts      # all write functions above
 ```
+
+> **Why `getPhotoDetailAccess` lives in `queries.ts`, not `internal.ts`.** The helper queries a photo + hike and decides whether the current session can view / review / refresh it; it depends on `isAcceptedHikeParticipant`, which is a read. Putting it in `internal.ts` would force `internal.ts → queries.ts`, but `queries.ts → internal.ts` is the canonical dependency for everything else. The clean break is: `getPhotoDetailAccess` is a read (it does no writes), so it lives with the other reads in `queries.ts`. `mutations.ts` imports it from there. No cycle.
 
 ### Migration steps
 
 1. Create `app/_data/hikes/{types,internal,queries,mutations}.ts` empty except for imports.
-2. Move every type definition into `types.ts` (verbatim, no edits beyond import order).
-3. Move private helpers into `internal.ts`. If a helper is only used by queries, it still lives in `internal.ts` to keep the boundary consistent; if it is only used by mutations, same rule. We do not split by usage to avoid two `internal` files.
-4. Move every `export const`/`export function` into `queries.ts` or `mutations.ts`. Group by reading vs writing — a single function with a name that reads like a write goes in `mutations.ts`.
-5. Add `app/_data/hikes/index.ts` that re-exports every public symbol so `import … from "@/app/_data/hikes"` continues to work. Internal helpers (`internal.ts`) are not re-exported.
+2. Move every type definition into `types.ts` (verbatim, no edits beyond import order). Internal helper types (record shapes used only by `internal.ts` / `queries.ts` / `mutations.ts`) are exported from `types.ts` but NOT re-exported from `index.ts`.
+3. Move private helpers into `internal.ts`. If a helper is only used by queries, it still lives in `internal.ts` to keep the boundary consistent; if it is only used by mutations, same rule. We do not split by usage to avoid two `internal` files. Helpers are `export const` so siblings can import them, but `index.ts` does not re-export them.
+4. Move every public `export const`/`export function` into `queries.ts` or `mutations.ts`. Group by reading vs writing — a single function with a name that reads like a write goes in `mutations.ts`. If a "read" helper is consumed by both a query and a mutation, put it with the reads (`queries.ts`) so `internal.ts` does not need to import from `mutations.ts`.
+5. Add `app/_data/hikes/index.ts` that re-exports every public symbol by name (no `export *`) so `import … from "@/app/_data/hikes"` continues to work. Internal helpers (`internal.ts`) are not re-exported.
 6. Delete `app/_data/hikes.ts`.
-7. Run `npm run tsc` and targeted ESLint. Resolve any circular-import errors by moving the shared dependency into `types.ts` or `internal.ts`.
+7. Run `npm run tsc` and targeted ESLint. Resolve any circular-import errors by moving the shared dependency into `types.ts` (preferred) or `internal.ts`.
 
 ### Risks
 
@@ -119,3 +123,4 @@ For each of these, the same folder shape (`<scope>/{index,types,internal,queries
 
 - Research doc for outdoor-track features: [outdoor-tracks-feature-research-2026-10-07.md](./outdoor-tracks-feature-research-2026-10-07.md).
 - Feature-107 stage 1 just landed: shared trip form/dialog modules extracted to `components/forms/trips/` and `components/dialogs/trips/`.
+- Hikes split applied on branch `feature-107-outdoor-public-trip-add-button` (commit forthcoming). Resulting file sizes: `index.ts` 58, `types.ts` 346, `internal.ts` 834, `queries.ts` 553, `mutations.ts` 693 (down from a single 2367-line `hikes.ts`).
