@@ -539,7 +539,7 @@ export const getHikeTrackContributionCapability = async (
   }
 
   // Admins and trusted users are uncapped; verified users follow the quota.
-  if (trustLevel !== AUTH_TRUST_LEVELS.VERIFIED) {
+  if (isAdminFromUser || trustLevel !== AUTH_TRUST_LEVELS.VERIFIED) {
     return { hikeId: hike.id, viewer: "owner-eligible", eligible: true, remainingTrackCount: null };
   }
 
