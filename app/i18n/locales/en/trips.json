@@ -33,5 +33,18 @@
   "photoTimezoneCaptureUnavailable": "Photo capture time is unavailable",
   "photoTimezoneProvenanceConfirmed": "Owner/admin confirmed",
   "photoTimezoneProvenanceTrackDefault": "Linked-track default",
-  "photoTimezoneResetUnavailableHint": "Reset is unavailable until a timezone is confirmed."
+  "photoTimezoneResetUnavailableHint": "Reset is unavailable until a timezone is confirmed.",
+  "addTrack": "Add track",
+  "addTrackQuotaReached": "You've reached your track limit.",
+  "addTrackSuccess": "Track added to trip",
+  "addTrackError": "Failed to add track",
+  "addTrackAttachTab": "Attach existing",
+  "addTrackUploadTab": "Upload new",
+  "addTrackEmptyState": "No unlinked tracks yet — upload one below",
+  "addTrackAttachButton": "Attach",
+  "addTrackAttachError": "Failed to attach track",
+  "addTrackUploadError": "Failed to upload track",
+  "addTrackSlugConflict": "A track with this slug already exists",
+  "addTrackNotOwner": "You can only attach tracks you own",
+  "addTrackNotTripOwner": "You can only add tracks to your own trip"
 }

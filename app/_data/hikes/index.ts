@@ -2,6 +2,7 @@
 // so future type/symbol drift surfaces immediately.
 export {
   acceptHikePhotoTrackTimeMatchCandidate,
+  attachCreatorTrackToHike,
   attachPhotoToHike,
   attachTrackToHike,
   cancelHikeInvitation,
@@ -10,6 +11,7 @@ export {
   contributePhotoToHike,
   createHike,
   createHikeNote,
+  createTrackAndAttachToHike,
   deleteHike,
   deleteHikeNote,
   detachPhotoFromHike,
@@ -32,6 +34,7 @@ export {
   getHikePhotoContributionCapabilityBySlug,
   getHikePhotoDetail,
   getHikePhotoOptions,
+  getHikeTrackContributionCapability,
   getMyLikedHikePhotos,
   getPendingHikeInvitations,
   getPublicHikeBySlug,
@@ -41,6 +44,8 @@ export {
   isAcceptedHikeParticipant,
 } from "./queries";
 export type {
+  CreateTrackAndAttachToHikeInput,
+  CreateTrackAndAttachToHikeResult,
   HikeActionValues,
   HikeListItem,
   HikeParticipantManagement,
@@ -50,6 +55,7 @@ export type {
   HikePhotoDetail,
   HikePhotoLikeState,
   HikePhotoOption,
+  HikeTrackContributionCapability,
   HikeTrackOption,
   MyLikedHikePhoto,
   PendingHikeInvitation,

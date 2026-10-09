@@ -142,7 +142,14 @@ const normalizeTrackSlug = (title: string, value?: string | null) => {
   return slug;
 };
 
-const getTrackData = async ({ title, slug, description, status, fileAssetId, activityTypeId }: TrackActionValues) => {
+export const getTrackData = async ({
+  title,
+  slug,
+  description,
+  status,
+  fileAssetId,
+  activityTypeId,
+}: TrackActionValues) => {
   const normalizedTitle = normalizeRequiredText(title, "Title");
   const normalizedStatus = status ?? DEFAULT_TRACK_STATUS;
   const normalizedFileAssetId = normalizeRequiredText(fileAssetId ?? "", "GPX file");
@@ -170,7 +177,7 @@ const getTrackData = async ({ title, slug, description, status, fileAssetId, act
   };
 };
 
-const ensureSlugAvailable = async ({ slug, id }: { slug: string; id?: string }) => {
+export const ensureSlugAvailable = async ({ slug, id }: { slug: string; id?: string }) => {
   const { default: prisma } = await import("@/lib/prisma");
   const existingTrack = await prisma.track.findUnique({
     where: { slug },
@@ -182,7 +189,7 @@ const ensureSlugAvailable = async ({ slug, id }: { slug: string; id?: string }) 
   }
 };
 
-const ensureEligibleTrackFileAsset = async ({
+export const ensureEligibleTrackFileAsset = async ({
   fileAssetId,
   userId,
   trackId,
@@ -392,6 +399,66 @@ export const getAllTracks = async (): Promise<TrackListItem[]> => {
     where: { userId },
     include: trackListInclude,
     orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
+  });
+};
+
+/**
+ * Trip-side candidate list for the `Attach existing` section of the trip
+ * contribution dialog. Returns the actor's own tracks that are not currently
+ * linked to any trip, projected to the minimum needed by the dialog. Ordered
+ * by most recently updated first.
+ */
+type CreatorUnlinkedTrackRecord = {
+  id: string;
+  title: string;
+  slug: string;
+  updatedAt: Date;
+  metadata: Prisma.JsonValue | null;
+};
+
+export type CreatorUnlinkedTrack = {
+  id: string;
+  title: string;
+  slug: string;
+  updatedAt: Date;
+  parseState: "PARSED" | "NOT_PARSED";
+};
+
+export const getCreatorUnlinkedTracks = async (userId: string): Promise<CreatorUnlinkedTrack[]> => {
+  const { default: prisma } = await import("@/lib/prisma");
+
+  const records = (await prisma.track.findMany({
+    where: {
+      userId,
+      hikes: { none: {} },
+    },
+    select: {
+      id: true,
+      title: true,
+      slug: true,
+      updatedAt: true,
+      metadata: true,
+    },
+    orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
+  })) as CreatorUnlinkedTrackRecord[];
+
+  return records.map((record) => {
+    const state = getTrackGpxMetadataState(record.metadata);
+    return {
+      id: record.id,
+      title: record.title,
+      slug: record.slug,
+      updatedAt: record.updatedAt,
+      parseState: (state.status === "SUCCESS" ? "PARSED" : "NOT_PARSED") as "PARSED" | "NOT_PARSED",
+    };
+  });
+};
+
+export const getActiveTrackActivityTypes = async () => {
+  const { default: prisma } = await import("@/lib/prisma");
+  return prisma.trackActivityType.findMany({
+    where: { isActive: true },
+    orderBy: [{ nameEn: "asc" }, { nameRu: "asc" }],
   });
 };
 

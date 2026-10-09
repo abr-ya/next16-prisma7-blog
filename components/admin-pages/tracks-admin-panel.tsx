@@ -44,10 +44,10 @@ import {
 } from "@/components/index";
 import type { TrackStatus } from "@/generated/prisma/enums";
 import type { TrackActivityType } from "@/generated/prisma/client";
-import { formatFileSize, TRACK_GPX_UPLOAD_MAX_SIZE } from "@/lib/file-upload-limits";
+import { formatFileSize } from "@/lib/file-upload-limits";
 import { formatHikeDateRange, formatHikeStatus, formatHikeType } from "@/lib/hikes";
-import { UploadDropzone } from "@/lib/uploadthing";
 import { createSlug } from "@/lib/slug-generator";
+import { TrackGpxUploadSection } from "@/components/track-pages/track-gpx-upload-section";
 import {
   formatTrackRecordingTimezone,
   getSupportedTrackRecordingTimezones,
@@ -436,32 +436,15 @@ const TrackFormDialog = ({
                   )}
                 />
               </div>
-              <UploadDropzone
-                endpoint="trackGpxUploader"
-                content={{
-                  label: isEditing ? "Drop or click to replace the GPX file" : "Drop or click to upload a GPX file",
-                  allowedContent: `One .gpx file up to ${TRACK_GPX_UPLOAD_MAX_SIZE}.`,
-                }}
-                appearance={{
-                  button: "rounded-lg",
-                  container: "rounded-lg border",
-                }}
-                onUploadError={(error) => {
-                  toast.error(error.message || "Uploading GPX failed");
-                }}
-                onClientUploadComplete={(files) => {
-                  const uploaded = files.at(0);
-                  const fileAssetId = uploaded?.serverData?.fileAssetId;
-
-                  if (!fileAssetId) {
-                    toast.error("Uploaded GPX was not recorded");
-                    return;
-                  }
-
+              <TrackGpxUploadSection
+                isEditing={isEditing}
+                onUploadComplete={({ fileAssetId, fileName }) => {
                   form.setValue("fileAssetId", fileAssetId, { shouldDirty: true, shouldValidate: true });
-                  form.setValue("fileAssetName", uploaded.name, { shouldDirty: true, shouldValidate: true });
+                  form.setValue("fileAssetName", fileName, { shouldDirty: true, shouldValidate: true });
                   setUploadedFileAssetIds((current) => uniqueIds([...current, fileAssetId]));
-                  toast.success("GPX uploaded");
+                }}
+                onUploadError={() => {
+                  // toast already emitted by the section
                 }}
               />
               {track && parseState ? (

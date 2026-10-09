@@ -263,6 +263,40 @@ export type HikePhotoContributionCapability = {
   remainingPhotoCount: number | null;
 };
 
+export type HikeTrackContributionCapability = {
+  hikeId: string;
+  viewer: "anonymous" | "non-owner" | "owner-trust-ineligible" | "owner-quota-reached" | "owner-eligible";
+  eligible: boolean;
+  remainingTrackCount: number | null;
+};
+
+export type CreatorUnlinkedTrack = {
+  id: string;
+  title: string;
+  slug: string;
+  updatedAt: Date;
+  parseState: "PARSED" | "NOT_PARSED";
+};
+
+export type CreateTrackAndAttachToHikeInput = {
+  hikeId: string;
+  title: string;
+  slug?: string | null;
+  description?: string | null;
+  status?: TrackStatus;
+  fileAssetId: string;
+  recordingTimezone?: string | null;
+  activityTypeId?: string | null;
+};
+
+export type CreateTrackAndAttachToHikeResult =
+  | { ok: true; trackId: string; trackSlug: string }
+  | {
+      ok: false;
+      code: "TRUST" | "QUOTA" | "VALIDATION" | "SLUG" | "INTERNAL";
+      message: string;
+    };
+
 export type HikePhotoLikeState = {
   isLikedByViewer: boolean;
 };
