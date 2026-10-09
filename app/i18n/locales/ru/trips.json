@@ -33,5 +33,18 @@
   "photoTimezoneCaptureUnavailable": "Время съёмки недоступно",
   "photoTimezoneProvenanceConfirmed": "Подтверждено владельцем/админом",
   "photoTimezoneProvenanceTrackDefault": "По умолчанию из привязанного трека",
-  "photoTimezoneResetUnavailableHint": "Сброс доступен только после подтверждения часового пояса."
+  "photoTimezoneResetUnavailableHint": "Сброс доступен только после подтверждения часового пояса.",
+  "addTrack": "Добавить трек",
+  "addTrackQuotaReached": "Вы достигли лимита треков.",
+  "addTrackSuccess": "Трек добавлен к походу",
+  "addTrackError": "Не удалось добавить трек",
+  "addTrackAttachTab": "Прикрепить существующий",
+  "addTrackUploadTab": "Загрузить новый",
+  "addTrackEmptyState": "Нет непривязанных треков — загрузите новый ниже",
+  "addTrackAttachButton": "Прикрепить",
+  "addTrackAttachError": "Не удалось прикрепить трек",
+  "addTrackUploadError": "Не удалось загрузить трек",
+  "addTrackSlugConflict": "Трек с таким slug уже существует",
+  "addTrackNotOwner": "Можно прикреплять только свои треки",
+  "addTrackNotTripOwner": "Треки можно добавлять только в свой поход"
 }

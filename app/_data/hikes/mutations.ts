@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import type { FileAssetStatus, Prisma } from "@/generated/prisma/client";
-import { requireTrustGatedAction } from "@/lib/auth-trust-gates.server";
+import { requireTrustGatedAction, InsufficientTrustError } from "@/lib/auth-trust-gates.server";
 import { assertVerifiedResourceQuota, reconcileVerifiedUserTrust } from "@/lib/auth-trust-quotas.server";
 import { currentUserRole } from "@/lib/auth-utils";
 import { hasAdminRole } from "@/lib/auth-roles";
@@ -19,10 +19,16 @@ import { canRefreshHikePhotoExif } from "@/lib/hike-photo-detail-policy";
 import { derivePhotoCaptureInstantUtc } from "@/lib/photo-capture-timezone";
 import { normalizeTrackRecordingTimezone } from "@/lib/track-recording-timezone";
 import type { HikeNoteInput } from "@/lib/hike-notes";
+import {
+  ensureEligibleTrackFileAsset,
+  ensureSlugAvailable,
+  getTrackData,
+  parseTrackGpx,
+  type TrackActionValues,
+} from "@/app/_data/tracks";
 
 import { getPhotoDetailAccess, isAcceptedHikeParticipant } from "./queries";
 import {
-  ensureSlugAvailable,
   expireHikeParticipantIfNeeded,
   getEligiblePublishedHikePhoto,
   getHikeData,
@@ -37,7 +43,13 @@ import {
   revalidateHikePhotoAssociationPaths,
   revalidateHikeTrackAssociationPaths,
 } from "./internal";
-import { type HikeActionValues, type HikePhotoContributionValues, type HikePhotoIdAssociation } from "./types";
+import {
+  type CreateTrackAndAttachToHikeInput,
+  type CreateTrackAndAttachToHikeResult,
+  type HikeActionValues,
+  type HikePhotoContributionValues,
+  type HikePhotoIdAssociation,
+} from "./types";
 
 const ACTIVE_FILE_STATUS: FileAssetStatus = "ACTIVE";
 
@@ -472,6 +484,160 @@ export const detachTrackFromHike = async ({ hikeId, trackId }: { hikeId: string;
 
   return { success: true };
 };
+
+/**
+ * Creator-only attach. Mirrors the admin-only `attachTrackToHike` but enforces
+ * that the actor owns the track and the trip. Used by the trip-side
+ * `HikeTrackContributionDialog` so the trip creator can attach one of their
+ * own unlinked tracks to the trip they own.
+ */
+export const attachCreatorTrackToHike = async ({ hikeId, trackId }: { hikeId: string; trackId: string }) => {
+  const actor = await requireTrustGatedAction("track-upload");
+  const { default: prisma } = await import("@/lib/prisma");
+
+  const [hike, track] = await Promise.all([
+    prisma.hike.findUnique({
+      where: { id: hikeId },
+      select: { id: true, slug: true, userId: true },
+    }),
+    prisma.track.findUnique({
+      where: { id: trackId },
+      select: { id: true, slug: true, userId: true },
+    }),
+  ]);
+
+  if (!hike) throw new Error("Trip is not available");
+  if (!track) throw new Error("Track is not available");
+  if (hike.userId !== actor.id) throw new Error("You can only attach tracks to your own trip");
+  if (track.userId !== actor.id) throw new Error("You can only attach tracks you own");
+
+  await prisma.hikesToTracks.upsert({
+    where: {
+      hikeId_trackId: {
+        hikeId: hike.id,
+        trackId: track.id,
+      },
+    },
+    create: {
+      hikeId: hike.id,
+      trackId: track.id,
+    },
+    update: {},
+  });
+
+  revalidateHikeTrackAssociationPaths({ hikeSlug: hike.slug, trackSlug: track.slug });
+
+  return { success: true };
+};
+
+/**
+ * Trip-side upload+attach in one transaction. Validates the actor's trust and
+ * verified-track quota, the trip ownership, the supplied GPX file asset, and
+ * the slug uniqueness, then writes the `Track` + `HikesToTracks` rows
+ * atomically. The `parseTrackGpx` call runs outside the transaction so a parse
+ * failure cannot undo the successful write — it just leaves the metadata
+ * in the "stale" state for the user to reparse.
+ */
+export const createTrackAndAttachToHike = async (
+  input: CreateTrackAndAttachToHikeInput,
+): Promise<CreateTrackAndAttachToHikeResult> => {
+  try {
+    const user = await requireTrustGatedAction("track-upload");
+    const userId = user.id;
+    const { default: prisma } = await import("@/lib/prisma");
+
+    const hike = await prisma.hike.findUnique({
+      where: { id: input.hikeId },
+      select: { id: true, slug: true, userId: true, status: true },
+    });
+
+    if (!hike) {
+      return { ok: false, code: "VALIDATION", message: "Trip is not available" };
+    }
+    if (hike.userId !== userId) {
+      return { ok: false, code: "VALIDATION", message: "You can only add tracks to your own trip" };
+    }
+
+    const trackValues: TrackActionValues = {
+      title: input.title,
+      slug: input.slug ?? null,
+      description: input.description ?? null,
+      status: input.status ?? (hike.status === "PUBLISHED" ? "PUBLISHED" : "DRAFT"),
+      fileAssetId: input.fileAssetId,
+      activityTypeId: input.activityTypeId ?? null,
+    };
+
+    const { id: trackId, slug: trackSlug } = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      await assertVerifiedResourceQuota(tx, user, "track");
+      const data = await getTrackData(trackValues);
+      try {
+        await ensureSlugAvailable({ slug: data.slug });
+        await ensureEligibleTrackFileAsset({ fileAssetId: data.fileAssetId, userId });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Track input is invalid";
+        if (message.toLowerCase().includes("slug")) {
+          throw new SlugConflictError(message);
+        }
+        throw new ValidationTrackInputError(message);
+      }
+      const track = await tx.track.create({
+        data: {
+          ...data,
+          recordingTimezone: normalizeTrackRecordingTimezone(input.recordingTimezone) ?? null,
+          userId,
+        },
+        select: { id: true, slug: true },
+      });
+      await tx.hikesToTracks.create({
+        data: { hikeId: hike.id, trackId: track.id },
+      });
+      return track;
+    });
+
+    // Parse outside the transaction so a parse failure does not roll back the
+    // successful track + association.
+    await parseTrackGpx(trackId).catch(() => null);
+
+    revalidateHikeTrackAssociationPaths({ hikeSlug: hike.slug, trackSlug });
+
+    return { ok: true, trackId, trackSlug };
+  } catch (error) {
+    if (error instanceof InsufficientTrustError) {
+      return { ok: false, code: "TRUST", message: error.message };
+    }
+    if (error instanceof SlugConflictError) {
+      return { ok: false, code: "SLUG", message: error.message };
+    }
+    if (error instanceof ValidationTrackInputError) {
+      return { ok: false, code: "VALIDATION", message: error.message };
+    }
+    if (error instanceof Error) {
+      const message = error.message;
+      if (message.toLowerCase().includes("limit reached")) {
+        return { ok: false, code: "QUOTA", message };
+      }
+    }
+    return {
+      ok: false,
+      code: "INTERNAL",
+      message: error instanceof Error ? error.message : "Could not create track for this trip",
+    };
+  }
+};
+
+class SlugConflictError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "SlugConflictError";
+  }
+}
+
+class ValidationTrackInputError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ValidationTrackInputError";
+  }
+}
 
 export const attachPhotoToHike = async ({ hikeId, photoId }: { hikeId: string; photoId: string }) => {
   await getRequiredAdminUserId();
