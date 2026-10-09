@@ -20,10 +20,12 @@ Backlog candidates stay unnumbered until they are promoted into implementation. 
 
 ## Numbering Rules
 
-- `Done` numbered features live in [feature-history.md](./feature-history.md).
-- Unnumbered candidates can use any free number when promoted.
-- Numbered follow-up slices stay in this backlog until completed, then move to [feature-history.md](./feature-history.md).
-- To promote a candidate, assign the lowest unused `feature-XXX` number after checking this file and [feature-history.md](./feature-history.md).
+The project uses three independent numbering pools (`feature-XXX`, `fix-XXX`, `verify-XXX`). Each pool has its own counter; numbers do not collide across pools, so `verify-001` and `feature-111` can ship in the same week without competing for a slot. Promote within a pool by taking the lowest unused number in that pool after checking this file and [feature-history.md](./feature-history.md).
+
+- `feature-XXX-<short-slug>` — product features and user-visible behavior changes. `Done` numbered features live in [feature-history.md](./feature-history.md). Numbered follow-up slices stay in this backlog until completed, then move to [feature-history.md](./feature-history.md).
+- `fix-XXX-<short-slug>` — bug fixes, paired with their originating change in the summary. Reserve a number only after reproduction.
+- `verify-XXX-<short-slug>` — automated verification scripts that exercise a server action or mutation with an isolated schema, seed factories, and explicit error-code assertions. A `verify-XXX` change that introduces a shared harness (DB setup/teardown, fake auth context, run loop) ships as a separate change from the first script that consumes it, so each PR is small and the pattern is documented in isolation. Manual browser QA candidates stay unnumbered in the [Manual QA Follow-ups](#manual-qa-follow-ups) table and promote to `fix-XXX` (bug found) or `verify-XXX` (later automation) as appropriate.
+- Unnumbered candidates can use any free number from the relevant pool when promoted.
 - Cancelled or deferred candidates do not reserve numbers; keep or move them as unnumbered history notes when useful.
 
 ## Unconfirmed Bugs
@@ -104,6 +106,14 @@ These candidates track the hikes/tracks/photos initiative as small increments. T
 | Status | Fix | Area | Summary |
 | --- | --- | --- | --- |
 | Candidate | fix-005-photo-confirm-timezone-redundant-reset | outdoor/photos-time | `confirmHikePhotoCaptureTimezone` always resets an `INFERRED_TRACK_TIME` coordinate to `PENDING_REVIEW` when the user confirms a timezone, even when the new UTC instant is identical to the previously inferred one (same single-track TRACK_DEFAULT timezone, same camera-local wall clock). The matching candidate and proposed coordinate are unchanged, so the owner still has to re-Approve the same coordinate in the GPX coordinates dialog. Skip the reset only when the new instant equals the would-be inferred instant; keep the existing reset for genuinely different timezones that shift the match. Reproduced on 2026-10-08 against feature-108 with a Nikon D750 photo linked to a `Europe/Moscow` track.
+
+## Verification Scripts
+
+Automated write-side verification scripts that exercise server actions and mutations with an isolated schema and explicit error-code assertions. The first candidate below introduces the shared harness as a separate change from the first script that consumes it, so each PR is small and the pattern is documented in isolation. Manual browser QA stays in [Manual QA Follow-ups](#manual-qa-follow-ups); promote a manual QA here only when its reproduction can be automated. Status uses the project's [priority scale](#status-values) (P0 Now / P1 Soon / P2 Later / P3 Someday) since each script has its own delivery urgency.
+
+| Status | Candidate | Area | Summary |
+| --- | --- | --- | --- |
+| Candidate (P1 Soon) | verify-001-server-action-verify-harness + verify-002-hike-track-attach-verify | test/server-actions | Introduce a `scripts/verify-server-action-*.mjs` harness for write-side verification of server actions: temp schema bootstrap, per-run migration apply, seed factories (users at each trust level, hikes, eligible and ineligible `FileAsset`s, GPX fixtures), a fake auth context, an isolated Prisma client, and an `assert` helper that maps each rejected action result to a documented `code`. Promote the harness as `verify-001-server-action-verify-harness` and the first concrete script as `verify-002-hike-track-attach-verify`; ship the harness in one branch and the script in the next so review surface stays small. The first script covers the feature-110 `createTrackAndAttachToHike` happy path plus the trust, quota, slug, and ineligible-`fileAssetId` rejection paths deferred from feature-110 task 2.4, asserting each documented `code` and the expected row set. Local `npm run build` passed for feature-110 on 2026-10-09. |
 
 ## P1 Soon
 
