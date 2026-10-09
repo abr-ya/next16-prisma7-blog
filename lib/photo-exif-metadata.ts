@@ -522,6 +522,11 @@ export const withPhotoCaptureTimeNormalization = (
   return { ...metadata, summary: { ...metadata.summary, captureTimeNormalization: normalization } };
 };
 
+export const withoutPhotoCaptureTimeNormalization = (metadata: PhotoExifMetadata): PhotoExifMetadata => {
+  if (!metadata.summary) return metadata;
+  return { ...metadata, summary: { ...metadata.summary, captureTimeNormalization: null } };
+};
+
 export const getPhotoMapCoordinate = (value: Prisma.JsonValue | null | undefined): PhotoMapCoordinate | null => {
   const metadata = readPhotoExifMetadata(value);
 

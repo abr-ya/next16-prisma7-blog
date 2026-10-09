@@ -13,6 +13,7 @@ import {
   readPhotoExifMetadata,
   withPhotoCaptureTimeNormalization,
   withPhotoMapCoordinate,
+  withoutPhotoCaptureTimeNormalization,
 } from "@/lib/photo-exif-metadata";
 import { canRefreshHikePhotoExif } from "@/lib/hike-photo-detail-policy";
 import { derivePhotoCaptureInstantUtc } from "@/lib/photo-capture-timezone";
@@ -124,6 +125,34 @@ export const confirmHikePhotoCaptureTimezone = async ({
   await prisma.photo.update({ where: { id: photoId }, data: { metadata: nextMetadata as Prisma.InputJsonValue } });
   revalidateHikePhotoAssociationPaths(access.hike.slug);
   return { success: true, instantUtc };
+};
+
+export const clearHikePhotoCaptureTimezone = async ({ hikeId, photoId }: { hikeId: string; photoId: string }) => {
+  const access = await getPhotoDetailAccess({ hikeId, photoId });
+  if (!access?.canReviewCoordinate) throw new Error("You cannot clear this photo timezone");
+
+  const metadata = readPhotoExifMetadata(access.photo.metadata);
+  const summary = metadata?.summary;
+  if (!metadata || !summary || !summary.captureTimeNormalization) {
+    throw new Error("This photo has no capture-time normalization to reset");
+  }
+
+  let nextMetadata = withoutPhotoCaptureTimeNormalization(metadata);
+  const priorCoordinate = nextMetadata.mapCoordinate;
+  if (priorCoordinate?.source === "INFERRED_TRACK_TIME") {
+    nextMetadata = withPhotoMapCoordinate(nextMetadata, {
+      ...priorCoordinate,
+      status: "PENDING_REVIEW",
+      explanation: `${priorCoordinate.explanation ?? "Inferred coordinate"} Timezone reset; review this retained coordinate again.`,
+      reviewedAt: null,
+      reviewedByUserId: null,
+    });
+  }
+
+  const { default: prisma } = await import("@/lib/prisma");
+  await prisma.photo.update({ where: { id: photoId }, data: { metadata: nextMetadata as Prisma.InputJsonValue } });
+  revalidateHikePhotoAssociationPaths(access.hike.slug);
+  return { success: true };
 };
 
 export const refreshHikePhotoExifMetadata = async ({ hikeId, photoId }: { hikeId: string; photoId: string }) => {
