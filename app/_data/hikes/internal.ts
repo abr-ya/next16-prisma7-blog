@@ -156,19 +156,14 @@ export const orderHikeTrackAssociations = <T extends HikeTrackAssociationWithSto
 
 export const toHikePhotoMapMarker = ({
   photo,
-  hikeDayKeys,
+  dayKeys,
 }: {
   photo: PublicHikeRecord["photos"][number]["photo"];
-  hikeDayKeys: Set<string>;
+  dayKeys: string[];
 }) => {
   const state = getPhotoExifMetadataState(photo.metadata);
   const preview = photo.images.at(0)?.fileAsset;
   const thumbnailUrl = preview ? `/files/${preview.id}/thumbnail` : null;
-  const dayKey =
-    state.status === "SUCCESS"
-      ? getTimestampDayKey(state.summary.capturedAt, state.summary.captureTimeTimezoneEvidence)
-      : null;
-  const dayKeys = dayKey && hikeDayKeys.has(dayKey) ? [dayKey] : [];
 
   // Prefer direct EXIF GPS over approved inferred/manual coordinates.
   if (state.status === "SUCCESS" && state.summary.gps) {
@@ -252,7 +247,10 @@ export const toTrackTimeMatchPhotoInput = ({
   };
 };
 
-const getReliablePhotoCaptureInstant = (metadata: Prisma.JsonValue | null, linkedTrackTimezones: string[] = []) => {
+export const getReliablePhotoCaptureInstant = (
+  metadata: Prisma.JsonValue | null,
+  linkedTrackTimezones: string[] = [],
+) => {
   const state = getPhotoExifMetadataState(metadata);
   if (state.status !== "SUCCESS") return null;
 
@@ -379,19 +377,29 @@ export const toPublicHike = (hike: PublicHikeRecord): PublicHike => {
         },
       };
     }),
-    photos: hike.photos.map((association) => ({
-      ...association,
-      photo: {
-        id: association.photo.id,
-        title: association.photo.title,
-        description: association.photo.description,
-        status: association.photo.status,
-        images: association.photo.images,
-        captureInstant: getReliablePhotoCaptureInstant(association.photo.metadata, linkedTrackTimezones),
-      },
-    })),
+    photos: hike.photos.map((association) => {
+      const captureInstant = getReliablePhotoCaptureInstant(association.photo.metadata, linkedTrackTimezones);
+      const dayKey = getTimestampDayKey(captureInstant, "UTC_OR_OFFSET");
+      const dayKeys = dayKey && hikeDayKeys.has(dayKey) ? [dayKey] : [];
+
+      return {
+        ...association,
+        photo: {
+          id: association.photo.id,
+          title: association.photo.title,
+          description: association.photo.description,
+          status: association.photo.status,
+          images: association.photo.images,
+          captureInstant,
+          dayKeys,
+        },
+      };
+    }),
     photoMapMarkers: hike.photos.flatMap(({ photo }) => {
-      const marker = toHikePhotoMapMarker({ photo, hikeDayKeys });
+      const captureInstant = getReliablePhotoCaptureInstant(photo.metadata, linkedTrackTimezones);
+      const dayKey = getTimestampDayKey(captureInstant, "UTC_OR_OFFSET");
+      const dayKeys = dayKey && hikeDayKeys.has(dayKey) ? [dayKey] : [];
+      const marker = toHikePhotoMapMarker({ photo, dayKeys });
       return marker ? [marker] : [];
     }),
     noteMapMarkers: hike.notes.flatMap((note) => {
