@@ -38,6 +38,7 @@ import {
   type HikePhotoLikeState,
   type HikePhotoOption,
   type HikePhotoOptionRecord,
+  type HikeTrackContributionCapability,
   type MyLikedHikePhoto,
   type MyLikedHikePhotoRecord,
   type PendingHikeInvitation,
@@ -479,6 +480,77 @@ export const getHikePhotoContributionCapabilityBySlug = async (
   });
 
   return { hikeId: hike.id, remainingPhotoCount: Math.max(0, 10 - contributedCount) };
+};
+
+/**
+ * Trip-side viewer capability for the `Add track` affordance on `/trips/[slug]`.
+ * Five viewer states, mirroring the photo-capability pattern with the addition
+ * of the trust-ineligible state (verified-track-quota is enforced separately
+ * inside the new `createTrackAndAttachToHike` mutation).
+ *
+ * - `anonymous` — no session. Button is omitted.
+ * - `non-owner` — authenticated but not the trip creator and not an admin.
+ *   Button is omitted (participants are also "non-owner" by this slice).
+ * - `owner-trust-ineligible` — trip owner without the `track-upload` trust
+ *   gate (NEW or RESTRICTED). Button is omitted.
+ * - `owner-quota-reached` — eligible creator who has hit the verified track
+ *   quota cap (10). Button is rendered disabled with localized feedback.
+ * - `owner-eligible` — eligible creator with remaining quota. Button enabled.
+ */
+export const getHikeTrackContributionCapability = async (
+  hikeId: string,
+): Promise<HikeTrackContributionCapability | null> => {
+  const session = await authSession();
+  const { default: prisma } = await import("@/lib/prisma");
+
+  const hike = await prisma.hike.findUnique({
+    where: { id: hikeId },
+    select: { id: true, userId: true },
+  });
+
+  if (!hike) return null;
+
+  if (!session) {
+    return { hikeId: hike.id, viewer: "anonymous", eligible: false, remainingTrackCount: null };
+  }
+
+  const isCreator = hike.userId === session.user.id;
+  const role = await currentUserRole();
+  const isAdmin = hasAdminRole(role);
+
+  if (!isCreator && !isAdmin) {
+    return { hikeId: hike.id, viewer: "non-owner", eligible: false, remainingTrackCount: null };
+  }
+
+  // Trust gate mirrors `requireTrustGatedAction("track-upload")` without
+  // throwing — we want to surface "owner-trust-ineligible" rather than a
+  // thrown InsufficientTrustError so the page can render the disabled button.
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { trustLevel: true, role: true },
+  });
+  const trustLevel = user?.trustLevel ?? AUTH_TRUST_LEVELS.NEW;
+  const isAdminFromUser = hasAdminRole(user?.role);
+  const trustAllowsUpload =
+    isAdminFromUser || trustLevel === AUTH_TRUST_LEVELS.VERIFIED || trustLevel === AUTH_TRUST_LEVELS.TRUSTED;
+
+  if (!trustAllowsUpload) {
+    return { hikeId: hike.id, viewer: "owner-trust-ineligible", eligible: false, remainingTrackCount: null };
+  }
+
+  // Admins and trusted users are uncapped; verified users follow the quota.
+  if (isAdminFromUser || trustLevel !== AUTH_TRUST_LEVELS.VERIFIED) {
+    return { hikeId: hike.id, viewer: "owner-eligible", eligible: true, remainingTrackCount: null };
+  }
+
+  const ownedTrackCount = await prisma.track.count({ where: { userId: session.user.id } });
+  const remaining = Math.max(0, VERIFIED_RESOURCE_LIMITS.track - ownedTrackCount);
+
+  if (remaining === 0) {
+    return { hikeId: hike.id, viewer: "owner-quota-reached", eligible: false, remainingTrackCount: 0 };
+  }
+
+  return { hikeId: hike.id, viewer: "owner-eligible", eligible: true, remainingTrackCount: remaining };
 };
 
 export const getHikeParticipantManagementBySlug = async (slug: string): Promise<HikeParticipantManagement | null> => {

@@ -2,7 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 
-import { requireAdmin } from "@/lib/auth-utils";
+import { hasAdminRole } from "@/lib/auth-roles";
+import { requireActionUser, requireAdmin } from "@/lib/auth-utils";
 import prisma from "@/lib/prisma";
 
 export const markFileAssetPendingDelete = async (fileId: string) => {
@@ -35,7 +36,7 @@ export const markFileAssetPendingDelete = async (fileId: string) => {
 };
 
 export const markDiscardedTrackGpxFileAssetsPendingDelete = async (fileIds: string[]) => {
-  await requireAdmin();
+  const actor = await requireActionUser();
 
   const uniqueFileIds = Array.from(new Set(fileIds.map((fileId) => fileId.trim()).filter(Boolean)));
 
@@ -46,6 +47,14 @@ export const markDiscardedTrackGpxFileAssetsPendingDelete = async (fileIds: stri
     };
   }
 
+  // Resolve the actor's admin status once so the ownership filter below can
+  // short-circuit for the admin path.
+  const actorRecord = await prisma.user.findUnique({
+    where: { id: actor.id },
+    select: { role: true },
+  });
+  const isAdmin = hasAdminRole(actorRecord?.role);
+
   const safeFiles = await prisma.fileAsset.findMany({
     where: {
       id: {
@@ -54,6 +63,9 @@ export const markDiscardedTrackGpxFileAssetsPendingDelete = async (fileIds: stri
       status: "ACTIVE",
       purpose: "TRACK_GPX",
       track: null,
+      // Non-admin actors can only discard uploads they own. Administrators
+      // can discard any qualifying file from the admin workspace.
+      ...(isAdmin ? {} : { ownerUserId: actor.id }),
     },
     select: {
       id: true,
@@ -65,7 +77,9 @@ export const markDiscardedTrackGpxFileAssetsPendingDelete = async (fileIds: stri
   if (unsafeFileId) {
     return {
       success: false,
-      message: "An uploaded GPX file is no longer safe to discard.",
+      message: isAdmin
+        ? "An uploaded GPX file is no longer safe to discard."
+        : "You can only discard GPX files you uploaded.",
     };
   }
 
@@ -77,6 +91,7 @@ export const markDiscardedTrackGpxFileAssetsPendingDelete = async (fileIds: stri
       status: "ACTIVE",
       purpose: "TRACK_GPX",
       track: null,
+      ...(isAdmin ? {} : { ownerUserId: actor.id }),
     },
     data: {
       status: "PENDING_DELETE",
@@ -86,6 +101,7 @@ export const markDiscardedTrackGpxFileAssetsPendingDelete = async (fileIds: stri
 
   revalidatePath("/admin/files");
   revalidatePath("/admin/tracks");
+  revalidatePath("/my/tracks");
 
   return {
     success: true,
