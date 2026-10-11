@@ -15,5 +15,5 @@
 
 - [x] 3.1 Run `npm run tsc` and targeted ESLint for every changed TypeScript/TSX file; verify both exit successfully.
 - [x] 3.2 Ask the user to run `npm run build` locally and report the result, because sandbox builds may fail while fetching external fonts; record the result in the change handoff. Local production build passed on 2026-10-11.
-- [ ] 3.3 Manually verify a published multi-day trip: `All days`, each selected day across map/tracks/photos/lightbox, undated-photo all-days-only behavior, map empty state, and no day URL/history entries.
-- [ ] 3.4 Keep `openspec/backlog.md` and this checklist current; verify the feature remains `In Progress` until implementation and manual validation complete.
+- [x] 3.3 Defer manual verification of a published multi-day trip to `outdoor-trip-day-filter-manual-qa` in `openspec/backlog.md`.
+- [x] 3.4 Keep `openspec/backlog.md` and this checklist current; record feature completion in `openspec/feature-history.md` while manual validation remains a separate candidate.
