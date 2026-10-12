@@ -2,14 +2,16 @@
 
 import { revalidatePath } from "next/cache";
 
-import type { Prisma } from "@/generated/prisma/client";
 import type { FileAssetStatus, FileAssetVisibility, HikeType, TrackStatus } from "@/generated/prisma/enums";
+import { Prisma } from "@/generated/prisma/client";
 import { authSession } from "@/lib/auth-utils";
-import { requireTrustGatedAction } from "@/lib/auth-trust-gates.server";
-import { createWithinVerifiedResourceQuota } from "@/lib/auth-trust-quotas.server";
+import { InsufficientTrustError, requireTrustGatedAction } from "@/lib/auth-trust-gates.server";
+import { assertVerifiedResourceQuota, createWithinVerifiedResourceQuota } from "@/lib/auth-trust-quotas.server";
+import { validateGpxString } from "@/lib/gpx-validation";
 import { createSlug } from "@/lib/slug-generator";
 import { parseTrackGpxMetadata } from "@/lib/track-gpx-parser";
 import { requireTrackRecordingTimezone } from "@/lib/track-recording-timezone";
+import { uploadSyntheticTrackGpx } from "@/lib/uploadthing/server-gpx";
 import {
   getTrackGpxMetadataState,
   markTrackGpxMetadataStale,
@@ -28,6 +30,20 @@ export type TrackActionValues = {
   fileAssetId?: string | null;
   activityTypeId?: string | null;
 };
+
+export type CreateManualTrackInput = {
+  title: string;
+  slug?: string | null;
+  description?: string | null;
+  status?: TrackStatus;
+  points: { lat: number; lng: number }[];
+};
+
+export type CreateManualTrackResult =
+  | { ok: true; trackId: string; trackSlug: string }
+  | { ok: false; code: "TRUST" | "QUOTA" | "SLUG" | "VALIDATION" | "INTERNAL"; message: string };
+
+export type ManualTrackPoint = { lat: number; lng: number };
 
 type PublicTrackRecord = Prisma.TrackGetPayload<{
   select: {
@@ -681,4 +697,210 @@ export const deleteTrack = async (id: string) => {
   revalidateTrackPaths();
 
   return { success: true };
+};
+
+const escapeXmlText = (value: string) =>
+  value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+
+/**
+ * Build a minimal GPX 1.1 byte string from a list of placed points for the
+ * `Place on map` track creation path (feature-111). The synthetic GPX
+ * deliberately omits `<time>` elements so the existing parse pipeline
+ * produces no timeline (matching the behavior of a coordinate-only uploaded
+ * GPX) and never exposes a recording-start time that the user did not
+ * provide. The `creator="manual-track-editor"` marker identifies synthetic
+ * files when a developer needs to distinguish them from uploaded GPX.
+ */
+export const buildSyntheticGpxBytes = (title: string, points: ManualTrackPoint[]): string => {
+  const safeTitle = escapeXmlText(title);
+  const trkpts = points
+    .map((point) => `      <trkpt lat="${Number(point.lat).toFixed(7)}" lon="${Number(point.lng).toFixed(7)}"/>`)
+    .join("\n");
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="manual-track-editor" xmlns="http://www.topografix.com/GPX/1/1">
+  <trk>
+    <name>${safeTitle}</name>
+    <trkseg>
+${trkpts}
+    </trkseg>
+  </trk>
+</gpx>
+`;
+};
+
+class ManualTrackSlugConflictError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ManualTrackSlugConflictError";
+  }
+}
+
+class ManualTrackValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ManualTrackValidationError";
+  }
+}
+
+/**
+ * Create a new `Track` row from points placed on a map (feature-111's
+ * "Place on map" tab). The flow:
+ *
+ *   1. Gate the actor on the existing `track-upload` trust action and the
+ *      verified `track` quota (10).
+ *   2. Build a synthetic GPX 1.1 byte string from the placed points
+ *      (no `<time>` elements — manual tracks have no recording time).
+ *   3. Validate the synthetic bytes with `validateGpxString` (root `<gpx>`,
+ *      at least one parseable `<trkpt>`) and reject invalid inputs.
+ *   4. Upload the bytes via `uploadSyntheticTrackGpx` (server-side UploadThing
+ *      write path) and persist a `FileAsset` row with
+ *      `purpose: TRACK_GPX`, `ownerUserId: actor.id`, `visibility: PRIVATE`,
+ *      `status: ACTIVE`. `visibility: PRIVATE` intentionally fails the
+ *      public-track-detail download affordance so manual tracks never expose
+ *      the synthetic GPX as a downloadable artifact.
+ *   5. Create the `Track` row bound to that file asset.
+ *   6. After commit, call `parseTrackGpx(trackId).catch(() => null)` outside
+ *      the transaction so a parse failure does not roll back the successful
+ *      write — it just leaves the metadata in the "stale" state for the
+ *      user to reparse.
+ *
+ * Returns a discriminated `CreateManualTrackResult` mirroring
+ * `createTrackAndAttachToHike` so the client can map the same `code`
+ * vocabulary into localized toast messages.
+ */
+export const createManualTrack = async (input: CreateManualTrackInput): Promise<CreateManualTrackResult> => {
+  try {
+    const user = await requireTrustGatedAction("track-upload");
+    const userId = user.id;
+    const { default: prisma } = await import("@/lib/prisma");
+
+    if (!Array.isArray(input.points) || input.points.length < 2) {
+      return { ok: false, code: "VALIDATION", message: "Place at least two points on the map" };
+    }
+
+    for (const point of input.points) {
+      if (
+        typeof point?.lat !== "number" ||
+        typeof point?.lng !== "number" ||
+        !Number.isFinite(point.lat) ||
+        !Number.isFinite(point.lng) ||
+        point.lat < -90 ||
+        point.lat > 90 ||
+        point.lng < -180 ||
+        point.lng > 180
+      ) {
+        return { ok: false, code: "VALIDATION", message: "Placed points have invalid coordinates" };
+      }
+    }
+
+    const normalizedTitle = normalizeRequiredText(input.title, "Title");
+    const normalizedStatus = input.status ?? DEFAULT_TRACK_STATUS;
+    if (!TRACK_STATUSES.has(normalizedStatus)) {
+      return { ok: false, code: "VALIDATION", message: "Track status is invalid" };
+    }
+    const normalizedSlug = normalizeTrackSlug(normalizedTitle, input.slug ?? null);
+    const normalizedDescription = normalizeOptionalText(input.description);
+
+    const gpxBytes = buildSyntheticGpxBytes(normalizedTitle, input.points);
+    const gpxValidation = validateGpxString(gpxBytes);
+    if (!gpxValidation.ok) {
+      const reason =
+        gpxValidation.reason === "no-gpx-root"
+          ? "Synthetic GPX is missing a <gpx> root element"
+          : gpxValidation.reason === "invalid-coordinates"
+            ? "Synthetic GPX has no usable coordinates"
+            : "Synthetic GPX has no track points";
+      return { ok: false, code: "VALIDATION", message: reason };
+    }
+
+    let uploadResult: Awaited<ReturnType<typeof uploadSyntheticTrackGpx>>;
+    try {
+      uploadResult = await uploadSyntheticTrackGpx({
+        bytes: gpxBytes,
+        ownerUserId: userId,
+        filename: `${normalizedSlug}.gpx`,
+      });
+    } catch (error) {
+      throw new ManualTrackValidationError(error instanceof Error ? error.message : "Synthetic GPX upload failed");
+    }
+
+    const { id: trackId, slug: trackSlug } = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      await assertVerifiedResourceQuota(tx, user, "track");
+      try {
+        await ensureSlugAvailable({ slug: normalizedSlug });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Slug is unavailable";
+        if (message.toLowerCase().includes("slug")) {
+          throw new ManualTrackSlugConflictError(message);
+        }
+        throw new ManualTrackValidationError(message);
+      }
+
+      const fileAsset = await tx.fileAsset.create({
+        data: {
+          provider: "UPLOADTHING",
+          fileKey: uploadResult.key,
+          customId: null,
+          url: uploadResult.url,
+          name: uploadResult.name,
+          mimeType: "application/gpx+xml",
+          sizeBytes: uploadResult.sizeBytes,
+          purpose: "TRACK_GPX",
+          visibility: "PRIVATE",
+          status: ACTIVE_FILE_STATUS,
+          ownerUserId: userId,
+        },
+        select: { id: true },
+      });
+
+      return tx.track.create({
+        data: {
+          title: normalizedTitle,
+          slug: normalizedSlug,
+          description: normalizedDescription,
+          status: normalizedStatus,
+          fileAssetId: fileAsset.id,
+          userId,
+          metadata: Prisma.JsonNull,
+        },
+        select: { id: true, slug: true },
+      });
+    });
+
+    // Parse outside the transaction so a parse failure does not roll back
+    // the successful track write — it just leaves the metadata in the
+    // "stale" state for the user to reparse.
+    await parseTrackGpx(trackId).catch(() => null);
+
+    revalidateTrackPaths();
+
+    return { ok: true, trackId, trackSlug };
+  } catch (error) {
+    if (error instanceof InsufficientTrustError) {
+      return { ok: false, code: "TRUST", message: error.message };
+    }
+    if (error instanceof ManualTrackSlugConflictError) {
+      return { ok: false, code: "SLUG", message: error.message };
+    }
+    if (error instanceof ManualTrackValidationError) {
+      return { ok: false, code: "VALIDATION", message: error.message };
+    }
+    if (error instanceof Error) {
+      const message = error.message;
+      if (message.toLowerCase().includes("limit reached")) {
+        return { ok: false, code: "QUOTA", message };
+      }
+    }
+    return {
+      ok: false,
+      code: "INTERNAL",
+      message: error instanceof Error ? error.message : "Could not create track",
+    };
+  }
 };
