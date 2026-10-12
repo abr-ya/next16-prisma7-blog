@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import z from "zod";
 
 import { markDiscardedTrackGpxFileAssetsPendingDelete } from "@/app/_actions/files";
-import { navigationNamespace } from "@/app/i18n/settings";
+import { navigationNamespace, tripsNamespace } from "@/app/i18n/settings";
 import {
   createManualTrack,
   createTrack,
@@ -185,7 +185,7 @@ const TrackFormDialog = ({
   parsingTrackId: string | null;
   onSaved: () => void;
 }) => {
-  const { i18n, t } = useT(navigationNamespace);
+  const { i18n, t } = useT(tripsNamespace);
   const activeLanguage = i18n.resolvedLanguage ?? i18n.language;
   const form = useForm<TrackFormValues>({
     resolver: zodResolver(formSchema),
@@ -483,7 +483,7 @@ const TrackFormDialog = ({
   return (
     <>
       <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogContent className="sm:max-w-3xl">
+        <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-3xl">
           <DialogHeader>
             <DialogTitle>{isEditing ? "Edit track" : "Create track"}</DialogTitle>
           </DialogHeader>

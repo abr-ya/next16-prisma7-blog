@@ -16,17 +16,14 @@ import { formatTrackDistance } from "@/lib/track-gpx-metadata";
  * `components/track-pages/track-map.tsx` for the read-only map because
  * Leaflet touches `window` during module init.
  */
-const TrackEditorMap = dynamic(
-  () => import("@/components/track-pages/track-editor-map").then((mod) => mod.TrackEditorMap),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="flex h-90 min-h-90 items-center justify-center rounded-md border bg-muted text-sm text-muted-foreground sm:h-110 sm:min-h-110">
-        Loading map...
-      </div>
-    ),
-  },
-);
+const TrackEditorMap = dynamic(() => import("@/components/track-pages/track-editor-map"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-125 min-h-125 items-center justify-center rounded-md border bg-muted text-sm text-muted-foreground sm:h-150 sm:min-h-150">
+      Loading map...
+    </div>
+  ),
+});
 
 export type ManualTrackPoint = { lat: number; lng: number };
 

@@ -65,5 +65,9 @@
   "placeOnMapErrorValidation": "Placed points or track details are invalid.",
   "placeOnMapErrorInternal": "Failed to create the track from the placed points.",
   "placeOnMapSuccess": "Track created from placed points",
-  "placeOnMapCreate": "Create from map"
+  "placeOnMapCreate": "Create from map",
+  "trackEditorLocate": "Locate me",
+  "trackEditorGeolocationDenied": "Location permission denied",
+  "trackEditorGeolocationFailed": "Could not determine your location",
+  "trackEditorGeolocationUnavailable": "Geolocation is not supported by your browser"
 }

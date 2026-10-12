@@ -65,5 +65,9 @@
   "placeOnMapErrorValidation": "Поставленные точки или данные трека недопустимы.",
   "placeOnMapErrorInternal": "Не удалось создать трек из поставленных точек.",
   "placeOnMapSuccess": "Трек создан из поставленных точек",
-  "placeOnMapCreate": "Создать по карте"
+  "placeOnMapCreate": "Создать по карте",
+  "trackEditorLocate": "Где я",
+  "trackEditorGeolocationDenied": "Доступ к геолокации запрещён",
+  "trackEditorGeolocationFailed": "Не удалось определить ваше местоположение",
+  "trackEditorGeolocationUnavailable": "Ваш браузер не поддерживает геолокацию"
 }
