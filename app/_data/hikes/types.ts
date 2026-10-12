@@ -246,7 +246,10 @@ export type PublicHike = Omit<PublicHikeRecord, "tracks" | "photos" | "notes"> &
     photoId: string;
     position: number;
     assignedAt: Date;
-    photo: Omit<PublicHikeRecord["photos"][number]["photo"], "metadata"> & { captureInstant: string | null };
+    photo: Omit<PublicHikeRecord["photos"][number]["photo"], "metadata"> & {
+      captureInstant: string | null;
+      dayKeys: string[];
+    };
   }[];
   photoMapMarkers: HikePhotoMapMarker[];
   noteMapMarkers: HikeNoteMapMarker[];

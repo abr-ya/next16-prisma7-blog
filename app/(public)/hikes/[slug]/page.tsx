@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
-import { CalendarDays, Route } from "lucide-react";
+import { CalendarDays } from "lucide-react";
 
 import {
   getHikeParticipantManagementBySlug,
@@ -17,14 +16,12 @@ import { HikeParticipantManager } from "@/components/hike-pages/hike-participant
 import type { HikePhotoGalleryItem } from "@/components/hike-pages/hike-photo-gallery";
 import { HikeTrackContributionButton } from "@/components/hike-pages/hike-track-contribution-form";
 import { HikeTripMedia } from "@/components/hike-pages/hike-trip-media";
-import { Badge, Button } from "@/components/index";
+import { Badge } from "@/components/index";
 import { PageLayout } from "@/components/layout/page-layout";
 import { authSession } from "@/lib/auth-utils";
 import { formatHikeDateRange, formatHikeType } from "@/lib/hikes";
 import { SITE_CONTENT_WIDTH } from "@/lib/site-content-width";
 import { buildPageMetadata, getTextMetadataDescription } from "@/lib/site-metadata";
-import { formatTrackRecordingTimeRange, formatTrackTimezoneEvidence } from "@/lib/track-gpx-metadata";
-import { formatTrackRecordingTimezone } from "@/lib/track-recording-timezone";
 import { cn } from "@/lib/utils";
 
 type HikePageProps = {
@@ -79,7 +76,6 @@ export const TripPage = async ({ params }: HikePageProps) => {
         photoIds: hike.photos.map(({ photo }) => photo.id),
       })
     : {};
-  const mappedTracks = hike.tracks.flatMap(({ track }) => (track.map ? [track.map] : []));
   const photoMapMarkers = hike.photoMapMarkers;
   const noteMapMarkers = hike.noteMapMarkers;
   const photoDetails = await Promise.all(
@@ -98,6 +94,7 @@ export const TripPage = async ({ params }: HikePageProps) => {
         title: photo.title,
         description: photo.description,
         captureInstant: photo.captureInstant,
+        dayKeys: photo.dayKeys,
         alt: preview?.name || photo.title,
         thumbnailUrl: preview ? `/files/${preview.id}/thumbnail` : null,
         fullUrl: canViewFullPhotos && preview ? `/files/${preview.id}/download?disposition=inline` : null,
@@ -133,7 +130,7 @@ export const TripPage = async ({ params }: HikePageProps) => {
           )}
         </div>
         <HikeTripMedia
-          tracks={mappedTracks}
+          linkedTracks={hike.tracks.map(({ track }) => track)}
           photoMarkers={photoMapMarkers}
           noteMarkers={noteMapMarkers}
           startDate={hike.startDate}
@@ -141,58 +138,16 @@ export const TripPage = async ({ params }: HikePageProps) => {
           photos={galleryPhotos}
           canViewFullPhotos={canViewFullPhotos}
           photoContributionCapability={photoContributionCapability}
-        />
-        <section className="grid gap-3">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 className="text-base font-semibold">Linked tracks</h2>
-            {trackContributionCapability ? (
+          trackHeaderAction={
+            trackContributionCapability ? (
               <HikeTrackContributionButton
                 capability={trackContributionCapability}
                 ownerTracks={ownerUnlinkedTracks}
                 activityTypes={activityTypes}
               />
-            ) : null}
-          </div>
-          {hike.tracks.length > 0 ? (
-            <div className="grid gap-3 md:grid-cols-3">
-              {hike.tracks.map(({ track }) => (
-                <div key={track.id} className="flex h-full flex-col gap-3 rounded-md border p-4">
-                  <div className="grid gap-1">
-                    <div className="font-medium">{track.title}</div>
-                    {track.description ? (
-                      <p className="line-clamp-2 text-sm text-muted-foreground">{track.description}</p>
-                    ) : null}
-                    {track.parsed?.summary.time ? (
-                      <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
-                        <Badge variant="outline">
-                          {formatTrackRecordingTimeRange(track.parsed.summary.time, track.recordingTimezone)}
-                        </Badge>
-                        <Badge variant={track.recordingTimezone ? "secondary" : "outline"}>
-                          {formatTrackRecordingTimezone(track.recordingTimezone)}
-                        </Badge>
-                        <Badge
-                          variant={
-                            track.parsed.summary.time.timezoneEvidence === "UTC_OR_OFFSET" ? "secondary" : "outline"
-                          }
-                        >
-                          {formatTrackTimezoneEvidence(track.parsed.summary.time.timezoneEvidence)}
-                        </Badge>
-                      </div>
-                    ) : null}
-                  </div>
-                  <Button asChild size="sm" variant="outline" className="mt-auto self-start">
-                    <Link href={`/tracks/${track.slug}`}>
-                      <Route />
-                      Open track
-                    </Link>
-                  </Button>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground">No tracks linked to this trip yet.</p>
-          )}
-        </section>
+            ) : undefined
+          }
+        />
       </article>
     </PageLayout>
   );

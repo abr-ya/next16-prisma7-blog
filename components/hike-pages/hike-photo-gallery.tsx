@@ -44,6 +44,7 @@ export type HikePhotoGalleryItem = {
   title: string;
   description: string | null;
   captureInstant: string | null;
+  dayKeys?: string[];
   alt: string;
   thumbnailUrl: string | null;
   fullUrl: string | null;
