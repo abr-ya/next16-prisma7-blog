@@ -2,11 +2,11 @@
 
 ## 1. Schema migration
 
-- [ ] 1.1 Add the `TrackTimeSource { GPX MANUAL NONE }` enum to `prisma/schema.prisma` (next to the existing `TrackStatus` block) and add `recordingStartAt DateTime?`, `recordingDurationSeconds Int?`, and `timeSource TrackTimeSource?` columns to `Track`; verify by reading the schema and confirming the new enum, its three values, and the three new nullable columns are present.
-- [ ] 1.2 Run `npx prisma migrate dev --name feature-112-outdoor-track-creation-public-metadata` to generate the migration; verify by reading the generated migration file and confirming it contains `CREATE TYPE "TrackTimeSource" ...`, the three `ALTER TABLE "Track" ADD COLUMN ...` statements, and the `null` defaults.
-- [ ] 1.3 Append a single `UPDATE "Track" SET "timeSource" = 'GPX' WHERE "timeSource" IS NULL;` statement to the generated migration after the column adds; verify by reading the migration file and confirming the backfill runs after the columns exist.
-- [ ] 1.4 Run `npx prisma migrate dev` once more to apply the migration to the local database and confirm zero errors; verify by `npx prisma studio` (or a `SELECT timeSource, COUNT(*) FROM "Track" GROUP BY 1` query) showing every existing row has `timeSource = GPX`.
-- [ ] 1.5 Run `npx prisma generate` (also runs on `npm postinstall`); verify by `npm run tsc` confirming the generated client includes the new `TrackTimeSource` type and the three new `Track` columns.
+- [x] 1.1 Add the `TrackTimeSource { GPX MANUAL NONE }` enum to `prisma/schema.prisma` (next to the existing `TrackStatus` block) and add `recordingStartAt DateTime?`, `recordingDurationSeconds Int?`, and `timeSource TrackTimeSource?` columns to `Track`; verify by reading the schema and confirming the new enum, its three values, and the three new nullable columns are present.
+- [x] 1.2 Run `npx prisma migrate dev --name feature-112-outdoor-track-creation-public-metadata` to generate the migration; verify by reading the generated migration file and confirming it contains `CREATE TYPE "TrackTimeSource" ...`, the three `ALTER TABLE "Track" ADD COLUMN ...` statements, and the `null` defaults.
+- [x] 1.3 Append a single `UPDATE "Track" SET "timeSource" = 'GPX' WHERE "timeSource" IS NULL;` statement to the generated migration after the column adds; verify by reading the migration file and confirming the backfill runs after the columns exist.
+- [x] 1.4 Run `npx prisma migrate dev` once more to apply the migration to the local database and confirm zero errors; verify by `npx prisma studio` (or a `SELECT timeSource, COUNT(*) FROM "Track" GROUP BY 1` query) showing every existing row has `timeSource = GPX`.
+- [x] 1.5 Run `npx prisma generate` (also runs on `npm postinstall`); verify by `npm run tsc` confirming the generated client includes the new `TrackTimeSource` type and the three new `Track` columns.
 
 ## 2. Server action extension
 

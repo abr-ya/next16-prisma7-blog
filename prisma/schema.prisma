@@ -238,6 +238,12 @@ enum TrackStatus {
   PUBLISHED
 }
 
+enum TrackTimeSource {
+  GPX
+  MANUAL
+  NONE
+}
+
 enum PhotoStatus {
   DRAFT
   PUBLISHED
@@ -327,26 +333,30 @@ model HikeNote {
 }
 
 model Track {
-  id                String          @id @default(uuid())
-  title             String
-  slug              String          @unique
-  description       String?
-  status            TrackStatus     @default(DRAFT)
-  fileAssetId       String          @unique
-  fileAsset         FileAsset       @relation(fields: [fileAssetId], references: [id], onDelete: Restrict)
-  metadata          Json?
-  recordingTimezone String?
-  activityTypeId    String?
-  activityType      TrackActivityType? @relation(fields: [activityTypeId], references: [id], onDelete: Restrict)
-  userId            String
-  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  hikes             HikesToTracks[]
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @default(now()) @updatedAt
+  id                       String          @id @default(uuid())
+  title                    String
+  slug                     String          @unique
+  description              String?
+  status                   TrackStatus     @default(DRAFT)
+  fileAssetId              String          @unique
+  fileAsset                FileAsset       @relation(fields: [fileAssetId], references: [id], onDelete: Restrict)
+  metadata                 Json?
+  recordingTimezone        String?
+  recordingStartAt         DateTime?
+  recordingDurationSeconds Int?
+  timeSource               TrackTimeSource?
+  activityTypeId           String?
+  activityType             TrackActivityType? @relation(fields: [activityTypeId], references: [id], onDelete: Restrict)
+  userId                   String
+  user                     User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  hikes                    HikesToTracks[]
+  createdAt                DateTime        @default(now())
+  updatedAt                DateTime        @default(now()) @updatedAt
 
   @@index([status])
   @@index([userId])
   @@index([activityTypeId])
+  @@index([timeSource])
 }
 
 model TrackActivityType {
