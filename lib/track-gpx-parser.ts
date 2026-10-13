@@ -23,7 +23,13 @@ type ParseTrackGpxInput = {
   sourceFileKey: string;
 };
 
-const EARTH_RADIUS_METERS = 6371000;
+/**
+ * Mean Earth radius in meters used by the Haversine formula below. Exported so
+ * client and server code (e.g. the `TrackEditor` live distance preview in
+ * feature-111, future outdoor-track-cleanup outlier speed checks) share the
+ * same single source of truth for the constant.
+ */
+export const EARTH_RADIUS_METERS = 6371000;
 const MAX_SIMPLIFIED_POINTS = 1000;
 const MAX_TIMELINE_POINTS = 400;
 const SIMPLIFY_TOLERANCE_DEGREES = 0.00008;
@@ -91,7 +97,13 @@ const parseGpxPoints = (content: string): ParsedGpxPoint[] => {
 
 const toRadians = (value: number) => (value * Math.PI) / 180;
 
-const distanceBetweenPoints = (from: TrackGpxCoordinate, to: TrackGpxCoordinate) => {
+/**
+ * Haversine great-circle distance in meters between two WGS84 coordinates.
+ * Exported so the `TrackEditor` live distance preview in feature-111 (and any
+ * future client-side check) uses the exact same math as the server-side GPX
+ * metadata pipeline.
+ */
+export const distanceBetweenPoints = (from: TrackGpxCoordinate, to: TrackGpxCoordinate) => {
   const lat1 = toRadians(from.lat);
   const lat2 = toRadians(to.lat);
   const deltaLat = toRadians(to.lat - from.lat);
@@ -104,7 +116,12 @@ const distanceBetweenPoints = (from: TrackGpxCoordinate, to: TrackGpxCoordinate)
   return EARTH_RADIUS_METERS * c;
 };
 
-const computeBounds = (points: TrackGpxCoordinate[]): TrackGpxBounds =>
+/**
+ * Bounding box around a set of WGS84 points. Exported so the `TrackEditorMap`
+ * in feature-111 can derive initial bounds for a placed polyline without
+ * duplicating the math.
+ */
+export const computeBounds = (points: TrackGpxCoordinate[]): TrackGpxBounds =>
   points.reduce(
     (bounds, point) => ({
       north: Math.max(bounds.north, point.lat),

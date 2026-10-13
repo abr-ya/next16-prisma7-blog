@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { ColumnDef } from "@tanstack/react-table";
-import { ArrowUpDown, Clock3, Edit, FileUp, Plus, RefreshCw, Trash2 } from "lucide-react";
+import { ArrowUpDown, Clock3, Edit, FileUp, MapPin, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useT } from "next-i18next/client";
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
@@ -11,8 +11,9 @@ import { toast } from "sonner";
 import z from "zod";
 
 import { markDiscardedTrackGpxFileAssetsPendingDelete } from "@/app/_actions/files";
-import { navigationNamespace } from "@/app/i18n/settings";
+import { navigationNamespace, tripsNamespace } from "@/app/i18n/settings";
 import {
+  createManualTrack,
   createTrack,
   deleteTrack,
   parseTrackGpx,
@@ -41,6 +42,10 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
 } from "@/components/index";
 import type { TrackStatus } from "@/generated/prisma/enums";
 import type { TrackActivityType } from "@/generated/prisma/client";
@@ -48,6 +53,7 @@ import { formatFileSize } from "@/lib/file-upload-limits";
 import { formatHikeDateRange, formatHikeStatus, formatHikeType } from "@/lib/hikes";
 import { createSlug } from "@/lib/slug-generator";
 import { TrackGpxUploadSection } from "@/components/track-pages/track-gpx-upload-section";
+import { TrackEditor, type ManualTrackPoint } from "@/components/track-pages/track-editor";
 import {
   formatTrackRecordingTimezone,
   getSupportedTrackRecordingTimezones,
@@ -69,12 +75,18 @@ const formSchema = z.object({
   slug: z.string().min(1, { message: "Slug is required" }),
   description: z.string().optional(),
   status: z.enum(["DRAFT", "PUBLISHED"]),
-  fileAssetId: z.string().min(1, { message: "GPX file is required" }),
+  // `fileAssetId` is required by the GPX-upload tab and left empty by the
+  // Place on map tab (where the file asset is built server-side from the
+  // placed points). The submit button enforces "tab-appropriate" non-empty
+  // values per active tab.
+  fileAssetId: z.string().optional(),
   fileAssetName: z.string().optional(),
   activityTypeId: z.string().optional(),
 });
 
 type TrackFormValues = z.infer<typeof formSchema>;
+
+type TrackCreationMode = "gpx" | "placeOnMap";
 
 const defaultValues: TrackFormValues = {
   title: "",
@@ -173,7 +185,7 @@ const TrackFormDialog = ({
   parsingTrackId: string | null;
   onSaved: () => void;
 }) => {
-  const { i18n } = useT(navigationNamespace);
+  const { i18n, t } = useT(tripsNamespace);
   const activeLanguage = i18n.resolvedLanguage ?? i18n.language;
   const form = useForm<TrackFormValues>({
     resolver: zodResolver(formSchema),
@@ -189,12 +201,25 @@ const TrackFormDialog = ({
   const [uploadedFileAssetIds, setUploadedFileAssetIds] = useState<string[]>([]);
   const [discardConfirmOpen, setDiscardConfirmOpen] = useState(false);
   const [isDiscarding, startDiscarding] = useTransition();
+  const [activeTab, setActiveTab] = useState<TrackCreationMode>("gpx");
+  const [placedPoints, setPlacedPoints] = useState<ManualTrackPoint[]>([]);
+  // Track the previous `open` value so we can reset local UI state during
+  // render (instead of in an effect) when the dialog flips closed → open.
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
+    if (open) {
+      setActiveTab("gpx");
+      setPlacedPoints([]);
+    }
+  }
   const discardFileAssetIds = useMemo(
     () => uploadedFileAssetIds.filter((uploadedFileAssetId) => uploadedFileAssetId !== savedFileAssetId),
     [savedFileAssetId, uploadedFileAssetIds],
   );
   const hasUnsavedUploads = discardFileAssetIds.length > 0;
-  const hasGuardedChanges = form.formState.isDirty || hasUnsavedUploads;
+  const hasUnsavedPoints = placedPoints.length > 0;
+  const hasGuardedChanges = form.formState.isDirty || hasUnsavedUploads || hasUnsavedPoints;
 
   useEffect(() => {
     if (!open) return;
@@ -227,6 +252,7 @@ const TrackFormDialog = ({
   const closeWithoutGuard = () => {
     setDiscardConfirmOpen(false);
     setUploadedFileAssetIds([]);
+    setPlacedPoints([]);
     form.reset(defaultValues);
     onOpenChange(false);
   };
@@ -295,12 +321,46 @@ const TrackFormDialog = ({
           ...trackPayload,
         });
         toast.success("Track updated");
+      } else if (activeTab === "placeOnMap") {
+        if (placedPoints.length < 2) {
+          toast.error(t("trackEditorMinimumPoints"));
+          return;
+        }
+
+        const result = await createManualTrack({
+          title: values.title,
+          slug: values.slug,
+          description: values.description ?? null,
+          status: values.status,
+          points: placedPoints,
+        });
+
+        if (!result.ok) {
+          const messageKey =
+            result.code === "TRUST"
+              ? "placeOnMapErrorTrust"
+              : result.code === "QUOTA"
+                ? "placeOnMapErrorQuota"
+                : result.code === "SLUG"
+                  ? "placeOnMapErrorSlug"
+                  : result.code === "VALIDATION"
+                    ? "placeOnMapErrorValidation"
+                    : "placeOnMapErrorInternal";
+          toast.error(t(messageKey) || result.message);
+          return;
+        }
+
+        toast.success(t("placeOnMapSuccess"));
+        setPlacedPoints([]);
+        closeWithoutGuard();
+        onSaved();
+        return;
       } else {
         await createTrack(trackPayload);
         toast.success("Track created");
       }
 
-      await cleanupSupersededUploads(values.fileAssetId);
+      await cleanupSupersededUploads(values.fileAssetId ?? "");
       closeWithoutGuard();
       onSaved();
     } catch (error) {
@@ -308,198 +368,242 @@ const TrackFormDialog = ({
     }
   };
 
+  const renderTextFields = () => (
+    <>
+      <div className="grid gap-4 md:grid-cols-2">
+        <FormField
+          control={form.control}
+          name="title"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Title</FormLabel>
+              <FormControl>
+                <Input {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="activityTypeId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Activity type</FormLabel>
+              <Select
+                onValueChange={(value) => field.onChange(value === "unclassified" ? "" : value)}
+                value={field.value || "unclassified"}
+              >
+                <FormControl>
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="unclassified">Unclassified</SelectItem>
+                  {activityTypes.map((activityType) => (
+                    <SelectItem key={activityType.id} value={activityType.id}>
+                      {formatActivityTypeName(activityType, activeLanguage)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="slug"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Slug</FormLabel>
+              <div className="flex gap-2">
+                <FormControl>
+                  <Input {...field} />
+                </FormControl>
+                <Button type="button" variant="outline" onClick={handleGenerateSlug}>
+                  Generate
+                </Button>
+              </div>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </div>
+      <FormField
+        control={form.control}
+        name="description"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Description</FormLabel>
+            <FormControl>
+              <textarea
+                {...field}
+                className="border-input focus-visible:border-ring focus-visible:ring-ring/50 min-h-28 w-full rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+      <FormField
+        control={form.control}
+        name="status"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Status</FormLabel>
+            <Select onValueChange={field.onChange} value={field.value}>
+              <FormControl>
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent>
+                {trackStatusOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+    </>
+  );
+
+  const canSubmit = isEditing
+    ? Boolean(fileAssetId)
+    : activeTab === "gpx"
+      ? Boolean(fileAssetId)
+      : placedPoints.length >= 2;
+
   return (
     <>
       <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogContent className="sm:max-w-2xl">
+        <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-3xl">
           <DialogHeader>
             <DialogTitle>{isEditing ? "Edit track" : "Create track"}</DialogTitle>
           </DialogHeader>
           <Form {...form}>
             <form className="grid gap-4" onSubmit={form.handleSubmit(onSubmit)}>
-              <div className="grid gap-4 md:grid-cols-2">
-                <FormField
-                  control={form.control}
-                  name="title"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Title</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="activityTypeId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Activity type</FormLabel>
-                      <Select
-                        onValueChange={(value) => field.onChange(value === "unclassified" ? "" : value)}
-                        value={field.value || "unclassified"}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="w-full">
-                            <SelectValue />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="unclassified">Unclassified</SelectItem>
-                          {activityTypes.map((activityType) => (
-                            <SelectItem key={activityType.id} value={activityType.id}>
-                              {formatActivityTypeName(activityType, activeLanguage)}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="slug"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Slug</FormLabel>
-                      <div className="flex gap-2">
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <Button type="button" variant="outline" onClick={handleGenerateSlug}>
-                          Generate
+              <Tabs
+                value={activeTab}
+                onValueChange={(value) => setActiveTab(value as TrackCreationMode)}
+                className="gap-4"
+              >
+                {!isEditing ? (
+                  <TabsList>
+                    <TabsTrigger value="gpx">
+                      <FileUp />
+                      {t("uploadGpxTab")}
+                    </TabsTrigger>
+                    <TabsTrigger value="placeOnMap">
+                      <MapPin />
+                      {t("placeOnMapTab")}
+                    </TabsTrigger>
+                  </TabsList>
+                ) : null}
+                <TabsContent value="gpx" className="grid gap-4">
+                  {renderTextFields()}
+                  <FormField
+                    control={form.control}
+                    name="fileAssetId"
+                    render={() => (
+                      <FormItem>
+                        <FormLabel>GPX file</FormLabel>
+                        <div className="rounded-md border p-3 text-sm">
+                          <div className="flex min-h-5 items-center gap-2">
+                            <FileUp className="size-4 text-muted-foreground" />
+                            <span className="truncate">{fileAssetName || "No GPX file uploaded"}</span>
+                          </div>
+                        </div>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <TrackGpxUploadSection
+                    isEditing={isEditing}
+                    onUploadComplete={({ fileAssetId, fileName }) => {
+                      form.setValue("fileAssetId", fileAssetId, { shouldDirty: true, shouldValidate: true });
+                      form.setValue("fileAssetName", fileName, { shouldDirty: true, shouldValidate: true });
+                      setUploadedFileAssetIds((current) => uniqueIds([...current, fileAssetId]));
+                    }}
+                    onUploadError={() => {
+                      // toast already emitted by the section
+                    }}
+                  />
+                  {track && parseState ? (
+                    <div className="grid gap-3 rounded-md border p-3 text-sm">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">GPX parsing</span>
+                          <Badge variant={getParseStatusVariant(parseState)}>{getParseStatusLabel(parseState)}</Badge>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          disabled={isParsing || form.formState.isDirty}
+                          onClick={() => onParse(track)}
+                        >
+                          <RefreshCw className={isParsing ? "animate-spin" : undefined} />
+                          {isParsing ? "Parsing..." : parseState.status === "SUCCESS" ? "Reparse" : "Parse GPX"}
                         </Button>
                       </div>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Description</FormLabel>
-                    <FormControl>
-                      <textarea
-                        {...field}
-                        className="border-input focus-visible:border-ring focus-visible:ring-ring/50 min-h-28 w-full rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <div className="grid gap-4 md:grid-cols-2">
-                <FormField
-                  control={form.control}
-                  name="status"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Status</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger className="w-full">
-                            <SelectValue />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {trackStatusOptions.map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
-                              {option.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="fileAssetId"
-                  render={() => (
-                    <FormItem>
-                      <FormLabel>GPX file</FormLabel>
-                      <div className="rounded-md border p-3 text-sm">
-                        <div className="flex min-h-5 items-center gap-2">
-                          <FileUp className="size-4 text-muted-foreground" />
-                          <span className="truncate">{fileAssetName || "No GPX file uploaded"}</span>
+                      {parseState.status === "SUCCESS" ? (
+                        <div className="grid gap-2 text-muted-foreground">
+                          <div className="flex flex-wrap gap-3">
+                            <span>{formatTrackDistance(parseState.summary.distanceMeters)}</span>
+                            <span>{formatTrackPointCount(parseState.summary.points)}</span>
+                            <span>{formatTrackTimelinePresence(parseState.timeline)}</span>
+                            <span>Parsed {formatDate(parseState.metadata.gpxParse.parsedAt)}</span>
+                          </div>
+                          {parseState.summary.time ? (
+                            <div className="flex flex-wrap gap-2">
+                              <span>
+                                {formatTrackRecordingTimeRange(parseState.summary.time, track.recordingTimezone)}
+                              </span>
+                              <Badge
+                                variant={
+                                  parseState.summary.time.timezoneEvidence === "UTC_OR_OFFSET" ? "secondary" : "outline"
+                                }
+                              >
+                                {formatTrackTimezoneEvidence(parseState.summary.time.timezoneEvidence)}
+                              </Badge>
+                            </div>
+                          ) : null}
                         </div>
-                      </div>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              <TrackGpxUploadSection
-                isEditing={isEditing}
-                onUploadComplete={({ fileAssetId, fileName }) => {
-                  form.setValue("fileAssetId", fileAssetId, { shouldDirty: true, shouldValidate: true });
-                  form.setValue("fileAssetName", fileName, { shouldDirty: true, shouldValidate: true });
-                  setUploadedFileAssetIds((current) => uniqueIds([...current, fileAssetId]));
-                }}
-                onUploadError={() => {
-                  // toast already emitted by the section
-                }}
-              />
-              {track && parseState ? (
-                <div className="grid gap-3 rounded-md border p-3 text-sm">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">GPX parsing</span>
-                      <Badge variant={getParseStatusVariant(parseState)}>{getParseStatusLabel(parseState)}</Badge>
-                    </div>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      disabled={isParsing || form.formState.isDirty}
-                      onClick={() => onParse(track)}
-                    >
-                      <RefreshCw className={isParsing ? "animate-spin" : undefined} />
-                      {isParsing ? "Parsing..." : parseState.status === "SUCCESS" ? "Reparse" : "Parse GPX"}
-                    </Button>
-                  </div>
-                  {parseState.status === "SUCCESS" ? (
-                    <div className="grid gap-2 text-muted-foreground">
-                      <div className="flex flex-wrap gap-3">
-                        <span>{formatTrackDistance(parseState.summary.distanceMeters)}</span>
-                        <span>{formatTrackPointCount(parseState.summary.points)}</span>
-                        <span>{formatTrackTimelinePresence(parseState.timeline)}</span>
-                        <span>Parsed {formatDate(parseState.metadata.gpxParse.parsedAt)}</span>
-                      </div>
-                      {parseState.summary.time ? (
-                        <div className="flex flex-wrap gap-2">
-                          <span>{formatTrackRecordingTimeRange(parseState.summary.time, track.recordingTimezone)}</span>
-                          <Badge
-                            variant={
-                              parseState.summary.time.timezoneEvidence === "UTC_OR_OFFSET" ? "secondary" : "outline"
-                            }
-                          >
-                            {formatTrackTimezoneEvidence(parseState.summary.time.timezoneEvidence)}
-                          </Badge>
+                      ) : null}
+                      {parseState.status === "FAILED" || parseState.status === "STALE" ? (
+                        <div className="text-muted-foreground">{parseState.errorMessage}</div>
+                      ) : null}
+                      {form.formState.isDirty ? (
+                        <div className="text-xs text-muted-foreground">
+                          Save track changes before parsing the current GPX file.
                         </div>
                       ) : null}
                     </div>
                   ) : null}
-                  {parseState.status === "FAILED" || parseState.status === "STALE" ? (
-                    <div className="text-muted-foreground">{parseState.errorMessage}</div>
-                  ) : null}
-                  {form.formState.isDirty ? (
-                    <div className="text-xs text-muted-foreground">
-                      Save track changes before parsing the current GPX file.
-                    </div>
-                  ) : null}
-                </div>
-              ) : null}
+                </TabsContent>
+                <TabsContent value="placeOnMap" className="grid gap-4">
+                  <TrackEditor
+                    initialPoints={[]}
+                    onChangePoints={setPlacedPoints}
+                    renderFormFields={renderTextFields}
+                    mapAriaLabel={t("trackEditorMapAriaLabel")}
+                  />
+                </TabsContent>
+              </Tabs>
               <div className="flex justify-end">
-                <Button type="submit" disabled={form.formState.isSubmitting || !fileAssetId}>
-                  {form.formState.isSubmitting ? "Saving..." : "Save track"}
+                <Button type="submit" disabled={form.formState.isSubmitting || !canSubmit}>
+                  {form.formState.isSubmitting
+                    ? "Saving..."
+                    : !isEditing && activeTab === "placeOnMap"
+                      ? t("placeOnMapCreate")
+                      : "Save track"}
                 </Button>
               </div>
             </form>
@@ -509,11 +613,19 @@ const TrackFormDialog = ({
       <ConfirmDialog
         open={discardConfirmOpen}
         onOpenChange={setDiscardConfirmOpen}
-        title={hasUnsavedUploads ? "Discard track and uploaded GPX?" : "Discard track changes?"}
+        title={
+          hasUnsavedUploads
+            ? "Discard track and uploaded GPX?"
+            : hasUnsavedPoints
+              ? "Discard placed points?"
+              : "Discard track changes?"
+        }
         description={
           hasUnsavedUploads
             ? "This form has unsaved changes and an uploaded GPX file. Discarding will mark the unsaved uploaded GPX file for deletion before closing."
-            : "This form has unsaved changes. Discarding will close the modal without saving them."
+            : hasUnsavedPoints
+              ? "This form has unsaved changes and placed map points. Discarding will close the modal without saving them."
+              : "This form has unsaved changes. Discarding will close the modal without saving them."
         }
         confirmLabel={hasUnsavedUploads ? "Discard and remove file" : "Discard changes"}
         confirmVariant="destructive"

@@ -19,6 +19,7 @@ export { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 export { Separator } from "./ui/separator";
 export { Sidebar, SidebarProvider } from "./ui/sidebar";
 export { Spinner } from "./ui/spinner";
+export { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 
 // Common Components
 export { ConfirmDialog } from "./common/confirm-dialog";

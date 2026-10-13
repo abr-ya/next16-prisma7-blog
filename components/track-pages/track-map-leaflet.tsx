@@ -7,6 +7,7 @@ import { CircleMarker, MapContainer, Marker, Polyline, Popup, TileLayer, Tooltip
 import type { HikePhotoMapMarker } from "@/lib/hikes";
 import type { HikeNoteMapMarker } from "@/lib/hike-notes";
 import { groupHikePhotoMapMarkers } from "@/lib/hike-map-markers";
+import { FitTrackMapBounds } from "@/lib/track-map-bounds";
 import type { TrackMapViewModel } from "@/lib/track-gpx-metadata";
 
 const TRACK_LINE_COLORS = ["#0f766e", "#0369a1", "#7c3aed", "#c2410c", "#15803d", "#a21caf", "#b45309", "#0e7490"];
@@ -48,33 +49,6 @@ const collectMapPoints = (
   ...photoMarkers.map((marker) => ({ lat: marker.lat, lng: marker.lng })),
   ...noteMarkers.map((marker) => ({ lat: marker.lat, lng: marker.lng })),
 ];
-
-const FitMapBounds = ({
-  tracks,
-  photoMarkers,
-  noteMarkers,
-}: {
-  tracks: TrackMapViewModel[];
-  photoMarkers: HikePhotoMapMarker[];
-  noteMarkers: HikeNoteMapMarker[];
-}) => {
-  const map = useMap();
-
-  useEffect(() => {
-    const points = collectMapPoints(tracks, photoMarkers, noteMarkers);
-
-    if (points.length === 0) return;
-
-    if (points.length === 1) {
-      map.setView(toLatLng(points[0]), 13);
-      return;
-    }
-
-    map.fitBounds(toBoundsFromPoints(points), { padding: [28, 28], maxZoom: 15 });
-  }, [map, noteMarkers, photoMarkers, tracks]);
-
-  return null;
-};
 
 const FocusMapCoordinate = ({ coordinate }: { coordinate?: MapPoint | null }) => {
   const map = useMap();
@@ -134,7 +108,7 @@ const TrackMapLeaflet = ({
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        <FitMapBounds tracks={tracks} photoMarkers={photoMarkers} noteMarkers={noteMarkers} />
+        <FitTrackMapBounds tracks={tracks} photoMarkers={photoMarkers} noteMarkers={noteMarkers} />
         <FocusMapCoordinate coordinate={focusCoordinate} />
         {tracks.map((track, index) => {
           const positions = track.geometry.map(toLatLng);
