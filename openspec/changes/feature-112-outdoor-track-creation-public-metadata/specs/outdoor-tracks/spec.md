@@ -100,40 +100,9 @@ The system SHALL let the viewer fill four optional metadata fields on the `Place
 - **THEN** the four new fields are not rendered there
 - **AND** the existing GPX upload form keeps its current shape
 
-### Requirement: New optional fields render on existing track summary surfaces
+### Requirement: Display surfaces are deferred to feature-113
 
-The system SHALL display `timeSource`, `recordingStartAt`, and `recordingDurationSeconds` on the existing public track detail page, public track list card, admin track list row, and hike linked-track card. The system SHALL render `timeSource` as a localized badge with one variant per enum value. The system SHALL render `recordingStartAt` in `Track.recordingTimezone` when that column is set, otherwise in UTC, and SHALL render `recordingDurationSeconds` through the existing `formatTrackDuration` helper. The system SHALL omit any of these fields from a surface when the field is null without failing the page render.
-
-#### Scenario: Public track detail shows the timeSource badge
-
-- **WHEN** a visitor opens `/tracks/[slug]` for a published track
-- **THEN** the page renders a `timeSource` badge whose label is the localized string for the stored enum value
-
-#### Scenario: Public track detail shows recording start and duration when present
-
-- **WHEN** a published track has `recordingStartAt` and `recordingDurationSeconds` non-null
-- **THEN** the page renders the recording start in `Track.recordingTimezone` when present, otherwise UTC
-- **AND** it renders the duration through the existing `formatTrackDuration` helper
-
-#### Scenario: Public track list card shows timeSource
-
-- **WHEN** a visitor opens `/tracks`
-- **THEN** each published-track card displays the `timeSource` badge
-- **AND** it displays the recording start and duration only when those fields are non-null
-- **AND** it omits them cleanly when null without failing the card render
-
-#### Scenario: Admin track list row shows timeSource
-
-- **WHEN** an administrator opens `/admin/tracks`
-- **THEN** each track row displays the `timeSource` badge
-- **AND** it displays the recording start and duration only when those fields are non-null
-
-#### Scenario: Hike linked-track card shows timeSource
-
-- **WHEN** a visitor opens `/trips/[slug]` for a published trip
-- **THEN** each linked-track card displays the `timeSource` badge
-- **AND** it displays the recording start and duration only when those fields are non-null
-- **AND** it preserves the existing day-filter behaviour from feature-106
+Display of `timeSource`, `recordingStartAt`, and `recordingDurationSeconds` on the public track detail page, public track list card, admin track list row, and hike linked-track card is intentionally deferred to the feature-113 (`feature-113-outdoor-track-time-source-display`) slice; this slice (feature-112) owns the data shape, server-action persistence, and form input only. Display requirements for those surfaces are documented in the feature-113 OpenSpec change.
 
 ### Requirement: Existing tracks are backfilled to timeSource GPX on migration
 
