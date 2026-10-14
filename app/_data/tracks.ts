@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
+import { getTrackActivityTypeById } from "@/app/_data/track-activity-types";
 import type { FileAssetStatus, FileAssetVisibility, HikeType, TrackStatus } from "@/generated/prisma/enums";
 import { Prisma } from "@/generated/prisma/client";
 import { authSession } from "@/lib/auth-utils";
@@ -9,6 +10,12 @@ import { InsufficientTrustError, requireTrustGatedAction } from "@/lib/auth-trus
 import { assertVerifiedResourceQuota, createWithinVerifiedResourceQuota } from "@/lib/auth-trust-quotas.server";
 import { validateGpxString } from "@/lib/gpx-validation";
 import { createSlug } from "@/lib/slug-generator";
+import {
+  parseDurationSeconds,
+  parseManualTrackStartAt,
+  TrackDurationInputError,
+  TrackStartAtParseError,
+} from "@/lib/track-duration-input";
 import { parseTrackGpxMetadata } from "@/lib/track-gpx-parser";
 import { requireTrackRecordingTimezone } from "@/lib/track-recording-timezone";
 import { uploadSyntheticTrackGpx } from "@/lib/uploadthing/server-gpx";
@@ -38,6 +45,10 @@ export type CreateManualTrackInput = {
   description?: string | null;
   status?: TrackStatus;
   points: { lat: number; lng: number }[];
+  activityTypeId?: string | null;
+  recordingStartAt?: string | null;
+  recordingDurationSeconds?: number | null;
+  recordingTimezone?: string | null;
 };
 
 export type CreateManualTrackResult =
@@ -773,6 +784,63 @@ export const createManualTrack = async (input: CreateManualTrackInput): Promise<
     const normalizedSlug = normalizeTrackSlug(normalizedTitle, input.slug ?? null);
     const normalizedDescription = normalizeOptionalText(input.description);
 
+    // feature-112 Place on map tab fields: activity type + recording time
+    // + duration + timezone. None are required; when start is set the
+    // timezone must also be set. `timeSource` is derived: any of start or
+    // duration set → MANUAL, else NONE.
+    const normalizedActivityTypeId = input.activityTypeId?.trim() || null;
+    if (normalizedActivityTypeId) {
+      const activityType = await getTrackActivityTypeById(normalizedActivityTypeId);
+      if (!activityType) {
+        return { ok: false, code: "VALIDATION", message: "Activity type is unavailable" };
+      }
+    }
+
+    const trimmedStart = input.recordingStartAt?.trim();
+    const hasStart = Boolean(trimmedStart);
+    const hasDuration = input.recordingDurationSeconds !== undefined && input.recordingDurationSeconds !== null;
+
+    let normalizedRecordingStartAt: Date | null = null;
+    let normalizedRecordingDurationSeconds: number | null = null;
+    let normalizedRecordingTimezone: string | null = null;
+
+    if (hasStart || hasDuration) {
+      if (hasStart) {
+        if (!input.recordingTimezone || !input.recordingTimezone.trim()) {
+          return {
+            ok: false,
+            code: "VALIDATION",
+            message: "Recording timezone is required when start time is set",
+          };
+        }
+        try {
+          normalizedRecordingStartAt = parseManualTrackStartAt({
+            wallClock: trimmedStart!,
+            timezone: input.recordingTimezone,
+          });
+          normalizedRecordingTimezone = requireTrackRecordingTimezone(input.recordingTimezone);
+        } catch (error) {
+          if (error instanceof TrackStartAtParseError) {
+            return { ok: false, code: "VALIDATION", message: error.message };
+          }
+          throw error;
+        }
+      }
+
+      if (hasDuration) {
+        try {
+          normalizedRecordingDurationSeconds = parseDurationSeconds(input.recordingDurationSeconds!);
+        } catch (error) {
+          if (error instanceof TrackDurationInputError) {
+            return { ok: false, code: "VALIDATION", message: error.message };
+          }
+          throw error;
+        }
+      }
+    }
+
+    const computedTimeSource: "MANUAL" | "NONE" = hasStart || hasDuration ? "MANUAL" : "NONE";
+
     const gpxBytes = buildSyntheticGpxBytes(normalizedTitle, input.points);
     const gpxValidation = validateGpxString(gpxBytes);
     if (!gpxValidation.ok) {
@@ -833,6 +901,11 @@ export const createManualTrack = async (input: CreateManualTrackInput): Promise<
           status: normalizedStatus,
           fileAssetId: fileAsset.id,
           userId,
+          activityTypeId: normalizedActivityTypeId,
+          recordingStartAt: normalizedRecordingStartAt,
+          recordingDurationSeconds: normalizedRecordingDurationSeconds,
+          recordingTimezone: normalizedRecordingTimezone,
+          timeSource: computedTimeSource,
           metadata: Prisma.JsonNull,
         },
         select: { id: true, slug: true },
