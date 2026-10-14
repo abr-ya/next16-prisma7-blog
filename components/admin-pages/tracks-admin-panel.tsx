@@ -69,6 +69,7 @@ import {
   getTrackGpxMetadataState,
   type TrackGpxMetadataState,
 } from "@/lib/track-gpx-metadata";
+import { TrackDurationInputError, parseDurationInput } from "@/lib/track-duration-input";
 
 const formSchema = z.object({
   title: z.string().min(1, { message: "Title is required" }),
@@ -82,6 +83,16 @@ const formSchema = z.object({
   fileAssetId: z.string().optional(),
   fileAssetName: z.string().optional(),
   activityTypeId: z.string().optional(),
+  // feature-112 Place on map tab fields. The form layer carries them as
+  // strings so react-hook-form can manage a single text/datetime input per
+  // component; parsing through `parseDurationInput` happens at submit time
+  // and `timeSource` is derived live from these values for the badge.
+  recordingStartAt: z.string().optional(),
+  recordingTimezone: z.string().optional(),
+  recordingDurationHours: z.string().optional(),
+  recordingDurationMinutes: z.string().optional(),
+  recordingDurationSeconds: z.string().optional(),
+  includeSeconds: z.boolean().optional(),
 });
 
 type TrackFormValues = z.infer<typeof formSchema>;
@@ -96,6 +107,12 @@ const defaultValues: TrackFormValues = {
   fileAssetId: "",
   fileAssetName: "",
   activityTypeId: "",
+  recordingStartAt: "",
+  recordingTimezone: "",
+  recordingDurationHours: "0",
+  recordingDurationMinutes: "0",
+  recordingDurationSeconds: "0",
+  includeSeconds: false,
 };
 
 const formatDate = (value: Date | string) =>
@@ -233,6 +250,16 @@ const TrackFormDialog = ({
         fileAssetId: track.fileAssetId,
         fileAssetName: track.fileAsset.name,
         activityTypeId: track.activityTypeId ?? "",
+        // The existing edit dialog stays display-only for the four new
+        // feature-112 metadata fields per design decision 7 — the values
+        // reset to defaults so the slot renders the same starting shape as
+        // a fresh create.
+        recordingStartAt: "",
+        recordingTimezone: track.recordingTimezone ?? "",
+        recordingDurationHours: "0",
+        recordingDurationMinutes: "0",
+        recordingDurationSeconds: "0",
+        includeSeconds: false,
       });
     } else {
       form.reset(defaultValues);
@@ -240,6 +267,24 @@ const TrackFormDialog = ({
   }, [form, track, open]);
 
   const titleValue = useWatch({ control: form.control, name: "title" });
+  // feature-112 Place on map metadata. `useWatch` re-renders the timeSource
+  // badge and duration layout as the user edits the inputs, mirroring the
+  // server-side derivation in `createManualTrack`.
+  const recordingStartAtValue = useWatch({ control: form.control, name: "recordingStartAt" }) ?? "";
+  const recordingDurationHoursValue = useWatch({ control: form.control, name: "recordingDurationHours" }) ?? "0";
+  const recordingDurationMinutesValue = useWatch({ control: form.control, name: "recordingDurationMinutes" }) ?? "0";
+  const recordingDurationSecondsValue = useWatch({ control: form.control, name: "recordingDurationSeconds" }) ?? "0";
+  const includeSecondsValue = Boolean(useWatch({ control: form.control, name: "includeSeconds" }));
+  const recordingTimezoneOptions = useMemo(() => getSupportedTrackRecordingTimezones(), []);
+  const hasStart = recordingStartAtValue.trim().length > 0;
+  const hasDuration =
+    Number(recordingDurationHoursValue) > 0 ||
+    Number(recordingDurationMinutesValue) > 0 ||
+    (includeSecondsValue && Number(recordingDurationSecondsValue) > 0);
+  const liveTimeSourceBadge: { variant: "secondary" | "outline"; label: string } =
+    hasStart || hasDuration
+      ? { variant: "secondary", label: t("placeOnMapTimeSourceManual") }
+      : { variant: "outline", label: t("placeOnMapTimeSourceNone") };
 
   const handleGenerateSlug = () => {
     const slug = createSlug(titleValue);
@@ -327,12 +372,54 @@ const TrackFormDialog = ({
           return;
         }
 
+        // Parse the feature-112 metadata at submit time so the typed
+        // `parseDurationInput` / `parseManualTrackStartAt` helpers run before
+        // we touch `createManualTrack`. `timeSource` is derived server-side
+        // from the parsed fields so the client only sends the scalar inputs.
+        const trimmedStart = values.recordingStartAt?.trim() ?? "";
+        const trimmedTimezone = values.recordingTimezone?.trim() ?? "";
+        const hasStart = trimmedStart.length > 0;
+        const hasTimezone = trimmedTimezone.length > 0;
+        const durationHours = Number(values.recordingDurationHours ?? "0");
+        const durationMinutes = Number(values.recordingDurationMinutes ?? "0");
+        const durationSecondsInput =
+          values.includeSeconds && values.recordingDurationSeconds !== undefined
+            ? Number(values.recordingDurationSeconds)
+            : undefined;
+        const hasDuration =
+          Number.isFinite(durationHours) && durationHours > 0
+            ? true
+            : Number.isFinite(durationMinutes) && durationMinutes > 0
+              ? true
+              : durationSecondsInput !== undefined && Number.isFinite(durationSecondsInput) && durationSecondsInput > 0;
+
+        let parsedDurationSeconds: number | null = null;
+        if (hasDuration) {
+          try {
+            parsedDurationSeconds = parseDurationInput({
+              hours: Number.isFinite(durationHours) ? durationHours : 0,
+              minutes: Number.isFinite(durationMinutes) ? durationMinutes : 0,
+              seconds: durationSecondsInput,
+            });
+          } catch (error) {
+            if (error instanceof TrackDurationInputError) {
+              toast.error(error.message);
+              return;
+            }
+            throw error;
+          }
+        }
+
         const result = await createManualTrack({
           title: values.title,
           slug: values.slug,
           description: values.description ?? null,
           status: values.status,
           points: placedPoints,
+          activityTypeId: values.activityTypeId?.trim() || null,
+          recordingStartAt: hasStart ? trimmedStart : null,
+          recordingDurationSeconds: parsedDurationSeconds,
+          recordingTimezone: hasTimezone ? trimmedTimezone : null,
         });
 
         if (!result.ok) {
@@ -400,7 +487,7 @@ const TrackFormDialog = ({
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value="unclassified">Unclassified</SelectItem>
+                  <SelectItem value="unclassified">{t("placeOnMapActivityTypeUnclassified")}</SelectItem>
                   {activityTypes.map((activityType) => (
                     <SelectItem key={activityType.id} value={activityType.id}>
                       {formatActivityTypeName(activityType, activeLanguage)}
@@ -430,6 +517,114 @@ const TrackFormDialog = ({
             </FormItem>
           )}
         />
+      </div>
+      {/* feature-112 Place on map tab fields. Rendered for both tabs per
+          design decision 4 (the slot is shared) — the values are optional and
+          only consumed by `createManualTrack`; on the GPX tab the upload
+          itself supplies any time-related metadata via `parseTrackGpx`. */}
+      <div className="grid gap-4 md:grid-cols-2">
+        <FormField
+          control={form.control}
+          name="recordingStartAt"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>{t("placeOnMapRecordingStartLabel")}</FormLabel>
+              <FormControl>
+                <Input {...field} type="datetime-local" placeholder="2026-10-12T09:30" autoComplete="off" />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="recordingTimezone"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel htmlFor="place-on-map-recording-timezone">{t("placeOnMapRecordingTimezoneLabel")}</FormLabel>
+              <FormControl>
+                <Input
+                  {...field}
+                  id="place-on-map-recording-timezone"
+                  list="place-on-map-recording-timezone-options"
+                  placeholder="Europe/Sofia"
+                  autoComplete="off"
+                />
+              </FormControl>
+              <datalist id="place-on-map-recording-timezone-options">
+                {recordingTimezoneOptions.map((timezone) => (
+                  <option key={timezone} value={timezone} />
+                ))}
+              </datalist>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </div>
+      <div className="grid gap-3">
+        <div className="flex items-center justify-between text-sm font-medium">
+          <span>{t("placeOnMapRecordingDurationLabel")}</span>
+          <Button
+            type="button"
+            variant={includeSecondsValue ? "default" : "outline"}
+            size="sm"
+            aria-pressed={Boolean(includeSecondsValue)}
+            onClick={() =>
+              form.setValue("includeSeconds", !includeSecondsValue, {
+                shouldDirty: true,
+              })
+            }
+          >
+            {t("placeOnMapRecordingDurationIncludeSeconds")}
+          </Button>
+        </div>
+        <div className={`grid gap-2 ${includeSecondsValue ? "md:grid-cols-3" : "md:grid-cols-2"}`}>
+          <FormField
+            control={form.control}
+            name="recordingDurationHours"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t("placeOnMapRecordingDurationHours")}</FormLabel>
+                <FormControl>
+                  <Input {...field} type="number" inputMode="numeric" min={0} max={24} step={1} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="recordingDurationMinutes"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t("placeOnMapRecordingDurationMinutes")}</FormLabel>
+                <FormControl>
+                  <Input {...field} type="number" inputMode="numeric" min={0} max={59} step={1} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          {includeSecondsValue ? (
+            <FormField
+              control={form.control}
+              name="recordingDurationSeconds"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t("placeOnMapRecordingDurationSeconds")}</FormLabel>
+                  <FormControl>
+                    <Input {...field} type="number" inputMode="numeric" min={0} max={59} step={1} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          ) : null}
+        </div>
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <span>{t("placeOnMapTimeSourceLabel")}:</span>
+          <Badge variant={liveTimeSourceBadge.variant}>{liveTimeSourceBadge.label}</Badge>
+        </div>
       </div>
       <FormField
         control={form.control}

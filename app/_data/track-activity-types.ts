@@ -16,6 +16,19 @@ export const getActiveTrackActivityTypes = async () => {
   return prisma.trackActivityType.findMany({ where: { isActive: true }, orderBy: { nameEn: "asc" } });
 };
 
+/**
+ * Fetch a single active `TrackActivityType` by id, or `null` if the id is
+ * unknown / inactive. Used by `createManualTrack` (feature-112) to validate
+ * the optional `activityTypeId` from the Place on map form before persisting.
+ */
+export const getTrackActivityTypeById = async (id: string) => {
+  if (!id || typeof id !== "string") return null;
+  const { default: prisma } = await import("@/lib/prisma");
+  return prisma.trackActivityType.findFirst({
+    where: { id, isActive: true },
+  });
+};
+
 export const getAdminTrackActivityTypes = async () => {
   await requireAdminControl();
   const { default: prisma } = await import("@/lib/prisma");
