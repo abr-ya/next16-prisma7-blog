@@ -102,7 +102,13 @@ The system SHALL let the viewer fill four optional metadata fields on the `Place
 
 ### Requirement: Display surfaces are deferred to feature-113
 
-Display of `timeSource`, `recordingStartAt`, and `recordingDurationSeconds` on the public track detail page, public track list card, admin track list row, and hike linked-track card is intentionally deferred to the feature-113 (`feature-113-outdoor-track-time-source-display`) slice; this slice (feature-112) owns the data shape, server-action persistence, and form input only. Display requirements for those surfaces are documented in the feature-113 OpenSpec change.
+The system SHALL NOT render `timeSource`, `recordingStartAt`, or `recordingDurationSeconds` on the public track detail page, public track list card, admin track list row, or hike linked-track card in this slice (feature-112). The system SHALL continue to render the pre-feature-112 output for these fields (the existing recording-time-unavailable fallback and any pre-existing summary lines) on those four surfaces. The display requirements for `timeSource` (as a localized badge) and the optional `recordingStartAt` / `recordingDurationSeconds` lines on the four surfaces are owned by the feature-113 (`feature-113-outdoor-track-time-source-display`) OpenSpec change and SHALL be added there.
+
+#### Scenario: No display change on the four surfaces in feature-112
+
+- **WHEN** a viewer opens the public track detail page, public track list card, admin track list row, or hike linked-track card after feature-112 ships
+- **THEN** the rendered output for `timeSource`, `recordingStartAt`, and `recordingDurationSeconds` is identical to the pre-feature-112 output (these fields are persisted on `Track` but not yet displayed)
+- **AND** the feature-113 OpenSpec change owns the display requirements for these fields on these four surfaces
 
 ### Requirement: Existing tracks are backfilled to timeSource GPX on migration
 
