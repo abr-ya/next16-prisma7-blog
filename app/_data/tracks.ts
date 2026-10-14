@@ -533,6 +533,11 @@ export const createTrack = async (values: TrackActionValues) => {
       data: {
         ...data,
         userId,
+        // Every GPX-uploaded track is GPX-sourced. The post-commit
+        // `parseTrackGpx` hook re-asserts this on every (re-)parse so the
+        // write here is the create-time guarantee that `timeSource` is never
+        // null between create and parse.
+        timeSource: "GPX",
       },
       include: trackListInclude,
     }),
@@ -682,7 +687,15 @@ export const parseTrackGpx = async (id: string) => {
 
   await prisma.track.update({
     where: { id: track.id },
-    data: { metadata: metadataToPersist as Prisma.InputJsonValue },
+    data: {
+      metadata: metadataToPersist as Prisma.InputJsonValue,
+      // Every parse (success, failed, stale, re-parse) re-asserts that this
+      // row is GPX-sourced — the source-of-time classification is orthogonal
+      // to whether the GPX actually carried `<time>` elements. The write
+      // happens before any success/failed branching on the metadata so all
+      // three outcomes converge on the same value.
+      timeSource: "GPX",
+    },
   });
 
   revalidateTrackDetailPaths(track.slug);
