@@ -59,6 +59,7 @@
   "trackEditorMoveUp": "Move point up",
   "trackEditorMoveDown": "Move point down",
   "trackEditorRemovePoint": "Remove point",
+  "trackEditorMapSelectedPointAria": "Selected point {index}. Press Delete to remove.",
   "placeOnMapErrorTrust": "Account verification is required to create a track on the map.",
   "placeOnMapErrorQuota": "You've reached your track limit.",
   "placeOnMapErrorSlug": "A track with this slug already exists",

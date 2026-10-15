@@ -59,6 +59,7 @@
   "trackEditorMoveUp": "Поднять точку",
   "trackEditorMoveDown": "Опустить точку",
   "trackEditorRemovePoint": "Удалить точку",
+  "trackEditorMapSelectedPointAria": "Выбрана точка {index}. Нажмите Delete, чтобы удалить.",
   "placeOnMapErrorTrust": "Для создания трека на карте требуется верифицированный аккаунт.",
   "placeOnMapErrorQuota": "Вы достигли лимита треков.",
   "placeOnMapErrorSlug": "Трек с таким slug уже существует",
