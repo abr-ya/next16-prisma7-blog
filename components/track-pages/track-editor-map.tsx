@@ -1,10 +1,10 @@
 "use client";
 
+import L, { type LatLngBoundsExpression } from "leaflet";
 import { Crosshair, Loader2 } from "lucide-react";
-import { type LatLngBoundsExpression } from "leaflet";
 import { useT } from "next-i18next/client";
 import { useState } from "react";
-import { CircleMarker, MapContainer, Polyline, TileLayer, useMap, useMapEvents } from "react-leaflet";
+import { MapContainer, Marker, Polyline, TileLayer, useMap, useMapEvents } from "react-leaflet";
 import { toast } from "sonner";
 
 import { tripsNamespace } from "@/app/i18n/settings";
@@ -14,6 +14,19 @@ import type { TrackGpxCoordinate } from "@/lib/track-gpx-metadata";
 export type TrackEditorMapPoint = TrackGpxCoordinate;
 
 const TRACK_LINE_COLORS = ["#0f766e", "#0369a1", "#7c3aed", "#c2410c", "#15803d", "#a21caf", "#b45309", "#0e7490"];
+const DEFAULT_POINT_COLOR = "#0f766e";
+const SELECTED_POINT_COLOR = "#ea580c";
+const DEFAULT_POINT_SIZE = 10;
+const SELECTED_POINT_SIZE = 14;
+const SELECTED_POINT_Z_INDEX = 1000;
+
+const createEditorPointIcon = (color: string, size: number) =>
+  L.divIcon({
+    className: "",
+    html: `<span aria-hidden="true" style="display:block;width:${size}px;height:${size}px;border-radius:999px;background:${color};border:2px solid white;box-shadow:0 2px 8px rgb(15 23 42 / 0.35);"></span>`,
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+  });
 
 const toLatLng = (point: TrackEditorMapPoint): [number, number] => [point.lat, point.lng];
 
@@ -78,12 +91,19 @@ const LocateButton = () => {
 export const TrackEditorMap = ({
   points,
   onAddPoint,
+  onMovePoint,
+  onSelectPoint,
+  selectedIndex,
   ariaLabel,
 }: {
   points: TrackEditorMapPoint[];
   onAddPoint: (point: TrackEditorMapPoint) => void;
+  onMovePoint: (index: number, point: TrackEditorMapPoint) => void;
+  onSelectPoint: (index: number) => void;
+  selectedIndex: number | null;
   ariaLabel: string;
 }) => {
+  const { t } = useT(tripsNamespace);
   const positions = points.map(toLatLng);
   const hasExtent = points.length >= 2;
   const bounds = hasExtent ? toBoundsFromPoints(points) : undefined;
@@ -109,18 +129,32 @@ export const TrackEditorMap = ({
         {positions.length >= 2 ? (
           <Polyline pathOptions={{ color: TRACK_LINE_COLORS[0], weight: 4, dashArray: "6 6" }} positions={positions} />
         ) : null}
-        {points.map((point, index) => (
-          <CircleMarker
-            key={`editor-point-${index}`}
-            center={toLatLng(point)}
-            pathOptions={{
-              color: TRACK_LINE_COLORS[0],
-              fillColor: TRACK_LINE_COLORS[0],
-              fillOpacity: 0.9,
-            }}
-            radius={6}
-          />
-        ))}
+        {points.map((point, index) => {
+          const isSelected = selectedIndex === index;
+          const color = isSelected ? SELECTED_POINT_COLOR : DEFAULT_POINT_COLOR;
+          const size = isSelected ? SELECTED_POINT_SIZE : DEFAULT_POINT_SIZE;
+          const selectedTitle = isSelected ? t("trackEditorMapSelectedPointAria", { index: index + 1 }) : undefined;
+          return (
+            <Marker
+              key={`editor-point-${index}`}
+              position={toLatLng(point)}
+              icon={createEditorPointIcon(color, size)}
+              draggable
+              zIndexOffset={isSelected ? SELECTED_POINT_Z_INDEX : 0}
+              title={selectedTitle}
+              eventHandlers={{
+                dragend: (event) => {
+                  const { lat, lng } = event.target.getLatLng();
+                  onMovePoint(index, { lat, lng });
+                },
+                click: (event) => {
+                  L.DomEvent.stopPropagation(event.originalEvent);
+                  onSelectPoint(index);
+                },
+              }}
+            />
+          );
+        })}
       </MapContainer>
     </div>
   );

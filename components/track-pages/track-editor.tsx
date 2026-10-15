@@ -3,7 +3,7 @@
 import { ArrowDown, ArrowUp, MapPin, Trash2 } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useT } from "next-i18next/client";
-import { useCallback, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
 import { navigationNamespace } from "@/app/i18n/settings";
@@ -26,6 +26,19 @@ const TrackEditorMap = dynamic(() => import("@/components/track-pages/track-edit
 });
 
 export type ManualTrackPoint = { lat: number; lng: number };
+
+/**
+ * Returns `true` when the event target is a text-editing element
+ * (`<input>`, `<textarea>`, `[contenteditable]`). Used by the editor's
+ * Delete/Backspace handler to no-op when the user is typing in any of the
+ * dialog's form fields.
+ */
+const isEditingText = (target: EventTarget | null): boolean => {
+  if (!(target instanceof HTMLElement)) return false;
+  if (target instanceof HTMLInputElement) return true;
+  if (target instanceof HTMLTextAreaElement) return true;
+  return target.isContentEditable;
+};
 
 export type TrackEditorProps = {
   /**
@@ -95,6 +108,7 @@ export const TrackEditor = ({
 }: TrackEditorProps) => {
   const { t } = useT(navigationNamespace);
   const [points, setPoints] = useState<ManualTrackPoint[]>(initialPoints);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
 
   const replacePoints = useCallback(
     (next: ManualTrackPoint[]) => {
@@ -107,6 +121,7 @@ export const TrackEditor = ({
   const handleAddPoint = useCallback(
     (point: ManualTrackPoint) => {
       replacePoints([...points, point]);
+      setSelectedIndex(null);
     },
     [points, replacePoints],
   );
@@ -114,8 +129,14 @@ export const TrackEditor = ({
   const handleRemovePoint = useCallback(
     (index: number) => {
       replacePoints(points.filter((_, currentIndex) => currentIndex !== index));
+      // Removal shifts later indices; clear any stale selection so the next
+      // Delete/Backspace press never targets a different point than intended.
+      if (selectedIndex !== null) {
+        if (index === selectedIndex) setSelectedIndex(null);
+        else if (index < selectedIndex) setSelectedIndex(selectedIndex - 1);
+      }
     },
-    [points, replacePoints],
+    [points, replacePoints, selectedIndex],
   );
 
   const handleMovePoint = useCallback(
@@ -129,6 +150,37 @@ export const TrackEditor = ({
     },
     [points, replacePoints],
   );
+
+  const handleMovePointToCoordinate = useCallback(
+    (index: number, point: ManualTrackPoint) => {
+      if (index < 0 || index >= points.length) return;
+      const next = points.slice();
+      next[index] = point;
+      replacePoints(next);
+    },
+    [points, replacePoints],
+  );
+
+  const handleSelectPoint = useCallback((index: number) => {
+    setSelectedIndex(index);
+  }, []);
+
+  // Window-level Delete/Backspace removes the currently selected map point
+  // (added in feature-114). The handler no-ops when the user is typing in any
+  // form field so that the literal characters "delete" / "backspace" in the
+  // slug, title, or other inputs do not trigger a point removal.
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (selectedIndex === null) return;
+      if (event.key !== "Delete" && event.key !== "Backspace") return;
+      if (isEditingText(event.target)) return;
+      event.preventDefault();
+      handleRemovePoint(selectedIndex);
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedIndex, handleRemovePoint]);
 
   const distanceMeters = useMemo(() => computeEditorDistanceMeters(points), [points]);
   const distanceLabel = formatTrackDistance(distanceMeters) ?? "0 m";
@@ -151,6 +203,9 @@ export const TrackEditor = ({
         <TrackEditorMap
           points={points}
           onAddPoint={handleAddPoint}
+          onMovePoint={handleMovePointToCoordinate}
+          onSelectPoint={handleSelectPoint}
+          selectedIndex={selectedIndex}
           ariaLabel={mapAriaLabel ?? t("trackEditorMapAriaLabel")}
         />
         <p className="text-xs text-muted-foreground">{t("trackEditorMapHelp")}</p>
