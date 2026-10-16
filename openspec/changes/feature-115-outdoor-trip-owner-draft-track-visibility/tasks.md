@@ -33,16 +33,16 @@
 
 ## 6. Localization
 
-- [ ] 6.1 Add `"linkedTrackDraftBadge": "Draft"` to `app/i18n/locales/en/trips.json`
-- [ ] 6.2 Add `"linkedTrackDraftBadge": "Черновик"` to `app/i18n/locales/ru/trips.json`
-- [ ] 6.3 Search the rest of `trips.json` to confirm `"Draft"` / `"Черновик"` are not already used as a different key in a conflicting meaning; if they are, choose a key name that is unambiguous
+- [x] 6.1 Add `"linkedTrackDraftBadge": "Draft"` to `app/i18n/locales/en/trips.json`
+- [x] 6.2 Add `"linkedTrackDraftBadge": "Черновик"` to `app/i18n/locales/ru/trips.json`
+- [x] 6.3 Search the rest of `trips.json` to confirm `"Draft"` / `"Черновик"` are not already used as a different key in a conflicting meaning; if they are, choose a key name that is unambiguous
 
 ## 7. Validation
 
-- [ ] 7.1 Run `npm run tsc` — no new type errors
-- [ ] 7.2 Run `npm run lint` (or targeted `npx eslint <path>` for non-`app/` files) — clean
-- [ ] 7.3 Run `npm run build` to confirm the production build is green
-- [ ] 7.4 Run `openspec validate --specs --change feature-115-outdoor-trip-owner-draft-track-visibility` and `openspec validate --change feature-115-outdoor-trip-owner-draft-track-visibility` — both green
+- [x] 7.1 Run `npm run tsc` — no new type errors
+- [x] 7.2 Run `npm run lint` (or targeted `npx eslint <path>` for non-`app/` files) — clean
+- [x] 7.3 Run `npm run build` to confirm the production build is green
+- [x] 7.4 Run `openspec validate --specs --change feature-115-outdoor-trip-owner-draft-track-visibility` and `openspec validate --change feature-115-outdoor-trip-owner-draft-track-visibility` — both green
 - [ ] 7.5 Manually verify in the browser:
   - As the trip owner, open `/trips/[slug]` of a trip you own that has a DRAFT track you attached — confirm the row is in the linked-track list with the `Draft` badge and muted style, and the polyline is on the map
   - As an anonymous viewer, open the same URL — confirm the DRAFT row is gone
