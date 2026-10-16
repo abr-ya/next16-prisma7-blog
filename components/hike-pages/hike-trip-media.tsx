@@ -4,8 +4,11 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Route } from "lucide-react";
+import { useT } from "next-i18next/client";
 
+import type { TrackStatus } from "@/generated/prisma/enums";
 import type { HikePhotoAcceptedCoordinate, HikePhotoContributionCapability } from "@/app/_data/hikes";
+import { tripsNamespace } from "@/app/i18n/settings";
 import {
   HikePhotoGallery,
   type HikePhotoGalleryHandle,
@@ -23,6 +26,7 @@ import {
   type TrackMapViewModel,
 } from "@/lib/track-gpx-metadata";
 import { formatTrackRecordingTimezone } from "@/lib/track-recording-timezone";
+import { cn } from "@/lib/utils";
 
 export type TripPhotoOrder = "capture" | "manual";
 
@@ -32,6 +36,7 @@ type LinkedTrack = {
   slug: string;
   description: string | null;
   recordingTimezone: string | null;
+  status: TrackStatus;
   parsed: { summary: TrackGpxSummary } | null;
   map: TrackMapViewModel | null;
 };
@@ -84,6 +89,7 @@ export const HikeTripMedia = ({
   const searchParams = useSearchParams();
   const mapSectionRef = useRef<HTMLElement>(null);
   const photoGalleryRef = useRef<HikePhotoGalleryHandle>(null);
+  const { t } = useT(tripsNamespace);
   const days = useMemo(() => getHikeMapDays(startDate, endDate), [endDate, startDate]);
   const [selectedDay, setSelectedDay] = useState(ALL_DAYS);
   const hasMap = linkedTracks.some(({ map }) => map) || photoMarkers.length > 0 || noteMarkers.length > 0;
@@ -94,10 +100,20 @@ export const HikeTripMedia = ({
       selectedDay === ALL_DAYS ? linkedTracks : linkedTracks.filter(({ map }) => map?.dayKeys?.includes(selectedDay)),
     [linkedTracks, selectedDay],
   );
-  const visibleTracks = useMemo(
-    () => visibleLinkedTracks.flatMap(({ map }) => (map ? [map] : [])),
-    [visibleLinkedTracks],
-  );
+  // Build visibleTracks + visibleTrackStatuses lockstep so the map can style
+  // DRAFT polylines / markers differently from PUBLISHED ones (per the
+  // owner-visible DRAFT tracks rule in `outdoor-hike-media-map`).
+  const { visibleTracks, visibleTrackStatuses } = useMemo(() => {
+    const tracks: TrackMapViewModel[] = [];
+    const statuses: TrackStatus[] = [];
+    for (const { map, status } of visibleLinkedTracks) {
+      if (map) {
+        tracks.push(map);
+        statuses.push(status);
+      }
+    }
+    return { visibleTracks: tracks, visibleTrackStatuses: statuses };
+  }, [visibleLinkedTracks]);
   const visiblePhotoMarkers = useMemo(
     () =>
       selectedDay === ALL_DAYS ? photoMarkers : photoMarkers.filter(({ dayKeys }) => dayKeys?.includes(selectedDay)),
@@ -209,6 +225,7 @@ export const HikeTripMedia = ({
           </h2>
           <HikeTrackMap
             tracks={visibleTracks}
+            trackStatuses={visibleTrackStatuses}
             photoMarkers={visiblePhotoMarkers}
             noteMarkers={visibleNoteMarkers}
             days={days}
@@ -227,39 +244,51 @@ export const HikeTripMedia = ({
         </div>
         {visibleLinkedTracks.length > 0 ? (
           <div className="grid gap-3 md:grid-cols-3">
-            {visibleLinkedTracks.map((track) => (
-              <div key={track.id} className="flex h-full flex-col gap-3 rounded-md border p-4">
-                <div className="grid gap-1">
-                  <div className="font-medium">{track.title}</div>
-                  {track.description ? (
-                    <p className="line-clamp-2 text-sm text-muted-foreground">{track.description}</p>
-                  ) : null}
-                  {track.parsed?.summary.time ? (
-                    <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
-                      <Badge variant="outline">
-                        {formatTrackRecordingTimeRange(track.parsed.summary.time, track.recordingTimezone)}
-                      </Badge>
-                      <Badge variant={track.recordingTimezone ? "secondary" : "outline"}>
-                        {formatTrackRecordingTimezone(track.recordingTimezone)}
-                      </Badge>
-                      <Badge
-                        variant={
-                          track.parsed.summary.time.timezoneEvidence === "UTC_OR_OFFSET" ? "secondary" : "outline"
-                        }
-                      >
-                        {formatTrackTimezoneEvidence(track.parsed.summary.time.timezoneEvidence)}
-                      </Badge>
+            {visibleLinkedTracks.map((track) => {
+              const isDraft = track.status === "DRAFT";
+              return (
+                <div
+                  key={track.id}
+                  className={cn(
+                    "flex h-full flex-col gap-3 rounded-md border p-4",
+                    isDraft && "border-dashed opacity-80",
+                  )}
+                >
+                  <div className="grid gap-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <div className="font-medium">{track.title}</div>
+                      {isDraft ? <Badge variant="outline">{t("linkedTrackDraftBadge")}</Badge> : null}
                     </div>
-                  ) : null}
+                    {track.description ? (
+                      <p className="line-clamp-2 text-sm text-muted-foreground">{track.description}</p>
+                    ) : null}
+                    {track.parsed?.summary.time ? (
+                      <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
+                        <Badge variant="outline">
+                          {formatTrackRecordingTimeRange(track.parsed.summary.time, track.recordingTimezone)}
+                        </Badge>
+                        <Badge variant={track.recordingTimezone ? "secondary" : "outline"}>
+                          {formatTrackRecordingTimezone(track.recordingTimezone)}
+                        </Badge>
+                        <Badge
+                          variant={
+                            track.parsed.summary.time.timezoneEvidence === "UTC_OR_OFFSET" ? "secondary" : "outline"
+                          }
+                        >
+                          {formatTrackTimezoneEvidence(track.parsed.summary.time.timezoneEvidence)}
+                        </Badge>
+                      </div>
+                    ) : null}
+                  </div>
+                  <Button asChild size="sm" variant="outline" className="mt-auto self-start">
+                    <Link href={`/tracks/${track.slug}`}>
+                      <Route />
+                      Open track
+                    </Link>
+                  </Button>
                 </div>
-                <Button asChild size="sm" variant="outline" className="mt-auto self-start">
-                  <Link href={`/tracks/${track.slug}`}>
-                    <Route />
-                    Open track
-                  </Link>
-                </Button>
-              </div>
-            ))}
+              );
+            })}
           </div>
         ) : (
           <p className="text-sm text-muted-foreground">

@@ -48,7 +48,6 @@ The system SHALL allow authenticated admins to attach and detach track records t
 
 - **WHEN** an authenticated admin opens a track management surface for a track associated with one or more hikes
 - **THEN** the admin can see which hikes are associated with that track
-- **AND** the admin can distinguish draft and published associated hikes
 
 #### Scenario: Admin attaches the same track twice
 
@@ -65,7 +64,8 @@ The system SHALL allow authenticated admins to attach and detach track records t
 #### Scenario: Draft track is linked to published hike
 
 - **WHEN** a published hike has an associated draft track
-- **THEN** public hike pages SHALL NOT expose that draft track
+- **THEN** public hike pages SHALL NOT expose that draft track to anonymous viewers or to signed-in viewers who are neither the trip creator nor an administrator
+- **AND** public hike pages SHALL additionally expose the trip creator's own draft tracks to the trip creator and to authenticated administrators, with a `Draft` badge and muted style
 - **AND** admin hike surfaces may still show the association to authenticated admins
 
 #### Scenario: Published track is linked to draft hike
@@ -76,7 +76,7 @@ The system SHALL allow authenticated admins to attach and detach track records t
 
 ### Requirement: Public hike pages show linked published tracks
 
-The system SHALL show associated published tracks on published hike detail pages while preserving existing track visibility and file download boundaries.
+The system SHALL show associated published tracks on published hike detail pages, AND SHALL additionally show the trip creator's draft tracks to the trip creator or to an authenticated administrator, while preserving existing track visibility and file download boundaries.
 
 #### Scenario: Visitor opens hike with linked published tracks
 
@@ -95,6 +95,39 @@ The system SHALL show associated published tracks on published hike detail pages
 - **WHEN** a published hike has an associated published track whose GPX file is private or inactive
 - **THEN** the public hike page may still link to the public track detail page when the track itself is published
 - **AND** it does not expose a direct GPX provider URL or bypass the existing track download rules
+
+#### Scenario: Trip creator sees their own draft tracks on the trip page
+
+- **WHEN** the signed-in trip creator opens `/trips/[slug]` for a published hike that has one or more `DRAFT` tracks whose `Track.userId` equals the trip's `Hike.userId`
+- **THEN** the page shows those draft tracks alongside the published tracks in the linked-track list
+- **AND** the page renders those draft tracks on the trip map
+- **AND** each draft row is visually distinguished by a `Draft` badge and a muted style that does not visually compete with a `PUBLISHED` row
+- **AND** each draft row remains clickable to the public track detail page so the creator can verify the saved geometry
+
+#### Scenario: Administrator sees the trip creator's draft tracks
+
+- **WHEN** an authenticated administrator (not the trip creator) opens `/trips/[slug]` for a published hike that has one or more `DRAFT` tracks whose `Track.userId` equals the trip's `Hike.userId`
+- **THEN** the page shows those draft tracks in the same way it does for the creator
+- **AND** it does NOT show draft tracks owned by any other user
+
+#### Scenario: Non-owner viewer does not see draft tracks
+
+- **WHEN** a signed-in viewer who is neither the trip creator nor an administrator (including accepted participants) opens `/trips/[slug]`
+- **THEN** the page shows only the published tracks associated with the trip
+- **AND** it never renders another user's draft tracks
+
+#### Scenario: Anonymous viewer does not see draft tracks
+
+- **WHEN** an anonymous viewer opens `/trips/[slug]`
+- **THEN** the page shows only the published tracks associated with the trip
+- **AND** it never renders any draft tracks
+
+#### Scenario: Trip creator's draft tracks preserve existing file download boundaries
+
+- **WHEN** the trip creator opens `/trips/[slug]` and one of their own `DRAFT` tracks references a `FileAsset` that is `PRIVATE` or not `ACTIVE`
+- **THEN** the draft row is still rendered in the linked-track list and on the map with the `Draft` badge
+- **AND** no direct GPX provider URL is exposed on the public trip page
+- **AND** the existing public track detail page download rules are preserved when the owner opens `/tracks/[slug]`
 
 ### Requirement: Linked trip tracks use chronological recording order
 

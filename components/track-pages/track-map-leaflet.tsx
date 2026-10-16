@@ -4,6 +4,7 @@ import L, { type LatLngBoundsExpression, type LatLngExpression } from "leaflet";
 import { useEffect } from "react";
 import { CircleMarker, MapContainer, Marker, Polyline, Popup, TileLayer, Tooltip, useMap } from "react-leaflet";
 
+import type { TrackStatus } from "@/generated/prisma/enums";
 import type { HikePhotoMapMarker } from "@/lib/hikes";
 import type { HikeNoteMapMarker } from "@/lib/hike-notes";
 import { groupHikePhotoMapMarkers } from "@/lib/hike-map-markers";
@@ -16,6 +17,12 @@ const END_COLOR = "#dc2626";
 const PHOTO_MARKER_COLOR = "#d97706";
 const NOTE_MARKER_COLOR = "#2563eb";
 const PREVIEW_MARKER_COLOR = "#7c3aed";
+// Owner-visible DRAFT tracks on the trip map (per `outdoor-hike-media-map`):
+// muted slate palette, thinner dashed stroke, slate endpoint markers so the
+// owner can distinguish "preview" from "real" without losing orientation.
+const DRAFT_TRACK_COLOR = "#94a3b8";
+const DRAFT_START_COLOR = "#64748b";
+const DRAFT_END_COLOR = "#94a3b8";
 
 const createEndpointIcon = (label: string, color: string) =>
   L.divIcon({
@@ -30,6 +37,10 @@ const endIcon = createEndpointIcon("E", END_COLOR);
 const photoIcon = createEndpointIcon("P", PHOTO_MARKER_COLOR);
 const noteIcon = createEndpointIcon("N", NOTE_MARKER_COLOR);
 const createPhotoGroupIcon = (count: number) => createEndpointIcon(String(count), PHOTO_MARKER_COLOR);
+// DRAFT counterparts: muted slate start/end markers for owner-visible DRAFT
+// tracks on the trip map. Same "S" / "E" labels so orientation is preserved.
+const draftStartIcon = createEndpointIcon("S", DRAFT_START_COLOR);
+const draftEndIcon = createEndpointIcon("E", DRAFT_END_COLOR);
 
 type MapPoint = { lat: number; lng: number };
 
@@ -63,6 +74,7 @@ const FocusMapCoordinate = ({ coordinate }: { coordinate?: MapPoint | null }) =>
 const TrackMapLeaflet = ({
   ariaLabel,
   tracks,
+  trackStatuses,
   photoMarkers = [],
   noteMarkers = [],
   focusCoordinate,
@@ -72,6 +84,11 @@ const TrackMapLeaflet = ({
 }: {
   ariaLabel: string;
   tracks: TrackMapViewModel[];
+  // Lockstep with `tracks`; lets the map render DRAFT polylines / markers with
+  // a muted style (per the owner-visible DRAFT tracks rule in
+  // `outdoor-hike-media-map`). Undefined / shorter than `tracks` is treated
+  // as `PUBLISHED` for any track without a matching entry.
+  trackStatuses?: TrackStatus[];
   photoMarkers?: HikePhotoMapMarker[];
   noteMarkers?: HikeNoteMapMarker[];
   focusCoordinate?: MapPoint | null;
@@ -87,6 +104,7 @@ const TrackMapLeaflet = ({
   const first = points[0];
   const hasExtent = points.length >= 2;
   const singleTrack = tracks.length === 1 ? tracks[0] : null;
+  const singleTrackIsDraft = singleTrack ? trackStatuses?.[0] === "DRAFT" : false;
   const singleTrackPositions = singleTrack?.geometry.map(toLatLng) ?? [];
   const singleHasRoute = singleTrackPositions.length >= 2;
   const singleFirst = singleTrack?.geometry[0];
@@ -115,24 +133,40 @@ const TrackMapLeaflet = ({
 
           if (positions.length < 2) return null;
 
+          const isDraft = trackStatuses?.[index] === "DRAFT";
+
           return (
             <Polyline
               key={`${track.title}-${index}`}
-              pathOptions={{ color: TRACK_LINE_COLORS[index % TRACK_LINE_COLORS.length], weight: 4 }}
+              pathOptions={
+                isDraft
+                  ? { color: DRAFT_TRACK_COLOR, weight: 2, dashArray: "4 6" }
+                  : { color: TRACK_LINE_COLORS[index % TRACK_LINE_COLORS.length], weight: 4 }
+              }
               positions={positions}
             >
               {tracks.length > 1 ? <Tooltip sticky>{track.title}</Tooltip> : null}
             </Polyline>
           );
         })}
-        {singleTrack && singleFirst ? <Marker icon={startIcon} position={toLatLng(singleFirst)} title="Start" /> : null}
+        {singleTrack && singleFirst ? (
+          <Marker
+            icon={singleTrackIsDraft ? draftStartIcon : startIcon}
+            position={toLatLng(singleFirst)}
+            title="Start"
+          />
+        ) : null}
         {singleTrack && singleHasRoute && singleLast ? (
-          <Marker icon={endIcon} position={toLatLng(singleLast)} title="End" />
+          <Marker icon={singleTrackIsDraft ? draftEndIcon : endIcon} position={toLatLng(singleLast)} title="End" />
         ) : null}
         {singleTrack && !singleHasRoute && singleFirst ? (
           <CircleMarker
             center={toLatLng(singleFirst)}
-            pathOptions={{ color: START_COLOR, fillColor: START_COLOR, fillOpacity: 0.8 }}
+            pathOptions={
+              singleTrackIsDraft
+                ? { color: DRAFT_START_COLOR, fillColor: DRAFT_START_COLOR, fillOpacity: 0.8 }
+                : { color: START_COLOR, fillColor: START_COLOR, fillOpacity: 0.8 }
+            }
             radius={8}
           />
         ) : null}

@@ -144,12 +144,33 @@ export const getPublicHikes = async (): Promise<PublicHikeListItem[]> => {
   }));
 };
 
-export const getPublicHikeBySlug = async (slug: string): Promise<PublicHike | null> => {
+/**
+ * Minimal `{ id, userId }` projection of a published hike by slug.
+ *
+ * Used by the public trip page to resolve the creator before deciding whether
+ * the linked-track include should also return the creator's `DRAFT` tracks
+ * (per the owner / admin visibility rule in `outdoor-hike-media-map`).
+ *
+ * Returns `null` when the hike is missing or not yet `PUBLISHED`.
+ */
+export const getPublicHikeOwnerMetaBySlug = async (slug: string): Promise<{ id: string; userId: string } | null> => {
+  const { default: prisma } = await import("@/lib/prisma");
+
+  return prisma.hike.findFirst({
+    where: { slug, status: "PUBLISHED" },
+    select: { id: true, userId: true },
+  });
+};
+
+export const getPublicHikeBySlug = async (
+  slug: string,
+  options: { includeCreatorDrafts: boolean; hikeUserId?: string } = { includeCreatorDrafts: false },
+): Promise<PublicHike | null> => {
   const { default: prisma } = await import("@/lib/prisma");
 
   const hike = await prisma.hike.findFirst({
     where: { slug, status: "PUBLISHED" },
-    include: publicHikeInclude,
+    include: publicHikeInclude(options),
   });
 
   return hike ? toPublicHike(hike) : null;

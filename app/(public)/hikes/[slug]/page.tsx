@@ -7,8 +7,9 @@ import {
   getHikePhotoDetail,
   getHikePhotoContributionCapabilityBySlug,
   getHikeTrackContributionCapability,
-  getPublicHikePhotoLikeStates,
   getPublicHikeBySlug,
+  getPublicHikeOwnerMetaBySlug,
+  getPublicHikePhotoLikeStates,
 } from "@/app/_data/hikes";
 import { getActiveTrackActivityTypes, getCreatorUnlinkedTracks } from "@/app/_data/tracks";
 import { getCommentListItems } from "@/app/_data/comments";
@@ -18,7 +19,8 @@ import { HikeTrackContributionButton } from "@/components/hike-pages/hike-track-
 import { HikeTripMedia } from "@/components/hike-pages/hike-trip-media";
 import { Badge } from "@/components/index";
 import { PageLayout } from "@/components/layout/page-layout";
-import { authSession } from "@/lib/auth-utils";
+import { hasAdminRole } from "@/lib/auth-roles";
+import { authSession, currentUserRole } from "@/lib/auth-utils";
 import { formatHikeDateRange, formatHikeType } from "@/lib/hikes";
 import { SITE_CONTENT_WIDTH } from "@/lib/site-content-width";
 import { buildPageMetadata, getTextMetadataDescription } from "@/lib/site-metadata";
@@ -50,11 +52,31 @@ export const generateTripMetadata = async ({ params }: HikePageProps): Promise<M
 
 export const TripPage = async ({ params }: HikePageProps) => {
   const { slug } = await params;
-  const hike = await getPublicHikeBySlug(slug);
+
+  // Resolve viewer + trip-creator up front so the linked-track include can
+  // additionally return the creator's own DRAFT tracks when the viewer is the
+  // trip creator or an authenticated administrator (per the
+  // `outdoor-hike-media-map` owner / admin visibility rule). The same
+  // `(isCreator || isAdmin)` boundary is reused by `getHikeTrackContributionCapability`
+  // below, so the Add track affordance and the draft-visibility decision
+  // cannot disagree.
+  const [session, role, ownerMeta] = await Promise.all([
+    authSession(),
+    currentUserRole(),
+    getPublicHikeOwnerMetaBySlug(slug),
+  ]);
+  if (!ownerMeta) notFound();
+  const isCreator = session?.user?.id === ownerMeta.userId;
+  const isAdmin = hasAdminRole(role);
+  const canSeeCreatorDrafts = isCreator || isAdmin;
+
+  const hike = await getPublicHikeBySlug(slug, {
+    includeCreatorDrafts: canSeeCreatorDrafts,
+    hikeUserId: ownerMeta.userId,
+  });
   if (!hike) notFound();
 
-  const [session, participantManagement, photoContributionCapability, trackContributionCapability] = await Promise.all([
-    authSession(),
+  const [participantManagement, photoContributionCapability, trackContributionCapability] = await Promise.all([
     getHikeParticipantManagementBySlug(slug),
     getHikePhotoContributionCapabilityBySlug(slug),
     getHikeTrackContributionCapability(hike.id),

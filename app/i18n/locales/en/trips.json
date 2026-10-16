@@ -47,6 +47,7 @@
   "addTrackSlugConflict": "A track with this slug already exists",
   "addTrackNotOwner": "You can only attach tracks you own",
   "addTrackNotTripOwner": "You can only add tracks to your own trip",
+  "linkedTrackDraftBadge": "Draft",
   "placeOnMapTab": "Place on map",
   "uploadGpxTab": "Upload GPX",
   "trackEditorMapLabel": "Place points on the map",

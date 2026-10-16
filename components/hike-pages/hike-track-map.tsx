@@ -1,5 +1,7 @@
 "use client";
 
+import type { TrackStatus } from "@/generated/prisma/enums";
+
 import { CombinedTrackMap, type TrackMapViewModel } from "@/components/track-pages/track-map";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { HikeMapDay } from "@/lib/hike-map-days";
@@ -11,6 +13,7 @@ const ALL_DAYS = "all";
 
 export const HikeTrackMap = ({
   tracks,
+  trackStatuses,
   photoMarkers = [],
   noteMarkers = [],
   days,
@@ -21,6 +24,11 @@ export const HikeTrackMap = ({
   onSelectPhoto,
 }: {
   tracks: TrackMapViewModel[];
+  // Lockstep with `tracks`; lets the map render DRAFT polylines / markers with
+  // a muted style (per the owner-visible DRAFT tracks rule in
+  // `outdoor-hike-media-map`). Undefined / shorter than `tracks` is treated
+  // as `PUBLISHED` for any track without a matching entry.
+  trackStatuses?: TrackStatus[];
   photoMarkers?: HikePhotoMapMarker[];
   noteMarkers?: HikeNoteMapMarker[];
   days: HikeMapDay[];
@@ -65,6 +73,7 @@ export const HikeTrackMap = ({
         <CombinedTrackMap
           ariaLabel="Trip route map"
           tracks={tracks}
+          trackStatuses={trackStatuses}
           photoMarkers={photoMarkers}
           noteMarkers={noteMarkers}
           focusCoordinate={focusCoordinate}
