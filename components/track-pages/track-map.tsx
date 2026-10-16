@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 
+import type { TrackStatus } from "@/generated/prisma/enums";
 import type { HikePhotoMapMarker } from "@/lib/hikes";
 import type { HikeNoteMapMarker } from "@/lib/hike-notes";
 import type { TrackMapViewModel } from "@/lib/track-gpx-metadata";
@@ -23,6 +24,7 @@ export const TrackMap = ({ track }: { track: TrackMapViewModel }) => (
 
 export const CombinedTrackMap = ({
   tracks,
+  trackStatuses,
   ariaLabel,
   photoMarkers = [],
   noteMarkers = [],
@@ -32,6 +34,11 @@ export const CombinedTrackMap = ({
   onSelectPhoto,
 }: {
   tracks: TrackMapViewModel[];
+  // Lockstep with `tracks`; lets the map render DRAFT polylines / markers with
+  // a muted style (per the owner-visible DRAFT tracks rule in
+  // `outdoor-hike-media-map`). Undefined / shorter than `tracks` is treated
+  // as `PUBLISHED` for any track without a matching entry.
+  trackStatuses?: TrackStatus[];
   ariaLabel: string;
   photoMarkers?: HikePhotoMapMarker[];
   noteMarkers?: HikeNoteMapMarker[];
@@ -43,6 +50,7 @@ export const CombinedTrackMap = ({
   <TrackMapLeaflet
     ariaLabel={ariaLabel}
     tracks={tracks}
+    trackStatuses={trackStatuses}
     photoMarkers={photoMarkers}
     noteMarkers={noteMarkers}
     focusCoordinate={focusCoordinate}

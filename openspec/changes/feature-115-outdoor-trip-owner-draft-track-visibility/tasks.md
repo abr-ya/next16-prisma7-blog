@@ -21,15 +21,15 @@
 
 ## 4. UI: linked-track card list
 
-- [ ] 4.1 In `components/hike-pages/hike-trip-media.tsx`, import `useT(tripsNamespace)` (or use the existing localizer pattern in this file) and add a `Badge` rendering branch when `track.status === "DRAFT"` that reads `t("linkedTrackDraftBadge")`
-- [ ] 4.2 Add a muted wrapper class (e.g. `opacity-80` or a softer border color) on the card when `track.status === "DRAFT"` so the row is visually distinct from `PUBLISHED`
-- [ ] 4.3 Confirm the link to `/tracks/[slug]` stays — the public track detail page's own per-track visibility rules protect against the owner being denied access to their own draft
+- [x] 4.1 In `components/hike-pages/hike-trip-media.tsx`, import `useT(tripsNamespace)` (or use the existing localizer pattern in this file) and add a `Badge` rendering branch when `track.status === "DRAFT"` that reads `t("linkedTrackDraftBadge")`
+- [x] 4.2 Add a muted wrapper class (e.g. `opacity-80` or a softer border color) on the card when `track.status === "DRAFT"` so the row is visually distinct from `PUBLISHED`
+- [x] 4.3 Confirm the link to `/tracks/[slug]` stays — the public track detail page's own per-track visibility rules protect against the owner being denied access to their own draft
 
 ## 5. UI: trip map
 
-- [ ] 5.1 In `components/hike-pages/hike-trip-media.tsx`, branch on `track.status` when rendering the polyline: `PUBLISHED` keeps the existing teal `TRACK_LINE_COLORS[0]` solid stroke; `DRAFT` renders with a muted color (e.g. `#94a3b8` slate-400), `weight: 2`, and `dashArray: "4 6"`
-- [ ] 5.2 Apply the same muted treatment to the endpoint markers for DRAFT tracks so the map clearly distinguishes "preview" from "real"
-- [ ] 5.3 Re-verify the day-filter (`selectedDay === ALL_DAYS ? linkedTracks : linkedTracks.filter(...)`) still works for DRAFT tracks and that `hasMap` (line 89) still includes DRAFT tracks whose `track.map` is populated
+- [x] 5.1 In `components/hike-pages/hike-trip-media.tsx`, branch on `track.status` when rendering the polyline: `PUBLISHED` keeps the existing teal `TRACK_LINE_COLORS[0]` solid stroke; `DRAFT` renders with a muted color (e.g. `#94a3b8` slate-400), `weight: 2`, and `dashArray: "4 6"`
+- [x] 5.2 Apply the same muted treatment to the endpoint markers for DRAFT tracks so the map clearly distinguishes "preview" from "real"
+- [x] 5.3 Re-verify the day-filter (`selectedDay === ALL_DAYS ? linkedTracks : linkedTracks.filter(...)`) still works for DRAFT tracks and that `hasMap` (line 89) still includes DRAFT tracks whose `track.map` is populated
 
 ## 6. Localization
 
