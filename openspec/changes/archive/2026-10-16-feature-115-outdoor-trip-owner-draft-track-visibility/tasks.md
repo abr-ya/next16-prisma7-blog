@@ -44,8 +44,10 @@
 - [x] 7.3 Run `npm run build` to confirm the production build is green
 - [x] 7.4 Run `openspec validate --specs --change feature-115-outdoor-trip-owner-draft-track-visibility` and `openspec validate --change feature-115-outdoor-trip-owner-draft-track-visibility` — both green
 - [ ] 7.5 Manually verify in the browser:
-  - As the trip owner, open `/trips/[slug]` of a trip you own that has a DRAFT track you attached — confirm the row is in the linked-track list with the `Draft` badge and muted style, and the polyline is on the map
-  - As an anonymous viewer, open the same URL — confirm the DRAFT row is gone
-  - As a non-owner signed-in user (e.g. a participant or a separate test account), open the same URL — confirm the DRAFT row is gone
-  - As an administrator viewing a trip they did NOT create that has the owner's DRAFT tracks — confirm the DRAFT row IS visible (per the design)
-  - As the trip owner, follow the link from the DRAFT row to `/tracks/[slug]` — confirm the per-track download rules still apply (no direct GPX URL exposed)
+  - [x] As the trip owner, open `/trips/[slug]` of a trip you own that has a DRAFT track you attached — confirmed in dev on 2026-10-16: row visible with `Draft` badge and muted style, polyline rendered on the map
+  - [ ] As an anonymous viewer, open the same URL — confirm the DRAFT row is gone
+  - [ ] As a non-owner signed-in user (e.g. a participant or a separate test account), open the same URL — confirm the DRAFT row is gone
+  - [ ] As an administrator viewing a trip they did NOT create that has the owner's DRAFT tracks — confirm the DRAFT row IS visible (per the design)
+  - [ ] As the trip owner, follow the link from the DRAFT row to `/tracks/[slug]` — confirm the per-track download rules still apply (no direct GPX URL exposed)
+
+  Scenarios 2–5 deferred to the `outdoor-trip-owner-draft-track-visibility-manual-qa` candidate in the Manual QA Follow-ups backlog (see `openspec/backlog.md`). The owner-sees-DRAFT positive scenario above was verified in dev on 2026-10-16.
