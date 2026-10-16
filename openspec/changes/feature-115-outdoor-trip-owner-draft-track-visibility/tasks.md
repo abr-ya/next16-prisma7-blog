@@ -2,22 +2,22 @@
 
 ## 1. Spec / change setup
 
-- [ ] 1.1 Confirm the `outdoor-hike-media-map` capability path and the target requirements (per `proposal.md` § Capabilities and `design.md` § Data flow)
-- [ ] 1.2 Re-read the existing `getPublicHikeBySlug`, `publicHikeInclude`, and `TripPage` callsites to confirm the design's data flow matches the current code (no drift since the proposal was written)
+- [x] 1.1 Confirm the `outdoor-hike-media-map` capability path and the target requirements (per `proposal.md` § Capabilities and `design.md` § Data flow)
+- [x] 1.2 Re-read the existing `getPublicHikeBySlug`, `publicHikeInclude`, and `TripPage` callsites to confirm the design's data flow matches the current code (no drift since the proposal was written)
 
 ## 2. Data layer: parameterized include
 
-- [ ] 2.1 Convert `publicHikeInclude` in `app/_data/hikes/types.ts` from a `Prisma.HikeInclude` constant to a factory `publicHikeInclude({ includeCreatorDrafts: boolean }): Prisma.HikeInclude` that returns the same shape, but the `tracks.where` becomes `OR: [{ track: { status: "PUBLISHED" } }, { track: { status: "DRAFT", userId: hikeUserId } }]` when `includeCreatorDrafts` is `true` and the original `status: "PUBLISHED"` filter otherwise
-- [ ] 2.2 Add a typed parameter to the factory so the `userId` is passed alongside the boolean (avoids re-deriving the trip's `userId` inside the include). Keep the existing `Prisma.HikeInclude` return type so `PublicHike` inference is unchanged
-- [ ] 2.3 Update `getPublicHikeBySlug` in `app/_data/hikes/queries.ts` to accept `{ includeCreatorDrafts: boolean; hikeUserId: string }` (or equivalent positional args) and pass them through to the factory
-- [ ] 2.4 Make sure the existing `getPublicHikes` and any other callers of the old constant (search before changing) keep working — either by exporting a default `publicHikeInclude` constant that delegates to the factory with `includeCreatorDrafts: false`, or by updating each caller explicitly
+- [x] 2.1 Convert `publicHikeInclude` in `app/_data/hikes/types.ts` from a `Prisma.HikeInclude` constant to a factory `publicHikeInclude({ includeCreatorDrafts: boolean }): Prisma.HikeInclude` that returns the same shape, but the `tracks.where` becomes `OR: [{ track: { status: "PUBLISHED" } }, { track: { status: "DRAFT", userId: hikeUserId } }]` when `includeCreatorDrafts` is `true` and the original `status: "PUBLISHED"` filter otherwise
+- [x] 2.2 Add a typed parameter to the factory so the `userId` is passed alongside the boolean (avoids re-deriving the trip's `userId` inside the include). Keep the existing `Prisma.HikeInclude` return type so `PublicHike` inference is unchanged
+- [x] 2.3 Update `getPublicHikeBySlug` in `app/_data/hikes/queries.ts` to accept `{ includeCreatorDrafts: boolean; hikeUserId: string }` (or equivalent positional args) and pass them through to the factory
+- [x] 2.4 Make sure the existing `getPublicHikes` and any other callers of the old constant (search before changing) keep working — either by exporting a default `publicHikeInclude` constant that delegates to the factory with `includeCreatorDrafts: false`, or by updating each caller explicitly
 
 ## 3. Trip page wiring
 
-- [ ] 3.1 In `TripPage` (`app/(public)/hikes/[slug]/page.tsx`), resolve `isCreator` (`hike.userId === session?.user.id`) and `isAdmin` (reusing the same `currentUserRole()` + `hasAdminRole(role)` check the existing capability helper uses, or reusing the helper's return value if it surfaces those booleans)
-- [ ] 3.2 Compute `canSeeCreatorDrafts = isCreator || isAdmin` and pass it (with `hike.userId`) into `getPublicHikeBySlug`
-- [ ] 3.3 Confirm the existing `Promise.all` for `authSession`, `getHikeTrackContributionCapability`, etc. already loads everything we need; add a single call to `currentUserRole()` only if it isn't already loaded by the capability helper's internals (avoid double-querying)
-- [ ] 3.4 Sanity-check: the same `isCreator || isAdmin` is used for the `Add track` button — make sure the two paths cannot disagree
+- [x] 3.1 In `TripPage` (`app/(public)/hikes/[slug]/page.tsx`), resolve `isCreator` (`hike.userId === session?.user.id`) and `isAdmin` (reusing the same `currentUserRole()` + `hasAdminRole(role)` check the existing capability helper uses, or reusing the helper's return value if it surfaces those booleans)
+- [x] 3.2 Compute `canSeeCreatorDrafts = isCreator || isAdmin` and pass it (with `hike.userId`) into `getPublicHikeBySlug`
+- [x] 3.3 Confirm the existing `Promise.all` for `authSession`, `getHikeTrackContributionCapability`, etc. already loads everything we need; add a single call to `currentUserRole()` only if it isn't already loaded by the capability helper's internals (avoid double-querying)
+- [x] 3.4 Sanity-check: the same `isCreator || isAdmin` is used for the `Add track` button — make sure the two paths cannot disagree
 
 ## 4. UI: linked-track card list
 

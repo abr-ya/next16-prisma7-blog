@@ -70,76 +70,98 @@ export const hikeListInclude = {
   notes: { orderBy: [{ dayKey: "asc" }, { createdAt: "asc" }] },
 } satisfies Prisma.HikeInclude;
 
-export const publicHikeInclude = {
-  user: {
-    select: {
-      id: true,
-      name: true,
-      image: true,
-    },
-  },
-  tracks: {
-    where: {
-      track: {
-        status: "PUBLISHED",
+/**
+ * Factory for the public hike detail include shape.
+ *
+ * When `includeCreatorDrafts` is `true` AND `hikeUserId` is provided, the
+ * `tracks` where-clause additionally returns the trip creator's own `DRAFT`
+ * tracks. This is the owner / admin visibility rule for `outdoor-hike-media-map`
+ * (the anonymous, non-owner, and participant viewers keep the original
+ * `PUBLISHED`-only filter).
+ *
+ * Callers that don't pass `includeCreatorDrafts: true` keep today's behavior
+ * exactly (e.g. the `generateTripMetadata` callsite, which never wants drafts).
+ */
+export type PublicHikeIncludeOptions = {
+  includeCreatorDrafts: boolean;
+  hikeUserId?: string;
+};
+
+export const publicHikeInclude = (options: PublicHikeIncludeOptions) => {
+  const tracksWhere: Prisma.HikesToTracksWhereInput =
+    options.includeCreatorDrafts && options.hikeUserId
+      ? {
+          OR: [{ track: { status: "PUBLISHED" } }, { track: { status: "DRAFT", userId: options.hikeUserId } }],
+        }
+      : { track: { status: "PUBLISHED" } };
+
+  return {
+    user: {
+      select: {
+        id: true,
+        name: true,
+        image: true,
       },
     },
-    orderBy: {
-      assignedAt: "desc",
-    },
-    include: {
-      track: {
-        select: {
-          id: true,
-          title: true,
-          slug: true,
-          description: true,
-          recordingTimezone: true,
-          status: true,
-          updatedAt: true,
-          metadata: true,
-          fileAsset: {
-            select: {
-              id: true,
-              fileKey: true,
+    tracks: {
+      where: tracksWhere,
+      orderBy: {
+        assignedAt: "desc",
+      },
+      include: {
+        track: {
+          select: {
+            id: true,
+            title: true,
+            slug: true,
+            description: true,
+            recordingTimezone: true,
+            status: true,
+            updatedAt: true,
+            metadata: true,
+            fileAsset: {
+              select: {
+                id: true,
+                fileKey: true,
+              },
             },
           },
         },
       },
     },
-  },
-  photos: {
-    where: {
-      photo: {
-        status: "PUBLISHED",
+    photos: {
+      where: {
+        photo: {
+          status: "PUBLISHED",
+        },
       },
-    },
-    orderBy: [{ position: "asc" }, { assignedAt: "desc" }],
-    include: {
-      photo: {
-        select: {
-          id: true,
-          title: true,
-          description: true,
-          status: true,
-          metadata: true,
-          images: {
-            where: {
-              fileAsset: {
-                status: ACTIVE_FILE_STATUS,
+      orderBy: [{ position: "asc" }, { assignedAt: "desc" }],
+      include: {
+        photo: {
+          select: {
+            id: true,
+            title: true,
+            description: true,
+            status: true,
+            metadata: true,
+            images: {
+              where: {
+                fileAsset: {
+                  status: ACTIVE_FILE_STATUS,
+                },
               },
-            },
-            orderBy: {
-              sortOrder: "asc",
-            },
-            select: {
-              sortOrder: true,
-              fileAsset: {
-                select: {
-                  id: true,
-                  name: true,
-                  mimeType: true,
-                  sizeBytes: true,
+              orderBy: {
+                sortOrder: "asc",
+              },
+              select: {
+                sortOrder: true,
+                fileAsset: {
+                  select: {
+                    id: true,
+                    name: true,
+                    mimeType: true,
+                    sizeBytes: true,
+                  },
                 },
               },
             },
@@ -147,13 +169,15 @@ export const publicHikeInclude = {
         },
       },
     },
-  },
-  notes: {
-    where: { status: "PUBLISHED", latitude: { not: null }, longitude: { not: null } },
-    orderBy: [{ dayKey: "asc" }, { createdAt: "asc" }],
-    select: { id: true, title: true, body: true, latitude: true, longitude: true, dayKey: true },
-  },
-} satisfies Prisma.HikeInclude;
+    notes: {
+      where: { status: "PUBLISHED", latitude: { not: null }, longitude: { not: null } },
+      orderBy: [{ dayKey: "asc" }, { createdAt: "asc" }],
+      select: { id: true, title: true, body: true, latitude: true, longitude: true, dayKey: true },
+    },
+  } satisfies Prisma.HikeInclude;
+};
+
+export type PublicHikeInclude = ReturnType<typeof publicHikeInclude>;
 
 export type HikeActionValues = {
   id?: string;
@@ -219,7 +243,7 @@ export type PublicHikeListItem = HikeListItem & {
 };
 
 export type PublicHikeRecord = Prisma.HikeGetPayload<{
-  include: typeof publicHikeInclude;
+  include: PublicHikeInclude;
 }>;
 
 export type PublicHike = Omit<PublicHikeRecord, "tracks" | "photos" | "notes"> & {

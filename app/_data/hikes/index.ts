@@ -38,6 +38,7 @@ export {
   getMyLikedHikePhotos,
   getPendingHikeInvitations,
   getPublicHikeBySlug,
+  getPublicHikeOwnerMetaBySlug,
   getPublicHikePhotoLikeStates,
   getPublicHikes,
   getPublicTripCreationCapability,
