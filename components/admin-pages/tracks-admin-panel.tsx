@@ -3,6 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { ColumnDef } from "@tanstack/react-table";
 import { ArrowUpDown, Clock3, Edit, FileUp, MapPin, Plus, RefreshCw, Trash2 } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useT } from "next-i18next/client";
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
@@ -62,8 +63,11 @@ import {
 import { formatTrackStatus, trackStatusOptions } from "@/lib/tracks";
 import {
   formatTrackDistance,
+  formatTrackDuration,
   formatTrackPointCount,
+  formatTrackRecordingDateTime,
   formatTrackRecordingTimeRange,
+  formatTrackTimeSource,
   formatTrackTimezoneEvidence,
   formatTrackTimelinePresence,
   getTrackGpxMetadataState,
@@ -154,11 +158,20 @@ const TrackParseStatus = ({ track }: { track: TrackListItem }) => {
   const timeline = state.status === "SUCCESS" ? formatTrackTimelinePresence(state.timeline) : null;
   const recordingTime =
     state.status === "SUCCESS" ? formatTrackRecordingTimeRange(state.summary.time, track.recordingTimezone) : null;
+  const manualStart =
+    track.timeSource === "MANUAL" && track.recordingStartAt
+      ? formatTrackRecordingDateTime(track.recordingStartAt.toISOString(), track.recordingTimezone)
+      : null;
+  const manualDuration =
+    track.timeSource === "MANUAL" && track.recordingDurationSeconds !== null
+      ? formatTrackDuration(track.recordingDurationSeconds)
+      : null;
 
   return (
     <div className="flex max-w-72 flex-wrap items-center gap-1.5">
       <div className="flex basis-full flex-wrap items-center gap-1.5">
         <Badge variant={getParseStatusVariant(state)}>{getParseStatusLabel(state)}</Badge>
+        {track.timeSource ? <Badge variant="secondary">Source: {formatTrackTimeSource(track.timeSource)}</Badge> : null}
         {state.status === "SUCCESS" && state.summary.time ? (
           <Badge variant={state.summary.time.timezoneEvidence === "UTC_OR_OFFSET" ? "secondary" : "outline"}>
             {formatTrackTimezoneEvidence(state.summary.time.timezoneEvidence)}
@@ -177,6 +190,12 @@ const TrackParseStatus = ({ track }: { track: TrackListItem }) => {
           ))}
           {recordingTime ? <span className="text-xs text-muted-foreground">Recording {recordingTime}</span> : null}
         </>
+      ) : null}
+      {track.timeSource === "MANUAL" && (manualStart || manualDuration) ? (
+        <div className="flex basis-full flex-col gap-0.5 text-xs text-muted-foreground">
+          {manualStart ? <span>Recording start: {manualStart}</span> : null}
+          {manualDuration ? <span>Recording duration: {manualDuration}</span> : null}
+        </div>
       ) : null}
       {state.status === "FAILED" || state.status === "STALE" ? (
         <div className="line-clamp-2 text-xs text-muted-foreground">{state.errorMessage}</div>
@@ -912,7 +931,17 @@ export const TrackManagementPanel = ({
             <ArrowUpDown />
           </Button>
         ),
-        cell: ({ row }) => <div className="font-medium">{row.original.title}</div>,
+        cell: ({ row }) =>
+          row.original.status === "PUBLISHED" ? (
+            <Link
+              href={`/tracks/${row.original.slug}`}
+              className="font-medium text-foreground hover:underline focus-visible:underline"
+            >
+              {row.original.title}
+            </Link>
+          ) : (
+            <div className="font-medium">{row.original.title}</div>
+          ),
       },
       {
         accessorKey: "fileAsset.name",

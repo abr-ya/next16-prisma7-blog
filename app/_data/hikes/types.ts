@@ -1,5 +1,12 @@
 import type { Prisma } from "@/generated/prisma/client";
-import type { FileAssetStatus, HikeStatus, HikeType, PhotoStatus, TrackStatus } from "@/generated/prisma/enums";
+import type {
+  FileAssetStatus,
+  HikeStatus,
+  HikeType,
+  PhotoStatus,
+  TrackStatus,
+  TrackTimeSource,
+} from "@/generated/prisma/enums";
 import type { HikePhotoMapMarker } from "@/lib/hikes";
 import type { HikeNoteMapMarker } from "@/lib/hike-notes";
 import type { PhotoExifMetadata, PhotoExifSummary, PhotoMapCoordinate } from "@/lib/photo-exif-metadata";
@@ -116,6 +123,9 @@ export const publicHikeInclude = (options: PublicHikeIncludeOptions) => {
             slug: true,
             description: true,
             recordingTimezone: true,
+            recordingStartAt: true,
+            recordingDurationSeconds: true,
+            timeSource: true,
             status: true,
             updatedAt: true,
             metadata: true,
@@ -257,6 +267,9 @@ export type PublicHike = Omit<PublicHikeRecord, "tracks" | "photos" | "notes"> &
       slug: string;
       description: string | null;
       recordingTimezone: string | null;
+      recordingStartAt: Date | null;
+      recordingDurationSeconds: number | null;
+      timeSource: TrackTimeSource | null;
       status: TrackStatus;
       updatedAt: Date;
       parsed: {

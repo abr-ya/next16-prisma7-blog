@@ -3,7 +3,13 @@
 import { revalidatePath } from "next/cache";
 
 import { getTrackActivityTypeById } from "@/app/_data/track-activity-types";
-import type { FileAssetStatus, FileAssetVisibility, HikeType, TrackStatus } from "@/generated/prisma/enums";
+import type {
+  FileAssetStatus,
+  FileAssetVisibility,
+  HikeType,
+  TrackStatus,
+  TrackTimeSource,
+} from "@/generated/prisma/enums";
 import { Prisma } from "@/generated/prisma/client";
 import { authSession } from "@/lib/auth-utils";
 import { InsufficientTrustError, requireTrustGatedAction } from "@/lib/auth-trust-gates.server";
@@ -64,6 +70,9 @@ type PublicTrackRecord = Prisma.TrackGetPayload<{
     slug: true;
     description: true;
     recordingTimezone: true;
+    recordingStartAt: true;
+    recordingDurationSeconds: true;
+    timeSource: true;
     updatedAt: true;
     createdAt: true;
     fileAsset: {
@@ -104,6 +113,9 @@ export type PublicTrack = {
   slug: string;
   description: string | null;
   recordingTimezone: string | null;
+  recordingStartAt: Date | null;
+  recordingDurationSeconds: number | null;
+  timeSource: TrackTimeSource | null;
   updatedAt: Date;
   createdAt: Date;
   file: {
@@ -257,7 +269,21 @@ export const ensureEligibleTrackFileAsset = async ({
   return fileAsset;
 };
 
-const trackListInclude = {
+const trackListSelect = {
+  id: true,
+  title: true,
+  slug: true,
+  description: true,
+  status: true,
+  fileAssetId: true,
+  activityTypeId: true,
+  metadata: true,
+  recordingTimezone: true,
+  recordingStartAt: true,
+  recordingDurationSeconds: true,
+  timeSource: true,
+  updatedAt: true,
+  createdAt: true,
   activityType: true,
   fileAsset: true,
   user: {
@@ -271,7 +297,8 @@ const trackListInclude = {
     orderBy: {
       assignedAt: "desc",
     },
-    include: {
+    select: {
+      assignedAt: true,
       hike: {
         select: {
           id: true,
@@ -285,10 +312,10 @@ const trackListInclude = {
       },
     },
   },
-} satisfies Prisma.TrackInclude;
+} satisfies Prisma.TrackSelect;
 
 export type TrackListItem = Prisma.TrackGetPayload<{
-  include: typeof trackListInclude;
+  select: typeof trackListSelect;
 }>;
 
 const publicTrackSelect = {
@@ -297,6 +324,9 @@ const publicTrackSelect = {
   slug: true,
   description: true,
   recordingTimezone: true,
+  recordingStartAt: true,
+  recordingDurationSeconds: true,
+  timeSource: true,
   updatedAt: true,
   createdAt: true,
   metadata: true,
@@ -355,6 +385,9 @@ const toPublicTrack = (
     slug: track.slug,
     description: track.description,
     recordingTimezone: track.recordingTimezone,
+    recordingStartAt: track.recordingStartAt,
+    recordingDurationSeconds: track.recordingDurationSeconds,
+    timeSource: track.timeSource,
     updatedAt: track.updatedAt,
     createdAt: track.createdAt,
     file: {
@@ -425,7 +458,7 @@ export const getAllTracks = async (): Promise<TrackListItem[]> => {
 
   return prisma.track.findMany({
     where: { userId },
-    include: trackListInclude,
+    select: trackListSelect,
     orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
   });
 };
@@ -496,7 +529,7 @@ export const getTrackById = async (id: string): Promise<TrackListItem | null> =>
 
   return prisma.track.findFirst({
     where: { id, userId },
-    include: trackListInclude,
+    select: trackListSelect,
   });
 };
 
@@ -539,7 +572,7 @@ export const createTrack = async (values: TrackActionValues) => {
         // null between create and parse.
         timeSource: "GPX",
       },
-      include: trackListInclude,
+      select: trackListSelect,
     }),
   );
 
@@ -591,7 +624,7 @@ export const updateTrack = async (values: TrackActionValues) => {
       ...data,
       ...(staleMetadata ? { metadata: staleMetadata as Prisma.InputJsonValue } : {}),
     },
-    include: trackListInclude,
+    select: trackListSelect,
   });
 
   revalidateTrackDetailPaths(track.slug);
@@ -629,7 +662,7 @@ export const updateTrackRecordingTimezone = async ({
   const track = await prisma.track.update({
     where: { id: existingTrack.id },
     data: { recordingTimezone: timezone },
-    include: trackListInclude,
+    select: trackListSelect,
   });
 
   revalidateTrackDetailPaths(track.slug);

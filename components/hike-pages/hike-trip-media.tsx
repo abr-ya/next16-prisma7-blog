@@ -6,7 +6,7 @@ import Link from "next/link";
 import { Route } from "lucide-react";
 import { useT } from "next-i18next/client";
 
-import type { TrackStatus } from "@/generated/prisma/enums";
+import type { TrackStatus, TrackTimeSource } from "@/generated/prisma/enums";
 import type { HikePhotoAcceptedCoordinate, HikePhotoContributionCapability } from "@/app/_data/hikes";
 import { tripsNamespace } from "@/app/i18n/settings";
 import {
@@ -20,8 +20,11 @@ import type { HikeNoteMapMarker } from "@/lib/hike-notes";
 import type { HikePhotoMapMarker } from "@/lib/hikes";
 import { getHikeMapDays } from "@/lib/hike-map-days";
 import {
+  formatTrackDuration,
+  formatTrackRecordingDateTime,
   formatTrackRecordingTimeRange,
   formatTrackTimezoneEvidence,
+  getTrackTimeSourceI18nKey,
   type TrackGpxSummary,
   type TrackMapViewModel,
 } from "@/lib/track-gpx-metadata";
@@ -36,6 +39,9 @@ type LinkedTrack = {
   slug: string;
   description: string | null;
   recordingTimezone: string | null;
+  recordingStartAt: Date | null;
+  recordingDurationSeconds: number | null;
+  timeSource: TrackTimeSource | null;
   status: TrackStatus;
   parsed: { summary: TrackGpxSummary } | null;
   map: TrackMapViewModel | null;
@@ -258,6 +264,13 @@ export const HikeTripMedia = ({
                     <div className="flex flex-wrap items-center gap-2">
                       <div className="font-medium">{track.title}</div>
                       {isDraft ? <Badge variant="outline">{t("linkedTrackDraftBadge")}</Badge> : null}
+                      {track.timeSource ? (
+                        <Badge variant="secondary">
+                          {t("trackTimeSourceBadgeLabel", {
+                            source: t(getTrackTimeSourceI18nKey(track.timeSource) ?? "placeOnMapTimeSourceNone"),
+                          })}
+                        </Badge>
+                      ) : null}
                     </div>
                     {track.description ? (
                       <p className="line-clamp-2 text-sm text-muted-foreground">{track.description}</p>
@@ -277,6 +290,25 @@ export const HikeTripMedia = ({
                         >
                           {formatTrackTimezoneEvidence(track.parsed.summary.time.timezoneEvidence)}
                         </Badge>
+                      </div>
+                    ) : null}
+                    {track.timeSource === "MANUAL" &&
+                    (track.recordingStartAt !== null || track.recordingDurationSeconds !== null) ? (
+                      <div className="flex flex-col gap-0.5 text-sm text-muted-foreground">
+                        {track.recordingStartAt !== null ? (
+                          <span>
+                            {t("trackRecordingStartLabel")}:{" "}
+                            {formatTrackRecordingDateTime(
+                              track.recordingStartAt.toISOString(),
+                              track.recordingTimezone,
+                            )}
+                          </span>
+                        ) : null}
+                        {track.recordingDurationSeconds !== null ? (
+                          <span>
+                            {t("trackRecordingDurationLabel")}: {formatTrackDuration(track.recordingDurationSeconds)}
+                          </span>
+                        ) : null}
                       </div>
                     ) : null}
                   </div>

@@ -1,4 +1,5 @@
 import type { Prisma } from "@/generated/prisma/client";
+import type { TrackTimeSource } from "@/generated/prisma/enums";
 import { getTrackRecordingTimezone } from "@/lib/track-recording-timezone";
 
 export const TRACK_GPX_METADATA_VERSION = "track-gpx-metadata/v1";
@@ -405,3 +406,25 @@ export const formatTrackTimelinePresence = (timeline?: TrackGpxTimedPoint[] | nu
 
 export const hasTrackTimedTimeline = (timeline?: TrackGpxTimedPoint[] | null) =>
   Array.isArray(timeline) && timeline.length > 0;
+
+export const TRACK_TIME_SOURCE_I18N_KEYS: Record<TrackTimeSource, string> = {
+  GPX: "trackTimeSourceGpx",
+  MANUAL: "placeOnMapTimeSourceManual",
+  NONE: "placeOnMapTimeSourceNone",
+};
+
+export const getTrackTimeSourceI18nKey = (value?: TrackTimeSource | null): string | null => {
+  if (!value) return null;
+  return TRACK_TIME_SOURCE_I18N_KEYS[value];
+};
+
+export const TRACK_TIME_SOURCE_LABELS: Record<TrackTimeSource, string> = {
+  GPX: "GPX",
+  MANUAL: "Manual",
+  NONE: "Not set",
+};
+
+export const formatTrackTimeSource = (value?: TrackTimeSource | null): string | null => {
+  if (!value) return null;
+  return TRACK_TIME_SOURCE_LABELS[value];
+};
