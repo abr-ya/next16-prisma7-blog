@@ -88,6 +88,34 @@ export const parseDurationSeconds = (value: number): number => {
 };
 
 /**
+ * Inverse of `parseDurationInput` — split a stored `recordingDurationSeconds`
+ * back into the three numeric inputs the form collects (`hours`, `minutes`,
+ * `seconds`) plus the `includeSeconds` boolean the form uses to decide whether
+ * to render the seconds field. Returns string components so they bind to the
+ * form's string-typed inputs without coercion, and zeros for any component
+ * when the stored value is `null`.
+ */
+export const parseStoredDurationToHms = (
+  seconds: number | null,
+): { hours: string; minutes: string; seconds: string; includeSeconds: boolean } => {
+  if (seconds === null || seconds === undefined) {
+    return { hours: "0", minutes: "0", seconds: "0", includeSeconds: false };
+  }
+
+  const safe = Math.max(0, Math.floor(seconds));
+  const hours = Math.floor(safe / 3600);
+  const minutes = Math.floor((safe % 3600) / 60);
+  const remainingSeconds = safe % 60;
+
+  return {
+    hours: String(hours),
+    minutes: String(minutes),
+    seconds: String(remainingSeconds),
+    includeSeconds: remainingSeconds !== 0,
+  };
+};
+
+/**
  * Compute the offset (in minutes) of `timezone` from UTC at the given UTC
  * instant. Returns a positive number for timezones east of UTC (e.g. +180 for
  * Europe/Moscow) and a negative number for timezones west of UTC. Used to

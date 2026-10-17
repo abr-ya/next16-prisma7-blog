@@ -673,6 +673,185 @@ export const updateTrackRecordingTimezone = async ({
   return track;
 };
 
+export type UpdateTrackRecordingMetadataInput = {
+  id: string;
+  recordingStartAt: string | null;
+  recordingDurationSeconds: number | null;
+  recordingTimezone: string | null;
+};
+
+export type UpdateTrackRecordingMetadataResult =
+  | { ok: true; track: TrackListItem }
+  | { ok: false; code: "NOT_FOUND" | "WRONG_SOURCE" | "VALIDATION"; message: string };
+
+/**
+ * Update the four manual recording-metadata columns on a `Track` whose
+ * `Track.timeSource === "MANUAL"`. The action enforces the same ownership
+ * and trust gate the other track mutations already enforce, and rejects
+ * GPX / NONE rows so the column values stay aligned with the
+ * source-of-truth classification set at creation / parse time.
+ *
+ * Validation runs through `parseManualTrackStartAt` (when both
+ * `recordingStartAt` and `recordingTimezone` are non-empty) and
+ * `parseDurationSeconds` (when `recordingDurationSeconds` is non-null);
+ * either may throw a `TrackStartAtParseError` or
+ * `TrackDurationInputError`, which surface as `{ ok: false, code: "VALIDATION" }`.
+ */
+export const updateTrackRecordingMetadata = async (
+  input: UpdateTrackRecordingMetadataInput,
+): Promise<UpdateTrackRecordingMetadataResult> => {
+  const userId = await getRequiredUserId();
+  const { default: prisma } = await import("@/lib/prisma");
+  const existingTrack = await prisma.track.findFirst({
+    where: { id: input.id, userId },
+    select: {
+      id: true,
+      slug: true,
+      timeSource: true,
+      hikes: {
+        select: {
+          hike: {
+            select: { slug: true },
+          },
+        },
+      },
+    },
+  });
+
+  if (!existingTrack) {
+    return { ok: false, code: "NOT_FOUND", message: "Track not found" };
+  }
+
+  if (existingTrack.timeSource !== "MANUAL") {
+    return {
+      ok: false,
+      code: "WRONG_SOURCE",
+      message: "Recording metadata can only be edited on manual tracks",
+    };
+  }
+
+  const trimmedStart = input.recordingStartAt?.trim() ?? "";
+  const trimmedTimezone = input.recordingTimezone?.trim() ?? "";
+  const hasStart = trimmedStart.length > 0;
+  const hasTimezone = trimmedTimezone.length > 0;
+  const hasDuration = input.recordingDurationSeconds !== null && input.recordingDurationSeconds !== undefined;
+
+  let normalizedRecordingStartAt: Date | null = null;
+  let normalizedRecordingDurationSeconds: number | null = null;
+  let normalizedRecordingTimezone: string | null = null;
+
+  if (hasStart) {
+    if (!hasTimezone) {
+      return {
+        ok: false,
+        code: "VALIDATION",
+        message: "Recording timezone is required when start time is set",
+      };
+    }
+    try {
+      normalizedRecordingStartAt = parseManualTrackStartAt({
+        wallClock: trimmedStart,
+        timezone: trimmedTimezone,
+      });
+      normalizedRecordingTimezone = requireTrackRecordingTimezone(trimmedTimezone);
+    } catch (error) {
+      if (error instanceof TrackStartAtParseError) {
+        return { ok: false, code: "VALIDATION", message: error.message };
+      }
+      throw error;
+    }
+  }
+
+  if (hasDuration) {
+    try {
+      normalizedRecordingDurationSeconds = parseDurationSeconds(input.recordingDurationSeconds!);
+    } catch (error) {
+      if (error instanceof TrackDurationInputError) {
+        return { ok: false, code: "VALIDATION", message: error.message };
+      }
+      throw error;
+    }
+  }
+
+  const track = await prisma.track.update({
+    where: { id: existingTrack.id },
+    data: {
+      recordingStartAt: normalizedRecordingStartAt,
+      recordingDurationSeconds: normalizedRecordingDurationSeconds,
+      recordingTimezone: normalizedRecordingTimezone,
+    },
+    select: trackListSelect,
+  });
+
+  revalidateTrackDetailPaths(track.slug);
+  for (const association of existingTrack.hikes) {
+    revalidatePath(`/hikes/${association.hike.slug}`);
+  }
+
+  return { ok: true, track };
+};
+
+export type MarkTrackAsManualInput = {
+  id: string;
+};
+
+export type MarkTrackAsManualResult =
+  | { ok: true; track: TrackListItem }
+  | { ok: false; code: "NOT_FOUND" | "ALREADY_MANUAL"; message: string };
+
+/**
+ * feature-116 follow-up: explicit transition for rows whose `timeSource` is
+ * misclassified. Two cases trigger the click:
+ *   1. a legacy row created through the `Place on map` flow that was
+ *      re-asserted to `GPX` by an earlier `parseTrackGpx` call before the
+ *      parse-time preserve fix landed (it has at least one recording column
+ *      populated and an "owner has supplied timing" badge reads as `GPX`),
+ *   2. a `GPX` row with no `<time>` elements (all three recording columns
+ *      are `null`) — such a row is also misclassified, since the absence of
+ *      any timed timeline is the same evidence the system uses to render the
+ *      `No timed timeline` fallback. Reclassifying it to `MANUAL` lets the
+ *      owner fill the columns in the edit form afterwards.
+ *
+ * The action does NOT require at least one populated recording column —
+ * the call short-circuits to `ALREADY_MANUAL` when the row is already
+ * `MANUAL` to keep the UX idempotent, and rejects with `NOT_FOUND` for
+ * non-owned rows. `parseTrackGpx` never performs this transition on its own.
+ */
+export const markTrackAsManual = async (input: MarkTrackAsManualInput): Promise<MarkTrackAsManualResult> => {
+  const userId = await getRequiredUserId();
+  const { default: prisma } = await import("@/lib/prisma");
+  const existingTrack = await prisma.track.findFirst({
+    where: { id: input.id, userId },
+    select: {
+      id: true,
+      slug: true,
+      timeSource: true,
+      hikes: { select: { hike: { select: { slug: true } } } },
+    },
+  });
+
+  if (!existingTrack) {
+    return { ok: false, code: "NOT_FOUND", message: "Track not found" };
+  }
+
+  if (existingTrack.timeSource === "MANUAL") {
+    return { ok: false, code: "ALREADY_MANUAL", message: "Track is already manual" };
+  }
+
+  const track = await prisma.track.update({
+    where: { id: existingTrack.id },
+    data: { timeSource: "MANUAL" },
+    select: trackListSelect,
+  });
+
+  revalidateTrackDetailPaths(track.slug);
+  for (const association of existingTrack.hikes) {
+    revalidatePath(`/hikes/${association.hike.slug}`);
+  }
+
+  return { ok: true, track };
+};
+
 export const parseTrackGpx = async (id: string) => {
   const userId = await getRequiredUserId();
   const { default: prisma } = await import("@/lib/prisma");
@@ -681,6 +860,7 @@ export const parseTrackGpx = async (id: string) => {
     select: {
       id: true,
       slug: true,
+      timeSource: true,
       fileAsset: {
         select: {
           id: true,
@@ -718,16 +898,31 @@ export const parseTrackGpx = async (id: string) => {
           },
         };
 
+  // Mirror the parsed summary into the new columns so every read path
+  // (public track detail / list, admin track list, hike linked-track card)
+  // can read `Track.recordingStartAt` / `Track.recordingDurationSeconds`
+  // without special-casing GPX rows against `metadata.summary.time`. The
+  // mirror is null when the parsed GPX had no usable `<time>` elements.
+  const summaryTime = metadataToPersist.summary?.time ?? null;
+  const parsedRecordingStartAt = summaryTime ? new Date(summaryTime.start) : null;
+  const parsedRecordingDurationSeconds = summaryTime ? summaryTime.durationSeconds : null;
+
   await prisma.track.update({
     where: { id: track.id },
     data: {
       metadata: metadataToPersist as Prisma.InputJsonValue,
-      // Every parse (success, failed, stale, re-parse) re-asserts that this
-      // row is GPX-sourced — the source-of-time classification is orthogonal
-      // to whether the GPX actually carried `<time>` elements. The write
-      // happens before any success/failed branching on the metadata so all
-      // three outcomes converge on the same value.
-      timeSource: "GPX",
+      // feature-116 follow-up: parse preserves the row's existing
+      // `timeSource` rather than re-asserting `"GPX"`. A row that was
+      // created through the `Place on map` flow keeps `MANUAL` (or `NONE`)
+      // even after its synthetic GPX is parsed; conversely a legacy
+      // `MANUAL`-misclassified row does not get auto-corrected by a
+      // re-parse — the owner must use the explicit `markTrackAsManual`
+      // action (or its inverse) to change the classification. The only
+      // transition handled here is null → `"GPX"`, so a fresh row that
+      // has never been classified becomes GPX-sourced on first parse.
+      timeSource: track.timeSource ?? "GPX",
+      recordingStartAt: parsedRecordingStartAt,
+      recordingDurationSeconds: parsedRecordingDurationSeconds,
     },
   });
 
