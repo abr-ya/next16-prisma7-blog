@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { ColumnDef } from "@tanstack/react-table";
-import { ArrowUpDown, Clock3, Edit, FileUp, MapPin, Plus, RefreshCw, Trash2 } from "lucide-react";
+import { ArrowUpDown, Clock3, Edit, FileUp, Loader2, MapPin, Plus, RefreshCw, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useT } from "next-i18next/client";
@@ -17,8 +17,10 @@ import {
   createManualTrack,
   createTrack,
   deleteTrack,
+  markTrackAsManual,
   parseTrackGpx,
   updateTrack,
+  updateTrackRecordingMetadata,
   updateTrackRecordingTimezone,
   type TrackListItem,
 } from "@/app/_data/tracks";
@@ -73,7 +75,7 @@ import {
   getTrackGpxMetadataState,
   type TrackGpxMetadataState,
 } from "@/lib/track-gpx-metadata";
-import { TrackDurationInputError, parseDurationInput } from "@/lib/track-duration-input";
+import { TrackDurationInputError, parseDurationInput, parseStoredDurationToHms } from "@/lib/track-duration-input";
 
 const formSchema = z.object({
   title: z.string().min(1, { message: "Title is required" }),
@@ -151,6 +153,48 @@ const uniqueIds = (ids: string[]) => Array.from(new Set(ids));
 const formatActivityTypeName = (activityType: TrackActivityType, language?: string) =>
   language === "ru" ? activityType.nameRu || activityType.nameEn : activityType.nameEn;
 
+// feature-116 row-level reclassify affordance: the `Source: …` badge in the
+// table row is rendered as a clickable button when the row is a `GPX` track
+// with NO recording metadata on the row itself (`recordingStartAt` /
+// `recordingDurationSeconds` / `recordingTimezone` all null). That's the
+// "GPX with no `<time>` elements" case — visually identical to a legacy
+// misclassified row, but it represents a track whose parsed GPX carried no
+// timing data. The owner can promote the row to `MANUAL` and supply the
+// missing timing through the form. Otherwise the badge stays a static
+// secondary variant. The mutation itself is owned by `TrackManagementPanel`
+// and dispatched through the `onMarkAsManual` prop.
+const SourceBadge = ({
+  track,
+  ariaLabel,
+  isMarking,
+  onMarkAsManual,
+}: {
+  track: TrackListItem;
+  ariaLabel: string;
+  isMarking: boolean;
+  onMarkAsManual: () => void;
+}) => {
+  if (!track.timeSource) {
+    return null;
+  }
+  const hasNoRecordingMetadata =
+    track.timeSource === "GPX" &&
+    track.recordingStartAt === null &&
+    track.recordingDurationSeconds === null &&
+    (track.recordingTimezone === null || track.recordingTimezone.length === 0);
+  if (!hasNoRecordingMetadata) {
+    return <Badge variant="secondary">Source: {formatTrackTimeSource(track.timeSource)}</Badge>;
+  }
+  return (
+    <Badge variant="outline" asChild className="cursor-pointer border-yellow-500 text-yellow-700 dark:text-yellow-300">
+      <button type="button" aria-label={ariaLabel} disabled={isMarking} onClick={onMarkAsManual}>
+        {isMarking ? <Loader2 className="animate-spin" aria-hidden="true" /> : null}
+        Source: {formatTrackTimeSource(track.timeSource)}
+      </button>
+    </Badge>
+  );
+};
+
 const TrackParseStatus = ({ track }: { track: TrackListItem }) => {
   const state = getTrackParseState(track);
   const distance = state.status === "SUCCESS" ? formatTrackDistance(state.summary.distanceMeters) : null;
@@ -171,7 +215,6 @@ const TrackParseStatus = ({ track }: { track: TrackListItem }) => {
     <div className="flex max-w-72 flex-wrap items-center gap-1.5">
       <div className="flex basis-full flex-wrap items-center gap-1.5">
         <Badge variant={getParseStatusVariant(state)}>{getParseStatusLabel(state)}</Badge>
-        {track.timeSource ? <Badge variant="secondary">Source: {formatTrackTimeSource(track.timeSource)}</Badge> : null}
         {state.status === "SUCCESS" && state.summary.time ? (
           <Badge variant={state.summary.time.timezoneEvidence === "UTC_OR_OFFSET" ? "secondary" : "outline"}>
             {formatTrackTimezoneEvidence(state.summary.time.timezoneEvidence)}
@@ -231,6 +274,22 @@ const TrackFormDialog = ({
   const isEditing = Boolean(track);
   const parseState = track ? getTrackParseState(track) : null;
   const isParsing = Boolean(track && parsingTrackId === track.id);
+  // feature-116: the four recording-metadata inputs (start / timezone / duration
+  // trio) are read-only when the saved row is GPX-sourced — the values come
+  // from the parsed file and cannot be edited. MANUAL and NONE rows keep the
+  // editable behaviour so an owner can fill the fields and save.
+  const isReadOnlyRecording = track?.timeSource === "GPX";
+  // feature-116 follow-up: legacy GPX-sourced rows whose `timeSource` was
+  // re-asserted by an older `parseTrackGpx` call can be reclassified to
+  // `MANUAL` from the admin form when at least one recording-metadata
+  // column is non-null. The button is hidden otherwise to keep the
+  // "explicit owner intent" contract.
+  const canMarkAsManual =
+    Boolean(track) &&
+    track?.timeSource === "GPX" &&
+    (track.recordingStartAt !== null ||
+      track.recordingDurationSeconds !== null ||
+      (track.recordingTimezone !== null && track.recordingTimezone.length > 0));
   const savedFileAssetId = track?.fileAssetId ?? null;
   const fileAssetId = useWatch({ control: form.control, name: "fileAssetId" });
   const fileAssetName = useWatch({ control: form.control, name: "fileAssetName" });
@@ -239,6 +298,8 @@ const TrackFormDialog = ({
   const [isDiscarding, startDiscarding] = useTransition();
   const [activeTab, setActiveTab] = useState<TrackCreationMode>("gpx");
   const [placedPoints, setPlacedPoints] = useState<ManualTrackPoint[]>([]);
+  const [isMarkingAsManual, setIsMarkingAsManual] = useState(false);
+  const [markAsManualError, setMarkAsManualError] = useState<string | null>(null);
   // Track the previous `open` value so we can reset local UI state during
   // render (instead of in an effect) when the dialog flips closed → open.
   const [prevOpen, setPrevOpen] = useState(open);
@@ -261,6 +322,14 @@ const TrackFormDialog = ({
     if (!open) return;
 
     if (track) {
+      // feature-116: pre-fill the four recording-metadata fields from the saved
+      // row so re-opening the dialog shows the values the owner typed the
+      // last time (for MANUAL / NONE) or the values the parser wrote
+      // (for GPX). The submit handler decides whether to dispatch the new
+      // `updateTrackRecordingMetadata` action; the form renders the inputs
+      // read-only for GPX rows via the `isReadOnlyRecording` flag.
+      const storedDuration = parseStoredDurationToHms(track.recordingDurationSeconds);
+      const startWallClock = track.recordingStartAt ? track.recordingStartAt.toISOString().slice(0, 16) : "";
       form.reset({
         title: track.title,
         slug: track.slug,
@@ -269,16 +338,12 @@ const TrackFormDialog = ({
         fileAssetId: track.fileAssetId,
         fileAssetName: track.fileAsset.name,
         activityTypeId: track.activityTypeId ?? "",
-        // The existing edit dialog stays display-only for the four new
-        // feature-112 metadata fields per design decision 7 — the values
-        // reset to defaults so the slot renders the same starting shape as
-        // a fresh create.
-        recordingStartAt: "",
+        recordingStartAt: startWallClock,
         recordingTimezone: track.recordingTimezone ?? "",
-        recordingDurationHours: "0",
-        recordingDurationMinutes: "0",
-        recordingDurationSeconds: "0",
-        includeSeconds: false,
+        recordingDurationHours: storedDuration.hours,
+        recordingDurationMinutes: storedDuration.minutes,
+        recordingDurationSeconds: storedDuration.seconds,
+        includeSeconds: storedDuration.includeSeconds,
       });
     } else {
       form.reset(defaultValues);
@@ -320,6 +385,28 @@ const TrackFormDialog = ({
     form.reset(defaultValues);
     onOpenChange(false);
   };
+
+  const handleMarkAsManual = useCallback(async () => {
+    if (!track) {
+      return;
+    }
+    setIsMarkingAsManual(true);
+    setMarkAsManualError(null);
+    try {
+      const result = await markTrackAsManual({ id: track.id });
+      if (!result.ok) {
+        setMarkAsManualError(result.message);
+        return;
+      }
+      toast.success(t("trackMarkAsManualSuccess"));
+      onSaved();
+      onOpenChange(false);
+    } catch (error) {
+      setMarkAsManualError(error instanceof Error ? error.message : "Failed to mark track as manual");
+    } finally {
+      setIsMarkingAsManual(false);
+    }
+  }, [track, t, onOpenChange, onSaved]);
 
   const handleOpenChange = (nextOpen: boolean) => {
     if (nextOpen) {
@@ -384,6 +471,70 @@ const TrackFormDialog = ({
           id: track.id,
           ...trackPayload,
         });
+
+        // feature-116: when the saved row is MANUAL- or NONE-sourced, dispatch
+        // the new `updateTrackRecordingMetadata` action with the four
+        // recording-metadata fields the form collected. The server action is
+        // timeSource-preserving (so a NONE row stays NONE even after the
+        // owner populates fields) and it validates through the same
+        // `parseManualTrackStartAt` / `parseDurationSeconds` helpers the
+        // create path uses. GPX rows skip the dispatch entirely — the
+        // columns come from the parsed GPX and the server action would
+        // reject the call.
+        if (track.timeSource !== "GPX") {
+          const trimmedStart = values.recordingStartAt?.trim() ?? "";
+          const trimmedTimezone = values.recordingTimezone?.trim() ?? "";
+          const hasStart = trimmedStart.length > 0;
+          const hasTimezone = trimmedTimezone.length > 0;
+          const durationHours = Number(values.recordingDurationHours ?? "0");
+          const durationMinutes = Number(values.recordingDurationMinutes ?? "0");
+          const durationSecondsInput =
+            values.includeSeconds && values.recordingDurationSeconds !== undefined
+              ? Number(values.recordingDurationSeconds)
+              : undefined;
+          const hasDuration =
+            Number.isFinite(durationHours) && durationHours > 0
+              ? true
+              : Number.isFinite(durationMinutes) && durationMinutes > 0
+                ? true
+                : durationSecondsInput !== undefined &&
+                  Number.isFinite(durationSecondsInput) &&
+                  durationSecondsInput > 0;
+
+          let parsedStartInput: string | null = null;
+          let parsedDurationInput: number | null = null;
+          if (hasStart) {
+            parsedStartInput = trimmedStart;
+          }
+          if (hasDuration) {
+            try {
+              parsedDurationInput = parseDurationInput({
+                hours: Number.isFinite(durationHours) ? durationHours : 0,
+                minutes: Number.isFinite(durationMinutes) ? durationMinutes : 0,
+                seconds: durationSecondsInput,
+              });
+            } catch (error) {
+              if (error instanceof TrackDurationInputError) {
+                toast.error(error.message);
+                return;
+              }
+              throw error;
+            }
+          }
+
+          const result = await updateTrackRecordingMetadata({
+            id: track.id,
+            recordingStartAt: parsedStartInput,
+            recordingDurationSeconds: parsedDurationInput,
+            recordingTimezone: hasTimezone ? trimmedTimezone : null,
+          });
+
+          if (!result.ok) {
+            toast.error(result.message);
+            return;
+          }
+        }
+
         toast.success("Track updated");
       } else if (activeTab === "placeOnMap") {
         if (placedPoints.length < 2) {
@@ -540,7 +691,10 @@ const TrackFormDialog = ({
       {/* feature-112 Place on map tab fields. Rendered for both tabs per
           design decision 4 (the slot is shared) — the values are optional and
           only consumed by `createManualTrack`; on the GPX tab the upload
-          itself supplies any time-related metadata via `parseTrackGpx`. */}
+          itself supplies any time-related metadata via `parseTrackGpx`.
+          feature-116: when the saved row is GPX-sourced (`isReadOnlyRecording`),
+          the four inputs render read-only with a "from file" hint and the
+          include-seconds toggle is disabled. */}
       <div className="grid gap-4 md:grid-cols-2">
         <FormField
           control={form.control}
@@ -549,7 +703,13 @@ const TrackFormDialog = ({
             <FormItem>
               <FormLabel>{t("placeOnMapRecordingStartLabel")}</FormLabel>
               <FormControl>
-                <Input {...field} type="datetime-local" placeholder="2026-10-12T09:30" autoComplete="off" />
+                <Input
+                  {...field}
+                  type="datetime-local"
+                  placeholder="2026-10-12T09:30"
+                  autoComplete="off"
+                  readOnly={isReadOnlyRecording}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -568,6 +728,7 @@ const TrackFormDialog = ({
                   list="place-on-map-recording-timezone-options"
                   placeholder="Europe/Sofia"
                   autoComplete="off"
+                  readOnly={isReadOnlyRecording}
                 />
               </FormControl>
               <datalist id="place-on-map-recording-timezone-options">
@@ -588,6 +749,7 @@ const TrackFormDialog = ({
             variant={includeSecondsValue ? "default" : "outline"}
             size="sm"
             aria-pressed={Boolean(includeSecondsValue)}
+            disabled={isReadOnlyRecording}
             onClick={() =>
               form.setValue("includeSeconds", !includeSecondsValue, {
                 shouldDirty: true,
@@ -605,7 +767,15 @@ const TrackFormDialog = ({
               <FormItem>
                 <FormLabel>{t("placeOnMapRecordingDurationHours")}</FormLabel>
                 <FormControl>
-                  <Input {...field} type="number" inputMode="numeric" min={0} max={24} step={1} />
+                  <Input
+                    {...field}
+                    type="number"
+                    inputMode="numeric"
+                    min={0}
+                    max={24}
+                    step={1}
+                    readOnly={isReadOnlyRecording}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -618,7 +788,15 @@ const TrackFormDialog = ({
               <FormItem>
                 <FormLabel>{t("placeOnMapRecordingDurationMinutes")}</FormLabel>
                 <FormControl>
-                  <Input {...field} type="number" inputMode="numeric" min={0} max={59} step={1} />
+                  <Input
+                    {...field}
+                    type="number"
+                    inputMode="numeric"
+                    min={0}
+                    max={59}
+                    step={1}
+                    readOnly={isReadOnlyRecording}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -632,7 +810,15 @@ const TrackFormDialog = ({
                 <FormItem>
                   <FormLabel>{t("placeOnMapRecordingDurationSeconds")}</FormLabel>
                   <FormControl>
-                    <Input {...field} type="number" inputMode="numeric" min={0} max={59} step={1} />
+                    <Input
+                      {...field}
+                      type="number"
+                      inputMode="numeric"
+                      min={0}
+                      max={59}
+                      step={1}
+                      readOnly={isReadOnlyRecording}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -640,6 +826,17 @@ const TrackFormDialog = ({
             />
           ) : null}
         </div>
+        {isReadOnlyRecording ? (
+          <p className="text-xs text-muted-foreground">{t("trackRecordingMetadataFromFileHint")}</p>
+        ) : null}
+        {canMarkAsManual ? (
+          <div className="flex items-center gap-2">
+            <Button type="button" variant="outline" size="sm" disabled={isMarkingAsManual} onClick={handleMarkAsManual}>
+              {t("trackMarkAsManualButton")}
+            </Button>
+            {markAsManualError ? <span className="text-xs text-destructive">{markAsManualError}</span> : null}
+          </div>
+        ) : null}
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <span>{t("placeOnMapTimeSourceLabel")}:</span>
           <Badge variant={liveTimeSourceBadge.variant}>{liveTimeSourceBadge.label}</Badge>
@@ -859,6 +1056,7 @@ export const TrackManagementPanel = ({
 }) => {
   const router = useRouter();
   const { i18n } = useT(navigationNamespace);
+  const { t } = useT(tripsNamespace);
   const activeLanguage = i18n.resolvedLanguage ?? i18n.language;
   const [formOpen, setFormOpen] = useState(false);
   const [editingTrack, setEditingTrack] = useState<TrackListItem | null>(null);
@@ -867,6 +1065,8 @@ export const TrackManagementPanel = ({
   const [recordingTimezone, setRecordingTimezone] = useState("");
   const [browserTimezone, setBrowserTimezone] = useState<string | null>(null);
   const [parsingTrackId, setParsingTrackId] = useState<string | null>(null);
+  const [markingAsManualId, setMarkingAsManualId] = useState<string | null>(null);
+  const [markAsManualTarget, setMarkAsManualTarget] = useState<TrackListItem | null>(null);
   const [isDeleting, startDeleting] = useTransition();
   const [isSavingTimezone, startSavingTimezone] = useTransition();
   const [, startParsing] = useTransition();
@@ -909,6 +1109,27 @@ export const TrackManagementPanel = ({
     },
     [router],
   );
+
+  const handleMarkAsManualConfirm = useCallback(async () => {
+    if (!markAsManualTarget) {
+      return;
+    }
+    setMarkingAsManualId(markAsManualTarget.id);
+    try {
+      const result = await markTrackAsManual({ id: markAsManualTarget.id });
+      if (!result.ok) {
+        toast.error(result.message);
+        return;
+      }
+      toast.success(t("trackMarkAsManualSuccess"));
+      setMarkAsManualTarget(null);
+      router.refresh();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to mark track as manual");
+    } finally {
+      setMarkingAsManualId(null);
+    }
+  }, [markAsManualTarget, router, t]);
 
   const columns = useMemo<ColumnDef<TrackListItem>[]>(
     () => [
@@ -963,7 +1184,17 @@ export const TrackManagementPanel = ({
       {
         id: "parse",
         header: "GPX summary",
-        cell: ({ row }) => <TrackParseStatus track={row.original} />,
+        cell: ({ row }) => (
+          <div className="flex max-w-72 flex-wrap items-center gap-1.5">
+            <SourceBadge
+              track={row.original}
+              ariaLabel={t("trackMarkAsManualBadgeAriaLabel")}
+              isMarking={markingAsManualId === row.original.id}
+              onMarkAsManual={() => setMarkAsManualTarget(row.original)}
+            />
+            <TrackParseStatus track={row.original} />
+          </div>
+        ),
       },
       {
         id: "timezone",
@@ -1054,7 +1285,7 @@ export const TrackManagementPanel = ({
         ),
       },
     ],
-    [activeLanguage, handleParse, parsingTrackId],
+    [activeLanguage, handleParse, markingAsManualId, parsingTrackId, t],
   );
 
   const handleTimezoneSave = () => {
@@ -1182,6 +1413,20 @@ export const TrackManagementPanel = ({
         confirmVariant="destructive"
         isPending={isDeleting}
         onConfirm={handleDelete}
+      />
+      <ConfirmDialog
+        open={Boolean(markAsManualTarget)}
+        onOpenChange={(open) => {
+          if (!open) setMarkAsManualTarget(null);
+        }}
+        title={t("trackMarkAsManualConfirmTitle")}
+        description={
+          markAsManualTarget ? `${t("trackMarkAsManualConfirmDescription")} (${markAsManualTarget.title})` : undefined
+        }
+        confirmLabel={t("trackMarkAsManualConfirmButton")}
+        confirmVariant="default"
+        isPending={Boolean(markingAsManualId)}
+        onConfirm={handleMarkAsManualConfirm}
       />
     </div>
   );
