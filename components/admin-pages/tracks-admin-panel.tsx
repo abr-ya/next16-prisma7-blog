@@ -3,6 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { ColumnDef } from "@tanstack/react-table";
 import { ArrowUpDown, Clock3, Edit, FileUp, MapPin, Plus, RefreshCw, Trash2 } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useT } from "next-i18next/client";
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
@@ -170,9 +171,7 @@ const TrackParseStatus = ({ track }: { track: TrackListItem }) => {
     <div className="flex max-w-72 flex-wrap items-center gap-1.5">
       <div className="flex basis-full flex-wrap items-center gap-1.5">
         <Badge variant={getParseStatusVariant(state)}>{getParseStatusLabel(state)}</Badge>
-        {track.timeSource ? (
-          <Badge variant="secondary">Source: {formatTrackTimeSource(track.timeSource)}</Badge>
-        ) : null}
+        {track.timeSource ? <Badge variant="secondary">Source: {formatTrackTimeSource(track.timeSource)}</Badge> : null}
         {state.status === "SUCCESS" && state.summary.time ? (
           <Badge variant={state.summary.time.timezoneEvidence === "UTC_OR_OFFSET" ? "secondary" : "outline"}>
             {formatTrackTimezoneEvidence(state.summary.time.timezoneEvidence)}
@@ -932,7 +931,17 @@ export const TrackManagementPanel = ({
             <ArrowUpDown />
           </Button>
         ),
-        cell: ({ row }) => <div className="font-medium">{row.original.title}</div>,
+        cell: ({ row }) =>
+          row.original.status === "PUBLISHED" ? (
+            <Link
+              href={`/tracks/${row.original.slug}`}
+              className="font-medium text-foreground hover:underline focus-visible:underline"
+            >
+              {row.original.title}
+            </Link>
+          ) : (
+            <div className="font-medium">{row.original.title}</div>
+          ),
       },
       {
         accessorKey: "fileAsset.name",

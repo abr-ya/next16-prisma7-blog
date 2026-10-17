@@ -44,12 +44,10 @@
 - [x] 8.1 Run `npm run tsc` and confirm zero TypeScript errors across the changed files. (Zero errors after projection extensions in `app/_data/tracks.ts`, `app/_data/hikes/types.ts`, and after rendering edits in the four surface files.)
 - [x] 8.2 Run `npx eslint app/(public)/tracks/[slug]/page.tsx app/(public)/tracks/page.tsx app/admin/tracks/page.tsx components/hike-pages/hike-trip-media.tsx app/_data/tracks.ts lib/track-gpx-metadata.ts --quiet` and confirm zero warnings. (Zero errors after fixing two prettier formatting nits — one in `app/(public)/tracks/page.tsx:106` (collapsed multi-line `formatTrackRecordingDateTime` call) and one in `app/_data/hikes/types.ts:2` (wrapped enum import). Also ran `npm run lint` for the project-wide script — clean.)
 - [x] 8.3 Run `npm run build` and confirm `/tracks`, `/tracks/[slug]`, `/admin/tracks`, and `/trips/[slug]` still appear in the build output. (All four routes present in build output; full route table includes 46 routes with no missing-params warnings.)
-- [ ] 8.4 Manual browser smoke check on a development build:
-  - Open `/tracks/[slug]` for a published GPX track and confirm the new `timeSource = GPX` badge renders and the existing parsed block is unchanged.
-  - Open `/tracks/[slug]` for a published MANUAL track with both fields set and confirm the `MANUAL` badge plus the two new lines render with formatted values.
-  - Open `/tracks/[slug]` for a published MANUAL track with `recordingStartAt = null` and confirm only the badge and the `Recording duration` line render.
-  - Open `/tracks/[slug]` for a published track with `timeSource = NONE` and confirm only the badge renders.
-  - Open `/tracks`, `/admin/tracks`, and `/trips/[slug]` for a trip with linked tracks and confirm the same conditional rules apply on those surfaces.
+- [ ] 8.4 Manual browser smoke check on a development build for the single "MANUAL + both fields" case:
+  - Open `/tracks/[slug]` for a published MANUAL track with both `recordingStartAt` and `recordingDurationSeconds` set and confirm: (a) the new `Source: Manual` badge renders at the top of the article next to the existing badges, (b) the new `Recording details` section renders below the GPX summary with `Recording start: {value}` and `Recording duration: {value}` lines using the recorded timezone, (c) the existing GPX `parsed.summary.time` block stays unchanged (no duplicated recording start/duration lines from the parsed block).
+  - Optional cross-surface check on the same track: open `/tracks`, `/admin/tracks`, and `/trips/[slug]` (linked-track card) and confirm the same `Source: Manual` badge and `Recording start: …` / `Recording duration: …` lines appear with the right labels (`Source: Manual` for the English surfaces, `Источник: Указан вручную` + `Начало записи: …` / `Длительность записи: …` for the localized trip card).
+  - Remaining visual cases (GPX, MANUAL + start-only, MANUAL + duration-only, NONE) deferred to `outdoor-track-recording-metadata-display-visual-qa` on the backlog.
 
 ## 9. Backlog and documentation bookkeeping
 
