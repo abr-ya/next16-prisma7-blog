@@ -73,6 +73,7 @@ import {
   formatTrackTimezoneEvidence,
   formatTrackTimelinePresence,
   getTrackGpxMetadataState,
+  hasTrackTimedTimeline,
   type TrackGpxMetadataState,
 } from "@/lib/track-gpx-metadata";
 import { TrackDurationInputError, parseDurationInput, parseStoredDurationToHms } from "@/lib/track-duration-input";
@@ -155,21 +156,22 @@ const formatActivityTypeName = (activityType: TrackActivityType, language?: stri
 
 // feature-116 row-level reclassify affordance: the `Source: …` badge in the
 // table row is rendered as a clickable button when the row is a `GPX` track
-// with NO recording metadata on the row itself (`recordingStartAt` /
-// `recordingDurationSeconds` / `recordingTimezone` all null). That's the
-// "GPX with no `<time>` elements" case — visually identical to a legacy
-// misclassified row, but it represents a track whose parsed GPX carried no
-// timing data. The owner can promote the row to `MANUAL` and supply the
-// missing timing through the form. Otherwise the badge stays a static
-// secondary variant. The mutation itself is owned by `TrackManagementPanel`
-// and dispatched through the `onMarkAsManual` prop.
+// whose parsed GPX carries no `<time>` elements — i.e. the same condition
+// the existing `No timed timeline` badge is built on. The cell passes the
+// derived `hasNoTimedTimeline` flag in (so the badge and the timeline chip
+// can never disagree), and the badge stays the static secondary variant
+// for every other row (GPX with a real timeline, MANUAL, NONE). The
+// mutation itself is owned by `TrackManagementPanel` and dispatched
+// through the `onMarkAsManual` prop.
 const SourceBadge = ({
   track,
+  hasNoTimedTimeline,
   ariaLabel,
   isMarking,
   onMarkAsManual,
 }: {
   track: TrackListItem;
+  hasNoTimedTimeline: boolean;
   ariaLabel: string;
   isMarking: boolean;
   onMarkAsManual: () => void;
@@ -177,12 +179,7 @@ const SourceBadge = ({
   if (!track.timeSource) {
     return null;
   }
-  const hasNoRecordingMetadata =
-    track.timeSource === "GPX" &&
-    track.recordingStartAt === null &&
-    track.recordingDurationSeconds === null &&
-    (track.recordingTimezone === null || track.recordingTimezone.length === 0);
-  if (!hasNoRecordingMetadata) {
+  if (!hasNoTimedTimeline) {
     return <Badge variant="secondary">Source: {formatTrackTimeSource(track.timeSource)}</Badge>;
   }
   return (
@@ -1184,17 +1181,30 @@ export const TrackManagementPanel = ({
       {
         id: "parse",
         header: "GPX summary",
-        cell: ({ row }) => (
-          <div className="flex max-w-72 flex-wrap items-center gap-1.5">
-            <SourceBadge
-              track={row.original}
-              ariaLabel={t("trackMarkAsManualBadgeAriaLabel")}
-              isMarking={markingAsManualId === row.original.id}
-              onMarkAsManual={() => setMarkAsManualTarget(row.original)}
-            />
-            <TrackParseStatus track={row.original} />
-          </div>
-        ),
+        cell: ({ row }) => {
+          const parseState = getTrackParseState(row.original);
+          // feature-116: a misclassified row is a GPX track whose parsed GPX
+          // carried no `<time>` elements (the same condition the existing
+          // "No timed timeline" badge is built on). The cell exposes this
+          // as `hasNoTimedTimeline` and `SourceBadge` decides clickability
+          // from it.
+          const hasNoTimedTimeline =
+            row.original.timeSource === "GPX" &&
+            parseState.status === "SUCCESS" &&
+            !hasTrackTimedTimeline(parseState.timeline);
+          return (
+            <div className="flex max-w-72 flex-wrap items-center gap-1.5">
+              <SourceBadge
+                track={row.original}
+                hasNoTimedTimeline={hasNoTimedTimeline}
+                ariaLabel={t("trackMarkAsManualBadgeAriaLabel")}
+                isMarking={markingAsManualId === row.original.id}
+                onMarkAsManual={() => setMarkAsManualTarget(row.original)}
+              />
+              <TrackParseStatus track={row.original} />
+            </div>
+          );
+        },
       },
       {
         id: "timezone",
