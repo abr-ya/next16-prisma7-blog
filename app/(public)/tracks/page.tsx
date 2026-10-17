@@ -9,8 +9,11 @@ import { formatFileSize } from "@/lib/file-upload-limits";
 import { buildPageMetadata, getTextMetadataDescription } from "@/lib/site-metadata";
 import {
   formatTrackDistance,
+  formatTrackDuration,
   formatTrackPointCount,
+  formatTrackRecordingDateTime,
   formatTrackRecordingTimeRange,
+  formatTrackTimeSource,
   formatTrackTimezoneEvidence,
 } from "@/lib/track-gpx-metadata";
 import { formatTrackRecordingTimezone } from "@/lib/track-recording-timezone";
@@ -45,6 +48,9 @@ const TracksPage = async () => {
                       <Route className="size-3.5" />
                       GPX track
                     </Badge>
+                    {track.timeSource ? (
+                      <Badge variant="secondary">Source: {formatTrackTimeSource(track.timeSource)}</Badge>
+                    ) : null}
                     <Badge variant="outline">
                       <CalendarDays className="size-3.5" />
                       {formatDate(track.updatedAt)}
@@ -89,6 +95,19 @@ const TracksPage = async () => {
                             {formatTrackTimezoneEvidence(track.parsed.summary.time.timezoneEvidence)}
                           </Badge>
                         </>
+                      ) : null}
+                    </div>
+                  ) : null}
+                  {track.timeSource === "MANUAL" &&
+                  (track.recordingStartAt !== null || track.recordingDurationSeconds !== null) ? (
+                    <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
+                      {track.recordingStartAt !== null ? (
+                        <Badge variant="secondary">
+                          {formatTrackRecordingDateTime(track.recordingStartAt.toISOString(), track.recordingTimezone)}
+                        </Badge>
+                      ) : null}
+                      {track.recordingDurationSeconds !== null ? (
+                        <Badge variant="secondary">{formatTrackDuration(track.recordingDurationSeconds)}</Badge>
                       ) : null}
                     </div>
                   ) : null}

@@ -17,6 +17,7 @@ import {
   formatTrackElevationRange,
   formatTrackPointCount,
   formatTrackRecordingDateTime,
+  formatTrackTimeSource,
   formatTrackTimezoneEvidence,
 } from "@/lib/track-gpx-metadata";
 import { formatTrackRecordingTimezone } from "@/lib/track-recording-timezone";
@@ -66,6 +67,9 @@ const TrackPage = async ({ params }: TrackPageProps) => {
             <Route className="size-3.5" />
             GPX track
           </Badge>
+          {track.timeSource ? (
+            <Badge variant="secondary">Source: {formatTrackTimeSource(track.timeSource)}</Badge>
+          ) : null}
           <Badge variant="outline">
             <CalendarDays className="size-3.5" />
             Updated {formatDate(track.updatedAt)}
@@ -142,6 +146,29 @@ const TrackPage = async ({ params }: TrackPageProps) => {
                     </div>
                   </div>
                 </>
+              ) : null}
+            </div>
+          </section>
+        ) : null}
+
+        {track.timeSource === "MANUAL" &&
+        (track.recordingStartAt !== null || track.recordingDurationSeconds !== null) ? (
+          <section className="grid gap-3 rounded-md border p-4">
+            <h2 className="text-base font-semibold">Recording details</h2>
+            <div className="grid gap-3 text-sm sm:grid-cols-2">
+              {track.recordingStartAt !== null ? (
+                <div>
+                  <div className="text-muted-foreground">Recording start</div>
+                  <div className="font-medium">
+                    {formatTrackRecordingDateTime(track.recordingStartAt.toISOString(), track.recordingTimezone)}
+                  </div>
+                </div>
+              ) : null}
+              {track.recordingDurationSeconds !== null ? (
+                <div>
+                  <div className="text-muted-foreground">Recording duration</div>
+                  <div className="font-medium">{formatTrackDuration(track.recordingDurationSeconds)}</div>
+                </div>
               ) : null}
             </div>
           </section>
