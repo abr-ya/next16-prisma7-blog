@@ -1,5 +1,6 @@
 import { Archive, ClipboardList, Database, FileArchive, ShieldCheck, TriangleAlert } from "lucide-react";
 
+import { DatabaseBackupPanel } from "@/components/admin-pages/database-backup-panel";
 import { AdminPageLayout } from "@/components/layout/admin-page-layout";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -34,9 +35,11 @@ const AdminDatabasePage = async () => {
                 controls are intentionally not active in this slice.
               </p>
             </div>
-            <Badge variant="secondary">Structure only</Badge>
+            <Badge variant="secondary">Structure + full backup generation</Badge>
           </div>
         </section>
+
+        <DatabaseBackupPanel />
 
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           {databaseBackupBoundaries.map((boundary) => (
