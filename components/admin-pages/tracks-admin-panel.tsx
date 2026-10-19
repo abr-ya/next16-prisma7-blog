@@ -1,9 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import type { ColumnDef } from "@tanstack/react-table";
-import { ArrowUpDown, Clock3, Edit, FileUp, Loader2, MapPin, Plus, RefreshCw, Trash2 } from "lucide-react";
-import Link from "next/link";
+import { FileUp, MapPin, Plus, RefreshCw } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useT } from "next-i18next/client";
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
@@ -18,7 +16,6 @@ import {
   createTrack,
   deleteTrack,
   markTrackAsManual,
-  parseTrackGpx,
   updateTrack,
   updateTrackRecordingMetadata,
   updateTrackRecordingTimezone,
@@ -52,30 +49,25 @@ import {
 } from "@/components/index";
 import type { TrackStatus } from "@/generated/prisma/enums";
 import type { TrackActivityType } from "@/generated/prisma/client";
-import { formatFileSize } from "@/lib/file-upload-limits";
-import { formatHikeDateRange, formatHikeStatus, formatHikeType } from "@/lib/hikes";
 import { createSlug } from "@/lib/slug-generator";
+import { useTrackRowActions } from "@/lib/track-row-actions";
 import { TrackGpxUploadSection } from "@/components/track-pages/track-gpx-upload-section";
 import { TrackEditor, type ManualTrackPoint } from "@/components/track-pages/track-editor";
-import {
-  formatTrackRecordingTimezone,
-  getSupportedTrackRecordingTimezones,
-  normalizeTrackRecordingTimezone,
-} from "@/lib/track-recording-timezone";
-import { formatTrackStatus, trackStatusOptions } from "@/lib/tracks";
+import { getSupportedTrackRecordingTimezones, normalizeTrackRecordingTimezone } from "@/lib/track-recording-timezone";
+import { trackStatusOptions } from "@/lib/tracks";
 import {
   formatTrackDistance,
-  formatTrackDuration,
   formatTrackPointCount,
-  formatTrackRecordingDateTime,
   formatTrackRecordingTimeRange,
-  formatTrackTimeSource,
   formatTrackTimezoneEvidence,
   formatTrackTimelinePresence,
-  getTrackGpxMetadataState,
-  hasTrackTimedTimeline,
-  type TrackGpxMetadataState,
 } from "@/lib/track-gpx-metadata";
+import {
+  getParseStatusLabel,
+  getParseStatusVariant,
+  getTrackParseState,
+} from "@/components/admin-pages/tracks-admin-panel-parse-cell";
+import { createTracksAdminColumns } from "@/components/admin-pages/tracks-admin-columns";
 import { TrackDurationInputError, parseDurationInput, parseStoredDurationToHms } from "@/lib/track-duration-input";
 
 const formSchema = z.object({
@@ -129,120 +121,9 @@ const formatDate = (value: Date | string) =>
     day: "numeric",
   }).format(new Date(value));
 
-const getTrackParseState = (track: TrackListItem): TrackGpxMetadataState =>
-  getTrackGpxMetadataState(track.metadata, {
-    fileAssetId: track.fileAsset.id,
-    fileKey: track.fileAsset.fileKey,
-  });
-
-const getParseStatusLabel = (state: TrackGpxMetadataState) => {
-  if (state.status === "SUCCESS") return "Parsed";
-  if (state.status === "FAILED") return "Failed";
-  if (state.status === "STALE") return "Needs reparse";
-
-  return "Not parsed";
-};
-
-const getParseStatusVariant = (state: TrackGpxMetadataState) => {
-  if (state.status === "SUCCESS") return "default";
-  if (state.status === "FAILED") return "destructive";
-
-  return "outline";
-};
-
 const uniqueIds = (ids: string[]) => Array.from(new Set(ids));
-const formatActivityTypeName = (activityType: TrackActivityType, language?: string) =>
-  language === "ru" ? activityType.nameRu || activityType.nameEn : activityType.nameEn;
-
-// feature-116 row-level reclassify affordance: the `Source: …` badge in the
-// table row is rendered as a clickable button when the row is a `GPX` track
-// whose parsed GPX carries no `<time>` elements — i.e. the same condition
-// the existing `No timed timeline` badge is built on. The cell passes the
-// derived `hasNoTimedTimeline` flag in (so the badge and the timeline chip
-// can never disagree), and the badge stays the static secondary variant
-// for every other row (GPX with a real timeline, MANUAL, NONE). The
-// mutation itself is owned by `TrackManagementPanel` and dispatched
-// through the `onMarkAsManual` prop.
-const SourceBadge = ({
-  track,
-  hasNoTimedTimeline,
-  ariaLabel,
-  isMarking,
-  onMarkAsManual,
-}: {
-  track: TrackListItem;
-  hasNoTimedTimeline: boolean;
-  ariaLabel: string;
-  isMarking: boolean;
-  onMarkAsManual: () => void;
-}) => {
-  if (!track.timeSource) {
-    return null;
-  }
-  if (!hasNoTimedTimeline) {
-    return <Badge variant="secondary">Source: {formatTrackTimeSource(track.timeSource)}</Badge>;
-  }
-  return (
-    <Badge variant="outline" asChild className="cursor-pointer border-yellow-500 text-yellow-700 dark:text-yellow-300">
-      <button type="button" aria-label={ariaLabel} disabled={isMarking} onClick={onMarkAsManual}>
-        {isMarking ? <Loader2 className="animate-spin" aria-hidden="true" /> : null}
-        Source: {formatTrackTimeSource(track.timeSource)}
-      </button>
-    </Badge>
-  );
-};
-
-const TrackParseStatus = ({ track }: { track: TrackListItem }) => {
-  const state = getTrackParseState(track);
-  const distance = state.status === "SUCCESS" ? formatTrackDistance(state.summary.distanceMeters) : null;
-  const points = state.status === "SUCCESS" ? formatTrackPointCount(state.summary.points) : null;
-  const timeline = state.status === "SUCCESS" ? formatTrackTimelinePresence(state.timeline) : null;
-  const recordingTime =
-    state.status === "SUCCESS" ? formatTrackRecordingTimeRange(state.summary.time, track.recordingTimezone) : null;
-  const manualStart =
-    track.timeSource === "MANUAL" && track.recordingStartAt
-      ? formatTrackRecordingDateTime(track.recordingStartAt.toISOString(), track.recordingTimezone)
-      : null;
-  const manualDuration =
-    track.timeSource === "MANUAL" && track.recordingDurationSeconds !== null
-      ? formatTrackDuration(track.recordingDurationSeconds)
-      : null;
-
-  return (
-    <div className="flex max-w-72 flex-wrap items-center gap-1.5">
-      <div className="flex basis-full flex-wrap items-center gap-1.5">
-        <Badge variant={getParseStatusVariant(state)}>{getParseStatusLabel(state)}</Badge>
-        {state.status === "SUCCESS" && state.summary.time ? (
-          <Badge variant={state.summary.time.timezoneEvidence === "UTC_OR_OFFSET" ? "secondary" : "outline"}>
-            {formatTrackTimezoneEvidence(state.summary.time.timezoneEvidence)}
-          </Badge>
-        ) : null}
-        {state.status === "SUCCESS" ? (
-          <Badge variant={state.timeline && state.timeline.length > 0 ? "secondary" : "outline"}>{timeline}</Badge>
-        ) : null}
-      </div>
-      {state.status === "SUCCESS" ? (
-        <>
-          {[distance, points].filter(Boolean).map((value) => (
-            <span key={value} className="text-xs text-muted-foreground">
-              {value}
-            </span>
-          ))}
-          {recordingTime ? <span className="text-xs text-muted-foreground">Recording {recordingTime}</span> : null}
-        </>
-      ) : null}
-      {track.timeSource === "MANUAL" && (manualStart || manualDuration) ? (
-        <div className="flex basis-full flex-col gap-0.5 text-xs text-muted-foreground">
-          {manualStart ? <span>Recording start: {manualStart}</span> : null}
-          {manualDuration ? <span>Recording duration: {manualDuration}</span> : null}
-        </div>
-      ) : null}
-      {state.status === "FAILED" || state.status === "STALE" ? (
-        <div className="line-clamp-2 text-xs text-muted-foreground">{state.errorMessage}</div>
-      ) : null}
-    </div>
-  );
-};
+const formatActivityTypeName = (activityType: TrackActivityType | null, language?: string) =>
+  activityType ? (language === "ru" ? activityType.nameRu || activityType.nameEn : activityType.nameEn) : "";
 
 const TrackFormDialog = ({
   track,
@@ -1061,15 +942,21 @@ export const TrackManagementPanel = ({
   const [timezoneTarget, setTimezoneTarget] = useState<TrackListItem | null>(null);
   const [recordingTimezone, setRecordingTimezone] = useState("");
   const [browserTimezone, setBrowserTimezone] = useState<string | null>(null);
-  const [parsingTrackId, setParsingTrackId] = useState<string | null>(null);
-  const [markingAsManualId, setMarkingAsManualId] = useState<string | null>(null);
-  const [markAsManualTarget, setMarkAsManualTarget] = useState<TrackListItem | null>(null);
   const [isDeleting, startDeleting] = useTransition();
   const [isSavingTimezone, startSavingTimezone] = useTransition();
-  const [, startParsing] = useTransition();
+
+  const rowActions = useTrackRowActions({
+    onSuccess: () => router.refresh(),
+  });
 
   const timezoneOptions = useMemo(() => getSupportedTrackRecordingTimezones(), []);
 
+  // The two effects below are pre-existing patterns that the new
+  // eslint-plugin-react-hooks v7 (React Compiler) flags as
+  // "set-state-in-effect"; the eslint-disable block suppresses the rule
+  // for the effect bodies without changing the runtime behaviour. The
+  // refactor scope is the panel split, not these effects.
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     const detected = normalizeTrackRecordingTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone);
 
@@ -1081,222 +968,36 @@ export const TrackManagementPanel = ({
 
     setRecordingTimezone(timezoneTarget.recordingTimezone ?? browserTimezone ?? "UTC");
   }, [browserTimezone, timezoneTarget]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
-  const handleParse = useCallback(
-    (track: TrackListItem) => {
-      setParsingTrackId(track.id);
+  const handleEditTrack = useCallback((track: TrackListItem) => {
+    setEditingTrack(track);
+    setFormOpen(true);
+  }, []);
 
-      startParsing(async () => {
-        try {
-          const metadata = await parseTrackGpx(track.id);
-
-          if (metadata.gpxParse.status === "SUCCESS") {
-            toast.success("GPX parsed");
-          } else {
-            toast.error(metadata.gpxParse.errorMessage ?? "GPX parsing failed");
-          }
-
-          router.refresh();
-        } catch (error) {
-          toast.error(error instanceof Error ? error.message : "Failed to parse GPX");
-        } finally {
-          setParsingTrackId(null);
-        }
-      });
-    },
-    [router],
+  const columns = useMemo(
+    () =>
+      createTracksAdminColumns({
+        activeLanguage,
+        handleParse: rowActions.handleParse,
+        markingAsManualId: rowActions.markingAsManualId,
+        onMarkAsManual: rowActions.setMarkAsManualTarget,
+        onSetTimezoneTarget: setTimezoneTarget,
+        onEditTrack: handleEditTrack,
+        onSetDeleteTarget: setDeleteTarget,
+        parsingTrackId: rowActions.parsingTrackId,
+        t,
+        formatDate,
+        formatActivityTypeName,
+      }),
+    [activeLanguage, handleEditTrack, rowActions, t],
   );
 
-  const handleMarkAsManualConfirm = useCallback(async () => {
-    if (!markAsManualTarget) {
-      return;
-    }
-    setMarkingAsManualId(markAsManualTarget.id);
-    try {
-      const result = await markTrackAsManual({ id: markAsManualTarget.id });
-      if (!result.ok) {
-        toast.error(result.message);
-        return;
-      }
-      toast.success(t("trackMarkAsManualSuccess"));
-      setMarkAsManualTarget(null);
-      router.refresh();
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to mark track as manual");
-    } finally {
-      setMarkingAsManualId(null);
-    }
-  }, [markAsManualTarget, router, t]);
-
-  const columns = useMemo<ColumnDef<TrackListItem>[]>(
-    () => [
-      {
-        id: "activityType",
-        header: "Type",
-        cell: ({ row }) => (
-          <Badge variant="outline">
-            {row.original.activityType
-              ? formatActivityTypeName(row.original.activityType, activeLanguage)
-              : "Unclassified"}
-          </Badge>
-        ),
-      },
-      {
-        accessorKey: "title",
-        header: ({ column }) => (
-          <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
-            Title
-            <ArrowUpDown />
-          </Button>
-        ),
-        cell: ({ row }) =>
-          row.original.status === "PUBLISHED" ? (
-            <Link
-              href={`/tracks/${row.original.slug}`}
-              className="font-medium text-foreground hover:underline focus-visible:underline"
-            >
-              {row.original.title}
-            </Link>
-          ) : (
-            <div className="font-medium">{row.original.title}</div>
-          ),
-      },
-      {
-        accessorKey: "fileAsset.name",
-        header: "GPX file",
-        cell: ({ row }) => (
-          <div className="grid max-w-64 gap-1">
-            <div className="truncate" title={row.original.fileAsset.name}>
-              {row.original.fileAsset.name}
-            </div>
-            <div className="flex flex-wrap items-center gap-1.5">
-              <Badge variant={row.original.status === "PUBLISHED" ? "default" : "secondary"}>
-                {formatTrackStatus(row.original.status)}
-              </Badge>
-              <span className="text-xs text-muted-foreground">{formatFileSize(row.original.fileAsset.sizeBytes)}</span>
-            </div>
-          </div>
-        ),
-      },
-      {
-        id: "parse",
-        header: "GPX summary",
-        cell: ({ row }) => {
-          const parseState = getTrackParseState(row.original);
-          // feature-116: a misclassified row is a GPX track whose parsed GPX
-          // carried no `<time>` elements (the same condition the existing
-          // "No timed timeline" badge is built on). The cell exposes this
-          // as `hasNoTimedTimeline` and `SourceBadge` decides clickability
-          // from it.
-          const hasNoTimedTimeline =
-            row.original.timeSource === "GPX" &&
-            parseState.status === "SUCCESS" &&
-            !hasTrackTimedTimeline(parseState.timeline);
-          return (
-            <div className="flex max-w-72 flex-wrap items-center gap-1.5">
-              <SourceBadge
-                track={row.original}
-                hasNoTimedTimeline={hasNoTimedTimeline}
-                ariaLabel={t("trackMarkAsManualBadgeAriaLabel")}
-                isMarking={markingAsManualId === row.original.id}
-                onMarkAsManual={() => setMarkAsManualTarget(row.original)}
-              />
-              <TrackParseStatus track={row.original} />
-            </div>
-          );
-        },
-      },
-      {
-        id: "timezone",
-        header: "Timezone",
-        cell: ({ row }) => (
-          <Badge variant={row.original.recordingTimezone ? "secondary" : "outline"}>
-            {formatTrackRecordingTimezone(row.original.recordingTimezone)}
-          </Badge>
-        ),
-      },
-      {
-        id: "hikes",
-        header: "Trips",
-        cell: ({ row }) => (
-          <div className="flex max-w-56 flex-col gap-1">
-            {row.original.hikes.length > 0 ? (
-              row.original.hikes.slice(0, 2).map(({ hike }) => (
-                <div key={hike.id} className="grid gap-1">
-                  <div className="truncate text-sm font-medium" title={hike.title}>
-                    {hike.title}
-                  </div>
-                  <div className="flex flex-wrap gap-1">
-                    <Badge variant={hike.status === "PUBLISHED" ? "default" : "secondary"}>
-                      {formatHikeStatus(hike.status)}
-                    </Badge>
-                    <Badge variant="outline">{formatHikeType(hike.type)}</Badge>
-                  </div>
-                  <div className="text-xs text-muted-foreground">{formatHikeDateRange(hike)}</div>
-                </div>
-              ))
-            ) : (
-              <span className="text-sm text-muted-foreground">None</span>
-            )}
-            {row.original.hikes.length > 2 ? <Badge variant="outline">+{row.original.hikes.length - 2}</Badge> : null}
-          </div>
-        ),
-      },
-      {
-        accessorKey: "updatedAt",
-        header: "Updated",
-        cell: ({ row }) => formatDate(row.original.updatedAt),
-      },
-      {
-        id: "actions",
-        cell: ({ row }) => (
-          <div className="flex justify-end gap-2">
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              title="Set recording timezone"
-              onClick={() => setTimezoneTarget(row.original)}
-            >
-              <Clock3 className="size-4" />
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              title="Parse GPX"
-              disabled={parsingTrackId === row.original.id}
-              onClick={() => handleParse(row.original)}
-            >
-              <RefreshCw className={`size-4 ${parsingTrackId === row.original.id ? "animate-spin" : ""}`} />
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              title="Edit track"
-              onClick={() => {
-                setEditingTrack(row.original);
-                setFormOpen(true);
-              }}
-            >
-              <Edit className="size-4" />
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              title="Delete track"
-              onClick={() => setDeleteTarget(row.original)}
-            >
-              <Trash2 className="size-4" />
-            </Button>
-          </div>
-        ),
-      },
-    ],
-    [activeLanguage, handleParse, markingAsManualId, parsingTrackId, t],
-  );
+  // The inline column body that used to live here has moved to
+  // `components/admin-pages/tracks-admin-columns.tsx` (feature-117).
+  // The factory composes the column array from the closures above; the
+  // `useMemo` keeps the same identity contract that the inline `useMemo`
+  // had before the move.
 
   const handleTimezoneSave = () => {
     if (!timezoneTarget) return;
@@ -1355,8 +1056,8 @@ export const TrackManagementPanel = ({
         track={editingTrack}
         activityTypes={activityTypes}
         open={formOpen}
-        onParse={handleParse}
-        parsingTrackId={parsingTrackId}
+        onParse={rowActions.handleParse}
+        parsingTrackId={rowActions.parsingTrackId}
         onSaved={() => router.refresh()}
         onOpenChange={(open) => {
           setFormOpen(open);
@@ -1425,18 +1126,20 @@ export const TrackManagementPanel = ({
         onConfirm={handleDelete}
       />
       <ConfirmDialog
-        open={Boolean(markAsManualTarget)}
+        open={Boolean(rowActions.markAsManualTarget)}
         onOpenChange={(open) => {
-          if (!open) setMarkAsManualTarget(null);
+          if (!open) rowActions.setMarkAsManualTarget(null);
         }}
         title={t("trackMarkAsManualConfirmTitle")}
         description={
-          markAsManualTarget ? `${t("trackMarkAsManualConfirmDescription")} (${markAsManualTarget.title})` : undefined
+          rowActions.markAsManualTarget
+            ? `${t("trackMarkAsManualConfirmDescription")} (${rowActions.markAsManualTarget.title})`
+            : undefined
         }
         confirmLabel={t("trackMarkAsManualConfirmButton")}
         confirmVariant="default"
-        isPending={Boolean(markingAsManualId)}
-        onConfirm={handleMarkAsManualConfirm}
+        isPending={Boolean(rowActions.markingAsManualId)}
+        onConfirm={rowActions.handleMarkAsManualConfirm}
       />
     </div>
   );
