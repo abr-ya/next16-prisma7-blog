@@ -80,23 +80,27 @@ npx prisma migrate dev  # Create and apply migrations
 
 **OpenSpec Methodology:**
 
-This project uses OpenSpec for feature planning. Before non-trivial feature work, behavior changes, schema changes, or architecture changes:
+This project uses OpenSpec for change planning across five independent numbering pools. Each pool has its own backlog and (where applicable) archive:
 
-1. Read `openspec/config.yaml` for project context
-2. Check `openspec/backlog.md` for the next available feature number
-3. Create OpenSpec artifacts (proposal/design/tasks/spec) in `openspec/changes/feature-XXX-area-action/`
-4. Implement according to accepted tasks
-5. Update docs/checklists when behavior changes
+- `feature-XXX` — product features and user-visible behavior changes. Backlog: `openspec/backlog.md`. Archive: `openspec/feature-history.md`.
+- `fix-XXX` — bug fixes, paired with the originating change in the summary. Backlog: `openspec/backlog.md`.
+- `verify-XXX` — automated verification scripts with isolated schema, seed factories, and explicit error-code assertions. Backlog: `openspec/backlog.md`.
+- `refactor-XXX` — internal code-hygiene changes with **no** user-visible behavior change. Backlog: `openspec/refactor-backlog.md`. Archive: `openspec/refactor-history.md`.
+- `research-XXX` — investigation outputs with no code change (for example shared-pattern audits). Backlog: `openspec/research-backlog.md`. Archive: `openspec/research-history.md`.
+
+**Hybrid rule:** if a change exposes *any* user-visible behavior change it belongs under `feature-XXX` regardless of how much internal cleanup it also does — the refactor rides inside. Conversely, a `refactor-XXX` change must leave observable behavior unchanged.
+
+**Workflow per pool:**
+
+1. Read `openspec/config.yaml` for project context.
+2. Read the pool's backlog file for the next available number.
+3. Create OpenSpec artifacts under `openspec/changes/<pool>-XXX-area-action/`. Use `proposal/`, `design/`, `tasks/`, and `specs/` when applicable. `refactor-XXX` and `research-XXX` changes omit `specs/` (no behavior change); `research-XXX` also omits `tasks/` because the deliverable is the research write-up itself.
+4. Implement per accepted tasks.
+5. Update docs/checklists when behavior changes; archive on completion via the OpenSpec archive skill.
+
+Numbering format: `<pool>-<3 digits>-<area>-<short-action>` (for example `feature-024-public-file-downloads`, `refactor-001-tracks-admin-panel-split`, `research-001-tracks-admin-panel-parallel-audit`). Use the same name for the OpenSpec change directory and the git branch. Do not reuse numbers in the same pool.
 
 Small obvious fixes that don't change product scope, public behavior, data contracts, or architecture may be implemented directly.
-
-**Feature Numbering:**
-
-Use format: `feature-<3 digits>-<area>-<short-action>`
-
-Examples: `feature-024-public-file-downloads`, `feature-025-video-search`
-
-Use the same name for OpenSpec change directory and git branch. Check `openspec/backlog.md` before starting a new feature. Do not reuse feature numbers.
 
 **Validation Workflow:**
 

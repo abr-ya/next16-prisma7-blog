@@ -20,11 +20,13 @@ Backlog candidates stay unnumbered until they are promoted into implementation. 
 
 ## Numbering Rules
 
-The project uses three independent numbering pools (`feature-XXX`, `fix-XXX`, `verify-XXX`). Each pool has its own counter; numbers do not collide across pools, so `verify-001` and `feature-111` can ship in the same week without competing for a slot. Promote within a pool by taking the lowest unused number in that pool after checking this file and [feature-history.md](./feature-history.md).
+The project uses five independent numbering pools (`feature-XXX`, `fix-XXX`, `verify-XXX`, `refactor-XXX`, `research-XXX`). Each pool has its own counter; numbers do not collide across pools, so `verify-001` and `feature-111` can ship in the same week without competing for a slot. Promote within a pool by taking the lowest unused number in that pool after checking this file, the pool's own backlog, and the pool's own archive.
 
 - `feature-XXX-<short-slug>` — product features and user-visible behavior changes. `Done` numbered features live in [feature-history.md](./feature-history.md). Numbered follow-up slices stay in this backlog until completed, then move to [feature-history.md](./feature-history.md).
 - `fix-XXX-<short-slug>` — bug fixes, paired with their originating change in the summary. Reserve a number only after reproduction.
 - `verify-XXX-<short-slug>` — automated verification scripts that exercise a server action or mutation with an isolated schema, seed factories, and explicit error-code assertions. A `verify-XXX` change that introduces a shared harness (DB setup/teardown, fake auth context, run loop) ships as a separate change from the first script that consumes it, so each PR is small and the pattern is documented in isolation. Manual browser QA candidates stay unnumbered in the [Manual QA Follow-ups](#manual-qa-follow-ups) table and promote to `fix-XXX` (bug found) or `verify-XXX` (later automation) as appropriate.
+- `refactor-XXX-<short-slug>` — internal code-hygiene changes with **no** user-visible behavior change. Live candidates live in [refactor-backlog.md](./refactor-backlog.md); `Done` numbered refactors archive in [refactor-history.md](./refactor-history.md). **Hybrid rule:** any candidate that exposes user-visible behavior change is not a refactor — promote it under `feature-XXX` and let the refactor ride inside.
+- `research-XXX-<short-slug>` — investigation outputs with **no** code change (for example shared-pattern audits). Live candidates live in [research-backlog.md](./research-backlog.md); `Done` numbered research archives in [research-history.md](./research-history.md).
 - Unnumbered candidates can use any free number from the relevant pool when promoted.
 - Cancelled or deferred candidates do not reserve numbers; keep or move them as unnumbered history notes when useful.
 
