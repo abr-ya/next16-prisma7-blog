@@ -20,8 +20,9 @@ A research candidate that surfaces a follow-up refactor or feature should hand t
 
 ## Numbering Rules
 
-- `research-XXX-<short-slug>` — investigation outputs with **no** code change. The deliverable is the research write-up; the open question lives in `proposal/`. Numbered research archives in [`research-history.md`](./research-history.md).
-- Research proposals keep `proposal/` and **omit both `design/` and `specs/`**; there is no `tasks/` implementation list because the output is a document. The proposal may end with the research write-up itself once accepted.
+- `research-XXX-<short-slug>` — investigation outputs with **no** code change. The question lives in `proposal.md`; the result lives in `output.md`. Numbered research archives in [`research-history.md`](./research-history.md).
+- Research changes keep `proposal.md`, `design.md`, and `tasks.md` and **omit `specs/`** (no behavior change). `design.md` describes the investigation method — scope boundaries, what counts as evidence, the `lift` / `skip` / `needs more research` rubric, and the required structure of the output document. `tasks.md` is the investigation checklist and states the write-up's required sections **before** the read begins, so the deliverable is reviewable up front instead of invented while writing it.
+- `research-001-tracks-admin-panel-parallel-audit` predates this rule and carries only `proposal.md` + `output.md`; its findings were resolved in place, so no `design.md` / `tasks.md` was written for it.
 - Number by taking the lowest unused `research-XXX` counter after checking this file and [`research-history.md`](./research-history.md). Do not reuse numbers.
 
 ## Candidates
