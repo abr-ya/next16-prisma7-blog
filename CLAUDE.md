@@ -94,7 +94,7 @@ This project uses OpenSpec for change planning across five independent numbering
 
 1. Read `openspec/config.yaml` for project context.
 2. Read the pool's backlog file for the next available number.
-3. Create OpenSpec artifacts under `openspec/changes/<pool>-XXX-area-action/`. Use `proposal/`, `design/`, `tasks/`, and `specs/` when applicable. `refactor-XXX` and `research-XXX` changes omit `specs/` (no behavior change); `research-XXX` also omits `tasks/` because the deliverable is the research write-up itself.
+3. Create OpenSpec artifacts under `openspec/changes/<pool>-XXX-area-action/` — `proposal.md`, `design.md`, `tasks.md`, and `specs/<capability>/spec.md` when applicable. `refactor-XXX` and `research-XXX` changes omit `specs/` (no behavior change). For `research-XXX`, `design.md` describes the investigation method (scope, evidence standard, findings rubric, required output structure), `tasks.md` is the investigation checklist that fixes the write-up's required sections before the read begins, and the result itself lives in `output.md`.
 4. Implement per accepted tasks.
 5. Update docs/checklists when behavior changes; archive on completion via the OpenSpec archive skill.
 
