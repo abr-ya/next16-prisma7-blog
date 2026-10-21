@@ -75,6 +75,7 @@ import {
   type TrackGpxTimeSummary,
 } from "@/lib/track-gpx-metadata";
 import { formatTrackRecordingTimezone } from "@/lib/track-recording-timezone";
+import { useDeleteRowConfirm } from "@/lib/use-delete-row-confirm";
 
 const formatDate = (value: Date | string) =>
   new Intl.DateTimeFormat("en", {
@@ -1070,8 +1071,21 @@ export const HikesAdminPanel = ({
   const [managingTracksHike, setManagingTracksHike] = useState<HikeListItem | null>(null);
   const [managingPhotosHike, setManagingPhotosHike] = useState<HikeListItem | null>(null);
   const [managingNotesHike, setManagingNotesHike] = useState<HikeListItem | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<HikeListItem | null>(null);
-  const [isDeleting, startDeleting] = useTransition();
+
+  const deleteConfirm = useDeleteRowConfirm<HikeListItem>({
+    deleteAction: deleteHike,
+    title: "Delete hike?",
+    getDescription: (row) => `This will remove "${row.title}" from admin and public hike lists.`,
+    deletedMsg: "Trip deleted",
+    notFoundMsg: "Trip not found",
+  });
+
+  // Destructure instead of reading `deleteConfirm.setTarget` inline. The React
+  // Compiler infers the whole `deleteConfirm` object as this memo's dependency,
+  // and that object is a fresh literal on every render — putting it in the dep
+  // array would rebuild all column defs on every render. `setTarget` is the
+  // `useState` setter underneath, so it is stable.
+  const { setTarget: setDeleteTarget } = deleteConfirm;
 
   const columns = useMemo<ColumnDef<HikeListItem>[]>(
     () => [
@@ -1205,29 +1219,12 @@ export const HikesAdminPanel = ({
         ),
       },
     ],
-    [isAdmin],
+    [isAdmin, setDeleteTarget],
   );
 
   const handleCreateClick = () => {
     setEditingHike(null);
     setFormOpen(true);
-  };
-
-  const handleDelete = () => {
-    if (!deleteTarget) return;
-
-    startDeleting(async () => {
-      const result = await deleteHike(deleteTarget.id);
-
-      if (result.success) {
-        toast.success("Trip deleted");
-      } else {
-        toast.error("Trip not found");
-      }
-
-      setDeleteTarget(null);
-      router.refresh();
-    });
   };
 
   return (
@@ -1297,20 +1294,7 @@ export const HikesAdminPanel = ({
           />
         </>
       ) : null}
-      <ConfirmDialog
-        open={Boolean(deleteTarget)}
-        onOpenChange={(open) => {
-          if (!open) setDeleteTarget(null);
-        }}
-        title="Delete hike?"
-        description={
-          deleteTarget ? `This will remove "${deleteTarget.title}" from admin and public hike lists.` : undefined
-        }
-        confirmLabel="Delete"
-        confirmVariant="destructive"
-        isPending={isDeleting}
-        onConfirm={handleDelete}
-      />
+      <ConfirmDialog {...deleteConfirm.confirmDialogProps} />
     </div>
   );
 };

@@ -142,7 +142,21 @@ and the tracks panel's existing `onSetDeleteTarget: setDeleteTarget` prop become
 
 ### Type risk at the tracks boundary
 
-`useState`'s setter is `Dispatch<SetStateAction<T | null>>`, which also accepts an updater function. The hook exposes the narrower `(row: T | null) => void`. If `createTracksAdminColumns` types `onSetDeleteTarget` as the full `Dispatch`, passing the narrower function is a compile error. Check the declared prop type in `components/admin-pages/tracks-admin-columns.tsx` before assuming the drop-in works; if it requires `Dispatch`, widen `setTarget`'s type or narrow the prop type — whichever the surrounding file already prefers.
+**Resolved during implementation — the risk did not materialize.** `createTracksAdminColumns` declares `onSetDeleteTarget: (track: TrackListItem) => void`, which is already narrower than the hook's `(row: T | null) => void`, so the drop-in assignment compiles. No reconciliation was needed.
+
+### React Compiler and the memo dependency
+
+Wiring the setter into a memoized column definition surfaced a `react-hooks/preserve-manual-memoization` error in **both** panels. The compiler infers the whole `deleteConfirm` object as the memo's dependency — not `deleteConfirm.setTarget` — and warns "Inferred less specific property than source" or the reverse.
+
+That matters because `deleteConfirm` is a fresh object literal on every render, so listing it in the dependency array would rebuild all column defs on every render. The tracks panel happened to pass with `deleteConfirm.setTarget` in the array; the hikes panel did not, because its column body is an inline array rather than a call to a factory function, and the compiler infers at a different granularity for the two shapes.
+
+The durable fix is to destructure the stable setter before the memo:
+
+```ts
+const { setTarget: setDeleteTarget } = deleteConfirm;
+```
+
+`setTarget` is the `useState` setter underneath, so it is referentially stable and the memo keeps its original behavior. Applied in `hikes-admin-panel.tsx`. Worth remembering for any future refactor that feeds a hook's setter into a `useMemo`: expose the setter as a destructurable stable value, not only as a property of a returned object.
 
 ## State removed from the panels
 
