@@ -1,7 +1,7 @@
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
-import { ArrowUpDown, Eye, Trash } from "lucide-react";
+import { Eye, Trash } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -22,6 +22,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  SortableHeader,
 } from "..";
 import { FilePreviewDialog, isFilePreviewable } from "./file-preview-dialog";
 
@@ -179,12 +180,7 @@ const FileActions = ({
 const getColumns = (onPreview: (file: FileAssetWithOwner) => void): ColumnDef<FileAssetWithOwner>[] => [
   {
     accessorKey: "name",
-    header: ({ column }) => (
-      <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
-        Name
-        <ArrowUpDown />
-      </Button>
-    ),
+    header: ({ column }) => <SortableHeader column={column} label="Name" />,
     cell: ({ row }) => {
       const file = row.original;
       const isActive = file.status === "ACTIVE";
@@ -270,16 +266,7 @@ const getColumns = (onPreview: (file: FileAssetWithOwner) => void): ColumnDef<Fi
   },
   {
     accessorKey: "uploadedAt",
-    header: ({ column }) => (
-      <Button
-        variant="ghost"
-        className="w-36 justify-start"
-        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-      >
-        Uploaded
-        <ArrowUpDown />
-      </Button>
-    ),
+    header: ({ column }) => <SortableHeader column={column} label="Uploaded" className="w-36 justify-start" />,
     cell: ({ row }) => (
       <div className="w-36 truncate" title={formatDateTime(row.getValue("uploadedAt") as Date)}>
         {formatDateTime(row.getValue("uploadedAt") as Date)}

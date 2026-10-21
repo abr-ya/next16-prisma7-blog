@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { ColumnDef } from "@tanstack/react-table";
-import { ArrowUpDown, Edit, ImageIcon, Plus, RefreshCw, Trash2, X } from "lucide-react";
+import { Edit, ImageIcon, Plus, RefreshCw, Trash2, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
@@ -38,6 +38,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  SortableHeader,
 } from "@/components/index";
 import type { PhotoStatus } from "@/generated/prisma/enums";
 import { OUTDOOR_PHOTO_IMAGE_UPLOAD_MAX_COUNT, OUTDOOR_PHOTO_IMAGE_UPLOAD_MAX_SIZE } from "@/lib/file-upload-limits";
@@ -733,12 +734,7 @@ export const PhotosAdminPanel = ({ photos }: { photos: PhotoListItem[] }) => {
       },
       {
         accessorKey: "title",
-        header: ({ column }) => (
-          <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
-            Title
-            <ArrowUpDown />
-          </Button>
-        ),
+        header: ({ column }) => <SortableHeader column={column} label="Title" />,
         cell: ({ row }) => <div className="font-medium">{row.original.title}</div>,
       },
       {

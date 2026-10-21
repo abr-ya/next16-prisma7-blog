@@ -4,7 +4,6 @@ import type { ColumnDef } from "@tanstack/react-table";
 import {
   ArrowDown,
   ArrowUp,
-  ArrowUpDown,
   Clock3,
   Edit,
   ImageIcon,
@@ -53,6 +52,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  SortableHeader,
 } from "@/components/index";
 import { dateInputValue } from "@/components/forms/trips";
 import { HikeFormDialog } from "@/components/dialogs/trips";
@@ -1091,12 +1091,7 @@ export const HikesAdminPanel = ({
     () => [
       {
         accessorKey: "title",
-        header: ({ column }) => (
-          <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
-            Title
-            <ArrowUpDown />
-          </Button>
-        ),
+        header: ({ column }) => <SortableHeader column={column} label="Title" />,
         cell: ({ row }) => <div className="font-medium">{row.original.title}</div>,
       },
       {
