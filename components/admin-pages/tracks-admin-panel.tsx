@@ -51,6 +51,7 @@ import type { TrackStatus } from "@/generated/prisma/enums";
 import type { TrackActivityType } from "@/generated/prisma/client";
 import { createSlug } from "@/lib/slug-generator";
 import { useTrackRowActions } from "@/lib/track-row-actions";
+import { useDeleteRowConfirm } from "@/lib/use-delete-row-confirm";
 import { TrackGpxUploadSection } from "@/components/track-pages/track-gpx-upload-section";
 import { TrackEditor, type ManualTrackPoint } from "@/components/track-pages/track-editor";
 import { getSupportedTrackRecordingTimezones, normalizeTrackRecordingTimezone } from "@/lib/track-recording-timezone";
@@ -938,15 +939,21 @@ export const TrackManagementPanel = ({
   const activeLanguage = i18n.resolvedLanguage ?? i18n.language;
   const [formOpen, setFormOpen] = useState(false);
   const [editingTrack, setEditingTrack] = useState<TrackListItem | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<TrackListItem | null>(null);
   const [timezoneTarget, setTimezoneTarget] = useState<TrackListItem | null>(null);
   const [recordingTimezone, setRecordingTimezone] = useState("");
   const [browserTimezone, setBrowserTimezone] = useState<string | null>(null);
-  const [isDeleting, startDeleting] = useTransition();
   const [isSavingTimezone, startSavingTimezone] = useTransition();
 
   const rowActions = useTrackRowActions({
     onSuccess: () => router.refresh(),
+  });
+
+  const deleteConfirm = useDeleteRowConfirm<TrackListItem>({
+    deleteAction: deleteTrack,
+    title: "Delete track?",
+    getDescription: (row) => `This will remove "${row.title}" from the admin tracks list.`,
+    deletedMsg: "Track deleted",
+    notFoundMsg: "Track not found",
   });
 
   const timezoneOptions = useMemo(() => getSupportedTrackRecordingTimezones(), []);
@@ -984,13 +991,13 @@ export const TrackManagementPanel = ({
         onMarkAsManual: rowActions.setMarkAsManualTarget,
         onSetTimezoneTarget: setTimezoneTarget,
         onEditTrack: handleEditTrack,
-        onSetDeleteTarget: setDeleteTarget,
+        onSetDeleteTarget: deleteConfirm.setTarget,
         parsingTrackId: rowActions.parsingTrackId,
         t,
         formatDate,
         formatActivityTypeName,
       }),
-    [activeLanguage, handleEditTrack, rowActions, t],
+    [activeLanguage, deleteConfirm.setTarget, handleEditTrack, rowActions, t],
   );
 
   // The inline column body that used to live here has moved to
@@ -1024,23 +1031,6 @@ export const TrackManagementPanel = ({
   const handleCreateClick = () => {
     setEditingTrack(null);
     setFormOpen(true);
-  };
-
-  const handleDelete = () => {
-    if (!deleteTarget) return;
-
-    startDeleting(async () => {
-      const result = await deleteTrack(deleteTarget.id);
-
-      if (result.success) {
-        toast.success("Track deleted");
-      } else {
-        toast.error("Track not found");
-      }
-
-      setDeleteTarget(null);
-      router.refresh();
-    });
   };
 
   return (
@@ -1113,18 +1103,7 @@ export const TrackManagementPanel = ({
           </div>
         </DialogContent>
       </Dialog>
-      <ConfirmDialog
-        open={Boolean(deleteTarget)}
-        onOpenChange={(open) => {
-          if (!open) setDeleteTarget(null);
-        }}
-        title="Delete track?"
-        description={deleteTarget ? `This will remove "${deleteTarget.title}" from the admin tracks list.` : undefined}
-        confirmLabel="Delete"
-        confirmVariant="destructive"
-        isPending={isDeleting}
-        onConfirm={handleDelete}
-      />
+      <ConfirmDialog {...deleteConfirm.confirmDialogProps} />
       <ConfirmDialog
         open={Boolean(rowActions.markAsManualTarget)}
         onOpenChange={(open) => {

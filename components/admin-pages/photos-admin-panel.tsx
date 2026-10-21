@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import type { ColumnDef } from "@tanstack/react-table";
 import { ArrowUpDown, Edit, ImageIcon, Plus, RefreshCw, Trash2, X } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 import z from "zod";
@@ -56,6 +56,7 @@ import {
 } from "@/lib/photo-exif-metadata";
 import { PHOTO_IMAGE_MAX_COUNT, formatPhotoStatus, photoStatusOptions } from "@/lib/photos";
 import { UploadDropzone } from "@/lib/uploadthing";
+import { useDeleteRowConfirm } from "@/lib/use-delete-row-confirm";
 
 type SelectedPhotoImage = {
   fileAssetId: string;
@@ -676,9 +677,15 @@ export const PhotosAdminPanel = ({ photos }: { photos: PhotoListItem[] }) => {
   const router = useRouter();
   const [formOpen, setFormOpen] = useState(false);
   const [editingPhoto, setEditingPhoto] = useState<PhotoListItem | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<PhotoListItem | null>(null);
   const [refreshingPhotoId, setRefreshingPhotoId] = useState<string | null>(null);
-  const [isDeleting, startDeleting] = useTransition();
+
+  const deleteConfirm = useDeleteRowConfirm<PhotoListItem>({
+    deleteAction: deletePhoto,
+    title: "Delete photo?",
+    getDescription: (row) => `This will remove "${row.title}" from the admin photos list.`,
+    deletedMsg: "Photo deleted",
+    notFoundMsg: "Photo not found",
+  });
 
   const handleRefresh = useCallback(
     (photo: PhotoListItem) => {
@@ -821,7 +828,7 @@ export const PhotosAdminPanel = ({ photos }: { photos: PhotoListItem[] }) => {
               variant="ghost"
               size="icon"
               title="Delete photo"
-              onClick={() => setDeleteTarget(row.original)}
+              onClick={() => deleteConfirm.setTarget(row.original)}
             >
               <Trash2 className="size-4" />
             </Button>
@@ -835,23 +842,6 @@ export const PhotosAdminPanel = ({ photos }: { photos: PhotoListItem[] }) => {
   const handleCreateClick = () => {
     setEditingPhoto(null);
     setFormOpen(true);
-  };
-
-  const handleDelete = () => {
-    if (!deleteTarget) return;
-
-    startDeleting(async () => {
-      const result = await deletePhoto(deleteTarget.id);
-
-      if (result.success) {
-        toast.success("Photo deleted");
-      } else {
-        toast.error("Photo not found");
-      }
-
-      setDeleteTarget(null);
-      router.refresh();
-    });
   };
 
   return (
@@ -875,18 +865,7 @@ export const PhotosAdminPanel = ({ photos }: { photos: PhotoListItem[] }) => {
           if (!open) setEditingPhoto(null);
         }}
       />
-      <ConfirmDialog
-        open={Boolean(deleteTarget)}
-        onOpenChange={(open) => {
-          if (!open) setDeleteTarget(null);
-        }}
-        title="Delete photo?"
-        description={deleteTarget ? `This will remove "${deleteTarget.title}" from the admin photos list.` : undefined}
-        confirmLabel="Delete"
-        confirmVariant="destructive"
-        isPending={isDeleting}
-        onConfirm={handleDelete}
-      />
+      <ConfirmDialog {...deleteConfirm.confirmDialogProps} />
     </div>
   );
 };
