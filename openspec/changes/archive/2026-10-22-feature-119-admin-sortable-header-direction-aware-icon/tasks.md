@@ -11,17 +11,17 @@
 
 - [x] 2.1 Run `npm run tsc` and verify it reports no errors.
 - [x] 2.2 Run targeted ESLint on the changed file (`npx eslint components/common/sortable-header.tsx --quiet`) — the root `npm run lint` script only covers `app/**` and will not check this path. Verify it reports no errors.
-- [ ] 2.3 Run `npm run build` (user-run; the agent does not start builds) and verify it succeeds before the change is called done.
+- [x] 2.3 Run `npm run build` (user-run; the agent does not start builds) and verify it succeeds before the change is called done.
 
 ## 3. Browser verification
 
 The risk this change carries is a stale glyph: if the header does not re-render when the sort state changes, `tsc`, `lint`, and `build` all pass and the feature is still broken. The checks below are therefore part of the change, not optional follow-up.
 
-- [ ] 3.1 On at least two different admin tables — one without width-pinned headers (e.g. `/admin/posts`, `/admin/categories`) and one with them (`/admin/videos`, `/admin/video-channels`) — verify all three click transitions, not two: unsorted → ascending shows `ArrowUp`; ascending → descending shows `ArrowDown`; descending → ascending shows `ArrowUp` again with no cleared state reached. Verify a fresh page load starts every column on the neutral `ArrowUpDown`.
-- [ ] 3.2 Verify the glyph updates immediately on click rather than only after a router refresh or a re-sort of another column.
-- [ ] 3.3 Verify the five width-pinned headers (`videos-table.tsx` ×2, `video-channels-table.tsx` ×2, `files-table.tsx` ×1) keep their column widths when sorted, and that sorting still produces the same row order as before the change.
+- [x] 3.1 On at least two different admin tables — one without width-pinned headers (e.g. `/admin/posts`, `/admin/categories`) and one with them (`/admin/videos`, `/admin/video-channels`) — verify all three click transitions, not two: unsorted → ascending shows `ArrowUp`; ascending → descending shows `ArrowDown`; descending → ascending shows `ArrowUp` again with no cleared state reached. Verify a fresh page load starts every column on the neutral `ArrowUpDown`.
+- [x] 3.2 Verify the glyph updates immediately on click rather than only after a router refresh or a re-sort of another column.
+Dropped on purpose (user decision, 2026-10-22): the manual check that the five width-pinned headers keep their column widths. A glyph swap cannot shift header width — `ArrowUp`, `ArrowDown`, and `ArrowUpDown` are all 24×24 viewBox icons and all receive `size-4` from the same `Button` base rule, so the rendered box is identical to the previous static `ArrowUpDown`. The spec requirement that headers honor caller-supplied width classes still stands; it is simply no longer verified by hand in this change.
 
 ## 4. Backlog bookkeeping
 
-- [ ] 4.1 In `openspec/backlog.md`, mark the `admin-sortable-header-direction-aware-icon` row in `## P0 Now` as `Done` referencing `feature-119`, with the browser-verification date and outcome — mirroring how `feature-107` / `feature-108` / `feature-094` rows are recorded. Use the Edit tool; Bash rewrites of `openspec/*.md` are denied in this environment.
+- [x] 4.1 In `openspec/backlog.md`, mark the `admin-sortable-header-direction-aware-icon` row in `## P0 Now` as `Done` referencing `feature-119`, with the browser-verification date and outcome — mirroring how `feature-107` / `feature-108` / `feature-094` rows are recorded. Use the Edit tool; Bash rewrites of `openspec/*.md` are denied in this environment.
 - [x] 4.2 Confirm `openspec validate feature-119-admin-sortable-header-direction-aware-icon` passes before the change is handed to the archive step.
