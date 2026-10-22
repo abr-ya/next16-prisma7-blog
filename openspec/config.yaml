@@ -78,7 +78,7 @@ rules:
   design:
     - Describe data model changes, server/client boundaries, and migration impact when applicable.
     - Call out security, auth, visibility, and data-preservation concerns.
-    - For research-XXX, describe the investigation method instead: scope boundaries, what counts as evidence, the findings rubric, and the required structure of the output document.
+    - "For research-XXX, describe the investigation method instead: scope boundaries, what counts as evidence, the findings rubric, and the required structure of the output document."
   tasks:
     - Break implementation into small reviewable steps.
     - Include validation tasks for npm run tsc, npm run lint, and npm run build when relevant.

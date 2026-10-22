@@ -3,8 +3,7 @@
 import { Post } from "@/generated/prisma/client";
 import { ColumnDef } from "@tanstack/react-table";
 import Link from "next/link";
-import { Button, DataTable } from "..";
-import { ArrowUpDown } from "lucide-react";
+import { DataTable, SortableHeader } from "..";
 
 interface IPostsTableProps {
   data: Post[];
@@ -13,12 +12,7 @@ interface IPostsTableProps {
 const columns: ColumnDef<Post>[] = [
   {
     accessorKey: "title",
-    header: ({ column }) => (
-      <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
-        Title
-        <ArrowUpDown />
-      </Button>
-    ),
+    header: ({ column }) => <SortableHeader column={column} label="Title" />,
     cell: ({ row }) => (
       <Link href={`/admin/posts/${row.original.id}`} key={row.original.id}>
         <h3 className="font-semibold">{row.original.title}</h3>
@@ -27,12 +21,7 @@ const columns: ColumnDef<Post>[] = [
   },
   {
     accessorKey: "createdAt",
-    header: ({ column }) => (
-      <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
-        Created At
-        <ArrowUpDown />
-      </Button>
-    ),
+    header: ({ column }) => <SortableHeader column={column} label="Created At" />,
     cell: ({ row }) =>
       (row.getValue("createdAt") as Date).toLocaleDateString("ru-RU", {
         year: "numeric",

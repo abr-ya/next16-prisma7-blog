@@ -27,6 +27,7 @@ export { DataTable } from "./common/data-table";
 export { RichTextEditor } from "./common/rich-text-editor";
 export { RichTextViewer } from "./common/rich-text-viewer";
 export { SimpleSelect } from "./common/simple-select";
+export { SortableHeader } from "./common/sortable-header";
 
 // Admin Pages Components
 export { AdminSidebar } from "./admin-pages/admin-sidebar";

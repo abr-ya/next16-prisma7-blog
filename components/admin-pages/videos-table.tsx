@@ -1,7 +1,7 @@
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
-import { ArrowUpDown, Copy, ExternalLink, ImageIcon, Pencil, Trash } from "lucide-react";
+import { Copy, ExternalLink, ImageIcon, Pencil, Trash } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
@@ -21,6 +21,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  SortableHeader,
 } from "..";
 
 interface IVideosTableProps {
@@ -166,12 +167,7 @@ const VideoActions = ({ video }: { video: VideoWithChannel }) => {
 const columns: ColumnDef<VideoWithChannel>[] = [
   {
     accessorKey: "title",
-    header: ({ column }) => (
-      <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
-        Title
-        <ArrowUpDown />
-      </Button>
-    ),
+    header: ({ column }) => <SortableHeader column={column} label="Title" />,
     cell: ({ row }) => (
       <Link
         href={`/admin/videos/${row.original.id}`}
@@ -268,16 +264,7 @@ const columns: ColumnDef<VideoWithChannel>[] = [
   },
   {
     accessorKey: "videoDate",
-    header: ({ column }) => (
-      <Button
-        variant="ghost"
-        className="w-28 justify-start"
-        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-      >
-        Video Date
-        <ArrowUpDown />
-      </Button>
-    ),
+    header: ({ column }) => <SortableHeader column={column} label="Video Date" className="w-28 justify-start" />,
     cell: ({ row }) => (
       <div className="w-28 truncate" title={formatDate(row.getValue("videoDate") as Date)}>
         {formatDate(row.getValue("videoDate") as Date)}
@@ -286,16 +273,7 @@ const columns: ColumnDef<VideoWithChannel>[] = [
   },
   {
     accessorKey: "createdAt",
-    header: ({ column }) => (
-      <Button
-        variant="ghost"
-        className="w-36 justify-start"
-        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-      >
-        Added Date
-        <ArrowUpDown />
-      </Button>
-    ),
+    header: ({ column }) => <SortableHeader column={column} label="Added Date" className="w-36 justify-start" />,
     cell: ({ row }) => (
       <div className="w-36 truncate" title={formatDateTime(row.getValue("createdAt") as Date)}>
         {formatDateTime(row.getValue("createdAt") as Date)}

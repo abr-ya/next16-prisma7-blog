@@ -2,11 +2,11 @@
 
 import type { ColumnDef } from "@tanstack/react-table";
 import type { TFunction } from "i18next";
-import { ArrowUpDown, Clock3, Edit, RefreshCw, Trash2 } from "lucide-react";
+import { Clock3, Edit, RefreshCw, Trash2 } from "lucide-react";
 import Link from "next/link";
 
 import type { TrackListItem } from "@/app/_data/tracks";
-import { Badge, Button } from "@/components/index";
+import { Badge, Button, SortableHeader } from "@/components/index";
 import { TracksAdminPanelParseCell } from "@/components/admin-pages/tracks-admin-panel-parse-cell";
 import { formatFileSize } from "@/lib/file-upload-limits";
 import { formatHikeDateRange, formatHikeStatus, formatHikeType } from "@/lib/hikes";
@@ -57,12 +57,7 @@ const createTracksAdminColumns = ({
   },
   {
     accessorKey: "title",
-    header: ({ column }) => (
-      <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
-        Title
-        <ArrowUpDown />
-      </Button>
-    ),
+    header: ({ column }) => <SortableHeader column={column} label="Title" />,
     cell: ({ row }) =>
       row.original.status === "PUBLISHED" ? (
         <Link

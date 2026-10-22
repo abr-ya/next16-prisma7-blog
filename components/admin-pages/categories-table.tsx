@@ -2,19 +2,14 @@
 
 import { Category } from "@/generated/prisma/client";
 import { ColumnDef } from "@tanstack/react-table";
-import { Button, DataTable } from "..";
-import { ArrowUpDown } from "lucide-react";
+import { DataTable, SortableHeader } from "..";
+
 import { CategoryControl } from "./category-control";
 
 const columns: ColumnDef<Category>[] = [
   {
     accessorKey: "name",
-    header: ({ column }) => (
-      <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
-        Name
-        <ArrowUpDown />
-      </Button>
-    ),
+    header: ({ column }) => <SortableHeader column={column} label="Name" />,
     cell: ({ row }) => <div className="lowercase"> {row.getValue("name")} </div>,
   },
 

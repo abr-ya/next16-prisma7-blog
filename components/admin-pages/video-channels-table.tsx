@@ -2,14 +2,14 @@
 
 import type { VideoChannel } from "@/generated/prisma/client";
 import { ColumnDef } from "@tanstack/react-table";
-import { ArrowUpDown, ExternalLink, Trash } from "lucide-react";
+import { ExternalLink, Trash } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 
 import { deleteVideoChannel } from "@/app/_data/video-channels";
 
-import { Badge, Button, ConfirmDialog, DataTable } from "..";
+import { Badge, Button, ConfirmDialog, DataTable, SortableHeader } from "..";
 import { VideoChannelEditDialog } from "./video-channel-edit-dialog";
 
 interface IVideoChannelsTableProps {
@@ -90,12 +90,7 @@ const VideoChannelActions = ({ channel }: { channel: VideoChannel }) => {
 const columns: ColumnDef<VideoChannel>[] = [
   {
     accessorKey: "name",
-    header: ({ column }) => (
-      <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
-        Name
-        <ArrowUpDown />
-      </Button>
-    ),
+    header: ({ column }) => <SortableHeader column={column} label="Name" />,
     cell: ({ row }) => (
       <div className="min-w-56 max-w-md whitespace-normal wrap-anywhere">
         <h3 className="font-semibold leading-snug">{row.original.name}</h3>
@@ -144,16 +139,7 @@ const columns: ColumnDef<VideoChannel>[] = [
   },
   {
     accessorKey: "createdAt",
-    header: ({ column }) => (
-      <Button
-        variant="ghost"
-        className="w-36 justify-start"
-        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-      >
-        Created
-        <ArrowUpDown />
-      </Button>
-    ),
+    header: ({ column }) => <SortableHeader column={column} label="Created" className="w-36 justify-start" />,
     cell: ({ row }) => (
       <div className="w-36 truncate" title={formatDateTime(row.getValue("createdAt") as Date)}>
         {formatDateTime(row.getValue("createdAt") as Date)}
@@ -162,16 +148,7 @@ const columns: ColumnDef<VideoChannel>[] = [
   },
   {
     accessorKey: "updatedAt",
-    header: ({ column }) => (
-      <Button
-        variant="ghost"
-        className="w-36 justify-start"
-        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-      >
-        Updated
-        <ArrowUpDown />
-      </Button>
-    ),
+    header: ({ column }) => <SortableHeader column={column} label="Updated" className="w-36 justify-start" />,
     cell: ({ row }) => (
       <div className="w-36 truncate" title={formatDateTime(row.getValue("updatedAt") as Date)}>
         {formatDateTime(row.getValue("updatedAt") as Date)}

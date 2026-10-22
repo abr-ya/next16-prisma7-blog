@@ -3,8 +3,8 @@
 import type { MdDoc } from "@/generated/prisma/client";
 import { ColumnDef } from "@tanstack/react-table";
 import Link from "next/link";
-import { Button, DataTable } from "..";
-import { ArrowUpDown, ExternalLink } from "lucide-react";
+import { Button, DataTable, SortableHeader } from "..";
+import { ExternalLink } from "lucide-react";
 
 interface IMdDocsTableProps {
   data: MdDoc[];
@@ -13,12 +13,7 @@ interface IMdDocsTableProps {
 const columns: ColumnDef<MdDoc>[] = [
   {
     accessorKey: "title",
-    header: ({ column }) => (
-      <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
-        Title
-        <ArrowUpDown />
-      </Button>
-    ),
+    header: ({ column }) => <SortableHeader column={column} label="Title" />,
     cell: ({ row }) => (
       <Link href={`/admin/md-docs/${row.original.id}`} key={row.original.id}>
         <h3 className="font-semibold">{row.original.title}</h3>
@@ -32,12 +27,7 @@ const columns: ColumnDef<MdDoc>[] = [
   },
   {
     accessorKey: "createdAt",
-    header: ({ column }) => (
-      <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
-        Created At
-        <ArrowUpDown />
-      </Button>
-    ),
+    header: ({ column }) => <SortableHeader column={column} label="Created At" />,
     cell: ({ row }) =>
       (row.getValue("createdAt") as Date).toLocaleDateString("ru-RU", {
         year: "numeric",
@@ -49,12 +39,7 @@ const columns: ColumnDef<MdDoc>[] = [
   },
   {
     accessorKey: "updatedAt",
-    header: ({ column }) => (
-      <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
-        Updated At
-        <ArrowUpDown />
-      </Button>
-    ),
+    header: ({ column }) => <SortableHeader column={column} label="Updated At" />,
     cell: ({ row }) =>
       (row.getValue("updatedAt") as Date).toLocaleDateString("ru-RU", {
         year: "numeric",

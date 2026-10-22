@@ -103,7 +103,13 @@ The obvious "cleanup" — normalizing the five to no `className`, or making them
 onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
 ```
 
-This is TanStack's three-state idiom: unsorted → asc → desc → unsorted. The `=== "asc"` comparison is what returns to unsorted on the third click. Replacing it with `toggleSorting()` (no argument) would make the third click cycle asc → desc → asc with no way back to the original order, and replacing it with `toggleSorting(true)` would make every click force ascending. Neither is a refactor. Copy the expression verbatim.
+Copy this expression **verbatim**. The requirement is only that the rendering is identical, *whatever* the cycle turns out to be — not that the cycle is three-state.
+
+> **Correction (2026-10-21).** An earlier draft of this section claimed the opposite: that the argument-less `toggleSorting()` is the form that drops the third click. That is backwards, and the browser check on 2026-10-21 proved it. In `RowSorting.js`, `toggleSorting(desc)` sets `hasManualValue = typeof desc !== 'undefined' && desc !== null`. Passing the `=== "asc"` boolean therefore makes `hasManualValue` permanently `true`, which **skips** the only branch that can remove a sort (`if (!hasManualValue) { if (!nextSortingOrder) sortAction = 'remove' }`). With `sortAction` pinned to `'toggle'`, the column is always re-assigned `{ ...d, desc: nextDesc }` and never cleared. The real cycle is therefore **two-state**: unsorted → asc → desc → asc → desc …
+>
+> The argument-less `toggleSorting()` is the form that yields the genuine three-state cycle: on the third click `getNextSortingOrder()` returns `false` (because `enableSortingRemoval` defaults to `true`), which turns `sortAction` into `'remove'` and returns the column to unsorted.
+>
+> Changing to that form is **not** a refactor — it is a user-visible behavior change affecting all 19 sites, and it belongs in a `fix-XXX`. See [`admin-sortable-header-third-click-no-unsorted`](../../backlog.md). Keeping the explicit argument here is what makes the change behavior-preserving, which is the only thing that matters for this change's place in the `refactor-XXX` pool.
 
 Note also that `ArrowUpDown` is a **static** icon — none of the 19 sites swaps it for `ArrowUp`/`ArrowDown` based on `getIsSorted()`. Do not "improve" it into a direction-aware icon as part of this change; that is a user-visible addition and belongs to a `feature-XXX`.
 
@@ -133,7 +139,7 @@ Only the header block is duplicated. The `cell` immediately under each header is
 | --- | --- |
 | Dropping the width `className` at 5 sites, silently changing layout | The prop is part of the contract; the 5 call sites are enumerated above and in `tasks.md` |
 | "Cleaning up" the 5 widths to a single value | Explicitly listed as a non-goal; any width change is a visible change |
-| Changing `toggleSorting(...)` to the argument-less form | Called out in the semantics section; the third-click reset is the behavior at risk |
+| Changing `toggleSorting(...)` to the argument-less form | It would turn a two-state cycle into a three-state one across all 19 sites. Explicitly out of scope; tracked as `admin-sortable-header-third-click-no-unsorted` in [`openspec/backlog.md`](../../backlog.md) |
 | Adding an ascending/descending icon swap while in the file | Explicitly out of scope; it is a feature, not a refactor |
 | Forgetting the `ArrowUpDown` import removal | Listed as its own task section with all 10 files |
 | Widening `cell:` renderers opportunistically | Stop the edit at `header` |

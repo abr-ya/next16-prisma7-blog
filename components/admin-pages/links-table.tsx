@@ -2,8 +2,7 @@
 
 import { Link as Ilink } from "@/generated/prisma/client";
 import { ColumnDef } from "@tanstack/react-table";
-import { Button, DataTable } from "..";
-import { ArrowUpDown } from "lucide-react";
+import { DataTable, SortableHeader } from "..";
 
 interface ILinksTableProps {
   data: Ilink[];
@@ -12,22 +11,12 @@ interface ILinksTableProps {
 const columns: ColumnDef<Ilink>[] = [
   {
     accessorKey: "title",
-    header: ({ column }) => (
-      <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
-        Title
-        <ArrowUpDown />
-      </Button>
-    ),
+    header: ({ column }) => <SortableHeader column={column} label="Title" />,
     cell: ({ row }) => <h3 className="font-semibold">{row.original.name}</h3>,
   },
   {
     accessorKey: "createdAt",
-    header: ({ column }) => (
-      <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
-        Created At
-        <ArrowUpDown />
-      </Button>
-    ),
+    header: ({ column }) => <SortableHeader column={column} label="Created At" />,
     cell: ({ row }) =>
       (row.getValue("createdAt") as Date).toLocaleDateString("ru-RU", {
         year: "numeric",
