@@ -33,13 +33,13 @@ A sortable column header SHALL render a glyph that reflects the column's current
 - **WHEN** two different admin tables both have a column sorted in the same direction
 - **THEN** both headers render the same glyph for that direction
 
-### Requirement: Header indicator does not change sort behavior
+### Requirement: Header cycles through unsorted, ascending, and descending
 
-Clicking a sortable column header SHALL continue to cycle that column between ascending and descending exactly as it did before the indicator was introduced. The indicator SHALL reflect the resulting state only; it SHALL NOT add, remove, or reorder any state in the cycle. In particular, a third click SHALL return the column to ascending rather than clearing the sort, and no unsorted state SHALL be reachable by clicking.
+Clicking a sortable column header SHALL cycle that column through three states in order: unsorted → ascending → descending → unsorted. An unsorted state SHALL therefore be reachable by clicking, without a page reload or any other navigation. The cycle SHALL continue indefinitely past the first three states. The header indicator SHALL remain a reflection of the resulting state only: it SHALL NOT determine, constrain, add, remove, or reorder any state in the cycle.
 
-#### Scenario: First click from an unsorted column
+#### Scenario: First click from a fresh page load
 
-- **WHEN** an administrator clicks the header of an unsorted column
+- **WHEN** an administrator clicks the header of a column that is unsorted
 - **THEN** the column is sorted ascending and the header renders the up-arrow glyph
 
 #### Scenario: Second click from an ascending column
@@ -47,10 +47,20 @@ Clicking a sortable column header SHALL continue to cycle that column between as
 - **WHEN** an administrator clicks the header of an ascending column
 - **THEN** the column is sorted descending and the header renders the down-arrow glyph
 
-#### Scenario: Third click from a descending column
+#### Scenario: Third click from a descending column clears the sort
 
 - **WHEN** an administrator clicks the header of a descending column
-- **THEN** the column is sorted ascending again and the header renders the up-arrow glyph, with no third unsorted state reachable by clicking
+- **THEN** the column is no longer sorted and the header renders the neutral bidirectional arrow glyph, returning the table to its original row order without a reload
+
+#### Scenario: Fourth click restarts the cycle
+
+- **WHEN** an administrator clicks the header again after the sort has been cleared
+- **THEN** the column is sorted ascending and the header renders the up-arrow glyph, so the cycle repeats
+
+#### Scenario: Clearing the sort changes only the sort
+
+- **WHEN** a sort is cleared from a column in an otherwise populated table
+- **THEN** the rest of the table is unchanged — the same rows remain visible in their original order, and no other column's sort is affected
 
 ### Requirement: Header preserves its label and caller-supplied width
 

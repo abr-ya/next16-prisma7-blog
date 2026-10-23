@@ -15,14 +15,13 @@ import { Button } from "@/components/ui/button";
 // for ascending, `ArrowDown` for descending, and the neutral `ArrowUpDown` when
 // the column is unsorted, which is also where a cleared sort lands.
 //
-// The click expression `toggleSorting(column.getIsSorted() === "asc")` is still
-// copied verbatim, so the sort cycle stays two-state — unsorted → asc → desc →
-// asc — because passing an explicit boolean sets `hasManualValue` in TanStack's
-// RowSorting, which skips the branch that can remove a sort. The argument-less
-// `toggleSorting()` would give a true three-state cycle, but that is a
-// user-visible change across every sortable header and is tracked separately;
-// see `openspec/backlog.md` →
-// `admin-sortable-header-third-click-no-unsorted`.
+// fix-006: the click handler calls `toggleSorting()` with no argument, so the
+// sort cycle is three-state — unsorted → asc → desc → unsorted. Passing an
+// explicit boolean set `hasManualValue` in TanStack's RowSorting, which skipped
+// the branch that can remove a sort and left the cycle stuck at two states. The
+// argument-less call lets the library own the cycle: the third click clears the
+// sort, the table returns to its original row order, and a fourth click starts
+// the cycle over.
 //
 // `className` is load-bearing, not decorative. Five sites pin their header to
 // `w-36` / `w-28 justify-start`; dropping the prop would collapse those
@@ -39,7 +38,7 @@ const SortableHeader = <TData,>({ column, label, className }: SortableHeaderProp
   const SortGlyph = sorted === "asc" ? ArrowUp : sorted === "desc" ? ArrowDown : ArrowUpDown;
 
   return (
-    <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")} className={className}>
+    <Button variant="ghost" onClick={() => column.toggleSorting()} className={className}>
       {label}
       <SortGlyph />
     </Button>
