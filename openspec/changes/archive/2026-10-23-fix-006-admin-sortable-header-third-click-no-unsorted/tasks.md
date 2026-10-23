@@ -10,16 +10,18 @@
 
 - [x] 2.1 Run `npm run tsc` and verify it reports no errors.
 - [x] 2.2 Run targeted ESLint on the changed file (`npx eslint components/common/sortable-header.tsx --quiet`) — the root `npm run lint` script only covers `app/**` and will not check this path. Verify it reports no errors.
-- [ ] 2.3 Run `npm run build` (user-run; the agent does not start builds) and verify it succeeds before the change is called done.
+- [x] 2.3 Run `npm run build` (user-run; the agent does not start builds) and verify it succeeds before the change is called done. Confirmed passing on 2026-10-23.
 - [x] 2.4 Run `openspec validate fix-006-admin-sortable-header-third-click-no-unsorted --strict` and verify it passes, so the REMOVED/ADDED pair against `admin-sortable-headers` is accepted.
 
 ## 3. Browser verification
 
 The sort cycle is transient client state that no static check can observe, so this group is part of the change rather than a follow-up. The regression to guard against is a cycle that silently stays two-state — which would still pass any check that only tests "sorting works".
 
-- [ ] 3.1 On a single admin table (e.g. `/admin/posts`), click one column header four times in a row and verify each transition in order: unsorted → ascending (up-arrow), ascending → descending (down-arrow), descending → unsorted (neutral arrow, rows back in their original order without a reload), unsorted → ascending (up-arrow). Verify the glyph flips on every one of the four clicks.
-- [ ] 3.2 On a second admin table with a different data set (e.g. `/admin/videos` or `/admin/hikes`), verify the same four-click cycle and confirm the cleared state restores the original row order rather than an alphabetical or reverse-alphabetical one.
-- [ ] 3.3 Verify a cleared sort affects only the column that was clicked — other columns' sorts and the rest of the table are unchanged — and that the five width-pinned headers (`videos-table.tsx` ×2, `video-channels-table.tsx` ×2, `files-table.tsx` ×1) keep their column widths.
+Verified by the user in the dev server on 2026-10-23, who signed off that the sort cycle now behaves as specified and asked to close the change.
+
+- [x] 3.1 On a single admin table (e.g. `/admin/posts`), click one column header four times in a row and verify each transition in order: unsorted → ascending (up-arrow), ascending → descending (down-arrow), descending → unsorted (neutral arrow, rows back in their original order without a reload), unsorted → ascending (up-arrow). Verify the glyph flips on every one of the four clicks.
+- [x] 3.2 On a second admin table with a different data set (e.g. `/admin/videos` or `/admin/hikes`), verify the same four-click cycle and confirm the cleared state restores the original row order rather than an alphabetical or reverse-alphabetical one.
+- [x] 3.3 Verify a cleared sort affects only the column that was clicked — other columns' sorts and the rest of the table are unchanged — and that the five width-pinned headers (`videos-table.tsx` ×2, `video-channels-table.tsx` ×2, `files-table.tsx` ×1) keep their column widths.
 
 ## 4. Spec sync and backlog bookkeeping
 
