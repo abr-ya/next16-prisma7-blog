@@ -70,6 +70,7 @@ import {
   getTrackParseState,
 } from "@/components/admin-pages/tracks-admin-panel-parse-cell";
 import { createTracksAdminColumns } from "@/components/admin-pages/tracks-admin-columns";
+import { createTrackWorkoutColumns } from "@/components/admin-pages/tracks-workout-columns";
 import { TrackDurationInputError, parseDurationInput, parseStoredDurationToHms } from "@/lib/track-duration-input";
 
 const formSchema = z.object({
@@ -915,6 +916,7 @@ export const TrackManagementPanel = ({
   tracks,
   activityTypes,
   defaultKind = "ROUTE",
+  tableVariant = "full",
 }: {
   tracks: TrackListItem[];
   activityTypes: TrackActivityType[];
@@ -922,6 +924,10 @@ export const TrackManagementPanel = ({
   // workouts" passes "TRAINING"; My tracks and the admin panel keep the
   // default route.
   defaultKind?: TrackKind;
+  // feature-120 follow-up: "My workouts" renders the short owner-side
+  // table (badges, title, start, distance, type); every other page keeps
+  // the full admin column set.
+  tableVariant?: "full" | "workouts";
 }) => {
   const router = useRouter();
   const { i18n } = useT(navigationNamespace);
@@ -941,7 +947,8 @@ export const TrackManagementPanel = ({
   const deleteConfirm = useDeleteRowConfirm<TrackListItem>({
     deleteAction: deleteTrack,
     title: "Delete track?",
-    getDescription: (row) => `This will remove "${row.title}" from the admin tracks list.`,
+    getDescription: (row) =>
+      `This will remove "${row.title}" from ${tableVariant === "workouts" ? "My workouts" : "the tracks list"}.`,
     deletedMsg: "Track deleted",
     notFoundMsg: "Track not found",
   });
@@ -974,20 +981,27 @@ export const TrackManagementPanel = ({
 
   const columns = useMemo(
     () =>
-      createTracksAdminColumns({
-        activeLanguage,
-        handleParse: rowActions.handleParse,
-        markingAsManualId: rowActions.markingAsManualId,
-        onMarkAsManual: rowActions.setMarkAsManualTarget,
-        onSetTimezoneTarget: setTimezoneTarget,
-        onEditTrack: handleEditTrack,
-        onSetDeleteTarget: deleteConfirm.setTarget,
-        parsingTrackId: rowActions.parsingTrackId,
-        t,
-        formatDate,
-        formatActivityTypeName,
-      }),
-    [activeLanguage, deleteConfirm.setTarget, handleEditTrack, rowActions, t],
+      tableVariant === "workouts"
+        ? createTrackWorkoutColumns({
+            activeLanguage,
+            onEditTrack: handleEditTrack,
+            onSetDeleteTarget: deleteConfirm.setTarget,
+            formatActivityTypeName,
+          })
+        : createTracksAdminColumns({
+            activeLanguage,
+            handleParse: rowActions.handleParse,
+            markingAsManualId: rowActions.markingAsManualId,
+            onMarkAsManual: rowActions.setMarkAsManualTarget,
+            onSetTimezoneTarget: setTimezoneTarget,
+            onEditTrack: handleEditTrack,
+            onSetDeleteTarget: deleteConfirm.setTarget,
+            parsingTrackId: rowActions.parsingTrackId,
+            t,
+            formatDate,
+            formatActivityTypeName,
+          }),
+    [activeLanguage, deleteConfirm.setTarget, handleEditTrack, rowActions, t, tableVariant],
   );
 
   // The inline column body that used to live here has moved to

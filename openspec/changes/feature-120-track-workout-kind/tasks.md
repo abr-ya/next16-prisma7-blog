@@ -72,6 +72,7 @@
 - [x] `await requireAuth()` at the top of the page component; `export const dynamic = "force-dynamic";` and a `metadata` export built with `buildPageMetadata` — title `My workouts`, path `/my/workouts`.
 - [x] `Promise.all([getOwnerWorkoutTracks(), getActiveTrackActivityTypes()])`.
 - [x] Render `<PageLayout title="My workouts" contentWidth="wide" className="pt-6">` around `<TrackManagementPanel tracks={tracks} activityTypes={activityTypes} defaultKind="TRAINING" />`.
+- [x] The page renders a short table, not the full admin column set: badges (kind + publication status), title, start date, distance, activity type. The panel picks the column set through a `tableVariant` prop (`"full" | "workouts"`), and the short set lives in `components/admin-pages/tracks-workout-columns.tsx`. The row actions (edit, delete) and the create/edit dialog are shared with the full table.
 
 ## 6. The nav entry (`components/blog-pages/navbar-user-menu.tsx`)
 

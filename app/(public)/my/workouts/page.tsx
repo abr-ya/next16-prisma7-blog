@@ -21,7 +21,12 @@ const MyWorkoutsPage = async () => {
 
   return (
     <PageLayout title="My workouts" contentWidth="wide" className="pt-6">
-      <TrackManagementPanel tracks={tracks} activityTypes={activityTypes} defaultKind="TRAINING" />
+      <TrackManagementPanel
+        tracks={tracks}
+        activityTypes={activityTypes}
+        defaultKind="TRAINING"
+        tableVariant="workouts"
+      />
     </PageLayout>
   );
 };

@@ -135,6 +135,8 @@ Kind      Type          Title      GPX file   …
 
 Both render the same `TrackManagementPanel`, so the table, the row actions, the delete confirmation, the parse and timezone actions, and the create/edit dialog are literally the same component. The only difference is the data and the `defaultKind` prop.
 
+**The workouts table is a short variant.** The owner asked for `/my/workouts` to stay simple, so the page renders five columns — badges (kind + publication status), title, start date, distance, activity type — instead of the full admin column set (GPX file, GPX summary, timezone, trips, updated). The panel swaps the column set through a `tableVariant` prop (`"full" | "workouts"`), and the short set lives in its own factory, `components/admin-pages/tracks-workout-columns.tsx`, next to the admin one. The create/edit dialog, the delete confirmation and the row actions (edit, delete) are shared and unchanged; parsing, timezone and trip assignment stay on the full table, one click away on `/my/tracks`.
+
 **Why a separate route rather than a filter on `/my/tracks`.** A filter would need a client-side toggle and a query parameter, and the panel would have to filter a list it already received in full. A separate route scopes the query in SQL, is bookmarkable, and gets its own default for new tracks — which is the behaviour the owner actually wants from the page ("I am here to log a workout, so start me in workout mode").
 
 **Why `/my/workouts` is not admin-only and not public.** It is an owner view, exactly like `/my/tracks`: `requireAuth()` at the top of the page, an owner-scoped query underneath. Nothing about it is special-cased for administrators — an administrator who owns workouts sees their own, and only their own.

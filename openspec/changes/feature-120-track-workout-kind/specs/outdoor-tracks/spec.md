@@ -103,13 +103,20 @@ The system SHALL store a kind on every track, either a route or a workout. A tra
 
 ### Requirement: My workouts lists only the owner's workouts
 
-The system SHALL provide an authenticated `/my/workouts` page where a signed-in user can view and manage only the tracks they own whose kind is a workout. The page SHALL use the same track management surface as `/my/tracks` and SHALL exclude the owner's routes from the list. A track created from `/my/workouts` SHALL default to the workout kind, and the owner SHALL be able to change it before saving. The page SHALL be reachable from the user menu.
+The system SHALL provide an authenticated `/my/workouts` page where a signed-in user can view and manage only the tracks they own whose kind is a workout. The page SHALL use the same track management surface as `/my/tracks` and SHALL exclude the owner's routes from the list. The page SHALL render a short owner-side table rather than the full admin column set: each listed workout SHALL show its badges, title, start date, distance, and activity type, and the row SHALL keep the edit and delete actions. A value the track does not carry SHALL read as empty rather than as a zero. A track created from `/my/workouts` SHALL default to the workout kind, and the owner SHALL be able to change it before saving. The page SHALL be reachable from the user menu.
 
 #### Scenario: Owner opens My workouts
 
 - **WHEN** a signed-in user opens `/my/workouts`
 - **THEN** the system displays only that user's tracks whose kind is a workout
 - **AND** it does not display that user's routes
+
+#### Scenario: Owner reads the workout list
+
+- **WHEN** a signed-in user views the workouts list
+- **THEN** each listed workout shows its badges, title, start date, distance, and activity type
+- **AND** the row offers the edit and delete actions
+- **AND** a workout without a recorded start or without a parsed distance shows an empty value in that column
 
 #### Scenario: Owner creates a track from My workouts
 

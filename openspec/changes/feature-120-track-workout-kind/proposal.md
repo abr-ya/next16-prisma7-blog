@@ -10,7 +10,7 @@ The request behind this change has three parts — a routine-training flag, a pa
 
 - **Every track carries a kind.** A new Prisma enum `TrackKind { ROUTE, TRAINING }` and a `Track.kind` column, defaulting to `ROUTE`. Every track that exists today is a route until its owner says otherwise.
 - **The owner marks a track as a workout from the track form.** The shared track dialog — the same one behind `/my/tracks` and `/admin/tracks` — gains a "Track kind" select with `Route` and `Workout`. Both creation paths (GPX upload and Place on map) honor it, and an existing track's kind can be changed by editing it.
-- **A new `/my/workouts` page lists only workouts.** Authenticated, owner-scoped, and built on the same track management panel as `/my/tracks` — but filtered to `kind = TRAINING`. A track created from that page defaults to the workout kind.
+- **A new `/my/workouts` page lists only workouts.** Authenticated, owner-scoped, and built on the same track management panel as `/my/tracks` — but filtered to `kind = TRAINING`. A track created from that page defaults to the workout kind. The page renders a short table of its own — badges, title, start date, distance, activity type — instead of the full admin column set.
 - **The list shows the kind.** The track table gains a "Kind" column with a `Route` / `Workout` badge, so the owner can tell the two apart without opening a row.
 
 ### Non-goals
@@ -37,6 +37,6 @@ None.
 - **Schemas**: one new Prisma enum `TrackKind`, one new `Track.kind` column (`NOT NULL`, `DEFAULT 'ROUTE'`), one new composite index on `(userId, kind)`. The migration is additive — existing rows backfill to `ROUTE` and no data is rewritten.
 - **Routes**: one new page, `/my/workouts`.
 - **Public surfaces**: none. The kind is owner-only; no public page, list, card, or feed changes.
-- **Code**: `prisma/schema.prisma` plus one new migration, `app/_data/tracks.ts`, `components/admin-pages/tracks-admin-panel.tsx`, `components/admin-pages/tracks-admin-columns.tsx`, `components/blog-pages/navbar-user-menu.tsx`, and one new page file under `app/(public)/my/workouts/`.
+- **Code**: `prisma/schema.prisma` plus one new migration, `app/_data/tracks.ts`, `components/admin-pages/tracks-admin-panel.tsx`, `components/admin-pages/tracks-admin-columns.tsx`, `components/admin-pages/tracks-workout-columns.tsx`, `components/blog-pages/navbar-user-menu.tsx`, and one new page file under `app/(public)/my/workouts/`.
 - **Server actions**: `createTrack`, `updateTrack`, and `createManualTrack` accept an optional kind and validate it. The trip-side attach path (`createTrackAndAttachToHike`) is untouched and keeps creating routes.
 - **Follow-ups this change enables**: the gear inventory (one gear item per track) and the Strava activity link both hang off the same "a track is one of my training sessions" model, and the "workouts are not part of trips" rule becomes expressible once the kind exists.
