@@ -244,6 +244,11 @@ enum TrackTimeSource {
   NONE
 }
 
+enum TrackKind {
+  ROUTE
+  TRAINING
+}
+
 enum PhotoStatus {
   DRAFT
   PUBLISHED
@@ -347,6 +352,7 @@ model Track {
   timeSource               TrackTimeSource?
   activityTypeId           String?
   activityType             TrackActivityType? @relation(fields: [activityTypeId], references: [id], onDelete: Restrict)
+  kind                     TrackKind       @default(ROUTE)
   userId                   String
   user                     User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   hikes                    HikesToTracks[]
@@ -355,6 +361,7 @@ model Track {
 
   @@index([status])
   @@index([userId])
+  @@index([userId, kind])
   @@index([activityTypeId])
   @@index([timeSource])
 }

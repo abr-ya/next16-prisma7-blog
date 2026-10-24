@@ -7,6 +7,7 @@ import type {
   FileAssetStatus,
   FileAssetVisibility,
   HikeType,
+  TrackKind,
   TrackStatus,
   TrackTimeSource,
 } from "@/generated/prisma/enums";
@@ -43,6 +44,7 @@ export type TrackActionValues = {
   status?: TrackStatus;
   fileAssetId?: string | null;
   activityTypeId?: string | null;
+  kind?: TrackKind;
 };
 
 export type CreateManualTrackInput = {
@@ -52,6 +54,7 @@ export type CreateManualTrackInput = {
   status?: TrackStatus;
   points: { lat: number; lng: number }[];
   activityTypeId?: string | null;
+  kind?: TrackKind;
   recordingStartAt?: string | null;
   recordingDurationSeconds?: number | null;
   recordingTimezone?: string | null;
@@ -145,6 +148,11 @@ export type PublicTrack = {
 
 const DEFAULT_TRACK_STATUS: TrackStatus = "DRAFT";
 const TRACK_STATUSES = new Set<TrackStatus>(["DRAFT", "PUBLISHED"]);
+// feature-120: a track is a route until its owner says otherwise. The kind
+// answers "what is this track for" — a training session versus a route —
+// and is deliberately private: the public read path never selects it.
+const DEFAULT_TRACK_KIND: TrackKind = "ROUTE";
+const TRACK_KINDS = new Set<TrackKind>(["ROUTE", "TRAINING"]);
 const ACTIVE_FILE_STATUS: FileAssetStatus = "ACTIVE";
 const PUBLIC_DOWNLOAD_VISIBILITIES = new Set<FileAssetVisibility>(["PUBLIC", "UNLISTED"]);
 
@@ -189,6 +197,7 @@ export const getTrackData = async ({
   status,
   fileAssetId,
   activityTypeId,
+  kind,
 }: TrackActionValues) => {
   const normalizedTitle = normalizeRequiredText(title, "Title");
   const normalizedStatus = status ?? DEFAULT_TRACK_STATUS;
@@ -196,6 +205,13 @@ export const getTrackData = async ({
 
   if (!TRACK_STATUSES.has(normalizedStatus)) {
     throw new Error("Track status is invalid");
+  }
+
+  // feature-120: the kind defaults to a route, so a caller that does not
+  // know about the column keeps the pre-feature behaviour.
+  const normalizedKind = kind ?? DEFAULT_TRACK_KIND;
+  if (!TRACK_KINDS.has(normalizedKind)) {
+    throw new Error("Track kind is invalid");
   }
 
   const normalizedActivityTypeId = activityTypeId?.trim() || null;
@@ -214,6 +230,7 @@ export const getTrackData = async ({
     status: normalizedStatus,
     fileAssetId: normalizedFileAssetId,
     activityTypeId: normalizedActivityTypeId,
+    kind: normalizedKind,
   };
 };
 
@@ -277,6 +294,7 @@ const trackListSelect = {
   status: true,
   fileAssetId: true,
   activityTypeId: true,
+  kind: true,
   metadata: true,
   recordingTimezone: true,
   recordingStartAt: true,
@@ -464,6 +482,22 @@ export const getAllTracks = async (): Promise<TrackListItem[]> => {
 };
 
 /**
+ * feature-120: the owner's workouts — the tracks they marked as training
+ * sessions. Owner-scoped like every other personal track query; the kind
+ * filter narrows it in SQL rather than in the table.
+ */
+export const getOwnerWorkoutTracks = async (): Promise<TrackListItem[]> => {
+  const userId = await getRequiredUserId();
+  const { default: prisma } = await import("@/lib/prisma");
+
+  return prisma.track.findMany({
+    where: { userId, kind: "TRAINING" },
+    select: trackListSelect,
+    orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
+  });
+};
+
+/**
  * Trip-side candidate list for the `Attach existing` section of the trip
  * contribution dialog. Returns the actor's own tracks that are not currently
  * linked to any trip, projected to the minimum needed by the dialog. Ordered
@@ -622,6 +656,11 @@ export const updateTrack = async (values: TrackActionValues) => {
     where: { id: existingTrack.id },
     data: {
       ...data,
+      // feature-120: the kind is written only when the caller sends one. An
+      // update that does not know about the column must not demote a
+      // workout back to a route, and `undefined` means "leave unchanged" in
+      // a Prisma update.
+      ...(values.kind ? { kind: data.kind } : { kind: undefined }),
       ...(staleMetadata ? { metadata: staleMetadata as Prisma.InputJsonValue } : {}),
     },
     select: trackListSelect,
@@ -1022,6 +1061,12 @@ export const createManualTrack = async (input: CreateManualTrackInput): Promise<
     if (!TRACK_STATUSES.has(normalizedStatus)) {
       return { ok: false, code: "VALIDATION", message: "Track status is invalid" };
     }
+    // feature-120: same default-and-validate contract as the status — a
+    // missing kind is a route, an unknown kind is a validation error.
+    const normalizedKind = input.kind ?? DEFAULT_TRACK_KIND;
+    if (!TRACK_KINDS.has(normalizedKind)) {
+      return { ok: false, code: "VALIDATION", message: "Track kind is invalid" };
+    }
     const normalizedSlug = normalizeTrackSlug(normalizedTitle, input.slug ?? null);
     const normalizedDescription = normalizeOptionalText(input.description);
 
@@ -1143,6 +1188,7 @@ export const createManualTrack = async (input: CreateManualTrackInput): Promise<
           fileAssetId: fileAsset.id,
           userId,
           activityTypeId: normalizedActivityTypeId,
+          kind: normalizedKind,
           recordingStartAt: normalizedRecordingStartAt,
           recordingDurationSeconds: normalizedRecordingDurationSeconds,
           recordingTimezone: normalizedRecordingTimezone,
