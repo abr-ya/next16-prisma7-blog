@@ -34,16 +34,17 @@
 - [x] `npm run tsc` — must pass clean.
 - [x] `npx eslint components/admin-pages/tracks-admin-panel.tsx components/hike-pages/hike-track-contribution-form.tsx lib/use-discard-guarded-track-form.ts --quiet` — these are outside `app/`, so the root lint script will not cover them. Run without `--quiet` too: the first pass reported one `react-hooks/exhaustive-deps` warning on the public form's `open` effect (see `design.md`, "The memo dependency in the public form").
 - [x] `npx prisma generate` — not needed; no schema change.
-- [ ] Ask the user to run `npm run build` and `npm run dev` — the agent does not start either.
+- [x] `npm run build` — passed on 2026-10-24 (run by the user).
+- [x] `npm run dev` — run by the user on 2026-10-24 for the browser check below.
 
 ## 5. Browser check
 
-- [ ] Admin track form: open the edit dialog, type a title, close it, and confirm the discard dialog still appears with the unchanged copy ("Discard track changes?"); confirm the dialog closes without saving and the row is untouched.
-- [ ] Admin track form: upload a GPX file, close the dialog, and confirm the dialog now reads "Discard track and uploaded GPX?" with the "Discard and remove file" label and that confirming marks the file `PENDING_DELETE` and shows the "Uploaded GPX file discarded" toast.
-- [ ] Admin track form: stage points on the map and close without other changes — confirm the dialog reads "Discard placed points?".
-- [ ] Admin track form: press Cancel on the discard dialog and confirm the form stays open with the typed values intact.
-- [ ] Public trip-page form: open the "Add track" dialog, upload a GPX file, close it, and confirm the discard dialog appears and the uploaded file is marked `PENDING_DELETE` — and that **no** success toast appears, as today.
-- [ ] Public trip-page form: type a slug on the upload tab and close — confirm the guard fires; switch to the "attach" tab with a dirty form and close — confirm the guard does **not** fire (the dirty term is upload-tab-only).
+Minimum set: the guard's presence and its copy only — nothing here deletes an uploaded file.
+
+- [x] Admin track form: type a title, close the dialog — the discard confirmation appears with the unchanged copy ("Discard track changes?"), and cancelling it keeps the dialog open with the title intact.
+- [x] Admin track form: stage points on the map and close without other changes — the confirmation reads "Discard placed points?". *(Both checked on 2026-10-24.)*
+
+The checks that confirm an uploaded file is actually removed — and the toast that goes with it — moved to `fix-008-public-track-discard-success-toast`: they exercise the same discard branch that fix changes, so running them once there covers the final code. The public form's upload-tab-only dirty term moved there as well.
 
 ## 6. Docs
 

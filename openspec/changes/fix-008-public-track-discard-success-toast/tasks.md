@@ -33,10 +33,13 @@
 
 ## 6. Browser check
 
-- [ ] Public trip-side dialog: upload a GPX file, close the dialog, confirm the discard — the toast `Uploaded GPX file discarded` appears, the uploaded `FileAsset` is marked `PENDING_DELETE`, and the dialog closes.
+The checks that delete an uploaded file moved here from `refactor-003-discard-guarded-track-form` — this is where that discard branch finally changes, so it gets verified once, on the final code.
+
+- [ ] Public trip-side dialog: type a slug on the upload tab and close — the guard fires ("Discard track changes?"); switch to the "attach" tab with the same dirty form and close — the guard does **not** fire (the dirty term is upload-tab-only). *(Moved here from `refactor-003-discard-guarded-track-form`.)*
+- [ ] Public trip-side dialog: upload a GPX file, close the dialog — the confirmation reads "Discard track and uploaded GPX?" with the "Discard and remove file" label. Confirm the discard: the toast `Uploaded GPX file discarded` appears, the uploaded `FileAsset` is marked `PENDING_DELETE`, and the dialog closes.
 - [ ] Public trip-side dialog: type a slug only (no upload), close, confirm the discard — the dialog closes and **no** file toast appears.
 - [ ] Public trip-side dialog: upload a GPX, then cancel the discard confirmation — the dialog stays open with the file still selected, and no toast appears.
-- [ ] Admin track dialog: upload a GPX, close, confirm the discard — the same `Uploaded GPX file discarded` toast appears as before the change.
+- [ ] Admin track dialog: upload a GPX, close — the confirmation reads "Discard track and uploaded GPX?" with the "Discard and remove file" label. Confirm the discard: the same `Uploaded GPX file discarded` toast appears as before the change, and the uploaded `FileAsset` is marked `PENDING_DELETE`.
 - [ ] Admin track dialog: make a form-only change and discard — no file toast, as before.
 
 ## 7. Docs
