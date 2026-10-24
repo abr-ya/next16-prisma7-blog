@@ -41,6 +41,7 @@ model User {
   hikeParticipants               HikeParticipant[] @relation("HikeParticipantUser")
   sentHikeParticipantInvitations HikeParticipant[] @relation("HikeParticipantInviter")
   tracks                         Track[]
+  gears                          Gear[]
   photos                         Photo[]
   photoLikes                     PhotoLike[]
   trustChangesReceived           TrustChangeLog[]  @relation("TrustChangeLogTarget")
@@ -373,10 +374,25 @@ model TrackActivityType {
   nameRu    String?
   isActive  Boolean  @default(true)
   tracks    Track[]
+  gears     Gear[]
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
 
   @@index([isActive])
+}
+
+model Gear {
+  id             String             @id @default(uuid())
+  name           String
+  activityTypeId String?
+  activityType   TrackActivityType? @relation(fields: [activityTypeId], references: [id], onDelete: SetNull)
+  userId         String
+  user           User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @default(now()) @updatedAt
+
+  @@index([userId])
+  @@index([activityTypeId])
 }
 
 model HikesToTracks {
