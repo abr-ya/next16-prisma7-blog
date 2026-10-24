@@ -52,6 +52,7 @@ import type { TrackActivityType } from "@/generated/prisma/client";
 import { createSlug } from "@/lib/slug-generator";
 import { useTrackRowActions } from "@/lib/track-row-actions";
 import { useDeleteRowConfirm } from "@/lib/use-delete-row-confirm";
+import { useDiscardGuardedTrackForm } from "@/lib/use-discard-guarded-track-form";
 import { TrackGpxUploadSection } from "@/components/track-pages/track-gpx-upload-section";
 import { TrackEditor, type ManualTrackPoint } from "@/components/track-pages/track-editor";
 import { getSupportedTrackRecordingTimezones, normalizeTrackRecordingTimezone } from "@/lib/track-recording-timezone";
@@ -122,7 +123,6 @@ const formatDate = (value: Date | string) =>
     day: "numeric",
   }).format(new Date(value));
 
-const uniqueIds = (ids: string[]) => Array.from(new Set(ids));
 const formatActivityTypeName = (activityType: TrackActivityType | null, language?: string) =>
   activityType ? (language === "ru" ? activityType.nameRu || activityType.nameEn : activityType.nameEn) : "";
 
@@ -172,9 +172,6 @@ const TrackFormDialog = ({
   const savedFileAssetId = track?.fileAssetId ?? null;
   const fileAssetId = useWatch({ control: form.control, name: "fileAssetId" });
   const fileAssetName = useWatch({ control: form.control, name: "fileAssetName" });
-  const [uploadedFileAssetIds, setUploadedFileAssetIds] = useState<string[]>([]);
-  const [discardConfirmOpen, setDiscardConfirmOpen] = useState(false);
-  const [isDiscarding, startDiscarding] = useTransition();
   const [activeTab, setActiveTab] = useState<TrackCreationMode>("gpx");
   const [placedPoints, setPlacedPoints] = useState<ManualTrackPoint[]>([]);
   const [isMarkingAsManual, setIsMarkingAsManual] = useState(false);
@@ -189,13 +186,19 @@ const TrackFormDialog = ({
       setPlacedPoints([]);
     }
   }
-  const discardFileAssetIds = useMemo(
-    () => uploadedFileAssetIds.filter((uploadedFileAssetId) => uploadedFileAssetId !== savedFileAssetId),
-    [savedFileAssetId, uploadedFileAssetIds],
-  );
-  const hasUnsavedUploads = discardFileAssetIds.length > 0;
-  const hasUnsavedPoints = placedPoints.length > 0;
-  const hasGuardedChanges = form.formState.isDirty || hasUnsavedUploads || hasUnsavedPoints;
+  const resetFormState = useCallback(() => {
+    setPlacedPoints([]);
+    form.reset(defaultValues);
+  }, [form]);
+
+  const discardGuard = useDiscardGuardedTrackForm({
+    savedFileAssetId,
+    hasUnsavedChanges: form.formState.isDirty,
+    hasUnsavedPoints: placedPoints.length > 0,
+    resetFormState,
+    onOpenChange,
+    discardedMsg: "Uploaded GPX file discarded",
+  });
 
   useEffect(() => {
     if (!open) return;
@@ -257,14 +260,6 @@ const TrackFormDialog = ({
     }
   };
 
-  const closeWithoutGuard = () => {
-    setDiscardConfirmOpen(false);
-    setUploadedFileAssetIds([]);
-    setPlacedPoints([]);
-    form.reset(defaultValues);
-    onOpenChange(false);
-  };
-
   const handleMarkAsManual = useCallback(async () => {
     if (!track) {
       return;
@@ -287,43 +282,10 @@ const TrackFormDialog = ({
     }
   }, [track, t, onOpenChange, onSaved]);
 
-  const handleOpenChange = (nextOpen: boolean) => {
-    if (nextOpen) {
-      onOpenChange(true);
-      return;
-    }
-
-    if (hasGuardedChanges) {
-      setDiscardConfirmOpen(true);
-      return;
-    }
-
-    closeWithoutGuard();
-  };
-
-  const handleConfirmDiscard = () => {
-    const fileIdsToDiscard = discardFileAssetIds;
-
-    if (fileIdsToDiscard.length === 0) {
-      closeWithoutGuard();
-      return;
-    }
-
-    startDiscarding(async () => {
-      const result = await markDiscardedTrackGpxFileAssetsPendingDelete(fileIdsToDiscard);
-
-      if (!result.success) {
-        toast.error(result.message || "Uploaded GPX file could not be removed");
-        return;
-      }
-
-      toast.success("Uploaded GPX file discarded");
-      closeWithoutGuard();
-    });
-  };
-
   const cleanupSupersededUploads = async (savedFileId: string) => {
-    const supersededFileIds = discardFileAssetIds.filter((uploadedFileAssetId) => uploadedFileAssetId !== savedFileId);
+    const supersededFileIds = discardGuard.discardableFileAssetIds.filter(
+      (uploadedFileAssetId) => uploadedFileAssetId !== savedFileId,
+    );
 
     if (supersededFileIds.length === 0) return;
 
@@ -488,7 +450,7 @@ const TrackFormDialog = ({
 
         toast.success(t("placeOnMapSuccess"));
         setPlacedPoints([]);
-        closeWithoutGuard();
+        discardGuard.closeWithoutGuard();
         onSaved();
         return;
       } else {
@@ -497,7 +459,7 @@ const TrackFormDialog = ({
       }
 
       await cleanupSupersededUploads(values.fileAssetId ?? "");
-      closeWithoutGuard();
+      discardGuard.closeWithoutGuard();
       onSaved();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to save track");
@@ -772,7 +734,7 @@ const TrackFormDialog = ({
 
   return (
     <>
-      <Dialog open={open} onOpenChange={handleOpenChange}>
+      <Dialog open={open} onOpenChange={discardGuard.handleOpenChange}>
         <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-3xl">
           <DialogHeader>
             <DialogTitle>{isEditing ? "Edit track" : "Create track"}</DialogTitle>
@@ -819,7 +781,7 @@ const TrackFormDialog = ({
                     onUploadComplete={({ fileAssetId, fileName }) => {
                       form.setValue("fileAssetId", fileAssetId, { shouldDirty: true, shouldValidate: true });
                       form.setValue("fileAssetName", fileName, { shouldDirty: true, shouldValidate: true });
-                      setUploadedFileAssetIds((current) => uniqueIds([...current, fileAssetId]));
+                      discardGuard.registerUploadedFileAssetId(fileAssetId);
                     }}
                     onUploadError={() => {
                       // toast already emitted by the section
@@ -900,28 +862,7 @@ const TrackFormDialog = ({
           </Form>
         </DialogContent>
       </Dialog>
-      <ConfirmDialog
-        open={discardConfirmOpen}
-        onOpenChange={setDiscardConfirmOpen}
-        title={
-          hasUnsavedUploads
-            ? "Discard track and uploaded GPX?"
-            : hasUnsavedPoints
-              ? "Discard placed points?"
-              : "Discard track changes?"
-        }
-        description={
-          hasUnsavedUploads
-            ? "This form has unsaved changes and an uploaded GPX file. Discarding will mark the unsaved uploaded GPX file for deletion before closing."
-            : hasUnsavedPoints
-              ? "This form has unsaved changes and placed map points. Discarding will close the modal without saving them."
-              : "This form has unsaved changes. Discarding will close the modal without saving them."
-        }
-        confirmLabel={hasUnsavedUploads ? "Discard and remove file" : "Discard changes"}
-        confirmVariant="destructive"
-        isPending={isDiscarding}
-        onConfirm={handleConfirmDiscard}
-      />
+      <ConfirmDialog {...discardGuard.confirmDialogProps} />
     </>
   );
 };
