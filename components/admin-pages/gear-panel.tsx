@@ -86,6 +86,7 @@ export const GearPanel = ({ gear, activityTypes }: GearPanelProps) => {
       <GearFormDialog
         gear={editingGear}
         activityTypeOptions={activityTypeOptions}
+        activeLanguage={activeLanguage}
         open={formOpen}
         onOpenChange={(open) => {
           setFormOpen(open);

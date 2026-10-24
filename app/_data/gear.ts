@@ -10,16 +10,32 @@ import { AuthorizationError, requireActionUser } from "@/lib/auth-utils";
 // the owner from the session — the client never sends an owner id — and every
 // mutation reads its row with the owner in the `where` clause, so a record
 // owned by somebody else is never reached, not merely refused afterwards.
+//
+// A gear item carries a *set* of activity types: the same shoes work for
+// running and for walking. The set lives in the `GearToTrackActivityTypes`
+// join table, so the owner picks any number of the active types, and none at
+// all for an item that is not classified yet.
 
 const GEAR_NAME_MAX_LENGTH = 120;
 
 const gearListSelect = {
   id: true,
   name: true,
-  activityTypeId: true,
   createdAt: true,
   updatedAt: true,
-  activityType: true,
+  activityTypes: {
+    select: {
+      activityTypeId: true,
+      activityType: {
+        select: {
+          id: true,
+          nameEn: true,
+          nameRu: true,
+          isActive: true,
+        },
+      },
+    },
+  },
   user: {
     select: {
       id: true,
@@ -33,6 +49,16 @@ export type GearListItem = Prisma.GearGetPayload<{
   select: typeof gearListSelect;
 }>;
 
+// The Prisma client is created through `require` in `lib/prisma.ts`, so the
+// result of a query is not inferred. This selection is typed by hand so the
+// linked activity types are known to be a list of ids.
+const gearLinksSelect = {
+  id: true,
+  activityTypes: { select: { activityTypeId: true } },
+} satisfies Prisma.GearSelect;
+
+type GearWithLinks = Prisma.GearGetPayload<{ select: typeof gearLinksSelect }>;
+
 export type GearErrorCode = "VALIDATION" | "NOT_FOUND" | "UNAUTHORIZED";
 
 export type GearSaveResult = { ok: true; gear: GearListItem } | { ok: false; code: GearErrorCode; message: string };
@@ -41,7 +67,7 @@ export type GearDeleteResult = { ok: true } | { ok: false; code: GearErrorCode; 
 
 export type GearValues = {
   name?: string | null;
-  activityTypeId?: string | null;
+  activityTypeIds?: string[] | null;
 };
 
 const getOwnerUserId = async () => {
@@ -61,20 +87,38 @@ const normalizeGearName = (value: string | null | undefined) => {
 };
 
 /**
- * The activity type is a borrowed dictionary value: only an active one may be
+ * The activity types are borrowed dictionary values: only an active one may be
  * attached. `getTrackActivityTypeById` returns `null` for an unknown *and* for
  * an inactive id, so both are rejected the same way.
+ *
+ * One exception keeps the record editable: a type that is already attached
+ * stays attached even after it was deactivated, so editing the name of that
+ * gear item does not fail on a type the owner never chose to remove. A type
+ * the owner attaches afresh must be active.
  */
-const resolveActivityTypeId = async (value: string | null | undefined) => {
-  const id = (value ?? "").trim();
+const resolveActivityTypeIds = async (value: string[] | null | undefined, alreadyLinkedIds: string[]) => {
+  const ids = Array.from(new Set((value ?? []).map((id) => (id ?? "").trim()).filter(Boolean)));
 
-  if (!id) return { ok: true as const, activityTypeId: null as string | null };
+  if (!ids.length) return { ok: true as const, activityTypeIds: [] as string[] };
 
-  const activityType = await getTrackActivityTypeById(id);
+  const linked = new Set(alreadyLinkedIds);
+  const resolved: string[] = [];
 
-  if (!activityType) return { ok: false as const, message: "Selected activity type is not available" };
+  for (const id of ids) {
+    if (linked.has(id)) {
+      resolved.push(id);
 
-  return { ok: true as const, activityTypeId: activityType.id };
+      continue;
+    }
+
+    const activityType = await getTrackActivityTypeById(id);
+
+    if (!activityType) return { ok: false as const, message: "Selected activity type is not available" };
+
+    resolved.push(activityType.id);
+  }
+
+  return { ok: true as const, activityTypeIds: resolved };
 };
 
 const unauthorized = (): { ok: false; code: "UNAUTHORIZED"; message: string } => ({
@@ -101,13 +145,19 @@ export const createGear = async (values: GearValues): Promise<GearSaveResult> =>
 
     if (!name.ok) return { ok: false, code: "VALIDATION", message: name.message };
 
-    const activityType = await resolveActivityTypeId(values.activityTypeId);
+    const activityTypes = await resolveActivityTypeIds(values.activityTypeIds, []);
 
-    if (!activityType.ok) return { ok: false, code: "VALIDATION", message: activityType.message };
+    if (!activityTypes.ok) return { ok: false, code: "VALIDATION", message: activityTypes.message };
 
     const { default: prisma } = await import("@/lib/prisma");
     const gear = await prisma.gear.create({
-      data: { name: name.name, activityTypeId: activityType.activityTypeId, userId },
+      data: {
+        name: name.name,
+        userId,
+        activityTypes: {
+          create: activityTypes.activityTypeIds.map((activityTypeId) => ({ activityTypeId })),
+        },
+      },
       select: gearListSelect,
     });
 
@@ -129,9 +179,9 @@ export const updateGear = async ({ id, ...values }: GearValues & { id?: string |
     if (!gearId) return { ok: false, code: "VALIDATION", message: "Gear id is required" };
 
     const { default: prisma } = await import("@/lib/prisma");
-    const existingGear = await prisma.gear.findFirst({
+    const existingGear: GearWithLinks = await prisma.gear.findFirst({
       where: { id: gearId, userId },
-      select: { id: true },
+      select: gearLinksSelect,
     });
 
     if (!existingGear) return { ok: false, code: "NOT_FOUND", message: "Gear not found" };
@@ -140,13 +190,22 @@ export const updateGear = async ({ id, ...values }: GearValues & { id?: string |
 
     if (!name.ok) return { ok: false, code: "VALIDATION", message: name.message };
 
-    const activityType = await resolveActivityTypeId(values.activityTypeId);
+    const activityTypes = await resolveActivityTypeIds(
+      values.activityTypeIds,
+      existingGear.activityTypes.map((link) => link.activityTypeId),
+    );
 
-    if (!activityType.ok) return { ok: false, code: "VALIDATION", message: activityType.message };
+    if (!activityTypes.ok) return { ok: false, code: "VALIDATION", message: activityTypes.message };
 
     const gear = await prisma.gear.update({
       where: { id: existingGear.id },
-      data: { name: name.name, activityTypeId: activityType.activityTypeId },
+      data: {
+        name: name.name,
+        activityTypes: {
+          deleteMany: {},
+          create: activityTypes.activityTypeIds.map((activityTypeId) => ({ activityTypeId })),
+        },
+      },
       select: gearListSelect,
     });
 

@@ -5,10 +5,10 @@ import { Edit, Trash2 } from "lucide-react";
 
 import type { GearListItem } from "@/app/_data/gear";
 import { Badge, Button } from "@/components/index";
-import { formatGearActivityTypeName } from "@/lib/gear";
+import { gearActivityTypeLabels } from "@/lib/gear";
 
 // feature-121: the gear table is deliberately short — the name, the borrowed
-// activity type, and the day the item was added. The row actions are edit and
+// activity types, and the day the item was added. The row actions are edit and
 // delete, the same two the track tables offer, so a deletion reads the same
 // everywhere in the owner pages.
 
@@ -36,14 +36,23 @@ const createGearColumns = ({
     cell: ({ row }) => <div className="font-medium">{row.original.name}</div>,
   },
   {
-    id: "activityType",
-    header: "Type",
-    cell: ({ row }) =>
-      row.original.activityType ? (
-        <Badge variant="outline">{formatGearActivityTypeName(row.original.activityType, activeLanguage)}</Badge>
-      ) : (
-        <Badge variant="outline">Unclassified</Badge>
-      ),
+    id: "activityTypes",
+    header: "Types",
+    cell: ({ row }) => {
+      const labels = gearActivityTypeLabels(row.original.activityTypes, activeLanguage);
+
+      if (!labels.length) return <Badge variant="outline">Unclassified</Badge>;
+
+      return (
+        <div className="flex flex-wrap gap-1">
+          {labels.map((label) => (
+            <Badge key={label} variant="outline">
+              {label}
+            </Badge>
+          ))}
+        </div>
+      );
+    },
   },
   {
     id: "createdAt",

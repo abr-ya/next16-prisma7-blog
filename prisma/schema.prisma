@@ -339,13 +339,13 @@ model HikeNote {
 }
 
 model Track {
-  id                       String          @id @default(uuid())
+  id                       String             @id @default(uuid())
   title                    String
-  slug                     String          @unique
+  slug                     String             @unique
   description              String?
-  status                   TrackStatus     @default(DRAFT)
-  fileAssetId              String          @unique
-  fileAsset                FileAsset       @relation(fields: [fileAssetId], references: [id], onDelete: Restrict)
+  status                   TrackStatus        @default(DRAFT)
+  fileAssetId              String             @unique
+  fileAsset                FileAsset          @relation(fields: [fileAssetId], references: [id], onDelete: Restrict)
   metadata                 Json?
   recordingTimezone        String?
   recordingStartAt         DateTime?
@@ -353,12 +353,12 @@ model Track {
   timeSource               TrackTimeSource?
   activityTypeId           String?
   activityType             TrackActivityType? @relation(fields: [activityTypeId], references: [id], onDelete: Restrict)
-  kind                     TrackKind       @default(ROUTE)
+  kind                     TrackKind          @default(ROUTE)
   userId                   String
-  user                     User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user                     User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   hikes                    HikesToTracks[]
-  createdAt                DateTime        @default(now())
-  updatedAt                DateTime        @default(now()) @updatedAt
+  createdAt                DateTime           @default(now())
+  updatedAt                DateTime           @default(now()) @updatedAt
 
   @@index([status])
   @@index([userId])
@@ -368,30 +368,39 @@ model Track {
 }
 
 model TrackActivityType {
-  id        String   @id @default(uuid())
-  key       String   @unique
+  id        String                     @id @default(uuid())
+  key       String                     @unique
   nameEn    String
   nameRu    String?
-  isActive  Boolean  @default(true)
+  isActive  Boolean                    @default(true)
   tracks    Track[]
-  gears     Gear[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now()) @updatedAt
+  gears     GearToTrackActivityTypes[]
+  createdAt DateTime                   @default(now())
+  updatedAt DateTime                   @default(now()) @updatedAt
 
   @@index([isActive])
 }
 
 model Gear {
-  id             String             @id @default(uuid())
-  name           String
-  activityTypeId String?
-  activityType   TrackActivityType? @relation(fields: [activityTypeId], references: [id], onDelete: SetNull)
-  userId         String
-  user           User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt      DateTime           @default(now())
-  updatedAt      DateTime           @default(now()) @updatedAt
+  id            String                     @id @default(uuid())
+  name          String
+  userId        String
+  user          User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  activityTypes GearToTrackActivityTypes[]
+  createdAt     DateTime                   @default(now())
+  updatedAt     DateTime                   @default(now()) @updatedAt
 
   @@index([userId])
+}
+
+model GearToTrackActivityTypes {
+  gear           Gear              @relation(fields: [gearId], references: [id], onDelete: Cascade)
+  gearId         String
+  activityType   TrackActivityType @relation(fields: [activityTypeId], references: [id], onDelete: Cascade)
+  activityTypeId String
+  assignedAt     DateTime          @default(now())
+
+  @@id([gearId, activityTypeId])
   @@index([activityTypeId])
 }
 
