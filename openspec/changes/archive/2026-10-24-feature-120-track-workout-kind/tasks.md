@@ -85,7 +85,7 @@
 - [x] `npx eslint components/admin-pages/tracks-admin-panel.tsx components/admin-pages/tracks-admin-columns.tsx components/blog-pages/navbar-user-menu.tsx "app/(public)/my/workouts/page.tsx"` — clean. The only warning is `react-refresh/only-export-components` on the new page, which the existing `/my/tracks` page produces identically (it also exports `metadata`).
 - [x] `npm run lint`.
 - [x] `npx openspec validate feature-120-track-workout-kind` — valid.
-- [ ] `npm run build` — the user runs the build; not run by the agent.
+- [x] `npm run build` — the user runs the build; not run by the agent. The owner ran it on 2026-10-24 and it passed.
 
 ## 8. Browser check
 
