@@ -47,7 +47,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/index";
-import type { TrackStatus } from "@/generated/prisma/enums";
+import type { TrackKind, TrackStatus } from "@/generated/prisma/enums";
 import type { TrackActivityType } from "@/generated/prisma/client";
 import { createSlug } from "@/lib/slug-generator";
 import { useTrackRowActions } from "@/lib/track-row-actions";
@@ -70,6 +70,7 @@ import {
   getTrackParseState,
 } from "@/components/admin-pages/tracks-admin-panel-parse-cell";
 import { createTracksAdminColumns } from "@/components/admin-pages/tracks-admin-columns";
+import { createTrackWorkoutColumns } from "@/components/admin-pages/tracks-workout-columns";
 import { TrackDurationInputError, parseDurationInput, parseStoredDurationToHms } from "@/lib/track-duration-input";
 
 const formSchema = z.object({
@@ -77,6 +78,10 @@ const formSchema = z.object({
   slug: z.string().min(1, { message: "Slug is required" }),
   description: z.string().optional(),
   status: z.enum(["DRAFT", "PUBLISHED"]),
+  // feature-120: the kind answers "what is this track for" — a routine
+  // training session versus a route. It is a private owner-side label and
+  // defaults to a route.
+  kind: z.enum(["ROUTE", "TRAINING"]),
   // `fileAssetId` is required by the GPX-upload tab and left empty by the
   // Place on map tab (where the file asset is built server-side from the
   // placed points). The submit button enforces "tab-appropriate" non-empty
@@ -100,11 +105,12 @@ type TrackFormValues = z.infer<typeof formSchema>;
 
 type TrackCreationMode = "gpx" | "placeOnMap";
 
-const defaultValues: TrackFormValues = {
+const TRACK_FORM_DEFAULTS: TrackFormValues = {
   title: "",
   slug: "",
   description: "",
   status: "DRAFT",
+  kind: "ROUTE",
   fileAssetId: "",
   fileAssetName: "",
   activityTypeId: "",
@@ -134,6 +140,7 @@ const TrackFormDialog = ({
   onParse,
   parsingTrackId,
   onSaved,
+  defaultKind = "ROUTE",
 }: {
   track: TrackListItem | null;
   activityTypes: TrackActivityType[];
@@ -142,9 +149,16 @@ const TrackFormDialog = ({
   onParse: (track: TrackListItem) => void;
   parsingTrackId: string | null;
   onSaved: () => void;
+  // feature-120: the kind a NEW track starts with. "My workouts" passes
+  // "TRAINING"; everywhere else a track starts as a route. The saved kind of
+  // an edited track always wins over this default.
+  defaultKind?: TrackKind;
 }) => {
   const { i18n, t } = useT(tripsNamespace);
   const activeLanguage = i18n.resolvedLanguage ?? i18n.language;
+  // feature-120: the form defaults are per-instance, because the new-track
+  // default kind depends on the page the dialog was opened from.
+  const defaultValues = useMemo(() => ({ ...TRACK_FORM_DEFAULTS, kind: defaultKind }), [defaultKind]);
   const form = useForm<TrackFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues,
@@ -189,7 +203,7 @@ const TrackFormDialog = ({
   const resetFormState = useCallback(() => {
     setPlacedPoints([]);
     form.reset(defaultValues);
-  }, [form]);
+  }, [form, defaultValues]);
 
   const discardGuard = useDiscardGuardedTrackForm({
     savedFileAssetId,
@@ -217,6 +231,9 @@ const TrackFormDialog = ({
         slug: track.slug,
         description: track.description ?? "",
         status: track.status,
+        // feature-120: restore the saved kind, otherwise opening a workout
+        // in the edit dialog would show "Route" and saving would demote it.
+        kind: track.kind,
         fileAssetId: track.fileAssetId,
         fileAssetName: track.fileAsset.name,
         activityTypeId: track.activityTypeId ?? "",
@@ -228,9 +245,11 @@ const TrackFormDialog = ({
         includeSeconds: storedDuration.includeSeconds,
       });
     } else {
+      // feature-120: a new track starts with the page's default kind — a
+      // route on My tracks and the admin panel, a workout on My workouts.
       form.reset(defaultValues);
     }
-  }, [form, track, open]);
+  }, [form, track, open, defaultValues]);
 
   const titleValue = useWatch({ control: form.control, name: "title" });
   // feature-112 Place on map metadata. `useWatch` re-renders the timeSource
@@ -304,6 +323,7 @@ const TrackFormDialog = ({
       status: values.status as TrackStatus,
       fileAssetId: values.fileAssetId,
       activityTypeId: values.activityTypeId || null,
+      kind: values.kind,
     };
 
     try {
@@ -428,6 +448,7 @@ const TrackFormDialog = ({
           status: values.status,
           points: placedPoints,
           activityTypeId: values.activityTypeId?.trim() || null,
+          kind: values.kind,
           recordingStartAt: hasStart ? trimmedStart : null,
           recordingDurationSeconds: parsedDurationSeconds,
           recordingTimezone: hasTimezone ? trimmedTimezone : null,
@@ -524,6 +545,30 @@ const TrackFormDialog = ({
                   Generate
                 </Button>
               </div>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        {/* feature-120: the kind is a private owner-side label — a routine
+            training session versus a route. It is not offered in the
+            trip-side dialog: a track inside a trip is a route. */}
+        <FormField
+          control={form.control}
+          name="kind"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Track kind</FormLabel>
+              <Select onValueChange={field.onChange} value={field.value}>
+                <FormControl>
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="ROUTE">Route</SelectItem>
+                  <SelectItem value="TRAINING">Workout</SelectItem>
+                </SelectContent>
+              </Select>
               <FormMessage />
             </FormItem>
           )}
@@ -870,9 +915,19 @@ const TrackFormDialog = ({
 export const TrackManagementPanel = ({
   tracks,
   activityTypes,
+  defaultKind = "ROUTE",
+  tableVariant = "full",
 }: {
   tracks: TrackListItem[];
   activityTypes: TrackActivityType[];
+  // feature-120: the kind a new track starts with on this page. "My
+  // workouts" passes "TRAINING"; My tracks and the admin panel keep the
+  // default route.
+  defaultKind?: TrackKind;
+  // feature-120 follow-up: "My workouts" renders the short owner-side
+  // table (badges, title, start, distance, type); every other page keeps
+  // the full admin column set.
+  tableVariant?: "full" | "workouts";
 }) => {
   const router = useRouter();
   const { i18n } = useT(navigationNamespace);
@@ -892,7 +947,8 @@ export const TrackManagementPanel = ({
   const deleteConfirm = useDeleteRowConfirm<TrackListItem>({
     deleteAction: deleteTrack,
     title: "Delete track?",
-    getDescription: (row) => `This will remove "${row.title}" from the admin tracks list.`,
+    getDescription: (row) =>
+      `This will remove "${row.title}" from ${tableVariant === "workouts" ? "My workouts" : "the tracks list"}.`,
     deletedMsg: "Track deleted",
     notFoundMsg: "Track not found",
   });
@@ -925,20 +981,27 @@ export const TrackManagementPanel = ({
 
   const columns = useMemo(
     () =>
-      createTracksAdminColumns({
-        activeLanguage,
-        handleParse: rowActions.handleParse,
-        markingAsManualId: rowActions.markingAsManualId,
-        onMarkAsManual: rowActions.setMarkAsManualTarget,
-        onSetTimezoneTarget: setTimezoneTarget,
-        onEditTrack: handleEditTrack,
-        onSetDeleteTarget: deleteConfirm.setTarget,
-        parsingTrackId: rowActions.parsingTrackId,
-        t,
-        formatDate,
-        formatActivityTypeName,
-      }),
-    [activeLanguage, deleteConfirm.setTarget, handleEditTrack, rowActions, t],
+      tableVariant === "workouts"
+        ? createTrackWorkoutColumns({
+            activeLanguage,
+            onEditTrack: handleEditTrack,
+            onSetDeleteTarget: deleteConfirm.setTarget,
+            formatActivityTypeName,
+          })
+        : createTracksAdminColumns({
+            activeLanguage,
+            handleParse: rowActions.handleParse,
+            markingAsManualId: rowActions.markingAsManualId,
+            onMarkAsManual: rowActions.setMarkAsManualTarget,
+            onSetTimezoneTarget: setTimezoneTarget,
+            onEditTrack: handleEditTrack,
+            onSetDeleteTarget: deleteConfirm.setTarget,
+            parsingTrackId: rowActions.parsingTrackId,
+            t,
+            formatDate,
+            formatActivityTypeName,
+          }),
+    [activeLanguage, deleteConfirm.setTarget, handleEditTrack, rowActions, t, tableVariant],
   );
 
   // The inline column body that used to live here has moved to
@@ -987,6 +1050,7 @@ export const TrackManagementPanel = ({
         track={editingTrack}
         activityTypes={activityTypes}
         open={formOpen}
+        defaultKind={defaultKind}
         onParse={rowActions.handleParse}
         parsingTrackId={rowActions.parsingTrackId}
         onSaved={() => router.refresh()}
