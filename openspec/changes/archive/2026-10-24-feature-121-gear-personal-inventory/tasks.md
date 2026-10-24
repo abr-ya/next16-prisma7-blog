@@ -6,7 +6,8 @@
   - The `SetNull` choice (not `Restrict`, which would make the activity-type deletion flow hit an unchecked foreign-key violation) is recorded in `design.md`, decision 2.
 - [x] 1.2 Add the inverse relation `gears Gear[]` to `model User` (next to `tracks Track[]`). Verify with `npx prisma validate` that both sides of the relation are declared.
 - [x] 1.3 Run `npx prisma generate`. Verify that `Gear` is exported from `generated/prisma/client` and that `Prisma.GearSelect` / `Prisma.GearGetPayload` resolve.
-- [ ] 1.4 Create the migration `prisma/migrations/<timestamp>_add_gear_model/migration.sql`. Generate the SQL with `npx prisma migrate diff --from-schema <old-schema> --to-schema <new-schema> --script` and apply it with `npx prisma migrate deploy` — `npx prisma migrate dev` will refuse to run because `20261013211113_feature_112_outdoor_track_creation_public_metadata` was edited after it was applied, and it offers a database reset. **Do not reset the database.** Verify that the `Gear` table and its two indexes exist and that no existing table was altered.
+- [x] 1.4 Create the migration `prisma/migrations/<timestamp>_add_gear_model/migration.sql`. Generate the SQL with `npx prisma migrate diff --from-schema <old-schema> --to-schema <new-schema> --script` and apply it with `npx prisma migrate deploy` — `npx prisma migrate dev` will refuse to run because `20261013211113_feature_112_outdoor_track_creation_public_metadata` was edited after it was applied, and it offers a database reset. **Do not reset the database.** Verify that the `Gear` table and its two indexes exist and that no existing table was altered.
+  - Applied on 2026-10-24 with `npx prisma migrate deploy` — the owner ran it, no database reset. The generated SQL matches `prisma migrate diff --from-schema <HEAD schema> --to-schema prisma/schema.prisma --script` byte for byte, and the `Gear` table was confirmed to exist in the database afterwards.
 
 ## 2. The data layer (`app/_data/gear.ts`)
 
@@ -51,15 +52,21 @@
 - [x] 7.2 `npx eslint app/_data/gear.ts components/admin-pages/gear-panel.tsx components/admin-pages/gear-columns.tsx components/admin-pages/gear-form-dialog.tsx components/blog-pages/navbar-user-menu.tsx "app/(public)/my/gear/page.tsx" --quiet` — clean.
 - [x] 7.3 `npm run lint` — clean.
 - [x] 7.4 `npx openspec validate feature-121-gear-personal-inventory` — valid.
-- [ ] 7.5 `npm run build` — the user runs the build; not run by the agent. The owner runs it and records the result here.
+- [x] 7.5 `npm run build` — the user runs the build; not run by the agent. The owner runs it and records the result here.
+  - The owner's production build passed on 2026-10-24.
 
 ## 8. Browser check
 
-- [ ] `/my/gear` opens from the user menu and lists the owner's gear.
-- [ ] Adding a gear with a name and an activity type saves it, and it appears in the list with the type badge.
+The manual pass is kept to one minimal positive scenario, the same scope the owner chose for the other owner-page changes — the page opens and an item can be created and seen.
+
+- [x] `/my/gear`: open the page from the user menu, add a gear item with a name and an activity type, and it appears in the list with its type badge.
+  - Verified by the owner on 2026-10-24, before the many-to-many revision of section 10 — the revision is verified by task 10.9.
+
+The remaining checks were deferred and filed as `outdoor-gear-personal-inventory-manual-qa` in `openspec/backlog.md`:
+
 - [ ] Adding a gear without an activity type saves it as "Unclassified" — no synthetic "not selected" type is created.
 - [ ] Adding a gear with an empty name is refused with a message, and no record is created.
-- [ ] Editing a gear changes its name and its activity type, and the list shows the new values.
+- [ ] Editing a gear changes its name and its activity types, and the list shows the new values.
 - [ ] Deleting a gear asks for confirmation, and the row disappears once confirmed.
 - [ ] A gear whose activity type was deactivated afterwards keeps its classification and shows it.
 - [ ] The gear of one signed-in user is not visible to another signed-in user, and neither can edit or delete it.
@@ -70,8 +77,35 @@
 
 The promotion itself is already done: when this change was created, the `outdoor-gear-personal-inventory` candidate became the `In Progress` row `feature-121-gear-personal-inventory`, and the follow-on candidates — the gear-to-track assignment, the extended fields (year and size), and the brand dictionary — were filed with their dependencies.
 
-- [ ] 9.1 `openspec/backlog.md`: the `feature-121-gear-personal-inventory` row is removed from the roadmap table at archive time, the way `feature-120-track-workout-kind` was.
-- [ ] 9.2 `openspec/specs/outdoor-gear/spec.md`: the requirements from `specs/outdoor-gear/spec.md` in this change are merged into the live spec at archive time.
+- [x] 9.1 `openspec/backlog.md`: the `feature-121-gear-personal-inventory` row is removed from the roadmap table at archive time, the way `feature-120-track-workout-kind` was.
+  - Removed on 2026-10-24 at archive time.
+- [x] 9.2 `openspec/specs/outdoor-gear/spec.md`: the requirements from `specs/outdoor-gear/spec.md` in this change are merged into the live spec at archive time.
+  - Done on 2026-10-24: the live spec was created from the delta — the same 4 requirements and 19 scenarios, under a single `## Requirements` section, with the delta's `## Purpose` copied into the new spec's `## Purpose`. `npx openspec validate --specs` passes.
+- [x] 9.3 `openspec/backlog.md`: the deferred browser checks are filed as `outdoor-gear-personal-inventory-manual-qa`.
+
+## 10. The many-to-many revision
+
+The owner asked for the activity types to be selectable in multiples — the same shoes for running and for walking. The single `Gear.activityTypeId` of sections 1–4 becomes the `GearToTrackActivityTypes` join model of `design.md`, decision 2. The first migration is already applied, so this revision is a *second* migration and never a rewrite of the first.
+
+Sections 1–9 describe the implementation as it was written; where this section says it revises a task, that task's wording is superseded.
+
+- [x] 10.1 Replace `Gear.activityTypeId` in `prisma/schema.prisma` with the `GearToTrackActivityTypes` join model — `@@id([gearId, activityTypeId])`, `@@index([activityTypeId])`, `onDelete: Cascade` on both foreign keys — and point `TrackActivityType.gears` at it. Verify with `npx prisma validate`, then `npx prisma format`.
+  - Revises tasks 1.1 and 1.2. The `SetNull` rationale of `design.md` decision 2 is superseded by the cascade on the join rows.
+- [x] 10.2 Create the migration `prisma/migrations/20261024194221_gear_multiple_activity_types/migration.sql`: create the join table with its index and its two foreign keys, copy the `activityTypeId` of every existing gear row into it, and only *after* that copy drop `Gear.activityTypeId` with its index and foreign key. Verify the SQL by hand against `prisma migrate diff --from-schema <the applied schema> --to-schema prisma/schema.prisma --script` — the generated script drops the column first, which would lose the data, so the order is corrected by hand.
+- [x] 10.3 Apply the second migration with `npx prisma migrate deploy`. **Do not reset the database.** Verify that `GearToTrackActivityTypes` exists, that the gear row created during the manual check kept its activity type, and that `Gear.activityTypeId` is gone.
+  - Applied on 2026-10-24 with `npx prisma migrate deploy` — the owner ran it, no database reset. Verified afterwards: `GearToTrackActivityTypes` exists and `Gear.activityTypeId` is gone. The copy step had nothing to carry in this environment — the `Gear` table was already empty, the manual-check item having been deleted during the check — so the join table is empty too, and no record was lost by the migration. The copy statement stays in the migration: it is what protects a row created between the two migrations.
+- [x] 10.4 Revise `app/_data/gear.ts` for the set: `gearListSelect` selects the joined types, `GearValues` carries `activityTypeIds`, `resolveActivityTypeIds` validates every submitted id, and `createGear` / `updateGear` write the set through the nested `create` and the `deleteMany` + `create` of an update. A type that is already attached to the record being edited stays accepted after it is deactivated. Verify under `npm run tsc`.
+  - Revises tasks 2.2, 2.5, and 2.6.
+- [x] 10.5 Revise the form: the zod field becomes `activityTypeIds: z.array(z.string())`, and the single `Select` becomes one toggleable `Badge` per type with `aria-pressed`. Verify that the toggles add and remove a type and that the dialog opens with the stored types selected.
+  - Revises tasks 3.1, 3.2, 3.3, and 3.6.
+  - The revision also fixes a defect that the single-type form already carried: `form.reset()` does not re-validate in react-hook-form 7, so opening the *edit* dialog left `formState.isValid` at its previous value and the submit button disabled on an already valid record. The edit path now calls `form.trigger()` after the reset. The create path is deliberately left alone — validating an empty name on open would show the error before the owner typed anything.
+- [x] 10.6 Revise the column factory: the type cell renders one badge per type, or an explicit "Unclassified" badge when the item has none.
+  - Revises task 4.1.
+- [x] 10.7 Re-run the validation: `npm run tsc`, the targeted `eslint`, `npm run lint`, and `npx openspec validate feature-121-gear-personal-inventory`.
+- [x] 10.8 `npm run build` — the owner runs the build; not run by the agent.
+  - The owner's production build passed on 2026-10-24, after the many-to-many revision.
+- [x] 10.9 Browser check: on `/my/gear`, add a gear item with two activity types and both badges show in the list; open it in edit and remove one — the badge is gone and the other stays; the item that existed before the revision kept its type.
+  - Verified by the owner on 2026-10-24.
 
 ## Not in this change
 

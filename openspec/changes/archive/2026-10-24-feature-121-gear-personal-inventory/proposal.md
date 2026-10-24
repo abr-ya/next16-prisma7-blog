@@ -6,14 +6,14 @@
 
 The track domain already has the classification vocabulary (`TrackActivityType` — running, cycling, hiking) and the owner-only private-surface pattern (`/my/tracks`, `/my/workouts`). What is missing is the other half of the pair: a private inventory of the physical equipment an owner actually uses. Without it, "the equipment I used for this training" cannot be expressed at all, and no mileage or wear statistic can ever be computed.
 
-This is the foundation slice of a three-part series: the inventory first (this change), the assignment of gear to tracks second, the extended fields and the brand dictionary third. The MVP deliberately keeps the inventory to a name and an optional activity type so the later slices stay additive — no field is removed or reshaped once it exists.
+This is the foundation slice of a three-part series: the inventory first (this change), the assignment of gear to tracks second, the extended fields and the brand dictionary third. The MVP deliberately keeps the inventory to a name and a set of activity types so the later slices stay additive — no field is removed or reshaped once it exists.
 
 ## What Changes
 
-- **A new `Gear` model holds one item of equipment.** A record has a required display name, an optional activity type borrowed from the existing `TrackActivityType` dictionary, and an owner. It carries no brand, model, size, or year — those arrive as nullable columns in a later slice, so nothing has to be migrated or rewritten later.
+- **A new `Gear` model holds one item of equipment.** A record has a required display name, any number of activity types borrowed from the existing `TrackActivityType` dictionary — the same shoes serve for running and for walking — and an owner. It carries no brand, model, size, or year — those arrive as nullable columns in a later slice, so nothing has to be migrated or rewritten later.
 - **A new private page `/my/gear` lists and manages the owner's gear.** It offers create, edit, and delete over the owner's own rows, in the same shape as the other owner pages (`/my/tracks`, `/my/workouts`).
 - **The user menu gains a `My gear` entry** next to `My tracks` and `My workouts`, so the inventory is reachable from the same place as the rest of the owner's private pages.
-- **Gear is private to its owner.** Another signed-in user can neither see nor touch it, and no gear ever reaches a public page, a public track, or an admin listing. The activity type on a gear record is a borrowed dictionary value used for grouping and later hints — it is not a new classification the owner invents.
+- **Gear is private to its owner.** Another signed-in user can neither see nor touch it, and no gear ever reaches a public page, a public track, or an admin listing. The activity types on a gear record are borrowed dictionary values used for grouping and later hints — they are not new classifications the owner invents.
 
 ### Non-goals
 
@@ -21,7 +21,7 @@ This is the foundation slice of a three-part series: the inventory first (this c
 - **No brand dictionary.** The admin-managed brand list (`key` / `nameEn` / `nameRu` / `isActive`, mirroring `TrackActivityType`) is its own slice with its own admin surface.
 - **No assignment of gear to tracks.** The inventory stands on its own here; attaching a pair of shoes to a run is the next slice.
 - **No mileage, wear, or lifecycle statistics.** Nothing is computed from gear yet, so nothing is stored for it.
-- **No photos or images.** A gear record is a name and a type, not a media item.
+- **No photos or images.** A gear record is a name and a set of types, not a media item.
 - **No admin surface for personal gear.** Gear is personal, not a global catalogue; there is nothing for an administrator to manage.
 - **No public visibility rules.** Gear has no public page and no public representation — it is private data, not a publishable one.
 
@@ -37,7 +37,7 @@ None. `outdoor-track-activity-types` keeps its current requirements — this cha
 
 ## Impact
 
-- **Schema**: one new Prisma model, `Gear`, with an owner relation and an optional `activityTypeId` relation to `TrackActivityType`; `TrackActivityType` gains the matching back-relation. One additive migration; no existing table changes, no existing row is touched.
+- **Schema**: one new Prisma model, `Gear`, with an owner relation, and the `GearToTrackActivityTypes` join model that carries its set of activity types; `TrackActivityType` gains the matching back-relation. Two additive migrations: the first creates `Gear`, the second creates the join table and carries the existing rows' activity type into it. No existing table changes, no existing row is lost.
 - **Routes**: one new page, `/my/gear`, inside the existing `(public)` route group but behind authentication — the same shape as `/my/tracks` and `/my/workouts`.
 - **Data layer**: a new `app/_data/gear.ts` with the owner-scoped list / create / update / delete helpers, following the ownership check the track helpers already perform.
 - **Components**: the owner-facing gear table and its create/edit dialog, plus one `My gear` entry in the user menu.

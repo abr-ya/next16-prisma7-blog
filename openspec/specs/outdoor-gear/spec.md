@@ -1,10 +1,10 @@
-# Spec Delta
+# outdoor-gear Specification
 
 ## Purpose
 
 Defines a private, owner-only inventory of personal equipment — the shoes, bicycles, and other gear an owner uses for their tracks — with the owner's own create, view, edit, and delete over it.
 
-## ADDED Requirements
+## Requirements
 
 ### Requirement: Owners manage a private gear inventory
 
@@ -24,7 +24,7 @@ The system SHALL let a signed-in owner create, list, view, edit, and delete thei
 
 #### Scenario: Owner edits a gear item
 
-- **WHEN** a signed-in owner changes the name or the activity type of one of their gear records
+- **WHEN** a signed-in owner changes the name or the activity types of one of their gear records
 - **THEN** the system stores the change on that record
 - **AND** it leaves the record's ownership and creation date unchanged
 
@@ -40,9 +40,9 @@ The system SHALL let a signed-in owner create, list, view, edit, and delete thei
 - **THEN** the system requires authentication instead of rendering the gear page
 - **AND** it returns no gear records
 
-### Requirement: Gear records carry a name and an optional activity type
+### Requirement: Gear records carry a name and optional activity types
 
-The system SHALL store a required display name on every gear record and SHALL allow an optional activity type drawn from the active activity-type list, without requiring one.
+The system SHALL store a required display name on every gear record and SHALL allow any number of activity types drawn from the active activity-type list, including none at all.
 
 #### Scenario: Owner names a gear item
 
@@ -62,17 +62,29 @@ The system SHALL store a required display name on every gear record and SHALL al
 - **THEN** the system rejects the save with a validation error
 - **AND** it creates no gear record
 
-#### Scenario: Owner classifies a gear item with an active activity type
+#### Scenario: Owner classifies a gear item with one activity type
 
-- **WHEN** a signed-in owner saves a gear item with an active activity type
+- **WHEN** a signed-in owner saves a gear item with one active activity type
 - **THEN** the system stores the association on that gear record
-- **AND** it displays the activity type alongside the item in the owner's gear list
+- **AND** it displays that activity type alongside the item in the owner's gear list
+
+#### Scenario: Owner classifies a gear item with several activity types
+
+- **WHEN** a signed-in owner saves a gear item with more than one active activity type
+- **THEN** the system stores every one of those associations on that gear record
+- **AND** it displays each of them alongside the item in the owner's gear list
 
 #### Scenario: Owner saves a gear item without an activity type
 
-- **WHEN** a signed-in owner saves a gear item without selecting an activity type
+- **WHEN** a signed-in owner saves a gear item without selecting any activity type
 - **THEN** the system saves the item as unclassified
 - **AND** it does not require a synthetic "not selected" activity-type record
+
+#### Scenario: Owner removes an activity type from a gear item
+
+- **WHEN** a signed-in owner saves a gear item with one of its previously selected activity types removed
+- **THEN** the system drops that association from the gear record
+- **AND** it keeps the associations the owner left selected
 
 #### Scenario: Owner submits an inactive or missing activity type
 
@@ -85,6 +97,12 @@ The system SHALL store a required display name on every gear record and SHALL al
 - **WHEN** an administrator deactivates an activity type that a gear record already uses
 - **THEN** the system keeps the gear record's existing classification
 - **AND** it stops offering that type for new gear selections
+
+#### Scenario: Owner edits a gear item whose activity type was deactivated
+
+- **WHEN** a signed-in owner saves a change to a gear record whose activity type was deactivated after it was attached
+- **THEN** the system accepts the save
+- **AND** it keeps that activity type attached to the record
 
 ### Requirement: Gear mutations are refused for gear the caller does not own
 
