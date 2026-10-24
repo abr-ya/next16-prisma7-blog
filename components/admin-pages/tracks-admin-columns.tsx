@@ -47,6 +47,18 @@ const createTracksAdminColumns = ({
   formatActivityTypeName,
 }: CreateTracksAdminColumnsInput): ColumnDef<TrackListItem>[] => [
   {
+    // feature-120: the kind is a private owner-side classification — a
+    // routine training session versus a route. It is its own column so it
+    // is not confused with the activity type in the next cell.
+    id: "kind",
+    header: "Kind",
+    cell: ({ row }) => (
+      <Badge variant={row.original.kind === "TRAINING" ? "secondary" : "outline"}>
+        {row.original.kind === "TRAINING" ? "Workout" : "Route"}
+      </Badge>
+    ),
+  },
+  {
     id: "activityType",
     header: "Type",
     cell: ({ row }) => (
