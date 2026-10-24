@@ -97,6 +97,7 @@ This project uses OpenSpec for change planning across five independent numbering
 3. Create OpenSpec artifacts under `openspec/changes/<pool>-XXX-area-action/` — `proposal.md`, `design.md`, `tasks.md`, and `specs/<capability>/spec.md` when applicable. `refactor-XXX` and `research-XXX` changes omit `specs/` (no behavior change). For `research-XXX`, `design.md` describes the investigation method (scope, evidence standard, findings rubric, required output structure), `tasks.md` is the investigation checklist that fixes the write-up's required sections before the read begins, and the result itself lives in `output.md`.
 4. Implement per accepted tasks.
 5. Update docs/checklists when behavior changes; archive on completion via the OpenSpec archive skill.
+6. **Before archiving, report the open tasks.** If any task in the change's `tasks.md` is still unchecked, tell the user explicitly which ones are open (and where they are tracked, e.g. a follow-up row in the pool backlog) and wait for their go-ahead. Do not pass `--yes` to skip the CLI's own incomplete-task warning — that flag is not the user's consent, and a warning printed inside CLI output is not a report the user has seen.
 
 Numbering format: `<pool>-<3 digits>-<area>-<short-action>` (for example `feature-024-public-file-downloads`, `refactor-001-tracks-admin-panel-split`, `research-001-tracks-admin-panel-parallel-audit`). Use the same name for the OpenSpec change directory and the git branch. Do not reuse numbers in the same pool.
 
