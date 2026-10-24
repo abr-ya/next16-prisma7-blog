@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useT } from "next-i18next/client";
-import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -15,7 +15,6 @@ import {
   type HikeTrackContributionCapability,
 } from "@/app/_data/hikes";
 import type { CreatorUnlinkedTrack } from "@/app/_data/tracks";
-import { markDiscardedTrackGpxFileAssetsPendingDelete } from "@/app/_actions/files";
 import { navigationNamespace } from "@/app/i18n/settings";
 import { TrackGpxUploadSection } from "@/components/track-pages/track-gpx-upload-section";
 import {
@@ -43,8 +42,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { TrackActivityType } from "@/generated/prisma/client";
 import type { TrackStatus } from "@/generated/prisma/enums";
 import { createSlug } from "@/lib/slug-generator";
-
-const uniqueIds = (ids: string[]) => Array.from(new Set(ids));
+import { useDiscardGuardedTrackForm } from "@/lib/use-discard-guarded-track-form";
 
 const formatActivityTypeName = (activityType: TrackActivityType, language?: string) =>
   language === "ru" ? activityType.nameRu || activityType.nameEn : activityType.nameEn;
@@ -102,58 +100,30 @@ const HikeTrackContributionDialog = ({
   const fileAssetId = useWatch({ control: form.control, name: "fileAssetId" });
   const titleValue = useWatch({ control: form.control, name: "title" });
   const [tab, setTab] = useState<"attach" | "upload">(ownerTracks.length > 0 ? "attach" : "upload");
-  const [uploadedFileAssetIds, setUploadedFileAssetIds] = useState<string[]>([]);
-  const [discardConfirmOpen, setDiscardConfirmOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isAttachingId, setIsAttachingId] = useState<string | null>(null);
-  const [isDiscarding, startDiscarding] = useTransition();
 
-  const hasUnsavedUploads = uploadedFileAssetIds.length > 0;
   const isFormDirty = form.formState.isDirty;
-  const hasGuardedChanges = hasUnsavedUploads || (isFormDirty && tab === "upload");
+
+  const resetFormState = useCallback(() => {
+    form.reset(defaultUploadValues);
+  }, [form]);
+
+  const discardGuard = useDiscardGuardedTrackForm({
+    hasUnsavedChanges: isFormDirty && tab === "upload",
+    resetFormState,
+    onOpenChange,
+  });
+  // Destructured so the effect depends on the stable callback itself rather
+  // than on `discardGuard`, which is a fresh object on every render.
+  const { resetDiscardState } = discardGuard;
 
   useEffect(() => {
     if (!open) return;
     form.reset(defaultUploadValues);
-    setUploadedFileAssetIds([]);
-    setDiscardConfirmOpen(false);
+    resetDiscardState();
     setTab(ownerTracks.length > 0 ? "attach" : "upload");
-  }, [form, open, ownerTracks.length]);
-
-  const closeWithoutGuard = useCallback(() => {
-    setDiscardConfirmOpen(false);
-    setUploadedFileAssetIds([]);
-    form.reset(defaultUploadValues);
-    onOpenChange(false);
-  }, [form, onOpenChange]);
-
-  const handleOpenChange = (nextOpen: boolean) => {
-    if (nextOpen) {
-      onOpenChange(true);
-      return;
-    }
-    if (hasGuardedChanges) {
-      setDiscardConfirmOpen(true);
-      return;
-    }
-    closeWithoutGuard();
-  };
-
-  const handleConfirmDiscard = () => {
-    const fileIdsToDiscard = uniqueIds(uploadedFileAssetIds);
-    if (fileIdsToDiscard.length === 0) {
-      closeWithoutGuard();
-      return;
-    }
-    startDiscarding(async () => {
-      const result = await markDiscardedTrackGpxFileAssetsPendingDelete(fileIdsToDiscard);
-      if (!result.success) {
-        toast.error(result.message);
-        return;
-      }
-      closeWithoutGuard();
-    });
-  };
+  }, [form, open, ownerTracks.length, resetDiscardState]);
 
   const handleGenerateSlug = () => {
     const slug = createSlug(titleValue);
@@ -167,7 +137,7 @@ const HikeTrackContributionDialog = ({
       toast.success(t("trips:addTrackSuccess"));
       onAttached();
       router.refresh();
-      closeWithoutGuard();
+      discardGuard.closeWithoutGuard();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : t("trips:addTrackAttachError"));
     } finally {
@@ -192,7 +162,7 @@ const HikeTrackContributionDialog = ({
         toast.success(t("trips:addTrackSuccess"));
         onAttached();
         router.refresh();
-        closeWithoutGuard();
+        discardGuard.closeWithoutGuard();
         return;
       }
       const messageByCode: Record<"SLUG" | "TRUST" | "QUOTA" | "VALIDATION" | "INTERNAL", string> = {
@@ -212,7 +182,7 @@ const HikeTrackContributionDialog = ({
 
   return (
     <>
-      <Dialog open={open} onOpenChange={handleOpenChange}>
+      <Dialog open={open} onOpenChange={discardGuard.handleOpenChange}>
         <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>{t("trips:addTrack")}</DialogTitle>
@@ -377,7 +347,7 @@ const HikeTrackContributionDialog = ({
                     onUploadComplete={({ fileAssetId: newFileAssetId, fileName }) => {
                       form.setValue("fileAssetId", newFileAssetId, { shouldDirty: true, shouldValidate: true });
                       form.setValue("fileAssetName", fileName, { shouldDirty: true, shouldValidate: true });
-                      setUploadedFileAssetIds((current) => uniqueIds([...current, newFileAssetId]));
+                      discardGuard.registerUploadedFileAssetId(newFileAssetId);
                     }}
                     onUploadError={() => {
                       // toast already emitted by the section
@@ -394,20 +364,7 @@ const HikeTrackContributionDialog = ({
           </Tabs>
         </DialogContent>
       </Dialog>
-      <ConfirmDialog
-        open={discardConfirmOpen}
-        onOpenChange={setDiscardConfirmOpen}
-        title={hasUnsavedUploads ? "Discard track and uploaded GPX?" : "Discard track changes?"}
-        description={
-          hasUnsavedUploads
-            ? "This form has unsaved changes and an uploaded GPX file. Discarding will mark the unsaved uploaded GPX file for deletion before closing."
-            : "This form has unsaved changes. Discarding will close the modal without saving them."
-        }
-        confirmLabel={hasUnsavedUploads ? "Discard and remove file" : "Discard changes"}
-        confirmVariant="destructive"
-        isPending={isDiscarding}
-        onConfirm={handleConfirmDiscard}
-      />
+      <ConfirmDialog {...discardGuard.confirmDialogProps} />
     </>
   );
 };
