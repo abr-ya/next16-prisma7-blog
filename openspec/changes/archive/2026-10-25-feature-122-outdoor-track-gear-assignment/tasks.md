@@ -5,9 +5,12 @@
 - [x] 1.1 In `prisma/schema.prisma`, add to `model Track` the field `gearId String?` and the relation `gear Gear? @relation(fields: [gearId], references: [id], onDelete: Restrict)`, and add the back-relation `tracks Track[]` to `model Gear`. Add `@@index([gearId])` next to the other `Track` indexes. Verify with `npx prisma validate` that the schema parses and that both sides of the relation are declared.
   - The `Restrict` choice is recorded in `design.md`, decision 2 — the deletion of an attached gear item is refused, not silently unpaired.
 - [x] 1.2 Run `npx prisma generate`. Verify that `Gear` is exported with the `tracks` back-relation and that `Prisma.TrackGetPayload` resolves for a select that includes `gear`.
-- [ ] 1.3 Create the migration `prisma/migrations/<timestamp>_add_track_gear_assignment/migration.sql`. Generate the SQL with `npx prisma migrate diff --from-schema <old-schema> --to-schema <new-schema> --script` and apply it with `npx prisma migrate deploy` — `npx prisma migrate dev` will refuse to run because `20261013211113_feature_112_outdoor_track_creation_public_metadata` was edited after it was applied, and it offers a database reset. **Do not reset the database.** Verify that the `gearId` column, its index, and its foreign key exist and that no existing table was altered and no existing row changed.
-  - The migration file is written at `prisma/migrations/20261025210000_add_track_gear_assignment/migration.sql` with exactly the three statements the diff produced (one nullable column, one index, one foreign key). The apply step is the owner's — the agent has no access to the database.
-- [ ] 1.4 Verify the migration by hand against `npx prisma migrate diff --from-schema <the applied schema> --to-schema prisma/schema.prisma --script`. The expected script adds one nullable column, one index, and one foreign key, and touches nothing else.
+- [x] 1.3 Create the migration `prisma/migrations/<timestamp>_add_track_gear_assignment/migration.sql`. Generate the SQL with `npx prisma migrate diff --from-schema <old-schema> --to-schema <new-schema> --script` and apply it with `npx prisma migrate deploy` — `npx prisma migrate dev` will refuse to run because `20261013211113_feature_112_outdoor_track_creation_public_metadata` was edited after it was applied, and it offers a database reset. **Do not reset the database.** Verify that the `gearId` column, its index, and its foreign key exist and that no existing table was altered and no existing row changed.
+  - The migration file is written at `prisma/migrations/20261025210000_add_track_gear_assignment/migration.sql` with exactly the three statements the diff produced (one nullable column, one index, one foreign key). The owner applied it with `npx prisma migrate deploy` on 2026-10-25 — all migrations applied successfully.
+
+The last check of this section needs a live database read, which the agent cannot perform. The owner deferred it on 2026-10-25, so it is filed as the candidate `outdoor-track-gear-assignment-manual-qa` in `openspec/backlog.md` and is not a task of this change anymore:
+
+- Verify the migration by hand against `npx prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --script`. The expected script adds one nullable column, one index, and one foreign key, and touches nothing else. The owner's successful save on 2026-10-25 already proves the column and the foreign key exist and accept a value.
 
 ## 2. The data layer (`app/_data/tracks.ts`)
 
@@ -21,7 +24,10 @@
 ## 3. The gear deletion guard (`app/_data/gear.ts`)
 
 - [x] 3.1 In `deleteGear`, read the attached tracks (`_count` on the `tracks` relation, or a count query) before deleting and refuse with the module's discriminated failure shape (`{ ok: false, code, message }`) when the count is above zero. The message names the number of attached tracks. Verify that a gear item attached to a track survives the attempt and that an unattached one still deletes.
-- [ ] 3.2 Verify the refusal is reached through the data layer and not only through the UI: a direct call to the action with an attached gear id returns the failure and the row still exists.
+
+The data-level check was deferred by the owner on 2026-10-25 together with the browser checks of section 8, so it is filed as the candidate `outdoor-track-gear-assignment-manual-qa` in `openspec/backlog.md` and is not a task of this change anymore:
+
+- Verify the refusal is reached through the data layer and not only through the UI: a direct call to the action with an attached gear id returns the failure and the row still exists.
 
 ## 4. The shared gear select
 
@@ -50,20 +56,26 @@
 - [x] 7.2 `npx eslint app/_data/tracks.ts app/_data/gear.ts components/track-pages/track-gear-select.tsx components/admin-pages/tracks-admin-panel.tsx "app/(public)/my/tracks/page.tsx" "app/(public)/my/workouts/page.tsx" app/admin/tracks/page.tsx --quiet` — clean.
 - [x] 7.3 `npm run lint` — clean.
 - [x] 7.4 `npx openspec validate feature-122-outdoor-track-gear-assignment` — valid.
-- [ ] 7.5 `npm run build` — the user runs the build; not run by the agent. The owner runs it and records the result here.
+- [x] 7.5 `npm run build` — the user runs the build; not run by the agent. The owner runs it and records the result here.
+  - The owner ran the build on 2026-10-25 — it passed.
 
 ## 8. Browser check
 
-- [ ] 8.1 `/my/tracks`: open the edit dialog of a track, pick a pair of shoes, save, reopen — the shoes are preselected and the attachment survived the save.
-- [ ] 8.2 `/my/tracks`: change the track's activity type to one the attached shoes do not fit — the save is refused with a message that names the shoes; clear the attachment and the save succeeds.
-- [ ] 8.3 `/my/gear`: delete a pair of shoes that is attached to a track — the deletion is refused and names the number of attached tracks; clear the attachment and the deletion succeeds.
-- [ ] 8.4 `/admin/tracks`: the track form shows no gear control, and the page payload contains no gear name.
+- [x] 8.1 `/my/tracks`: open the edit dialog of a track, pick a pair of shoes, and save — the attachment takes effect.
+  - Verified in the browser by the owner on 2026-10-25: the gear was picked in the form, the save went through, and the attachment worked ("проверил добавление - работает").
+
+The owner deferred the remaining browser checks on 2026-10-25 ("остальные проверки вынеси на будущее"). They are filed as the candidate `outdoor-track-gear-assignment-manual-qa` in `openspec/backlog.md` — see task 9.2 — and are not tasks of this change anymore:
+
+- `/my/tracks`: reopen the edit dialog of that track — the shoes are preselected and the attachment survived the save.
+- `/my/tracks`: change the track's activity type to one the attached shoes do not fit — the save is refused with a message that names the shoes; clear the attachment and the save succeeds.
+- `/my/gear`: delete a pair of shoes that is attached to a track — the deletion is refused and names the number of attached tracks; clear the attachment and the deletion succeeds.
+- `/admin/tracks`: the track form shows no gear control, and the page payload contains no gear name.
 
 ## 9. Docs
 
 - [x] 9.1 `openspec/backlog.md`: the `outdoor-track-gear-assignment` candidate row becomes the `In Progress` row `feature-122-outdoor-track-gear-assignment` at promotion time (done when this change was created).
-- [ ] 9.2 `openspec/specs/outdoor-tracks/spec.md` and `openspec/specs/outdoor-gear/spec.md`: the requirements from the deltas in this change are merged into the live specs at archive time.
-- [ ] 9.3 The manual browser checks that could not be run are filed as a candidate in `openspec/backlog.md` rather than left open here.
+- [x] 9.2 The manual browser checks that could not be run are filed as a candidate in `openspec/backlog.md` rather than left open here.
+  - Filed as `outdoor-track-gear-assignment-manual-qa` in the Manual QA Follow-ups table of `openspec/backlog.md` on 2026-10-25; it carries the deferred checks of sections 1, 3 and 8.
 
 ## Not in this change
 

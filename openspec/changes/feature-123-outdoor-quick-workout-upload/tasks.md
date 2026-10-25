@@ -63,8 +63,7 @@
 ## 9. Docs
 
 - [ ] 9.1 `openspec/backlog.md`: the `outdoor-quick-workout-upload` candidate row becomes the `In Progress` row `feature-123-outdoor-quick-workout-upload` at promotion time (done when this change was created).
-- [ ] 9.2 `openspec/specs/outdoor-quick-workout-upload/spec.md`: the requirements from the delta in this change are merged into the live spec at archive time.
-- [ ] 9.3 The manual browser checks that could not be run are filed as a candidate in `openspec/backlog.md` rather than left open here.
+- [ ] 9.2 The manual browser checks that could not be run are filed as a candidate in `openspec/backlog.md` rather than left open here.
 
 ## Not in this change
 
