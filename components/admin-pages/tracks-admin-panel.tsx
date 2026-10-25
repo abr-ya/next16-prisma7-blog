@@ -11,6 +11,7 @@ import z from "zod";
 
 import { markDiscardedTrackGpxFileAssetsPendingDelete } from "@/app/_actions/files";
 import { navigationNamespace, tripsNamespace } from "@/app/i18n/settings";
+import type { GearListItem } from "@/app/_data/gear";
 import {
   createManualTrack,
   createTrack,
@@ -54,6 +55,7 @@ import { useTrackRowActions } from "@/lib/track-row-actions";
 import { useDeleteRowConfirm } from "@/lib/use-delete-row-confirm";
 import { useDiscardGuardedTrackForm } from "@/lib/use-discard-guarded-track-form";
 import { TrackGpxUploadSection } from "@/components/track-pages/track-gpx-upload-section";
+import { TrackGearSelect } from "@/components/track-pages/track-gear-select";
 import { TrackEditor, type ManualTrackPoint } from "@/components/track-pages/track-editor";
 import { getSupportedTrackRecordingTimezones, normalizeTrackRecordingTimezone } from "@/lib/track-recording-timezone";
 import { trackStatusOptions } from "@/lib/tracks";
@@ -89,6 +91,10 @@ const formSchema = z.object({
   fileAssetId: z.string().optional(),
   fileAssetName: z.string().optional(),
   activityTypeId: z.string().optional(),
+  // feature-122: the gear the track was run in. An empty selection is stored
+  // as no gear; a form that never touched the field leaves the attachment
+  // alone.
+  gearId: z.string().optional(),
   // feature-112 Place on map tab fields. The form layer carries them as
   // strings so react-hook-form can manage a single text/datetime input per
   // component; parsing through `parseDurationInput` happens at submit time
@@ -114,6 +120,7 @@ const TRACK_FORM_DEFAULTS: TrackFormValues = {
   fileAssetId: "",
   fileAssetName: "",
   activityTypeId: "",
+  gearId: "",
   recordingStartAt: "",
   recordingTimezone: "",
   recordingDurationHours: "0",
@@ -135,6 +142,7 @@ const formatActivityTypeName = (activityType: TrackActivityType | null, language
 const TrackFormDialog = ({
   track,
   activityTypes,
+  ownerGear,
   open,
   onOpenChange,
   onParse,
@@ -144,6 +152,10 @@ const TrackFormDialog = ({
 }: {
   track: TrackListItem | null;
   activityTypes: TrackActivityType[];
+  // feature-122: the owner's own gear. The field is rendered only when the
+  // caller has gear to offer — the administrative panel has none, so it
+  // cannot show the control at all.
+  ownerGear?: GearListItem[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onParse: (track: TrackListItem) => void;
@@ -237,6 +249,9 @@ const TrackFormDialog = ({
         fileAssetId: track.fileAssetId,
         fileAssetName: track.fileAsset.name,
         activityTypeId: track.activityTypeId ?? "",
+        // feature-122: the attached gear, read from the row the table was
+        // built from — no second query for it.
+        gearId: track.gear?.id ?? "",
         recordingStartAt: startWallClock,
         recordingTimezone: track.recordingTimezone ?? "",
         recordingDurationHours: storedDuration.hours,
@@ -252,6 +267,9 @@ const TrackFormDialog = ({
   }, [form, track, open, defaultValues]);
 
   const titleValue = useWatch({ control: form.control, name: "title" });
+  // feature-122: the gear list narrows itself to the activity type the form
+  // carries at the moment.
+  const activityTypeIdValue = useWatch({ control: form.control, name: "activityTypeId" }) ?? "";
   // feature-112 Place on map metadata. `useWatch` re-renders the timeSource
   // badge and duration layout as the user edits the inputs, mirroring the
   // server-side derivation in `createManualTrack`.
@@ -324,6 +342,10 @@ const TrackFormDialog = ({
       fileAssetId: values.fileAssetId,
       activityTypeId: values.activityTypeId || null,
       kind: values.kind,
+      // feature-122: the gear field has three states. A form that never
+      // touched it leaves the attachment alone, a cleared selection clears
+      // it, a picked item attaches it.
+      ...(form.formState.dirtyFields.gearId ? { gearId: values.gearId || null } : {}),
     };
 
     try {
@@ -449,6 +471,7 @@ const TrackFormDialog = ({
           points: placedPoints,
           activityTypeId: values.activityTypeId?.trim() || null,
           kind: values.kind,
+          gearId: values.gearId || null,
           recordingStartAt: hasStart ? trimmedStart : null,
           recordingDurationSeconds: parsedDurationSeconds,
           recordingTimezone: hasTimezone ? trimmedTimezone : null,
@@ -531,6 +554,27 @@ const TrackFormDialog = ({
             </FormItem>
           )}
         />
+        {/* feature-122: the gear the owner ran the track in. The control
+            exists only where the owner is the only audience — the
+            administrative panel has no gear to offer and never renders it. */}
+        {ownerGear ? (
+          <FormField
+            control={form.control}
+            name="gearId"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Gear</FormLabel>
+                <TrackGearSelect
+                  value={field.value}
+                  onChange={field.onChange}
+                  gear={ownerGear}
+                  activityTypeId={activityTypeIdValue || null}
+                />
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        ) : null}
         <FormField
           control={form.control}
           name="slug"
@@ -915,11 +959,16 @@ const TrackFormDialog = ({
 export const TrackManagementPanel = ({
   tracks,
   activityTypes,
+  ownerGear,
   defaultKind = "ROUTE",
   tableVariant = "full",
 }: {
   tracks: TrackListItem[];
   activityTypes: TrackActivityType[];
+  // feature-122: the owner's own gear. The gear field is rendered only when
+  // this prop is present, so a surface without gear — the administrative
+  // panel — cannot show the control at all.
+  ownerGear?: GearListItem[];
   // feature-120: the kind a new track starts with on this page. "My
   // workouts" passes "TRAINING"; My tracks and the admin panel keep the
   // default route.
@@ -1049,6 +1098,7 @@ export const TrackManagementPanel = ({
       <TrackFormDialog
         track={editingTrack}
         activityTypes={activityTypes}
+        ownerGear={ownerGear}
         open={formOpen}
         defaultKind={defaultKind}
         onParse={rowActions.handleParse}

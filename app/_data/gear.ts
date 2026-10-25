@@ -229,10 +229,24 @@ export const deleteGear = async (id: string | null | undefined): Promise<GearDel
     const { default: prisma } = await import("@/lib/prisma");
     const existingGear = await prisma.gear.findFirst({
       where: { id: gearId, userId },
-      select: { id: true },
+      select: { id: true, _count: { select: { tracks: true } } },
     });
 
     if (!existingGear) return { ok: false, code: "NOT_FOUND", message: "Gear not found" };
+
+    // feature-122: a gear item that is still attached to a track cannot go.
+    // The foreign key refuses the delete as well, but the refusal the owner
+    // reads is this one: it says how many tracks still point at the item and
+    // what has to happen first.
+    if (existingGear._count.tracks > 0) {
+      const count = existingGear._count.tracks;
+
+      return {
+        ok: false,
+        code: "VALIDATION",
+        message: `This gear is attached to ${count} track${count === 1 ? "" : "s"} and cannot be deleted until the attachment is cleared`,
+      };
+    }
 
     await prisma.gear.delete({ where: { id: existingGear.id } });
 
