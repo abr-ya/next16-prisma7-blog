@@ -84,6 +84,54 @@ The system SHALL pre-fill the track edit dialog's `Recording start`, `Recording 
 - **THEN** the recording start and the recording duration are read-only
 - **AND** the `Recording start` and `Recording duration` rows show the existing recording-time "unavailable" fallback instead of empty inputs
 
+### Requirement: My workouts lists only the owner's workouts
+
+The system SHALL provide an authenticated `/my/workouts` page where a signed-in user can view and manage only the tracks they own whose kind is a workout. The page SHALL use the same track management surface as `/my/tracks` and SHALL exclude the owner's routes from the list. The page SHALL render a short owner-side table rather than the full admin column set: each listed workout SHALL show its badges, title, start date, the recording timezone, distance, the recording duration, and its activity type, and the row SHALL keep the edit and delete actions. A value the track does not carry SHALL read as empty rather than as a zero. A track created from `/my/workouts` SHALL default to the workout kind, and the owner SHALL be able to change it before saving. The page SHALL be reachable from the user menu.
+
+#### Scenario: Owner opens My workouts
+
+- **WHEN** a signed-in user opens `/my/workouts`
+- **THEN** the system displays only that user's tracks whose kind is a workout
+- **AND** it does not display that user's routes
+
+#### Scenario: Owner reads the workout list
+
+- **WHEN** a signed-in user views the workouts list
+- **THEN** each listed workout shows its badges, title, start date, the recording timezone, distance, the recording duration, and its activity type
+- **AND** the row offers the edit and delete actions
+- **AND** a workout without a recorded start or without a parsed distance shows an empty value in that column
+
+#### Scenario: Owner reads the recording timezone of a workout
+
+- **WHEN** a signed-in user views the workouts list
+- **THEN** each listed workout shows the timezone its recording was made in
+- **AND** the start date in the same row is rendered in that timezone
+- **AND** a workout without a confirmed timezone shows the explicit UTC fallback with the unconfirmed marker
+
+#### Scenario: Owner reads the recording duration of a workout
+
+- **WHEN** a signed-in user views the workouts list
+- **THEN** each listed workout shows how long its recording lasted
+- **AND** a workout without a recorded duration shows an empty value in that column
+
+#### Scenario: Owner creates a track from My workouts
+
+- **WHEN** a signed-in user creates a track from `/my/workouts` without changing the kind
+- **THEN** the system stores the workout kind on the new track
+- **AND** the new track appears in the owner's workouts list and in the owner's full track list
+
+#### Scenario: Owner has no workouts
+
+- **WHEN** a signed-in user whose tracks are all routes opens `/my/workouts`
+- **THEN** the system presents the empty list state
+- **AND** the add-track control remains available for creating a workout
+
+#### Scenario: Anonymous visitor requests My workouts
+
+- **WHEN** an anonymous visitor requests `/my/workouts`
+- **THEN** the system requires authentication
+- **AND** it does not render personal track records
+
 ## ADDED Requirements
 
 ### Requirement: A parsed GPX file's own UTC offset becomes the track's recording timezone

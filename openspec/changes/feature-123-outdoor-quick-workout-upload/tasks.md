@@ -43,7 +43,7 @@
 - [x] 6.1 In `components/admin-pages/tracks-admin-panel.tsx`, add a `quickWorkoutUpload?: boolean` prop to `TrackManagementPanel`. When it is set, the panel renders one quick-add button per active activity type whose key has a wording entry in the current locale, labelled with that entry's `addLabel`, and opens the quick dialog with that activity type. Verify that `My workouts` shows `Добавить прогулку` and that `/my/tracks` and `/admin/tracks` show no such button.
 - [x] 6.2 The button's icon is the lucide `Plus`, matching the existing `Add track` button in the same toolbar. Verify the toolbar reads as one row of owner actions.
 - [x] 6.3 In `app/(public)/my/workouts/page.tsx`, pass `quickWorkoutUpload` and the owner's gear to the panel. The gear list is the same owner-scoped list `feature-122` already puts on that page — the quick dialog must not receive gear from anywhere else. Verify that the dialog offers only the owner's own gear.
-The keyboard-reachability check is a browser check — the agent cannot press the keys. It rides along with the browser checks of section 9 in the candidate `outdoor-quick-workout-upload-manual-qa` in `openspec/backlog.md` (task 10.2) and is not a task of this change anymore:
+The keyboard-reachability check is a browser check — the agent cannot press the keys. It rides along with the browser checks of section 10 in the candidate `outdoor-quick-workout-upload-manual-qa` in `openspec/backlog.md` (task 11.2) and is not a task of this change anymore:
 
 - Verify that the quick dialog is reachable with the keyboard and that the file input, the title, and the gear select are reachable in order.
 
@@ -57,17 +57,22 @@ The keyboard-reachability check is a browser check — the agent cannot press th
 - [x] 7.6 In `components/admin-pages/tracks-admin-panel.tsx`, the recording-timezone field is editable on a `GPX` row and the submit dispatches `updateTrackRecordingTimezone` for it; the recording start and the recording duration stay read-only, because they are the file's own values. `updateTrackRecordingTimezone` accepts a cleared field, so an emptied timezone returns the row to the "unconfirmed" state. Verify that a wrong stored zone can be corrected from the edit form.
 - [x] 7.7 In `components/admin-pages/tracks-admin-panel.tsx`, the "Set recording timezone" action no longer pre-fills the field with the browser's zone — that value was saved as the track's zone by a single click, and the owner could not tell it was a guess. The browser's zone is now a suggestion the owner applies deliberately, and the field starts empty when the track carries no timezone. Verify that the action opens empty for a track without a timezone.
 
-## 8. Validate
+## 8. The workouts table columns
 
-- [x] 8.1 `npm run tsc` — passes clean.
-- [x] 8.2 `npx eslint lib/track-gpx-parser.ts lib/quick-workout.ts lib/track-recording-timezone.ts components/track-pages/quick-workout-upload-dialog.tsx components/track-pages/track-gpx-upload-section.tsx components/admin-pages/tracks-admin-panel.tsx app/_data/tracks.ts "app/(public)/my/workouts/page.tsx" --quiet` — clean.
-- [x] 8.3 `npm run lint` — clean.
-- [x] 8.4 `npx openspec validate feature-123-outdoor-quick-workout-upload` — valid.
-- [ ] 8.5 `npm run build` — the user runs the build; not run by the agent. The owner runs it and records the result here.
+- [x] 8.1 In `components/admin-pages/tracks-workout-columns.tsx`, add a `Timezone` column to the short owner-side table: the confirmed recording timezone as a badge, the explicit UTC fallback with the unconfirmed marker for a workout that carries none. It sits next to the start column, which renders the start in that same timezone. Verify that a Moscow recording reads `UTC+03:00` in the list and that a row without a timezone reads `UTC (unconfirmed)`.
+- [x] 8.2 In the same factory, add a `Duration` column: the mirrored `recordingDurationSeconds` when the row carries one, and the parsed summary's duration for a row parsed before that column existed. A row with no duration at all reads empty rather than as a zero. Verify that a quick upload of a 30-minute recording reads `30 min` in the list.
 
-## 9. Browser check
+## 9. Validate
 
-The browser checks of this section are the owner's — the agent does not open a browser. They are filed as the candidate `outdoor-quick-workout-upload-manual-qa` in the Manual QA Follow-ups table of `openspec/backlog.md` — see task 10.2 — and are not tasks of this change anymore:
+- [x] 9.1 `npm run tsc` — passes clean.
+- [x] 9.2 `npx eslint lib/track-gpx-parser.ts lib/quick-workout.ts lib/track-recording-timezone.ts components/track-pages/quick-workout-upload-dialog.tsx components/track-pages/track-gpx-upload-section.tsx components/admin-pages/tracks-admin-panel.tsx components/admin-pages/tracks-workout-columns.tsx app/_data/tracks.ts "app/(public)/my/workouts/page.tsx" --quiet` — clean.
+- [x] 9.3 `npm run lint` — clean.
+- [x] 9.4 `npx openspec validate feature-123-outdoor-quick-workout-upload` — valid.
+- [x] 9.5 `npm run build` — the owner ran the build on 2026-10-26 and it passed.
+
+## 10. Browser check
+
+The browser checks of this section are the owner's — the agent does not open a browser. They are filed as the candidate `outdoor-quick-workout-upload-manual-qa` in the Manual QA Follow-ups table of `openspec/backlog.md` — see task 11.2 — and are not tasks of this change anymore:
 
 - `/my/workouts`: click `Добавить прогулку`, drop a GPX recorded in the morning, and confirm that the title is filled with the morning wording and that the distance and duration appear while the upload runs.
 - Save and confirm that the workout appears in the list, that its activity type is walking, that its kind is a workout, that its status is a draft, and that the recorded start and duration match the file.
@@ -75,10 +80,10 @@ The browser checks of this section are the owner's — the agent does not open a
 - Close the dialog with an uploaded file and confirm that the discard confirmation appears and that the file is marked for deletion.
 - Choose a pair of shoes and confirm that the saved workout carries the attachment, and that a second quick upload preselects nothing yet — the preselection is `feature-124`.
 
-## 10. Docs
+## 11. Docs
 
-- [x] 10.1 `openspec/backlog.md`: the `outdoor-quick-workout-upload` candidate row becomes the `In Progress` row `feature-123-outdoor-quick-workout-upload` at promotion time (done when this change was created).
-- [x] 10.2 The manual browser checks that could not be run are filed as a candidate in `openspec/backlog.md` rather than left open here.
+- [x] 11.1 `openspec/backlog.md`: the `outdoor-quick-workout-upload` candidate row becomes the `In Progress` row `feature-123-outdoor-quick-workout-upload` at promotion time (done when this change was created).
+- [x] 11.2 The manual browser checks that could not be run are filed as a candidate in `openspec/backlog.md` rather than left open here.
   - Filed as `outdoor-quick-workout-upload-manual-qa` in the Manual QA Follow-ups table of `openspec/backlog.md` on 2026-10-26; it carries the deferred checks of sections 6.4 and 9.
 
 ## Not in this change
