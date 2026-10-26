@@ -84,6 +84,6 @@ rules:
     - Include validation tasks for npm run tsc, npm run lint, and npm run build when relevant.
     - Include docs/checklist updates when behavior or project workflow changes.
     - For research-XXX, use the investigation checklist and state the write-up's required sections before the read begins, so the deliverable is reviewable up front.
-  spec:
+  specs:
     - Use observable requirements with clear SHALL statements.
     - Cover admin and public behavior separately when both are affected.
