@@ -103,13 +103,33 @@ export const toRecordingTimezoneFromUtcOffset = (minutes: number | null | undefi
 };
 
 /**
+ * The offset a file's own timestamps name as the recording's local clock.
+ *
+ * A non-zero offset (`+03:00`) is the recording's own wall-clock: it is the
+ * only place that survives the normalization to UTC instants. UTC — a `Z` or a
+ * `+00:00` — names the *instant*, not the wall-clock the owner recorded in,
+ * so it describes no local zone at all, exactly like a naive timestamp does.
+ *
+ * `null` when the file names no local offset.
+ */
+export const toLocalRecordingOffsetMinutes = (minutes: number | null | undefined): number | null => {
+  if (minutes === null || minutes === undefined || !Number.isFinite(minutes)) return null;
+
+  const total = Math.trunc(minutes);
+
+  return total === 0 ? null : total;
+};
+
+/**
  * The recording timezone a quick upload stores.
  *
- * The file's own offset wins — it is the recording's own wall-clock. A file
- * that names no offset carries naive wall-clock timestamps, and the device
- * that wrote it is then the only reference there is, so the device's timezone
- * is the fallback. It is validated the way every recording timezone is, and
- * an unsupported one is dropped rather than stored.
+ * The file's own *local* offset wins — it is the recording's own wall-clock.
+ * A file that names no local offset carries either naive wall-clock
+ * timestamps or timestamps written in UTC, and both lose the local clock the
+ * owner recorded in, so the device that uploaded it is then the only
+ * reference there is and the device's timezone is the fallback. It is
+ * validated the way every recording timezone is, and an unsupported one is
+ * dropped rather than stored.
  *
  * `null` when neither source names a usable zone — the track then reads as
  * the explicit UTC fallback with the unconfirmed marker.
@@ -118,9 +138,19 @@ export const resolveQuickWorkoutRecordingTimezone = (
   utcOffsetMinutes: number | null | undefined,
   deviceTimezone?: string | null,
 ): string | null => {
-  const fromOffset = toRecordingTimezoneFromUtcOffset(utcOffsetMinutes);
+  const localOffsetMinutes = toLocalRecordingOffsetMinutes(utcOffsetMinutes);
 
-  if (fromOffset) return fromOffset;
+  if (localOffsetMinutes !== null) {
+    const fromOffset = formatFixedUtcOffset(localOffsetMinutes);
 
-  return normalizeTrackRecordingTimezone(deviceTimezone);
+    if (fromOffset) return fromOffset;
+  }
+
+  const device = normalizeTrackRecordingTimezone(deviceTimezone);
+
+  if (device) return device;
+
+  // The device names nothing usable: the file's own UTC stays, and a file
+  // that names no offset at all leaves the track unconfirmed.
+  return toRecordingTimezoneFromUtcOffset(utcOffsetMinutes);
 };

@@ -32,7 +32,7 @@ import { gearFitsActivityType } from "@/lib/gear";
 import { buildQuickWorkoutSlugBase, capitalizeQuickWorkoutNoun, getQuickWorkoutDaypart } from "@/lib/quick-workout";
 import { formatTrackDistance, formatTrackDuration, formatTrackRecordingDateTime } from "@/lib/track-gpx-metadata";
 import { parseTrackGpxPreview, type TrackGpxPreview } from "@/lib/track-gpx-parser";
-import { formatFixedUtcOffset } from "@/lib/track-recording-timezone";
+import { formatFixedUtcOffset, toLocalRecordingOffsetMinutes } from "@/lib/track-recording-timezone";
 import { useDiscardGuardedTrackForm } from "@/lib/use-discard-guarded-track-form";
 
 // feature-123: the one-click quick upload.
@@ -153,10 +153,12 @@ export const QuickWorkoutUploadDialog = ({
         }
 
         const startAt = new Date(parsed.startAt);
-        // The file's own offset is the recording's wall-clock. The device's
-        // zone is the fallback for a file that names no offset — and there it
-        // is also right, because a naive timestamp is the device's own clock.
-        const daypart = getQuickWorkoutDaypart(startAt, parsed.utcOffsetMinutes);
+        // The file's own local offset is the recording's wall-clock. A file
+        // that names none — naive, or written in UTC, which says nothing
+        // about the wall-clock the owner recorded in — leaves the device's
+        // own clock as the only reference there is.
+        const localOffsetMinutes = toLocalRecordingOffsetMinutes(parsed.utcOffsetMinutes);
+        const daypart = getQuickWorkoutDaypart(startAt, localOffsetMinutes);
         const adjective = t(`${wordingPrefix}.dayparts.${daypart}`);
 
         suggestTitle(`${adjective} ${noun}`);
@@ -164,7 +166,7 @@ export const QuickWorkoutUploadDialog = ({
           buildQuickWorkoutSlugBase({
             activityTypeKey: activityType.key,
             startAt,
-            utcOffsetMinutes: parsed.utcOffsetMinutes,
+            utcOffsetMinutes: localOffsetMinutes,
           }),
         );
       });
@@ -241,12 +243,16 @@ export const QuickWorkoutUploadDialog = ({
   });
 
   // The preview reads the start in the recording's own timezone — the file's
-  // offset when it names one, and the device's zone otherwise. Reading it in
-  // the device's zone alone would show a Moscow recording in Sofia time.
+  // local offset when it names one, and the device's zone otherwise. Reading
+  // it in the device's zone alone would show a Moscow recording in Sofia
+  // time; a file written in UTC names the instant and not the wall-clock, so
+  // it falls to the device's zone as well.
   const previewZone = useMemo(() => {
     if (!preview) return null;
 
-    return formatFixedUtcOffset(preview.utcOffsetMinutes) ?? browserTimeZone;
+    const localOffsetMinutes = toLocalRecordingOffsetMinutes(preview.utcOffsetMinutes);
+
+    return (localOffsetMinutes === null ? null : formatFixedUtcOffset(localOffsetMinutes)) ?? browserTimeZone;
   }, [browserTimeZone, preview]);
 
   const statsText = preview

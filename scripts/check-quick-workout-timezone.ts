@@ -8,6 +8,7 @@ import {
   formatTrackRecordingTimezone,
   normalizeTrackRecordingTimezone,
   resolveQuickWorkoutRecordingTimezone,
+  toLocalRecordingOffsetMinutes,
   toRecordingTimezoneFromUtcOffset,
 } from "@/lib/track-recording-timezone";
 
@@ -44,14 +45,24 @@ assert.equal(toRecordingTimezoneFromUtcOffset(180), "+03:00");
 assert.equal(toRecordingTimezoneFromUtcOffset(0), "UTC");
 assert.equal(toRecordingTimezoneFromUtcOffset(null), null);
 
-// The quick upload's fallback: the file's offset wins, and the device's
-// timezone is the fallback for a file that names none.
+// The quick upload's fallback: the file's *local* offset wins, and the
+// device's timezone is the fallback for a file that names no local offset —
+// a naive file, or one written in UTC, which names the instant and not the
+// wall-clock the owner recorded in.
 assert.equal(resolveQuickWorkoutRecordingTimezone(180, "Europe/Sofia"), "+03:00");
-assert.equal(resolveQuickWorkoutRecordingTimezone(0, "Europe/Sofia"), "UTC");
+assert.equal(resolveQuickWorkoutRecordingTimezone(0, "Europe/Sofia"), "Europe/Sofia");
 assert.equal(resolveQuickWorkoutRecordingTimezone(null, "Europe/Sofia"), "Europe/Sofia");
+assert.equal(resolveQuickWorkoutRecordingTimezone(0, null), "UTC");
+assert.equal(resolveQuickWorkoutRecordingTimezone(0, "Not/A-Timezone"), "UTC");
 assert.equal(resolveQuickWorkoutRecordingTimezone(null, "Not/A-Timezone"), null);
 assert.equal(resolveQuickWorkoutRecordingTimezone(null, null), null);
 assert.equal(resolveQuickWorkoutRecordingTimezone(null, "  Europe/Sofia  "), "Europe/Sofia");
+
+// A UTC offset names the instant, not the recording's own wall-clock.
+assert.equal(toLocalRecordingOffsetMinutes(180), 180);
+assert.equal(toLocalRecordingOffsetMinutes(-270), -270);
+assert.equal(toLocalRecordingOffsetMinutes(0), null);
+assert.equal(toLocalRecordingOffsetMinutes(null), null);
 
 // The stored instant is UTC; the recording timezone renders the recording's
 // own wall-clock.
@@ -87,7 +98,9 @@ assert.equal(
   "walking-2026-10-26-0030",
 );
 
-// A file with no offset falls back to the device's own local time.
+// A file with no local offset — naive, or written in UTC — falls back to the
+// device's own local time.
 assert.equal(getQuickWorkoutDaypart(startAt, null), getQuickWorkoutDaypart(startAt));
+assert.equal(getQuickWorkoutDaypart(startAt, toLocalRecordingOffsetMinutes(0)), getQuickWorkoutDaypart(startAt));
 
 console.log("quick workout timezone checks passed");
