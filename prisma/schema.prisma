@@ -353,6 +353,11 @@ model Track {
   timeSource               TrackTimeSource?
   activityTypeId           String?
   activityType             TrackActivityType? @relation(fields: [activityTypeId], references: [id], onDelete: Restrict)
+  // feature-122: one gear item per track — the pair of shoes a walk was
+  // run in. The owner may leave it unset, and a gear item that is still
+  // attached cannot be deleted until the attachment is cleared.
+  gearId                   String?
+  gear                     Gear?              @relation(fields: [gearId], references: [id], onDelete: Restrict)
   kind                     TrackKind          @default(ROUTE)
   userId                   String
   user                     User               @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -365,6 +370,7 @@ model Track {
   @@index([userId, kind])
   @@index([activityTypeId])
   @@index([timeSource])
+  @@index([gearId])
 }
 
 model TrackActivityType {
@@ -387,6 +393,8 @@ model Gear {
   userId        String
   user          User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
   activityTypes GearToTrackActivityTypes[]
+  // feature-122: the tracks this gear item was used for.
+  tracks        Track[]
   createdAt     DateTime                   @default(now())
   updatedAt     DateTime                   @default(now()) @updatedAt
 

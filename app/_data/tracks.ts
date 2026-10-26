@@ -15,6 +15,7 @@ import { Prisma } from "@/generated/prisma/client";
 import { authSession } from "@/lib/auth-utils";
 import { InsufficientTrustError, requireTrustGatedAction } from "@/lib/auth-trust-gates.server";
 import { assertVerifiedResourceQuota, createWithinVerifiedResourceQuota } from "@/lib/auth-trust-quotas.server";
+import { gearFitsActivityType } from "@/lib/gear";
 import { validateGpxString } from "@/lib/gpx-validation";
 import { createSlug } from "@/lib/slug-generator";
 import {
@@ -44,6 +45,10 @@ export type TrackActionValues = {
   status?: TrackStatus;
   fileAssetId?: string | null;
   activityTypeId?: string | null;
+  // feature-122: the gear the owner ran the track in. The three states are
+  // deliberate: `undefined` leaves the attachment alone, `null` clears it,
+  // and an id attaches that item.
+  gearId?: string | null;
   kind?: TrackKind;
 };
 
@@ -55,6 +60,9 @@ export type CreateManualTrackInput = {
   points: { lat: number; lng: number }[];
   activityTypeId?: string | null;
   kind?: TrackKind;
+  // feature-122: the gear the track was run in. Optional — a track without
+  // an attachment is the normal case.
+  gearId?: string | null;
   recordingStartAt?: string | null;
   recordingDurationSeconds?: number | null;
   recordingTimezone?: string | null;
@@ -286,6 +294,62 @@ export const ensureEligibleTrackFileAsset = async ({
   return fileAsset;
 };
 
+/**
+ * feature-122: the gear a track may be attached to.
+ *
+ * The Prisma client is created through `require` in `lib/prisma.ts`, so the
+ * result of a query is not inferred. This selection is typed by hand so the
+ * linked activity types are known to be a list of ids.
+ */
+const trackGearSelect = {
+  id: true,
+  name: true,
+  activityTypes: { select: { activityTypeId: true } },
+} satisfies Prisma.GearSelect;
+
+type TrackGearRecord = Prisma.GearGetPayload<{ select: typeof trackGearSelect }>;
+
+/**
+ * feature-122: the gear attached to a track has to be the owner's own, and it
+ * has to fit the track's activity type. A missing row and somebody else's row
+ * are refused with the same message, so the existence of another owner's gear
+ * is never disclosed — the refusal reads as "not available", not as "belongs
+ * to somebody else".
+ *
+ * The compatibility rule itself lives in `lib/gear.ts`, so the preference path
+ * of feature-124 applies the same rule instead of a second copy of it.
+ */
+const ensureEligibleTrackGear = async ({
+  gearId,
+  userId,
+  activityTypeId,
+}: {
+  gearId: string | null | undefined;
+  userId: string;
+  activityTypeId?: string | null;
+}) => {
+  const normalizedGearId = gearId?.trim() || null;
+
+  if (!normalizedGearId) return null;
+
+  const { default: prisma } = await import("@/lib/prisma");
+  const gear: TrackGearRecord = await prisma.gear.findFirst({
+    where: { id: normalizedGearId, userId },
+    select: trackGearSelect,
+  });
+
+  if (!gear) throw new Error("Selected gear is not available");
+
+  const fits = gearFitsActivityType(
+    gear.activityTypes.map((link) => link.activityTypeId),
+    activityTypeId,
+  );
+
+  if (!fits) throw new Error(`"${gear.name}" does not fit this activity type`);
+
+  return gear;
+};
+
 const trackListSelect = {
   id: true,
   title: true,
@@ -334,6 +398,26 @@ const trackListSelect = {
 
 export type TrackListItem = Prisma.TrackGetPayload<{
   select: typeof trackListSelect;
+}> & {
+  // feature-122: the attached gear item is part of the row only when the
+  // caller asked for the projection — the administrative listing reads the
+  // rows without it and stays free of gear names.
+  gear?: { id: string; name: string } | null;
+};
+
+/**
+ * feature-122: the attachment is projected only when a caller asks for it, so
+ * the gear of an owner never rides along in a payload that has no business
+ * carrying it — the administrative listing keeps calling the query without the
+ * projection and stays free of gear names.
+ */
+const trackListSelectWithGear = {
+  ...trackListSelect,
+  gear: { select: { id: true, name: true } },
+} satisfies Prisma.TrackSelect;
+
+export type TrackListItemWithGear = Prisma.TrackGetPayload<{
+  select: typeof trackListSelectWithGear;
 }>;
 
 const publicTrackSelect = {
@@ -470,9 +554,19 @@ const revalidateTrackDetailPaths = (slug?: string | null) => {
   if (slug) revalidatePath(`/tracks/${slug}`);
 };
 
-export const getAllTracks = async (): Promise<TrackListItem[]> => {
+export const getAllTracks = async ({ includeGear = false }: { includeGear?: boolean } = {}): Promise<
+  TrackListItem[]
+> => {
   const userId = await getRequiredUserId();
   const { default: prisma } = await import("@/lib/prisma");
+
+  if (includeGear) {
+    return prisma.track.findMany({
+      where: { userId },
+      select: trackListSelectWithGear,
+      orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
+    });
+  }
 
   return prisma.track.findMany({
     where: { userId },
@@ -486,9 +580,19 @@ export const getAllTracks = async (): Promise<TrackListItem[]> => {
  * sessions. Owner-scoped like every other personal track query; the kind
  * filter narrows it in SQL rather than in the table.
  */
-export const getOwnerWorkoutTracks = async (): Promise<TrackListItem[]> => {
+export const getOwnerWorkoutTracks = async ({ includeGear = false }: { includeGear?: boolean } = {}): Promise<
+  TrackListItem[]
+> => {
   const userId = await getRequiredUserId();
   const { default: prisma } = await import("@/lib/prisma");
+
+  if (includeGear) {
+    return prisma.track.findMany({
+      where: { userId, kind: "TRAINING" },
+      select: trackListSelectWithGear,
+      orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
+    });
+  }
 
   return prisma.track.findMany({
     where: { userId, kind: "TRAINING" },
@@ -594,12 +698,16 @@ export const createTrack = async (values: TrackActionValues) => {
   const data = await getTrackData(values);
   await ensureSlugAvailable({ slug: data.slug });
   await ensureEligibleTrackFileAsset({ fileAssetId: data.fileAssetId, userId });
+  const gear = await ensureEligibleTrackGear({ gearId: values.gearId, userId, activityTypeId: data.activityTypeId });
 
   const track = await createWithinVerifiedResourceQuota(user, "track", (tx) =>
     tx.track.create({
       data: {
         ...data,
         userId,
+        // feature-122: the gear is written with the row, or left empty when
+        // the owner did not pick one.
+        gearId: gear?.id ?? null,
         // Every GPX-uploaded track is GPX-sourced. The post-commit
         // `parseTrackGpx` hook re-asserts this on every (re-)parse so the
         // write here is the create-time guarantee that `timeSource` is never
@@ -629,6 +737,7 @@ export const updateTrack = async (values: TrackActionValues) => {
       id: true,
       metadata: true,
       fileAssetId: true,
+      gearId: true,
       fileAsset: {
         select: {
           fileKey: true,
@@ -647,6 +756,17 @@ export const updateTrack = async (values: TrackActionValues) => {
     userId,
     trackId: existingTrack.id,
   });
+  // feature-122: the attachment that this update ends up with is the one the
+  // caller names, or the one the track already carries when the caller says
+  // nothing about it. Either way it is checked against the activity type
+  // this very update writes — so a change of the activity type to one the
+  // attached shoes do not fit is refused rather than silently kept.
+  const effectiveGearId = values.gearId === undefined ? existingTrack.gearId : values.gearId;
+  const gear = await ensureEligibleTrackGear({
+    gearId: effectiveGearId,
+    userId,
+    activityTypeId: data.activityTypeId,
+  });
   const staleMetadata =
     existingTrack.fileAssetId !== data.fileAssetId || existingTrack.fileAsset.fileKey !== fileAsset.fileKey
       ? markTrackGpxMetadataStale(existingTrack.metadata, fileAsset.id, fileAsset.fileKey)
@@ -661,6 +781,9 @@ export const updateTrack = async (values: TrackActionValues) => {
       // workout back to a route, and `undefined` means "leave unchanged" in
       // a Prisma update.
       ...(values.kind ? { kind: data.kind } : { kind: undefined }),
+      // feature-122: the same three states as in `createTrack` — `undefined`
+      // keeps the attachment, `null` clears it, an id replaces it.
+      ...(values.gearId !== undefined ? { gearId: gear?.id ?? null } : { gearId: undefined }),
       ...(staleMetadata ? { metadata: staleMetadata as Prisma.InputJsonValue } : {}),
     },
     select: trackListSelect,
@@ -1082,6 +1205,25 @@ export const createManualTrack = async (input: CreateManualTrackInput): Promise<
       }
     }
 
+    // feature-122: the gear is optional and is checked against the owner and
+    // against the activity type before anything is written — a refused gear
+    // never reaches the upload or the row.
+    let normalizedGearId: string | null = null;
+    try {
+      const gear = await ensureEligibleTrackGear({
+        gearId: input.gearId,
+        userId,
+        activityTypeId: normalizedActivityTypeId,
+      });
+      normalizedGearId = gear?.id ?? null;
+    } catch (error) {
+      return {
+        ok: false,
+        code: "VALIDATION",
+        message: error instanceof Error ? error.message : "Selected gear is not available",
+      };
+    }
+
     const trimmedStart = input.recordingStartAt?.trim();
     const hasStart = Boolean(trimmedStart);
     const hasDuration = input.recordingDurationSeconds !== undefined && input.recordingDurationSeconds !== null;
@@ -1188,6 +1330,7 @@ export const createManualTrack = async (input: CreateManualTrackInput): Promise<
           fileAssetId: fileAsset.id,
           userId,
           activityTypeId: normalizedActivityTypeId,
+          gearId: normalizedGearId,
           kind: normalizedKind,
           recordingStartAt: normalizedRecordingStartAt,
           recordingDurationSeconds: normalizedRecordingDurationSeconds,

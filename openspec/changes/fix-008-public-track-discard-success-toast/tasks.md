@@ -45,7 +45,6 @@ The checks that delete an uploaded file moved here from `refactor-003-discard-gu
 ## 7. Docs
 
 - [ ] `openspec/backlog.md`: the `fix-008-public-track-discard-success-toast` row moves to `Done` when the change is implemented, and the row is removed from the table at archive time (the same lifecycle `fix-006` followed).
-- [ ] `openspec/specs/outdoor-tracks/spec.md`: the added requirement from `specs/outdoor-tracks/spec.md` in this change is merged into the live spec at archive time.
 
 ## Not in this change
 

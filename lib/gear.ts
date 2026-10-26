@@ -30,3 +30,24 @@ export const gearActivityTypeLabels = (
   activityTypes
     .map(({ activityType }) => formatGearActivityTypeName(activityType, language))
     .filter((label): label is string => Boolean(label));
+
+/**
+ * feature-122: the compatibility rule between a gear item and an activity
+ * type, kept in one place so the track attachment and the per-activity-type
+ * preference of feature-124 apply the same rule instead of two copies of it.
+ *
+ * A gear item that carries no activity type is unclassified and fits every
+ * type. A classified one fits only the types it carries. The other side of
+ * the rule: a track without an activity type accepts any gear item.
+ */
+export const gearFitsActivityType = (
+  gearActivityTypeIds: readonly string[] | null | undefined,
+  activityTypeId: string | null | undefined,
+): boolean => {
+  const ids = (gearActivityTypeIds ?? []).filter(Boolean);
+
+  if (!ids.length) return true;
+  if (!activityTypeId) return true;
+
+  return ids.includes(activityTypeId);
+};

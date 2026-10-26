@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 
+import { getOwnerGear } from "@/app/_data/gear";
 import { getActiveTrackActivityTypes } from "@/app/_data/track-activity-types";
 import { getOwnerWorkoutTracks } from "@/app/_data/tracks";
 import { TrackManagementPanel } from "@/components/admin-pages/tracks-admin-panel";
@@ -17,13 +18,20 @@ export const metadata: Metadata = buildPageMetadata({
 
 const MyWorkoutsPage = async () => {
   await requireAuth();
-  const [tracks, activityTypes] = await Promise.all([getOwnerWorkoutTracks(), getActiveTrackActivityTypes()]);
+  // feature-122: the owner's own gear, and the attachment projection — the
+  // same pair the "My tracks" page reads.
+  const [tracks, activityTypes, gear] = await Promise.all([
+    getOwnerWorkoutTracks({ includeGear: true }),
+    getActiveTrackActivityTypes(),
+    getOwnerGear(),
+  ]);
 
   return (
     <PageLayout title="My workouts" contentWidth="wide" className="pt-6">
       <TrackManagementPanel
         tracks={tracks}
         activityTypes={activityTypes}
+        ownerGear={gear}
         defaultKind="TRAINING"
         tableVariant="workouts"
       />

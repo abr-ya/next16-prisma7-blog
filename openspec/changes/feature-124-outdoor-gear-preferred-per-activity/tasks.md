@@ -57,8 +57,7 @@
 ## 8. Docs
 
 - [ ] 8.1 `openspec/backlog.md`: the `outdoor-gear-preferred-per-activity` candidate row becomes the `In Progress` row `feature-124-outdoor-gear-preferred-per-activity` at promotion time (done when this change was created).
-- [ ] 8.2 `openspec/specs/outdoor-gear-preferences/spec.md`: the requirements from the delta in this change are merged into the live spec at archive time.
-- [ ] 8.3 The manual browser checks that could not be run are filed as a candidate in `openspec/backlog.md` rather than left open here.
+- [ ] 8.2 The manual browser checks that could not be run are filed as a candidate in `openspec/backlog.md` rather than left open here.
 
 ## Not in this change
 
