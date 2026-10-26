@@ -25,7 +25,11 @@ import {
   TrackStartAtParseError,
 } from "@/lib/track-duration-input";
 import { parseTrackGpxMetadata, parseTrackGpxUtcOffsetMinutes } from "@/lib/track-gpx-parser";
-import { requireTrackRecordingTimezone, toRecordingTimezoneFromUtcOffset } from "@/lib/track-recording-timezone";
+import {
+  requireTrackRecordingTimezone,
+  resolveQuickWorkoutRecordingTimezone,
+  toRecordingTimezoneFromUtcOffset,
+} from "@/lib/track-recording-timezone";
 import { uploadSyntheticTrackGpx } from "@/lib/uploadthing/server-gpx";
 import { buildSyntheticGpxBytes } from "@/lib/track-synthetic-gpx";
 import {
@@ -86,6 +90,13 @@ export type CreateQuickWorkoutInput = {
   slug?: string | null;
   /** The owner's own gear for the activity type; optional. */
   gearId?: string | null;
+  /**
+   * The timezone of the device the upload was made from. It is the fallback
+   * for a file that names no UTC offset — the device is then the only
+   * reference there is. It is validated the way any other recording timezone
+   * is, and an unsupported value leaves the track's timezone unset.
+   */
+  deviceTimezone?: string | null;
 };
 
 /** The quick upload answers with the same vocabulary as `createManualTrack`. */
@@ -1545,8 +1556,13 @@ export const createQuickWorkout = async (input: CreateQuickWorkoutInput): Promis
     // own wall-clock survives, because the stored instants are UTC. A Moscow
     // recording says `+03:00` and is stored as that offset, so every surface
     // shows the time the owner actually recorded. A file that names no offset
-    // keeps the unset timezone and the "unconfirmed" badge.
-    const recordingTimezone = toRecordingTimezoneFromUtcOffset(parseTrackGpxUtcOffsetMinutes(content));
+    // leaves naive wall-clock timestamps, and the device that wrote them is
+    // then the only reference there is — so the device's timezone is the
+    // fallback.
+    const recordingTimezone = resolveQuickWorkoutRecordingTimezone(
+      parseTrackGpxUtcOffsetMinutes(content),
+      input.deviceTimezone,
+    );
 
     const track = await createWithinVerifiedResourceQuota(user, "track", (tx) =>
       tx.track.create({

@@ -208,6 +208,10 @@ export const QuickWorkoutUploadDialog = ({
         title: values.title,
         slug: slugBase,
         gearId: values.gearId || null,
+        // The fallback for a file that names no UTC offset: the device that
+        // wrote it is then the only reference there is. The server validates
+        // the value before it stores it.
+        deviceTimezone: browserTimeZone,
       });
 
       if (!result.ok) {

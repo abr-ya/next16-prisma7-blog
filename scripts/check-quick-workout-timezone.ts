@@ -7,6 +7,7 @@ import {
   formatFixedUtcOffset,
   formatTrackRecordingTimezone,
   normalizeTrackRecordingTimezone,
+  resolveQuickWorkoutRecordingTimezone,
   toRecordingTimezoneFromUtcOffset,
 } from "@/lib/track-recording-timezone";
 
@@ -42,6 +43,15 @@ assert.equal(formatTrackRecordingTimezone(null), "UTC (unconfirmed)");
 assert.equal(toRecordingTimezoneFromUtcOffset(180), "+03:00");
 assert.equal(toRecordingTimezoneFromUtcOffset(0), "UTC");
 assert.equal(toRecordingTimezoneFromUtcOffset(null), null);
+
+// The quick upload's fallback: the file's offset wins, and the device's
+// timezone is the fallback for a file that names none.
+assert.equal(resolveQuickWorkoutRecordingTimezone(180, "Europe/Sofia"), "+03:00");
+assert.equal(resolveQuickWorkoutRecordingTimezone(0, "Europe/Sofia"), "UTC");
+assert.equal(resolveQuickWorkoutRecordingTimezone(null, "Europe/Sofia"), "Europe/Sofia");
+assert.equal(resolveQuickWorkoutRecordingTimezone(null, "Not/A-Timezone"), null);
+assert.equal(resolveQuickWorkoutRecordingTimezone(null, null), null);
+assert.equal(resolveQuickWorkoutRecordingTimezone(null, "  Europe/Sofia  "), "Europe/Sofia");
 
 // The stored instant is UTC; the recording timezone renders the recording's
 // own wall-clock.

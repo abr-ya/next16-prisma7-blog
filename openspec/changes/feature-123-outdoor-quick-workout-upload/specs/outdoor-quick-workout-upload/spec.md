@@ -24,17 +24,33 @@ The quick upload SHALL read the recording's own wall-clock from the uploaded fil
 - **THEN** the created track's recording timezone is that offset
 - **AND** the surfaces show the recording time in the recording's own local time
 
-#### Scenario: A file with no offset keeps the timezone unset
+#### Scenario: A file with no offset takes the device's timezone
 
 - **WHEN** a signed-in owner saves a quick upload whose file names no UTC offset
-- **THEN** the created track carries no confirmed recording timezone
-- **AND** the surfaces show the explicit UTC fallback with the unconfirmed marker
+- **THEN** the created track's recording timezone is the timezone of the device the upload was made from
+- **AND** the surfaces render the recording start in that timezone
 
 #### Scenario: A file with no offset falls back to the device's own clock
 
 - **WHEN** a signed-in owner drops a GPX file whose timestamps name no UTC offset
 - **THEN** the preview and the suggested title read the device's own local time
-- **AND** the saved track still carries no confirmed recording timezone
+- **AND** the saved track carries the device's timezone
+
+### Requirement: The quick upload falls back to the device's timezone
+
+The system SHALL store the timezone of the device the upload was made from as the track's recording timezone when the uploaded file names no UTC offset — the file's timestamps are then naive wall-clock values, and the device that wrote them is the only reference there is. The system SHALL validate that value the way it validates every other recording timezone, and SHALL leave the track's timezone unset when the device names one the system does not support. The file's own offset SHALL win over the device's timezone whenever the file names one.
+
+#### Scenario: The file's offset wins over the device's timezone
+
+- **WHEN** a signed-in owner saves a quick upload whose file names a UTC offset
+- **THEN** the created track's recording timezone is the file's offset
+- **AND** the device's timezone is not stored
+
+#### Scenario: An unsupported device timezone is not stored
+
+- **WHEN** the device the upload is made from reports a timezone the system does not support
+- **THEN** the created track carries no confirmed recording timezone
+- **AND** the save succeeds
 
 ### Requirement: The owner starts a quick workout upload from a per-activity-type button
 

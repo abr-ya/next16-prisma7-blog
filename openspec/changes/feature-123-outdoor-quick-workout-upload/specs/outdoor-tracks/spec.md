@@ -152,7 +152,7 @@ The system SHALL read the UTC offset that a parsed GPX file's own timestamps car
 
 #### Scenario: A file with no offset leaves the timezone unset
 
-- **WHEN** the system parses a GPX file whose `<time>` values name no offset
+- **WHEN** the system re-parses a GPX file from the track form whose `<time>` values name no offset
 - **THEN** the track keeps no confirmed recording timezone
 - **AND** the surfaces show the explicit UTC fallback with the unconfirmed marker
 

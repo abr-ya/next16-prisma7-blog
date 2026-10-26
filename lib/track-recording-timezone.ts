@@ -101,3 +101,26 @@ export const toRecordingTimezoneFromUtcOffset = (minutes: number | null | undefi
 
   return formatFixedUtcOffset(minutes);
 };
+
+/**
+ * The recording timezone a quick upload stores.
+ *
+ * The file's own offset wins — it is the recording's own wall-clock. A file
+ * that names no offset carries naive wall-clock timestamps, and the device
+ * that wrote it is then the only reference there is, so the device's timezone
+ * is the fallback. It is validated the way every recording timezone is, and
+ * an unsupported one is dropped rather than stored.
+ *
+ * `null` when neither source names a usable zone — the track then reads as
+ * the explicit UTC fallback with the unconfirmed marker.
+ */
+export const resolveQuickWorkoutRecordingTimezone = (
+  utcOffsetMinutes: number | null | undefined,
+  deviceTimezone?: string | null,
+): string | null => {
+  const fromOffset = toRecordingTimezoneFromUtcOffset(utcOffsetMinutes);
+
+  if (fromOffset) return fromOffset;
+
+  return normalizeTrackRecordingTimezone(deviceTimezone);
+};
