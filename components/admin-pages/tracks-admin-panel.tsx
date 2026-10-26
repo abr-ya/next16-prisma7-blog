@@ -56,6 +56,7 @@ import { useDeleteRowConfirm } from "@/lib/use-delete-row-confirm";
 import { useDiscardGuardedTrackForm } from "@/lib/use-discard-guarded-track-form";
 import { TrackGpxUploadSection } from "@/components/track-pages/track-gpx-upload-section";
 import { TrackGearSelect } from "@/components/track-pages/track-gear-select";
+import { QuickWorkoutUploadDialog } from "@/components/track-pages/quick-workout-upload-dialog";
 import { TrackEditor, type ManualTrackPoint } from "@/components/track-pages/track-editor";
 import { getSupportedTrackRecordingTimezones, normalizeTrackRecordingTimezone } from "@/lib/track-recording-timezone";
 import { trackStatusOptions } from "@/lib/tracks";
@@ -416,6 +417,21 @@ const TrackFormDialog = ({
             toast.error(result.message);
             return;
           }
+        } else if (form.formState.dirtyFields.recordingTimezone) {
+          // feature-123: on a GPX row the start and the duration stay read-only
+          // — they come from the file — but the timezone is the owner's to
+          // correct. The file names an offset, not a zone, and the offset is
+          // only a starting point: a recording made in Moscow is stored as
+          // `+03:00`, and the owner may want `Europe/Moscow` instead.
+          const trimmedTimezone = values.recordingTimezone?.trim() ?? "";
+          const timezone = trimmedTimezone ? normalizeTrackRecordingTimezone(trimmedTimezone) : null;
+
+          if (trimmedTimezone && !timezone) {
+            toast.error("Choose a supported IANA timezone");
+            return;
+          }
+
+          await updateTrackRecordingTimezone({ id: track.id, recordingTimezone: timezone });
         }
 
         toast.success("Track updated");
@@ -656,9 +672,8 @@ const TrackFormDialog = ({
                   {...field}
                   id="place-on-map-recording-timezone"
                   list="place-on-map-recording-timezone-options"
-                  placeholder="Europe/Sofia"
+                  placeholder="Area/City"
                   autoComplete="off"
-                  readOnly={isReadOnlyRecording}
                 />
               </FormControl>
               <datalist id="place-on-map-recording-timezone-options">
@@ -759,6 +774,9 @@ const TrackFormDialog = ({
         {isReadOnlyRecording ? (
           <p className="text-xs text-muted-foreground">{t("trackRecordingMetadataFromFileHint")}</p>
         ) : null}
+        {/* feature-123: the timezone is the one recording field the owner may
+            correct on a GPX row — the file names an offset, not a zone. */}
+        <p className="text-xs text-muted-foreground">{t("trackRecordingTimezoneEditableHint")}</p>
         {canMarkAsManual ? (
           <div className="flex items-center gap-2">
             <Button type="button" variant="outline" size="sm" disabled={isMarkingAsManual} onClick={handleMarkAsManual}>
@@ -962,6 +980,7 @@ export const TrackManagementPanel = ({
   ownerGear,
   defaultKind = "ROUTE",
   tableVariant = "full",
+  quickWorkoutUpload = false,
 }: {
   tracks: TrackListItem[];
   activityTypes: TrackActivityType[];
@@ -977,6 +996,10 @@ export const TrackManagementPanel = ({
   // table (badges, title, start, distance, type); every other page keeps
   // the full admin column set.
   tableVariant?: "full" | "workouts";
+  // feature-123: the one-click quick upload. The button set is rendered only
+  // where the owner asked for it — "My workouts" — and only for the activity
+  // types that have a wording entry in the interface language.
+  quickWorkoutUpload?: boolean;
 }) => {
   const router = useRouter();
   const { i18n } = useT(navigationNamespace);
@@ -984,6 +1007,9 @@ export const TrackManagementPanel = ({
   const activeLanguage = i18n.resolvedLanguage ?? i18n.language;
   const [formOpen, setFormOpen] = useState(false);
   const [editingTrack, setEditingTrack] = useState<TrackListItem | null>(null);
+  // feature-123: the activity type whose quick-upload button was clicked.
+  // `null` means no quick dialog is open.
+  const [quickActivityType, setQuickActivityType] = useState<TrackActivityType | null>(null);
   const [timezoneTarget, setTimezoneTarget] = useState<TrackListItem | null>(null);
   const [recordingTimezone, setRecordingTimezone] = useState("");
   const [browserTimezone, setBrowserTimezone] = useState<string | null>(null);
@@ -1004,6 +1030,20 @@ export const TrackManagementPanel = ({
 
   const timezoneOptions = useMemo(() => getSupportedTrackRecordingTimezones(), []);
 
+  // feature-123: an activity type gets a quick-add button when the interface
+  // language has a wording entry for it. A type without one gets no button —
+  // the fallback would either be a generic label that fits the wrong type, or
+  // a wrong noun.
+  const quickActivityTypes = useMemo(
+    () =>
+      quickWorkoutUpload
+        ? activityTypes.filter((activityType) =>
+            i18n.exists(`quickWorkout.activities.${activityType.key}.addLabel`, { ns: tripsNamespace }),
+          )
+        : [],
+    [activityTypes, i18n, quickWorkoutUpload],
+  );
+
   // The two effects below are pre-existing patterns that the new
   // eslint-plugin-react-hooks v7 (React Compiler) flags as
   // "set-state-in-effect"; the eslint-disable block suppresses the rule
@@ -1019,8 +1059,12 @@ export const TrackManagementPanel = ({
   useEffect(() => {
     if (!timezoneTarget) return;
 
-    setRecordingTimezone(timezoneTarget.recordingTimezone ?? browserTimezone ?? "UTC");
-  }, [browserTimezone, timezoneTarget]);
+    // feature-123: the field starts empty when the row carries no timezone.
+    // The browser's zone is a *suggestion*, not a value: prefilling it saved
+    // "Europe/Sofia" on a recording made in Moscow, and the owner could not
+    // tell that the field held a guess rather than the recording's own zone.
+    setRecordingTimezone(timezoneTarget.recordingTimezone ?? "");
+  }, [timezoneTarget]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
   const handleEditTrack = useCallback((track: TrackListItem) => {
@@ -1088,13 +1132,30 @@ export const TrackManagementPanel = ({
 
   return (
     <div className="flex flex-col gap-4 p-4">
-      <div className="flex justify-end">
+      <div className="flex flex-wrap justify-end gap-2">
+        {quickActivityTypes.map((activityType) => (
+          <Button key={activityType.id} type="button" onClick={() => setQuickActivityType(activityType)}>
+            <Plus />
+            {t(`quickWorkout.activities.${activityType.key}.addLabel`)}
+          </Button>
+        ))}
         <Button type="button" onClick={handleCreateClick}>
           <Plus />
           Add track
         </Button>
       </div>
       <DataTable data={tracks} columns={columns} pagination={{ pageSize: 10 }} />
+      {quickActivityType ? (
+        <QuickWorkoutUploadDialog
+          activityType={{ id: quickActivityType.id, key: quickActivityType.key }}
+          ownerGear={ownerGear ?? []}
+          open
+          onOpenChange={(open) => {
+            if (!open) setQuickActivityType(null);
+          }}
+          onSaved={() => router.refresh()}
+        />
+      ) : null}
       <TrackFormDialog
         track={editingTrack}
         activityTypes={activityTypes}
@@ -1130,7 +1191,7 @@ export const TrackManagementPanel = ({
                 list="track-recording-timezone-options"
                 value={recordingTimezone}
                 onChange={(event) => setRecordingTimezone(event.target.value)}
-                placeholder="Europe/Sofia"
+                placeholder="Area/City"
                 autoComplete="off"
               />
               <datalist id="track-recording-timezone-options">
@@ -1138,9 +1199,19 @@ export const TrackManagementPanel = ({
                   <option key={timezone} value={timezone} />
                 ))}
               </datalist>
-              <p className="text-xs text-muted-foreground">
-                {browserTimezone ? `Browser suggestion: ${browserTimezone}` : "Choose a supported IANA timezone."}
-              </p>
+              {browserTimezone ? (
+                <Button
+                  type="button"
+                  variant="link"
+                  size="sm"
+                  className="h-auto justify-start p-0 text-xs"
+                  onClick={() => setRecordingTimezone(browserTimezone)}
+                >
+                  {`Use the browser timezone: ${browserTimezone}`}
+                </Button>
+              ) : (
+                <p className="text-xs text-muted-foreground">Choose a supported IANA timezone.</p>
+              )}
             </div>
             <div className="flex justify-end gap-2">
               <Button

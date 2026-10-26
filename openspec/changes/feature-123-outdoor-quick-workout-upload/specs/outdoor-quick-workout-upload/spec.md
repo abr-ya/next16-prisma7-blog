@@ -2,6 +2,40 @@
 
 ## ADDED Requirements
 
+### Requirement: The quick upload reads the recording's own wall-clock from the file
+
+The quick upload SHALL read the recording's own wall-clock from the uploaded file rather than from the viewer's device, and SHALL store the timezone the file names.
+
+#### Scenario: Preview shows the recording's own time
+
+- **WHEN** a signed-in owner drops a GPX file whose timestamps carry `+03:00` into the quick upload dialog
+- **THEN** the preview shows the recording start in that offset
+- **AND** it does not show the recording start in the viewer's device timezone
+
+#### Scenario: The suggested title and the slug read the recording's own clock
+
+- **WHEN** the dropped file names a UTC offset
+- **THEN** the suggested title names the part of the day the recording falls in at that offset
+- **AND** the proposed slug carries the date and the time at that offset
+
+#### Scenario: The saved track carries the file's timezone
+
+- **WHEN** a signed-in owner saves a quick upload whose file names a UTC offset
+- **THEN** the created track's recording timezone is that offset
+- **AND** the surfaces show the recording time in the recording's own local time
+
+#### Scenario: A file with no offset keeps the timezone unset
+
+- **WHEN** a signed-in owner saves a quick upload whose file names no UTC offset
+- **THEN** the created track carries no confirmed recording timezone
+- **AND** the surfaces show the explicit UTC fallback with the unconfirmed marker
+
+#### Scenario: A file with no offset falls back to the device's own clock
+
+- **WHEN** a signed-in owner drops a GPX file whose timestamps name no UTC offset
+- **THEN** the preview and the suggested title read the device's own local time
+- **AND** the saved track still carries no confirmed recording timezone
+
 ### Requirement: The owner starts a quick workout upload from a per-activity-type button
 
 The system SHALL offer a quick workout upload on the owner's workouts page, SHALL bind each such button to one activity type, and SHALL open the same dialog for every one of them with that activity type applied.

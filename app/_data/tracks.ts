@@ -24,8 +24,8 @@ import {
   TrackDurationInputError,
   TrackStartAtParseError,
 } from "@/lib/track-duration-input";
-import { parseTrackGpxMetadata } from "@/lib/track-gpx-parser";
-import { requireTrackRecordingTimezone } from "@/lib/track-recording-timezone";
+import { parseTrackGpxMetadata, parseTrackGpxUtcOffsetMinutes } from "@/lib/track-gpx-parser";
+import { requireTrackRecordingTimezone, toRecordingTimezoneFromUtcOffset } from "@/lib/track-recording-timezone";
 import { uploadSyntheticTrackGpx } from "@/lib/uploadthing/server-gpx";
 import { buildSyntheticGpxBytes } from "@/lib/track-synthetic-gpx";
 import {
@@ -71,6 +71,25 @@ export type CreateManualTrackInput = {
 export type CreateManualTrackResult =
   | { ok: true; trackId: string; trackSlug: string }
   | { ok: false; code: "TRUST" | "QUOTA" | "SLUG" | "VALIDATION" | "INTERNAL"; message: string };
+
+/**
+ * feature-123: the quick upload creates a workout from one file, so it sends
+ * no points, no status and no kind — the action fills those in.
+ */
+export type CreateQuickWorkoutInput = {
+  /** The uploaded GPX file asset. */
+  fileAssetId: string;
+  /** The activity type the button was bound to. */
+  activityTypeId: string;
+  title: string;
+  /** The slug base the browser proposed; the server makes it unique. */
+  slug?: string | null;
+  /** The owner's own gear for the activity type; optional. */
+  gearId?: string | null;
+};
+
+/** The quick upload answers with the same vocabulary as `createManualTrack`. */
+export type CreateQuickWorkoutResult = CreateManualTrackResult;
 
 export type ManualTrackPoint = { lat: number; lng: number };
 
@@ -540,6 +559,41 @@ const fetchTrackGpxContent = async (url: string) => {
   }
 };
 
+/**
+ * The metadata a track row carries for a GPX file, parsed from the file's
+ * content.
+ *
+ * A file that could not be read from storage leaves the row in the state the
+ * owner can repair from the track form: the parse failed, and the reason says
+ * why. The owner re-parses it there. Every other parse result is persisted as
+ * it is.
+ */
+const buildTrackGpxMetadata = ({
+  content,
+  fileAssetId,
+  fileKey,
+}: {
+  content: string;
+  fileAssetId: string;
+  fileKey: string;
+}) => {
+  const metadata = parseTrackGpxMetadata({
+    content,
+    sourceFileAssetId: fileAssetId,
+    sourceFileKey: fileKey,
+  });
+
+  if (content.length > 0) return metadata;
+
+  return {
+    ...metadata,
+    gpxParse: {
+      ...metadata.gpxParse,
+      errorMessage: "Unable to read GPX file from storage",
+    },
+  };
+};
+
 const revalidateTrackPaths = () => {
   revalidatePath("/admin/tracks");
   revalidatePath("/my/tracks");
@@ -799,10 +853,12 @@ export const updateTrackRecordingTimezone = async ({
   recordingTimezone,
 }: {
   id: string;
-  recordingTimezone: string;
+  recordingTimezone: string | null;
 }) => {
   const userId = await getRequiredUserId();
-  const timezone = requireTrackRecordingTimezone(recordingTimezone);
+  // feature-123: a cleared field means "no confirmed timezone" — the recording
+  // goes back to the unconfirmed state rather than keeping a stale zone.
+  const timezone = recordingTimezone === null ? null : requireTrackRecordingTimezone(recordingTimezone);
   const { default: prisma } = await import("@/lib/prisma");
   const existingTrack = await prisma.track.findFirst({
     where: { id, userId },
@@ -1023,6 +1079,7 @@ export const parseTrackGpx = async (id: string) => {
       id: true,
       slug: true,
       timeSource: true,
+      recordingTimezone: true,
       fileAsset: {
         select: {
           id: true,
@@ -1044,21 +1101,11 @@ export const parseTrackGpx = async (id: string) => {
   }
 
   const content = await fetchTrackGpxContent(track.fileAsset.url).catch(() => "");
-  const metadata = parseTrackGpxMetadata({
+  const metadataToPersist = buildTrackGpxMetadata({
     content,
-    sourceFileAssetId: track.fileAsset.id,
-    sourceFileKey: track.fileAsset.fileKey,
+    fileAssetId: track.fileAsset.id,
+    fileKey: track.fileAsset.fileKey,
   });
-  const metadataToPersist =
-    content.length > 0
-      ? metadata
-      : {
-          ...metadata,
-          gpxParse: {
-            ...metadata.gpxParse,
-            errorMessage: "Unable to read GPX file from storage",
-          },
-        };
 
   // Mirror the parsed summary into the new columns so every read path
   // (public track detail / list, admin track list, hike linked-track card)
@@ -1068,6 +1115,17 @@ export const parseTrackGpx = async (id: string) => {
   const summaryTime = metadataToPersist.summary?.time ?? null;
   const parsedRecordingStartAt = summaryTime ? new Date(summaryTime.start) : null;
   const parsedRecordingDurationSeconds = summaryTime ? summaryTime.durationSeconds : null;
+
+  // feature-123: a file that names its own UTC offset carries the recording's
+  // wall-clock — a Moscow recording says `+03:00` in every `<time>`, and the
+  // normalized instants kept only the UTC moment. The offset is a starting
+  // point, not a decision: a timezone the owner has already confirmed wins,
+  // and a manual row is never given one.
+  const effectiveTimeSource = track.timeSource ?? "GPX";
+  const fileRecordingTimezone =
+    effectiveTimeSource === "GPX" ? toRecordingTimezoneFromUtcOffset(parseTrackGpxUtcOffsetMinutes(content)) : null;
+  const confirmedRecordingTimezone = track.recordingTimezone?.trim() ? track.recordingTimezone : null;
+  const parsedRecordingTimezone = confirmedRecordingTimezone ?? fileRecordingTimezone;
 
   await prisma.track.update({
     where: { id: track.id },
@@ -1085,6 +1143,7 @@ export const parseTrackGpx = async (id: string) => {
       timeSource: track.timeSource ?? "GPX",
       recordingStartAt: parsedRecordingStartAt,
       recordingDurationSeconds: parsedRecordingDurationSeconds,
+      recordingTimezone: parsedRecordingTimezone,
     },
   });
 
@@ -1370,6 +1429,169 @@ export const createManualTrack = async (input: CreateManualTrackInput): Promise<
       ok: false,
       code: "INTERNAL",
       message: error instanceof Error ? error.message : "Could not create track",
+    };
+  }
+};
+
+/**
+ * feature-123: the slug the quick upload writes.
+ *
+ * The shared track form can refuse a slug conflict, because the owner can
+ * retype the slug. The quick dialog has no slug field, so a refusal would be
+ * a dead end. This takes the next free slug instead — `walking-2026-10-25-0830`,
+ * then `-2`, `-3`, … — and lets the save succeed.
+ */
+const ensureUniqueTrackSlug = async (base: string) => {
+  const { default: prisma } = await import("@/lib/prisma");
+  const slugBase = createSlug(base);
+
+  if (!slugBase) {
+    throw new Error("Slug is required");
+  }
+
+  for (let attempt = 0; attempt < 50; attempt += 1) {
+    const slug = attempt === 0 ? slugBase : `${slugBase}-${attempt + 1}`;
+    const existingTrack = await prisma.track.findUnique({ where: { slug }, select: { id: true } });
+
+    if (!existingTrack) return slug;
+  }
+
+  throw new Error("Could not find a free slug");
+};
+
+/**
+ * feature-123: the one-click quick upload.
+ *
+ * The owner drops a GPX file into a small dialog, the browser suggests a
+ * title from the file, and the save fills in everything else: the activity
+ * type the button was bound to, the kind (`TRAINING`), the status (`DRAFT`),
+ * a unique slug, the parsed metadata and the mirrored recording columns.
+ *
+ * The order of the checks is the order of the refusals:
+ *
+ *   1. The `track-upload` trust gate and the verified `track` quota.
+ *   2. The title and the activity type.
+ *   3. The file asset — it has to be the owner's own, GPX-shaped and unused.
+ *   4. The gear — optional, the owner's own, and fitting the activity type.
+ *   5. The slug — the browser proposed it, the server makes it unique.
+ *   6. The parse — the file is read once, and the metadata is written with
+ *      the row. A file that cannot be read still creates the track, in the
+ *      same state the owner can repair from the track form.
+ *
+ * The answer carries the same codes as `createManualTrack`, so the dialog can
+ * say *why* a save was refused instead of showing one generic failure.
+ */
+export const createQuickWorkout = async (input: CreateQuickWorkoutInput): Promise<CreateQuickWorkoutResult> => {
+  try {
+    const user = await requireTrustGatedAction("track-upload");
+    const userId = user.id;
+
+    const normalizedTitle = input.title?.trim() ?? "";
+    if (!normalizedTitle) {
+      return { ok: false, code: "VALIDATION", message: "Title is required" };
+    }
+
+    const normalizedActivityTypeId = input.activityTypeId?.trim() ?? "";
+    if (!normalizedActivityTypeId) {
+      return { ok: false, code: "VALIDATION", message: "Activity type is required" };
+    }
+
+    const activityType = await getTrackActivityTypeById(normalizedActivityTypeId);
+    if (!activityType) {
+      return { ok: false, code: "VALIDATION", message: "Activity type is unavailable" };
+    }
+
+    let fileAsset;
+    try {
+      fileAsset = await ensureEligibleTrackFileAsset({ fileAssetId: input.fileAssetId, userId });
+    } catch (error) {
+      return {
+        ok: false,
+        code: "VALIDATION",
+        message: error instanceof Error ? error.message : "Selected GPX file is not eligible for tracks",
+      };
+    }
+
+    // feature-122: the gear is optional and is checked against the owner and
+    // against the activity type before anything is written.
+    let gearId: string | null = null;
+    try {
+      const gear = await ensureEligibleTrackGear({
+        gearId: input.gearId,
+        userId,
+        activityTypeId: normalizedActivityTypeId,
+      });
+      gearId = gear?.id ?? null;
+    } catch (error) {
+      return {
+        ok: false,
+        code: "VALIDATION",
+        message: error instanceof Error ? error.message : "Selected gear is not available",
+      };
+    }
+
+    const slug = await ensureUniqueTrackSlug(input.slug?.trim() || normalizedTitle);
+
+    // The file is fetched once and parsed here — the stored metadata is the
+    // server's parse of the same bytes the browser previewed.
+    const content = await fetchTrackGpxContent(fileAsset.url).catch(() => "");
+    const metadata = buildTrackGpxMetadata({
+      content,
+      fileAssetId: fileAsset.id,
+      fileKey: fileAsset.fileKey,
+    });
+    const summaryTime = metadata.summary?.time ?? null;
+    // feature-123: the file's own UTC offset — the only place the recording's
+    // own wall-clock survives, because the stored instants are UTC. A Moscow
+    // recording says `+03:00` and is stored as that offset, so every surface
+    // shows the time the owner actually recorded. A file that names no offset
+    // keeps the unset timezone and the "unconfirmed" badge.
+    const recordingTimezone = toRecordingTimezoneFromUtcOffset(parseTrackGpxUtcOffsetMinutes(content));
+
+    const track = await createWithinVerifiedResourceQuota(user, "track", (tx) =>
+      tx.track.create({
+        data: {
+          title: normalizedTitle,
+          slug,
+          description: null,
+          // The quick upload creates a draft: publishing stays an explicit act
+          // in the track form.
+          status: "DRAFT",
+          // The button lives on "My workouts", and the kind is what that page
+          // lists.
+          kind: "TRAINING",
+          fileAssetId: fileAsset.id,
+          userId,
+          activityTypeId: normalizedActivityTypeId,
+          gearId,
+          // Every GPX-uploaded track is GPX-sourced. The recording timezone is
+          // the file's own offset when it names one — the owner confirms or
+          // corrects it in the track form.
+          timeSource: "GPX",
+          recordingTimezone,
+          recordingStartAt: summaryTime ? new Date(summaryTime.start) : null,
+          recordingDurationSeconds: summaryTime ? summaryTime.durationSeconds : null,
+          metadata: metadata as Prisma.InputJsonValue,
+        },
+        select: { id: true, slug: true },
+      }),
+    );
+
+    revalidateTrackPaths();
+    revalidatePath("/my/workouts");
+
+    return { ok: true, trackId: track.id, trackSlug: track.slug };
+  } catch (error) {
+    if (error instanceof InsufficientTrustError) {
+      return { ok: false, code: "TRUST", message: error.message };
+    }
+    if (error instanceof Error && error.message.toLowerCase().includes("limit reached")) {
+      return { ok: false, code: "QUOTA", message: error.message };
+    }
+    return {
+      ok: false,
+      code: "INTERNAL",
+      message: error instanceof Error ? error.message : "Could not create workout",
     };
   }
 };

@@ -27,10 +27,10 @@ Two constraints shape the work:
 **Non-Goals:**
 
 - Editing, publishing, or any other field the dialog does not show.
-- A recording-timezone input, or any other derived field the owner has to confirm later.
+- A recording-timezone input in the dialog, or any other derived field the owner has to confirm there — the file's own offset is the recording timezone, and the owner corrects it in the track form.
 - Remembering the shoes (that is `feature-124`).
 - A public entry point, a batch import, or a second upload route.
-- Changing the shared track form, the shared upload route, or the shared parser.
+- Changing the shared upload route or the shared track form's fields. The shared parser gains the file's UTC offset as an additive field; nothing it already produced changes.
 
 ## Decisions
 
@@ -74,13 +74,13 @@ Two constraints shape the work:
 
 **Why the noun is separate from the activity type's name:** `Ходьба` is the category label the owner sees in the track form; `прогулка` is the word a title wants. One dictionary entry carries the button label and the title wording together, so they cannot drift apart.
 
-### 5. The daypart is computed in the browser's own timezone
+### 5. The daypart is read at the recording's own offset, not at the viewer's
 
-**Decision:** the recording start is turned into a daypart with the browser's local time.
+**Decision:** the recording start is turned into a daypart with the hours it had where it was recorded — at the UTC offset the file's own timestamps carry, and at the browser's local time only when the file names no offset.
 
-**Why:** the recording timezone is a separate, owner-confirmed field that this dialog does not touch (see decision 9), and the device the owner is holding is the reference they think in. For the ordinary case — recorded on the watch this morning, uploaded on the phone — the device clock is exactly right.
+**Why:** the file says `+03:00` in every `<time>` of a Moscow recording. That offset is the recording's wall-clock, and it is the only place it survives: the normalized instants are UTC. Reading them on a device in Sofia shifts the recording by the difference between the two zones, and a night recording becomes an evening one. The device clock is the right reference only for a file that names no offset — there, and only there, the device's clock *is* the file's clock.
 
-**The case it gets wrong:** a walk recorded in another timezone and uploaded later from a different one. The title then names the wrong moment of the day. The risk is bounded — a title is a label the owner can retype, and the stored recording start is the file's own absolute instant either way — but it is the reason the recording timezone stays an explicit field rather than something the quick flow guesses at.
+**The case it still gets wrong:** a file whose timestamps are naive and that was recorded on a device in another zone than the one uploading it. The title then names the wrong moment of the day. The risk is bounded — a title is a label the owner can retype, and the stored recording start is the file's own absolute instant either way.
 
 ### 6. A file without timestamps gets the bare noun, not a guessed time
 
@@ -90,11 +90,11 @@ Two constraints shape the work:
 
 ### 7. The client proposes the slug; the server makes it unique
 
-**Decision:** the dialog proposes `{activity-type-key}-{recording-date}-{recording-start-time}` in the browser's local time — `walking-2026-10-25-0830` — and the server sanitizes it with the existing `createSlug` and appends `-2`, `-3`, … until it is free.
+**Decision:** the dialog proposes `{activity-type-key}-{recording-date}-{recording-start-time}` at the recording's own offset — `walking-2026-10-25-0830` — and the server sanitizes it with the existing `createSlug` and appends `-2`, `-3`, … until it is free.
 
 **Why the format:** it is the format the backlog already proposes for the GPX-derived slug suggestion (`outdoor-track-gpx-derived-slug-suggestion`), and it is what makes repeated walks safe. A title-derived slug (`utrennyaya-progulka`) collides the second time the owner walks in the morning, and a collision in the quick flow is a dead end — there is no slug field to fix. A date and a time do not collide.
 
-**Why the client proposes it:** the date and the time are the owner's local ones, and the slug is the one place they are written down. The server deriving them would have to guess a timezone it does not have. The server does not trust the text: `createSlug` reduces it to `[a-z0-9-]`, and the uniqueness loop is server-side.
+**Why the client proposes it:** the date and the time are the recording's own, and the slug is the one place they are written down. The server deriving them would have to guess a timezone it does not have. The server does not trust the text: `createSlug` reduces it to `[a-z0-9-]`, and the uniqueness loop is server-side.
 
 **Why the server uniquifies instead of refusing:** the existing form can refuse a slug conflict, because the owner can retype the slug. The quick dialog has no slug field, so a refusal would be a dead end. The server's loop makes the save succeed and the slug readable (`walking-2026-10-25-0830-2`).
 
@@ -110,15 +110,17 @@ Two constraints shape the work:
 
 **The consequence:** a file that cannot be read from storage still creates the track — with the same "stale metadata" outcome `parseTrackGpx` produces — rather than failing the save. The owner can re-parse from the track form.
 
-### 9. The status is `DRAFT`, the kind is `TRAINING`, and the recording timezone stays unset
+### 9. The status is `DRAFT`, the kind is `TRAINING`, and the recording timezone comes from the file
 
-**Decision:** the quick upload writes `status: "DRAFT"`, `kind: "TRAINING"`, `activityTypeId` from the button, `recordingTimezone: null`, and `timeSource: "GPX"`.
+**Decision:** the quick upload writes `status: "DRAFT"`, `kind: "TRAINING"`, `activityTypeId` from the button, `timeSource: "GPX"`, and the file's own UTC offset as its `recordingTimezone` — `+03:00` for a recording made in Moscow, and nothing at all for a file that names no offset.
 
 **Why `DRAFT`:** it is the default of every other track creation path, and a walk recorded seconds ago is not something to publish without a look. The owner publishes from the track form, where the activity type, the description, and the thumbnail can still be adjusted.
 
 **Why `TRAINING`:** the button lives on `My workouts`, and the kind is what that page lists. A route created through a workout button would be a misfiling.
 
-**Why the recording timezone stays unset:** it is the one recording field that cannot be derived from the file. `feature-112` made it an owner-confirmed value on purpose, and the existing GPX upload path leaves it unset as well — the quick flow must not invent a value the owner has not confirmed, and the device's timezone is not the walk's timezone whenever the walk happened somewhere else. The existing `Set recording timezone` action still handles it.
+**Why the recording timezone comes from the file:** the offset in a GPX timestamp is not a guess — it is the recording's own wall-clock, written by the device that made the recording. `feature-112` made the timezone an owner-confirmed value because *no field can be confirmed by a machine*; but the offset is the one recording fact the file does carry, and throwing it away is what made a Moscow walk render in UTC and, once the owner "corrected" it, in the browser's zone. The offset is stored as a starting point, not as a decision: the owner can replace it with a named zone, and the surfaces show it as `UTC+03:00` so it is never mistaken for a confirmed IANA zone.
+
+**Why an offset and not a zone:** the file names `+03:00`, not `Europe/Moscow`. A fixed offset is the truth the file carries; a named zone would add a DST rule the file never mentioned. The timezone vocabulary therefore accepts the fixed-offset form, and `Intl` reads it directly.
 
 ### 10. The action answers with the `createManualTrack` result shape
 
@@ -148,9 +150,20 @@ Two constraints shape the work:
 
 **Why:** the owner asked for exactly this — a modal "с параметром", so that `Добавить пробежку` later costs a dictionary entry and a button, not a component. The differences between two activity types are the wording and the activity type id; everything else — the file, the title, the shoes, the save — is identical.
 
+### 14. The recording timezone is the one recording field the owner owns, and the browser's zone is never stored by accident
+
+**Decision:** three things change in the track workspace. The recording-timezone field stays editable on a `GPX` row (the recording start and the recording duration stay read-only — they are the file's own values), and saving the row writes the typed timezone through the existing `updateTrackRecordingTimezone` action. The focused `Set recording timezone` action no longer pre-fills the field with the browser's zone; that zone became a suggestion the owner applies on purpose. And a cleared field clears the track's timezone, which puts the row back into the explicit "unconfirmed" state.
+
+**Why:** the owner's complaint that started this section was that a recording made in Moscow came back as `Europe/Sofia` and could not be changed. Both halves were the browser's zone leaking into stored data: the action pre-filled it, and a single click saved it. The field then could not be corrected, because the edit form renders the four recording inputs read-only for a `GPX` row — a rule written when a GPX file was the only source of the recording facts. It no longer is: the file names an *offset*, and the owner names the *zone*.
+
+**Why the offset is not simply accepted as final:** `+03:00` is a fact about the recording, and `Europe/Moscow` is a fact about the place — the first is right even for a recording made in a place that observes DST, the second is what a reader expects to see. The owner may keep either. What must not happen is a value nobody chose.
+
+**Why the browser's zone is a button and not a default:** a default is invisible. A field that opens already filled with `Europe/Sofia` reads as a value that was read from the track, and saving it writes the browser's guess into the record. An empty field with a labelled suggestion asks the question the owner has to answer.
+
 ## Risks / Trade-offs
 
-- **[The title can name the wrong part of the day for a file recorded in another timezone]** → The title is the browser's local reading of the file's absolute start, and the owner can retype it. The stored recording start is always the file's own instant. The risk is the reason the recording timezone stays an owner-confirmed field (decision 9).
+- **[The title can name the wrong part of the day for a file with naive timestamps]** → The title reads the device's own clock for such a file, because the file carries no offset and the device is the only reference left. The owner can retype it, and the stored recording start is always the file's own instant. The risk is the reason the recording timezone stays an owner-corrected field (decisions 5 and 14).
+- **[A fixed offset is not a named zone]** → A track stored as `+03:00` renders correctly but reads less familiar than `Europe/Moscow`. The surfaces show `UTC+03:00`, so it is never mistaken for a confirmed named zone, and the owner can replace it with one from the track form.
 - **[The browser's parse and the server's parse can disagree]** → The browser's parse only produces a suggestion; the server's parse produces the stored metadata. If the server cannot read the file from storage, the track is created with the stale-metadata state and can be re-parsed from the track form — the same outcome the Place-on-map flow has.
 - **[The GPX parser now ships to the browser]** → The parser is pure string code with no dependencies; it adds a few kilobytes to the client bundle. Mitigation: it is imported by the one dialog that needs it, and the same code path already runs on the server, so there is one implementation of the parsing rules rather than two.
 - **[The slug is proposed by the client]** → It is sanitized by `createSlug` and uniquified by the server, so the client can only choose the readable part of it. The stored slug is always ASCII, always unique, and always server-checked.

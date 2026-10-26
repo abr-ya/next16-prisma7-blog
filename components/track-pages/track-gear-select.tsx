@@ -27,12 +27,17 @@ export const TrackGearSelect = ({
   gear,
   activityTypeId,
   disabled,
+  noneLabel = "No gear",
 }: {
   value?: string;
   onChange: (value: string) => void;
   gear: TrackGearOption[];
   activityTypeId: string | null;
   disabled?: boolean;
+  // feature-123: the wording of the "no gear" choice. The quick upload
+  // dialog passes the label of the interface language; the track form keeps
+  // the default.
+  noneLabel?: string;
 }) => {
   const options = useMemo(() => {
     const fitting = gear.filter((item) =>
@@ -66,7 +71,7 @@ export const TrackGearSelect = ({
         </SelectTrigger>
       </FormControl>
       <SelectContent>
-        <SelectItem value={NO_GEAR_VALUE}>No gear</SelectItem>
+        <SelectItem value={NO_GEAR_VALUE}>{noneLabel}</SelectItem>
         {options.map((item) => (
           <SelectItem key={item.id} value={item.id}>
             {item.name}

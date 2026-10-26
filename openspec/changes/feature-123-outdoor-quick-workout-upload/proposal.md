@@ -15,13 +15,13 @@ This change builds that surface. It is deliberately parameterized by activity ty
 - **`My workouts` gains a `Add a walk` button.** The button opens a small modal whose only fields are the GPX file, the title, and the shoes. Everything else — the activity type, the kind, the status, the slug, the parsed distance, duration, and recording start — is filled in automatically.
 - **The title is suggested from the file, and stays editable.** The dialog reads the recording start time out of the dropped GPX and suggests `Morning walk` / `Дневная прогулка` from it, using the wording of the button's activity type. The owner can type something else; the suggestion is only a default.
 - **The file is read in the browser, once.** The GPX parser is already isomorphic, so the dialog extracts the recording start, the distance, and the duration from the dropped file itself and shows them while the upload is still running. The server re-parses the same file when it saves, and the stored metadata comes from that parse.
-- **The server fills the rest.** The save writes a `TRAINING` track in `DRAFT`, with the activity type the button was bound to, a slug derived from the activity type and the recording date and time, the parsed metadata, and the mirrored recording columns.
+- **The server fills the rest.** The save writes a `TRAINING` track in `DRAFT`, with the activity type the button was bound to, a slug derived from the activity type and the recording date and time, the parsed metadata, the mirrored recording columns, and the UTC offset the file's own timestamps carry as the recording timezone.
 - **The shoes are optional and owner-only.** The dialog offers the owner's own gear that fits the activity type, and the chosen pair is attached to the new track through the server path `feature-122-outdoor-track-gear-assignment` adds.
 
 ### Non-goals
 
 - **No publishing.** The quick upload creates a `DRAFT`; publishing stays an explicit act in the track form, exactly as it is for every other track.
-- **No description, no recording timezone, no recording duration input.** The duration comes from the file. The recording timezone stays unset, as it is for every GPX upload today — the owner confirms it in the track form when the walk was recorded somewhere other than the device's own clock.
+- **No description, no recording timezone, no recording duration input.** The duration comes from the file. The recording timezone comes from the file too — the offset its timestamps carry — but it is not a field the dialog asks about: the owner replaces it with a named zone in the track form when they want one.
 - **No editing inside the dialog.** The dialog creates; the existing form edits.
 - **No public surface.** The quick upload creates a private draft. Nothing about it changes what a visitor sees.
 - **No remembering the shoes.** Which pair is preselected next time is `feature-124-outdoor-gear-preferred-per-activity`; this change attaches the pair that was chosen, and nothing else.
@@ -36,7 +36,9 @@ This change builds that surface. It is deliberately parameterized by activity ty
 
 ### Modified Capabilities
 
-None. `outdoor-tracks` keeps its current requirements — this change adds a faster way into the same record, and the track it creates satisfies the same rules every other track does. `outdoor-gear` keeps its current requirements — the shoes are attached through the relation `feature-122` adds, not by changing the inventory.
+- `outdoor-tracks` — a GPX file's own UTC offset becomes a valid recording timezone and is stored as the starting point for the track it produced; the recording-timezone field stays editable on a GPX-sourced track, because the file names an offset and the owner names the zone; and the focused `Set recording timezone` action no longer pre-fills the field with the browser's timezone.
+
+`outdoor-gear` keeps its current requirements — the shoes are attached through the relation `feature-122` adds, not by changing the inventory.
 
 ## Impact
 
