@@ -11,7 +11,7 @@ import z from "zod";
 
 import { markDiscardedTrackGpxFileAssetsPendingDelete } from "@/app/_actions/files";
 import { navigationNamespace, tripsNamespace } from "@/app/i18n/settings";
-import type { GearListItem } from "@/app/_data/gear";
+import type { GearListItem, OwnerGearPreferences } from "@/app/_data/gear";
 import {
   createManualTrack,
   createTrack,
@@ -978,6 +978,7 @@ export const TrackManagementPanel = ({
   tracks,
   activityTypes,
   ownerGear,
+  ownerGearPreferences,
   defaultKind = "ROUTE",
   tableVariant = "full",
   quickWorkoutUpload = false,
@@ -988,6 +989,10 @@ export const TrackManagementPanel = ({
   // this prop is present, so a surface without gear — the administrative
   // panel — cannot show the control at all.
   ownerGear?: GearListItem[];
+  // feature-124: the owner's preferred gear per activity type. The surface
+  // without preferences — the administrative panel — never receives the map,
+  // so nothing about a gear record reaches it.
+  ownerGearPreferences?: OwnerGearPreferences;
   // feature-120: the kind a new track starts with on this page. "My
   // workouts" passes "TRAINING"; My tracks and the admin panel keep the
   // default route.
@@ -1147,8 +1152,12 @@ export const TrackManagementPanel = ({
       <DataTable data={tracks} columns={columns} pagination={{ pageSize: 10 }} />
       {quickActivityType ? (
         <QuickWorkoutUploadDialog
+          // The dialog is keyed by the activity type: another type gets its
+          // own form, with its own preferred gear as the default.
+          key={quickActivityType.id}
           activityType={{ id: quickActivityType.id, key: quickActivityType.key }}
           ownerGear={ownerGear ?? []}
+          preferredGearId={ownerGearPreferences?.[quickActivityType.id]?.gearId ?? null}
           open
           onOpenChange={(open) => {
             if (!open) setQuickActivityType(null);

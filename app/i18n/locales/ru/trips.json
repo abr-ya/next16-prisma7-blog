@@ -107,10 +107,12 @@
     "success": "Тренировка добавлена",
     "error": "Не удалось добавить тренировку",
     "statsSummary": "Расстояние: {{distance}} · Длительность: {{duration}} · Начало: {{start}}",
+    "rememberGearLabel": "Запоминать это снаряжение для активности «{{activity}}»",
     "activities": {
       "walking": {
         "addLabel": "Добавить прогулку",
         "noun": "прогулка",
+        "rememberGearLabel": "Запоминать это снаряжение для прогулок",
         "dayparts": {
           "morning": "Утренняя",
           "day": "Дневная",

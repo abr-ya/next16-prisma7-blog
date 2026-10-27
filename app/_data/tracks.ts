@@ -91,6 +91,13 @@ export type CreateQuickWorkoutInput = {
   /** The owner's own gear for the activity type; optional. */
   gearId?: string | null;
   /**
+   * feature-124: the owner asks to remember the attached gear as the
+   * preferred one for this activity type. The flag is honoured only when a
+   * gear item is actually attached, and the preference is written in the same
+   * transaction as the workout.
+   */
+  rememberGearAsPreferred?: boolean;
+  /**
    * The timezone of the device the upload was made from. It is the fallback
    * for a file that names no UTC offset — the device is then the only
    * reference there is. It is validated the way any other recording timezone
@@ -1564,8 +1571,12 @@ export const createQuickWorkout = async (input: CreateQuickWorkoutInput): Promis
       input.deviceTimezone,
     );
 
-    const track = await createWithinVerifiedResourceQuota(user, "track", (tx) =>
-      tx.track.create({
+    // feature-124: the preference is written together with the attachment,
+    // so a failure of either half leaves the other unwritten.
+    const rememberGear = input.rememberGearAsPreferred === true && gearId !== null;
+
+    const track = await createWithinVerifiedResourceQuota(user, "track", async (tx) => {
+      const created = await tx.track.create({
         data: {
           title: normalizedTitle,
           slug,
@@ -1590,11 +1601,24 @@ export const createQuickWorkout = async (input: CreateQuickWorkoutInput): Promis
           metadata: metadata as Prisma.InputJsonValue,
         },
         select: { id: true, slug: true },
-      }),
-    );
+      });
+
+      // The gear was checked against the owner and against the activity type
+      // above, so the row can only point at a record that fits this type.
+      if (rememberGear && gearId) {
+        await tx.gearPreference.upsert({
+          where: { userId_activityTypeId: { userId, activityTypeId: normalizedActivityTypeId } },
+          create: { userId, activityTypeId: normalizedActivityTypeId, gearId },
+          update: { gearId },
+        });
+      }
+
+      return created;
+    });
 
     revalidateTrackPaths();
     revalidatePath("/my/workouts");
+    if (rememberGear && gearId) revalidatePath("/my/gear");
 
     return { ok: true, trackId: track.id, trackSlug: track.slug };
   } catch (error) {
