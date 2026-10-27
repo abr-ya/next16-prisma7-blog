@@ -2,6 +2,56 @@
 
 ## ADDED Requirements
 
+### Requirement: The quick upload reads the recording's own wall-clock from the file
+
+The quick upload SHALL read the recording's own wall-clock from the uploaded file rather than from the viewer's device, and SHALL store the timezone the file names.
+
+#### Scenario: Preview shows the recording's own time
+
+- **WHEN** a signed-in owner drops a GPX file whose timestamps carry `+03:00` into the quick upload dialog
+- **THEN** the preview shows the recording start in that offset
+- **AND** it does not show the recording start in the viewer's device timezone
+
+#### Scenario: The suggested title and the slug read the recording's own clock
+
+- **WHEN** the dropped file names a UTC offset
+- **THEN** the suggested title names the part of the day the recording falls in at that offset
+- **AND** the proposed slug carries the date and the time at that offset
+
+#### Scenario: The saved track carries the file's timezone
+
+- **WHEN** a signed-in owner saves a quick upload whose file names a UTC offset
+- **THEN** the created track's recording timezone is that offset
+- **AND** the surfaces show the recording time in the recording's own local time
+
+#### Scenario: A file with no offset takes the device's timezone
+
+- **WHEN** a signed-in owner saves a quick upload whose file names no UTC offset
+- **THEN** the created track's recording timezone is the timezone of the device the upload was made from
+- **AND** the surfaces render the recording start in that timezone
+
+#### Scenario: A file with no offset falls back to the device's own clock
+
+- **WHEN** a signed-in owner drops a GPX file whose timestamps name no UTC offset
+- **THEN** the preview and the suggested title read the device's own local time
+- **AND** the saved track carries the device's timezone
+
+### Requirement: The quick upload falls back to the device's timezone
+
+The system SHALL store the timezone of the device the upload was made from as the track's recording timezone when the uploaded file names no UTC offset — the file's timestamps are then naive wall-clock values, and the device that wrote them is the only reference there is. The system SHALL validate that value the way it validates every other recording timezone, and SHALL leave the track's timezone unset when the device names one the system does not support. The file's own offset SHALL win over the device's timezone whenever the file names one.
+
+#### Scenario: The file's offset wins over the device's timezone
+
+- **WHEN** a signed-in owner saves a quick upload whose file names a UTC offset
+- **THEN** the created track's recording timezone is the file's offset
+- **AND** the device's timezone is not stored
+
+#### Scenario: An unsupported device timezone is not stored
+
+- **WHEN** the device the upload is made from reports a timezone the system does not support
+- **THEN** the created track carries no confirmed recording timezone
+- **AND** the save succeeds
+
 ### Requirement: The owner starts a quick workout upload from a per-activity-type button
 
 The system SHALL offer a quick workout upload on the owner's workouts page, SHALL bind each such button to one activity type, and SHALL open the same dialog for every one of them with that activity type applied.

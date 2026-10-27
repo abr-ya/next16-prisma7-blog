@@ -7,17 +7,23 @@ import Link from "next/link";
 import type { TrackListItem } from "@/app/_data/tracks";
 import { Badge, Button } from "@/components/index";
 import { getTrackParseState } from "@/components/admin-pages/tracks-admin-panel-parse-cell";
-import { formatTrackDistance, formatTrackRecordingDateTime } from "@/lib/track-gpx-metadata";
+import { formatTrackDistance, formatTrackDuration, formatTrackRecordingDateTime } from "@/lib/track-gpx-metadata";
+import { formatTrackRecordingTimezone } from "@/lib/track-recording-timezone";
 import { formatTrackStatus } from "@/lib/tracks";
 
 // feature-120 follow-up: the "My workouts" table is a deliberately short
 // owner-side list — badges, title, start date, distance and activity type.
-// The heavy admin columns (GPX file, GPX summary, timezone, trips, updated)
-// stay on the admin and "My tracks" tables; this factory composes the
-// short variant and the panel swaps column sets through `tableVariant`.
+// The heavy admin columns (GPX file, GPX summary, trips, updated) stay on
+// the admin and "My tracks" tables; this factory composes the short
+// variant and the panel swaps column sets through `tableVariant`.
+//
+// feature-123: the short list also carries the recording timezone and the
+// recording duration — the two values that tell the owner when the workout
+// happened and how long it lasted. The timezone sits next to the start
+// column because that column renders the start in it.
 //
 // The row actions are kept to edit and delete so the page stays manageable;
-// parsing, timezone and trip assignment remain on the full table.
+// parsing, the timezone action and trip assignment remain on the full table.
 
 type CreateTrackWorkoutColumnsInput = {
   activeLanguage: string;
@@ -82,6 +88,15 @@ const createTrackWorkoutColumns = ({
     },
   },
   {
+    id: "timezone",
+    header: "Timezone",
+    cell: ({ row }) => (
+      <Badge variant={row.original.recordingTimezone ? "secondary" : "outline"}>
+        {formatTrackRecordingTimezone(row.original.recordingTimezone)}
+      </Badge>
+    ),
+  },
+  {
     id: "distance",
     header: "Distance",
     cell: ({ row }) => {
@@ -92,6 +107,23 @@ const createTrackWorkoutColumns = ({
       const distance = formatTrackDistance(state.summary.distanceMeters);
 
       return <span className="text-sm">{distance ?? "—"}</span>;
+    },
+  },
+  {
+    id: "duration",
+    header: "Duration",
+    cell: ({ row }) => {
+      const state = getTrackParseState(row.original);
+      // The mirrored column is the duration the owner confirmed; a row parsed
+      // before the column existed keeps its duration in the parsed summary.
+      const seconds =
+        row.original.recordingDurationSeconds ??
+        (state.status === "SUCCESS" ? (state.summary.time?.durationSeconds ?? null) : null);
+      const duration = formatTrackDuration(seconds);
+
+      if (!duration) return <span className="text-sm text-muted-foreground">—</span>;
+
+      return <span className="text-sm">{duration}</span>;
     },
   },
   {

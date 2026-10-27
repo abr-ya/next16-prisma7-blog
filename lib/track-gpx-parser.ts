@@ -15,6 +15,10 @@ type ParsedGpxPoint = TrackGpxCoordinate & {
   ele?: number;
   time?: string;
   timeTimezoneEvidence?: Exclude<TrackGpxTimezoneEvidence, "MIXED" | "UNKNOWN">;
+  // feature-123: the UTC offset the file's own timestamp carried. The
+  // normalized `time` above is a UTC instant and keeps no offset — this is
+  // what tells the recording's own wall-clock apart from the viewer's.
+  utcOffsetMinutes?: number;
 };
 
 type ParseTrackGpxInput = {
@@ -60,6 +64,32 @@ const isFiniteCoordinate = (lat: number, lng: number) =>
   Number.isFinite(lat) && Number.isFinite(lng) && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180;
 
 const TIMEZONE_OFFSET_PATTERN = /(?:z|[+-]\d{2}:?\d{2})$/i;
+const UTC_OFFSET_PATTERN = /(?:z|([+-])(\d{2}):?(\d{2}))$/i;
+
+/**
+ * The UTC offset a timestamp carries, in minutes.
+ *
+ * A GPX file that was written in Moscow says `+03:00` in every `<time>`
+ * element — that is the only place the recording's own wall-clock survives,
+ * because the normalized instant is stored in UTC. `null` means the file
+ * named no offset at all: the timestamps are naive wall-clock values whose
+ * zone only the device that wrote them knew.
+ */
+export const readGpxUtcOffsetMinutes = (value: string): number | null => {
+  const match = UTC_OFFSET_PATTERN.exec(value.trim());
+
+  if (!match) return null;
+  // "Z" — the timestamp is UTC already.
+  if (!match[1]) return 0;
+
+  const sign = match[1] === "-" ? -1 : 1;
+  const hours = Number(match[2]);
+  const minutes = Number(match[3]);
+
+  if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return null;
+
+  return sign * (hours * 60 + minutes);
+};
 
 const getTimeTimezoneEvidence = (value: string): Exclude<TrackGpxTimezoneEvidence, "MIXED" | "UNKNOWN"> =>
   TIMEZONE_OFFSET_PATTERN.test(value.trim()) ? "UTC_OR_OFFSET" : "MISSING";
@@ -82,6 +112,7 @@ const parseGpxPoints = (content: string): ParsedGpxPoint[] => {
     const ele = eleValue === null ? undefined : Number(eleValue);
     const time = timeValue && !Number.isNaN(Date.parse(timeValue)) ? new Date(timeValue).toISOString() : undefined;
     const timeTimezoneEvidence = time && timeValue ? getTimeTimezoneEvidence(timeValue) : undefined;
+    const utcOffsetMinutes = timeValue ? readGpxUtcOffsetMinutes(timeValue) : null;
 
     points.push({
       lat,
@@ -89,6 +120,7 @@ const parseGpxPoints = (content: string): ParsedGpxPoint[] => {
       ...(Number.isFinite(ele) ? { ele } : {}),
       ...(time ? { time } : {}),
       ...(timeTimezoneEvidence ? { timeTimezoneEvidence } : {}),
+      ...(utcOffsetMinutes !== null ? { utcOffsetMinutes } : {}),
     });
   }
 
@@ -371,4 +403,73 @@ export const parseTrackGpxMetadata = ({
       errorMessage: sanitizeErrorMessage(error),
     });
   }
+};
+
+/**
+ * feature-123: the browser-side preview of a dropped GPX file.
+ *
+ * The quick upload dialog reads the file the owner dropped — before the
+ * upload finishes — and needs three facts from it: when the recording
+ * started, how far it went, and how long it took. This is the module's own
+ * point reading, distance computation and time computation, so the browser
+ * says exactly what the server will say; only the metadata envelope is left
+ * to the server, which owns the stored record.
+ *
+ * `null` means "this content is not a readable GPX". The dialog falls back to
+ * the bare wording then, rather than claiming a time of day the file does
+ * not contain.
+ */
+export type TrackGpxPreview = {
+  /** The first recorded point, as an ISO instant; null when the file has no usable timestamps. */
+  startAt: string | null;
+  distanceMeters: number;
+  /** null when the file carries no usable timestamps. */
+  durationSeconds: number | null;
+  pointCount: number;
+  /**
+   * The UTC offset the file's timestamps carried, in minutes; null when the
+   * file named no offset. A Moscow recording carries `180`.
+   */
+  utcOffsetMinutes: number | null;
+};
+
+/**
+ * The offset of the first point that names one.
+ *
+ * GPX files are written in chronological order, so the first offset is the
+ * one the recording started in — the one the start time is shown in.
+ */
+const computeUtcOffsetMinutes = (points: ParsedGpxPoint[]): number | null => {
+  for (const point of points) {
+    if (point.utcOffsetMinutes !== undefined) return point.utcOffsetMinutes;
+  }
+
+  return null;
+};
+
+/**
+ * The UTC offset the file's own timestamps carry, in minutes.
+ *
+ * `null` means the file named no offset: its timestamps are naive wall-clock
+ * values, and only the device that wrote them knew the zone.
+ */
+export const parseTrackGpxUtcOffsetMinutes = (content: string): number | null =>
+  computeUtcOffsetMinutes(parseGpxPoints(content));
+
+export const parseTrackGpxPreview = (content: string): TrackGpxPreview | null => {
+  if (!/<\s*(?:[\w-]+:)?gpx(?:\s|>)/i.test(content)) return null;
+
+  const points = parseGpxPoints(content);
+
+  if (points.length === 0) return null;
+
+  const time = computeTime(points);
+
+  return {
+    startAt: time?.start ?? null,
+    distanceMeters: computeDistance(points),
+    durationSeconds: time?.durationSeconds ?? null,
+    pointCount: points.length,
+    utcOffsetMinutes: computeUtcOffsetMinutes(points),
+  };
 };

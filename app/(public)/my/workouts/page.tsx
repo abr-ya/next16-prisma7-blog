@@ -34,6 +34,10 @@ const MyWorkoutsPage = async () => {
         ownerGear={gear}
         defaultKind="TRAINING"
         tableVariant="workouts"
+        // feature-123: the one-click quick upload lives here — the page whose
+        // rows are workouts. "My tracks" and the administrative panel keep the
+        // full form only.
+        quickWorkoutUpload
       />
     </PageLayout>
   );

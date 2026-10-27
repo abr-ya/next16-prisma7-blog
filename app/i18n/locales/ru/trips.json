@@ -82,7 +82,8 @@
   "trackTimeSourceBadgeLabel": "Источник: {source}",
   "trackRecordingStartLabel": "Начало записи",
   "trackRecordingDurationLabel": "Длительность записи",
-  "trackRecordingMetadataFromFileHint": "Эти значения получены из загруженного GPX-файла и недоступны для редактирования.",
+  "trackRecordingMetadataFromFileHint": "Начало и длительность записи получены из загруженного GPX-файла и недоступны для редактирования.",
+  "trackRecordingTimezoneEditableHint": "Часовой пояс записи можно изменить — смещение из самого файла лишь отправная точка.",
   "trackMarkAsManualButton": "Отметить как ручной",
   "trackMarkAsManualSuccess": "Трек отмечен как ручной",
   "trackMarkAsManualBadgeAriaLabel": "Переклассифицировать трек как ручной",
@@ -93,5 +94,30 @@
   "trackEditorLocate": "Где я",
   "trackEditorGeolocationDenied": "Доступ к геолокации запрещён",
   "trackEditorGeolocationFailed": "Не удалось определить ваше местоположение",
-  "trackEditorGeolocationUnavailable": "Ваш браузер не поддерживает геолокацию"
+  "trackEditorGeolocationUnavailable": "Ваш браузер не поддерживает геолокацию",
+  "quickWorkout": {
+    "fileLabel": "GPX-файл",
+    "fileRequired": "Добавьте GPX-файл",
+    "titleLabel": "Название",
+    "gearLabel": "Снаряжение",
+    "gearNone": "Без снаряжения",
+    "gearEmpty": "Нет снаряжения для этого вида активности",
+    "save": "Сохранить",
+    "saving": "Сохраняем…",
+    "success": "Тренировка добавлена",
+    "error": "Не удалось добавить тренировку",
+    "statsSummary": "Расстояние: {{distance}} · Длительность: {{duration}} · Начало: {{start}}",
+    "activities": {
+      "walking": {
+        "addLabel": "Добавить прогулку",
+        "noun": "прогулка",
+        "dayparts": {
+          "morning": "Утренняя",
+          "day": "Дневная",
+          "evening": "Вечерняя",
+          "night": "Ночная"
+        }
+      }
+    }
+  }
 }

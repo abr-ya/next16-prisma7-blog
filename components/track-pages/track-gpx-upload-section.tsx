@@ -25,10 +25,16 @@ export const TrackGpxUploadSection = ({
   isEditing,
   onUploadComplete,
   onUploadError,
+  onBeforeUpload,
 }: {
   isEditing: boolean;
   onUploadComplete: (params: { fileAssetId: string; fileName: string }) => void;
   onUploadError: (message: string) => void;
+  // feature-123: the quick upload dialog reads the dropped file in the browser
+  // before the upload finishes, to suggest a title from it. The prop is
+  // optional — the two existing consumers pass nothing, and the upload itself
+  // is unaffected by what the handler does with the files.
+  onBeforeUpload?: (files: File[]) => void;
 }) => {
   return (
     <UploadDropzone
@@ -40,6 +46,10 @@ export const TrackGpxUploadSection = ({
       appearance={{
         button: "rounded-lg",
         container: "rounded-lg border",
+      }}
+      onBeforeUploadBegin={(files) => {
+        onBeforeUpload?.(files);
+        return files;
       }}
       onUploadError={(error) => {
         const message = error.message || "Uploading GPX failed";
