@@ -42,6 +42,8 @@ model User {
   sentHikeParticipantInvitations HikeParticipant[] @relation("HikeParticipantInviter")
   tracks                         Track[]
   gears                          Gear[]
+  // feature-124: the per-activity-type gear preferences of this owner.
+  gearPreferences                GearPreference[]
   photos                         Photo[]
   photoLikes                     PhotoLike[]
   trustChangesReceived           TrustChangeLog[]  @relation("TrustChangeLogTarget")
@@ -381,6 +383,9 @@ model TrackActivityType {
   isActive  Boolean                    @default(true)
   tracks    Track[]
   gears     GearToTrackActivityTypes[]
+  // feature-124: the preferences keyed by this activity type. A deleted type
+  // takes its preferences with it — a preference without a type has no meaning.
+  gearPreferences GearPreference[]
   createdAt DateTime                   @default(now())
   updatedAt DateTime                   @default(now()) @updatedAt
 
@@ -395,10 +400,36 @@ model Gear {
   activityTypes GearToTrackActivityTypes[]
   // feature-122: the tracks this gear item was used for.
   tracks        Track[]
+  // feature-124: the per-activity-type preferences that point at this item.
+  gearPreferences GearPreference[]
   createdAt     DateTime                   @default(now())
   updatedAt     DateTime                   @default(now()) @updatedAt
 
   @@index([userId])
+}
+
+// feature-124: one preferred gear record per activity type and owner.
+//
+// The direction of the pointer is the question the owner asks: "what do I
+// prefer for walks?" — so the row is keyed by the owner and the activity type
+// and points at the gear record. One pair of shoes may be preferred for
+// several types, which a column on the gear record could not express.
+//
+// The composite primary key *is* the rule: one row per owner and type means
+// changing a preference is an update of that row, never a delete-then-insert
+// that could momentarily leave the type with no preference.
+model GearPreference {
+  userId         String
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  activityTypeId String
+  activityType   TrackActivityType @relation(fields: [activityTypeId], references: [id], onDelete: Cascade)
+  gearId         String
+  gear           Gear             @relation(fields: [gearId], references: [id], onDelete: Cascade)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @default(now()) @updatedAt
+
+  @@id([userId, activityTypeId])
+  @@index([gearId])
 }
 
 model GearToTrackActivityTypes {

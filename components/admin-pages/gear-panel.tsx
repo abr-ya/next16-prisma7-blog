@@ -1,10 +1,17 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
 import { useT } from "next-i18next/client";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
+import { toast } from "sonner";
 
-import { deleteGear, type GearListItem } from "@/app/_data/gear";
+import {
+  clearPreferredGearForActivityType,
+  deleteGear,
+  type GearListItem,
+  type OwnerGearPreferences,
+} from "@/app/_data/gear";
 import { navigationNamespace } from "@/app/i18n/settings";
 import { createGearColumns } from "@/components/admin-pages/gear-columns";
 import { GearFormDialog } from "@/components/admin-pages/gear-form-dialog";
@@ -20,9 +27,13 @@ import { useDeleteRowConfirm } from "@/lib/use-delete-row-confirm";
 type GearPanelProps = {
   gear: GearListItem[];
   activityTypes: TrackActivityType[];
+  // feature-124: the owner's preferred gear per activity type. The map comes
+  // from the page, which reads it with the owner's scope.
+  preferences: OwnerGearPreferences;
 };
 
-export const GearPanel = ({ gear, activityTypes }: GearPanelProps) => {
+export const GearPanel = ({ gear, activityTypes, preferences }: GearPanelProps) => {
+  const router = useRouter();
   const { i18n } = useT(navigationNamespace);
   const activeLanguage = i18n.resolvedLanguage ?? i18n.language;
   const [formOpen, setFormOpen] = useState(false);
@@ -43,17 +54,38 @@ export const GearPanel = ({ gear, activityTypes }: GearPanelProps) => {
     notFoundMsg: "Gear not found",
   });
 
+  // feature-124: dropping the preference for an activity type. The action
+  // carries the owner scope itself, so this only reports what happened and
+  // asks the page for the new state.
+  const handleClearPreference = useCallback(
+    async (activityTypeId: string) => {
+      const result = await clearPreferredGearForActivityType(activityTypeId);
+
+      if (!result.ok) {
+        toast.error(result.message);
+
+        return;
+      }
+
+      toast.success("Default cleared");
+      router.refresh();
+    },
+    [router],
+  );
+
   const columns = useMemo(
     () =>
       createGearColumns({
         activeLanguage,
+        preferences,
         onEditGear: (gearItem) => {
           setEditingGear(gearItem);
           setFormOpen(true);
         },
         onSetDeleteTarget: deleteConfirm.setTarget,
+        onClearPreference: handleClearPreference,
       }),
-    [activeLanguage, deleteConfirm.setTarget],
+    [activeLanguage, deleteConfirm.setTarget, handleClearPreference, preferences],
   );
 
   const activityTypeOptions = useMemo(

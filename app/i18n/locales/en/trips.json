@@ -107,10 +107,12 @@
     "success": "Workout added",
     "error": "Failed to add the workout",
     "statsSummary": "Distance: {{distance}} · Duration: {{duration}} · Start: {{start}}",
+    "rememberGearLabel": "Remember this gear for the “{{activity}}” activity",
     "activities": {
       "walking": {
         "addLabel": "Add a walk",
         "noun": "walk",
+        "rememberGearLabel": "Remember this gear for walks",
         "dayparts": {
           "morning": "Morning",
           "day": "Daytime",

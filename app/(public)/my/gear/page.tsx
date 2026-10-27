@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { getOwnerGear } from "@/app/_data/gear";
+import { getOwnerGear, getOwnerGearPreferences } from "@/app/_data/gear";
 import { getActiveTrackActivityTypes } from "@/app/_data/track-activity-types";
 import { GearPanel } from "@/components/admin-pages/gear-panel";
 import { PageLayout } from "@/components/layout/page-layout";
@@ -17,11 +17,17 @@ export const metadata: Metadata = buildPageMetadata({
 
 const MyGearPage = async () => {
   await requireAuth();
-  const [gear, activityTypes] = await Promise.all([getOwnerGear(), getActiveTrackActivityTypes()]);
+  // feature-124: the preferences come with the rest of the page, in one read
+  // and with the owner's scope.
+  const [gear, activityTypes, preferences] = await Promise.all([
+    getOwnerGear(),
+    getActiveTrackActivityTypes(),
+    getOwnerGearPreferences(),
+  ]);
 
   return (
     <PageLayout title="My gear" contentWidth="wide" className="pt-6">
-      <GearPanel gear={gear} activityTypes={activityTypes} />
+      <GearPanel gear={gear} activityTypes={activityTypes} preferences={preferences} />
     </PageLayout>
   );
 };

@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { getTrackActivityTypeById } from "@/app/_data/track-activity-types";
 import { Prisma } from "@/generated/prisma/client";
 import { AuthorizationError, requireActionUser } from "@/lib/auth-utils";
+import { gearFitsActivityType } from "@/lib/gear";
 
 // feature-121: the private, owner-only gear inventory. Every helper resolves
 // the owner from the session — the client never sends an owner id — and every
@@ -69,6 +70,47 @@ export type GearValues = {
   name?: string | null;
   activityTypeIds?: string[] | null;
 };
+
+// feature-124: the preferred gear record per activity type. The map is keyed
+// by the activity type id, so a page reads the whole set in one query and
+// never has to ask about a second type. The activity type travels with the
+// entry because the gear page has to name the type in the interface
+// language, and the dictionary value may be inactive by then — a deactivated
+// type keeps its preference (the classification stays, only the offer goes).
+export type OwnerGearPreference = {
+  gearId: string;
+  activityType: {
+    id: string;
+    nameEn: string;
+    nameRu: string | null;
+  };
+};
+
+export type OwnerGearPreferences = Record<string, OwnerGearPreference>;
+
+export type GearPreferenceResult = { ok: true } | { ok: false; code: GearErrorCode; message: string };
+
+const gearPreferenceSelect = {
+  gearId: true,
+  activityType: {
+    select: {
+      id: true,
+      nameEn: true,
+      nameRu: true,
+    },
+  },
+} satisfies Prisma.GearPreferenceSelect;
+
+type GearPreferenceWithType = Prisma.GearPreferenceGetPayload<{ select: typeof gearPreferenceSelect }>;
+
+// The gear record with its activity type ids — the shape the compatibility
+// rule is checked against.
+const gearWithTypeIdsSelect = {
+  id: true,
+  activityTypes: { select: { activityTypeId: true } },
+} satisfies Prisma.GearSelect;
+
+type GearWithTypeIds = Prisma.GearGetPayload<{ select: typeof gearWithTypeIdsSelect }>;
 
 const getOwnerUserId = async () => {
   const user = await requireActionUser();
@@ -197,16 +239,48 @@ export const updateGear = async ({ id, ...values }: GearValues & { id?: string |
 
     if (!activityTypes.ok) return { ok: false, code: "VALIDATION", message: activityTypes.message };
 
-    const gear = await prisma.gear.update({
-      where: { id: existingGear.id },
-      data: {
-        name: name.name,
-        activityTypes: {
-          deleteMany: {},
-          create: activityTypes.activityTypeIds.map((activityTypeId) => ({ activityTypeId })),
+    const nextActivityTypeIds = activityTypes.activityTypeIds;
+    const previousActivityTypeIds = existingGear.activityTypes.map((link) => link.activityTypeId);
+    const removedActivityTypeIds = previousActivityTypeIds.filter((id) => !nextActivityTypeIds.includes(id));
+
+    // feature-124: the preference for an activity type the owner just removed
+    // from the record goes in the same save — the removal *is* the statement
+    // "these are not for that any more". A record that becomes classified
+    // also loses the preferences for the types it does not carry, because it
+    // no longer fits them. A record that stays unclassified keeps them: an
+    // unclassified record fits every type.
+    const gear = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      const updated = await tx.gear.update({
+        where: { id: existingGear.id },
+        data: {
+          name: name.name,
+          activityTypes: {
+            deleteMany: {},
+            create: nextActivityTypeIds.map((activityTypeId) => ({ activityTypeId })),
+          },
         },
-      },
-      select: gearListSelect,
+        select: gearListSelect,
+      });
+
+      if (nextActivityTypeIds.length) {
+        await tx.gearPreference.deleteMany({
+          where: {
+            userId,
+            gearId: existingGear.id,
+            activityTypeId: { notIn: nextActivityTypeIds },
+          },
+        });
+      } else if (removedActivityTypeIds.length) {
+        await tx.gearPreference.deleteMany({
+          where: {
+            userId,
+            gearId: existingGear.id,
+            activityTypeId: { in: removedActivityTypeIds },
+          },
+        });
+      }
+
+      return updated;
     });
 
     revalidatePath("/my/gear");
@@ -251,6 +325,122 @@ export const deleteGear = async (id: string | null | undefined): Promise<GearDel
     await prisma.gear.delete({ where: { id: existingGear.id } });
 
     revalidatePath("/my/gear");
+
+    return { ok: true };
+  } catch (error) {
+    if (error instanceof AuthorizationError) return unauthorized();
+
+    throw error;
+  }
+};
+
+/**
+ * feature-124: the owner's preferences, read as one map keyed by the activity
+ * type id. The owner comes from the session, so another owner's preferences
+ * are never in the result — the privacy of the preference is a property of
+ * the read, not of the surface that shows it.
+ */
+export const getOwnerGearPreferences = async (): Promise<OwnerGearPreferences> => {
+  const userId = await getOwnerUserId();
+  const { default: prisma } = await import("@/lib/prisma");
+  const preferences: GearPreferenceWithType[] = await prisma.gearPreference.findMany({
+    where: { userId },
+    select: gearPreferenceSelect,
+  });
+  const entries = preferences.map((preference) => {
+    const entry: OwnerGearPreference = {
+      gearId: preference.gearId,
+      activityType: preference.activityType,
+    };
+
+    return [preference.activityType.id, entry] as const;
+  });
+
+  return Object.fromEntries(entries);
+};
+
+/**
+ * feature-124: the owner names one gear record as the preferred one for an
+ * activity type. The rules are the ones the attachment already applies: the
+ * record must belong to the owner, the type must be a live dictionary value,
+ * and the record must fit the type — the same compatibility helper
+ * (feature-122, decision 3), so the owner learns it once.
+ */
+export const setPreferredGearForActivityType = async ({
+  activityTypeId,
+  gearId,
+}: {
+  activityTypeId: string | null | undefined;
+  gearId: string | null | undefined;
+}): Promise<GearPreferenceResult> => {
+  try {
+    const userId = await getOwnerUserId();
+    const typeId = (activityTypeId ?? "").trim();
+    const gearRecordId = (gearId ?? "").trim();
+
+    if (!typeId) return { ok: false, code: "VALIDATION", message: "Activity type is required" };
+    if (!gearRecordId) return { ok: false, code: "VALIDATION", message: "Gear is required" };
+
+    // `getTrackActivityTypeById` returns `null` for an unknown *and* for an
+    // inactive id, so both are refused the same way.
+    const activityType = await getTrackActivityTypeById(typeId);
+
+    if (!activityType) return { ok: false, code: "VALIDATION", message: "Selected activity type is not available" };
+
+    const { default: prisma } = await import("@/lib/prisma");
+    const gear: GearWithTypeIds = await prisma.gear.findFirst({
+      where: { id: gearRecordId, userId },
+      select: gearWithTypeIdsSelect,
+    });
+
+    if (!gear) return { ok: false, code: "NOT_FOUND", message: "Gear not found" };
+
+    if (
+      !gearFitsActivityType(
+        gear.activityTypes.map((link) => link.activityTypeId),
+        typeId,
+      )
+    ) {
+      return { ok: false, code: "VALIDATION", message: "This gear does not fit the selected activity type" };
+    }
+
+    await prisma.gearPreference.upsert({
+      where: { userId_activityTypeId: { userId, activityTypeId: typeId } },
+      create: { userId, activityTypeId: typeId, gearId: gear.id },
+      update: { gearId: gear.id },
+    });
+
+    revalidatePath("/my/gear");
+    revalidatePath("/my/workouts");
+
+    return { ok: true };
+  } catch (error) {
+    if (error instanceof AuthorizationError) return unauthorized();
+
+    throw error;
+  }
+};
+
+/**
+ * feature-124: the owner drops the preference for an activity type. The
+ * delete is owner-scoped, so another owner's preference for the same type is
+ * untouched, and a type that carries no preference is a no-op.
+ */
+export const clearPreferredGearForActivityType = async (
+  activityTypeId: string | null | undefined,
+): Promise<GearPreferenceResult> => {
+  try {
+    const userId = await getOwnerUserId();
+    const typeId = (activityTypeId ?? "").trim();
+
+    if (!typeId) return { ok: false, code: "VALIDATION", message: "Activity type is required" };
+
+    const { default: prisma } = await import("@/lib/prisma");
+
+    await prisma.gearPreference.deleteMany({ where: { userId, activityTypeId: typeId } });
+
+    revalidatePath("/my/gear");
+    revalidatePath("/my/workouts");
 
     return { ok: true };
   } catch (error) {

@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useT } from "next-i18next/client";
 import { useCallback, useMemo, useRef, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 import z from "zod";
 
@@ -45,6 +45,9 @@ import { useDiscardGuardedTrackForm } from "@/lib/use-discard-guarded-track-form
 const quickWorkoutSchema = z.object({
   title: z.string().min(1, { message: "Title is required" }),
   gearId: z.string().optional(),
+  // feature-124: the owner asks for the attached gear to become the preferred
+  // one for this activity type. It is off unless the owner says otherwise.
+  rememberGear: z.boolean().optional(),
 });
 
 type QuickWorkoutFormValues = z.infer<typeof quickWorkoutSchema>;
@@ -57,12 +60,19 @@ export type QuickWorkoutActivityType = {
 export const QuickWorkoutUploadDialog = ({
   activityType,
   ownerGear,
+  preferredGearId,
   open,
   onOpenChange,
   onSaved,
 }: {
   activityType: QuickWorkoutActivityType;
   ownerGear: TrackGearOption[];
+  /**
+   * feature-124: the owner's preferred gear record for this activity type.
+   * It is offered as the default in the gear field; it never overrides the
+   * owner's own pick.
+   */
+  preferredGearId?: string | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSaved?: () => void;
@@ -79,19 +89,51 @@ export const QuickWorkoutUploadDialog = ({
   // overwritten — only a previous suggestion is replaced by a new one.
   const suggestedTitleRef = useRef<string | null>(null);
 
+  // feature-124: the gear that fits this activity type. The owner's own
+  // compatibility rule decides, the same one the attachment uses.
+  const fittingGear = useMemo(
+    () =>
+      ownerGear.filter((item) =>
+        gearFitsActivityType(
+          item.activityTypes.map((link) => link.activityTypeId),
+          activityType.id,
+        ),
+      ),
+    [activityType.id, ownerGear],
+  );
+
+  // feature-124: the preferred gear for this activity type is offered as the
+  // default. A default is not a decision — the owner may pick another item,
+  // or none at all.
+  const preselectedGearId = useMemo(
+    () => (preferredGearId && fittingGear.some((item) => item.id === preferredGearId) ? preferredGearId : ""),
+    [fittingGear, preferredGearId],
+  );
+
   const form = useForm<QuickWorkoutFormValues>({
     resolver: zodResolver(quickWorkoutSchema),
-    defaultValues: { title: "", gearId: "" },
+    defaultValues: { title: "", gearId: preselectedGearId, rememberGear: false },
     mode: "onBlur",
   });
+
+  const selectedGearId = useWatch({ control: form.control, name: "gearId" });
 
   const wordingPrefix = `quickWorkout.activities.${activityType.key}`;
   const noun = i18n.exists(`${wordingPrefix}.noun`, { ns: tripsNamespace })
     ? t(`${wordingPrefix}.noun`)
     : capitalizeQuickWorkoutNoun(activityType.key);
 
+  // feature-124: the control names the activity type in the interface
+  // language. The wording dictionary owns the grammar of that name — the
+  // Russian form of a preposition needs a case the generic wording cannot
+  // guess — so the activity type carries its own entry, and the generic
+  // wording is the fallback for a type that has none.
+  const rememberGearLabel = i18n.exists(`${wordingPrefix}.rememberGearLabel`, { ns: tripsNamespace })
+    ? t(`${wordingPrefix}.rememberGearLabel`)
+    : t("quickWorkout.rememberGearLabel", { activity: noun });
+
   const resetFormState = useCallback(() => {
-    form.reset({ title: "", gearId: "" });
+    form.reset({ title: "", gearId: preselectedGearId, rememberGear: false });
     suggestedTitleRef.current = null;
     setFileAssetId(null);
     setFileName(null);
@@ -99,7 +141,7 @@ export const QuickWorkoutUploadDialog = ({
     setSlugBase(null);
     setBrowserTimeZone(null);
     setUploadError(null);
-  }, [form]);
+  }, [form, preselectedGearId]);
 
   const discardGuard = useDiscardGuardedTrackForm({
     hasUnsavedChanges: form.formState.isDirty,
@@ -184,17 +226,6 @@ export const QuickWorkoutUploadDialog = ({
     [discardGuard],
   );
 
-  const fittingGear = useMemo(
-    () =>
-      ownerGear.filter((item) =>
-        gearFitsActivityType(
-          item.activityTypes.map((link) => link.activityTypeId),
-          activityType.id,
-        ),
-      ),
-    [activityType.id, ownerGear],
-  );
-
   const handleSubmit = form.handleSubmit(async (values) => {
     if (!fileAssetId) {
       toast.error(t("quickWorkout.fileRequired"));
@@ -210,6 +241,10 @@ export const QuickWorkoutUploadDialog = ({
         title: values.title,
         slug: slugBase,
         gearId: values.gearId || null,
+        // feature-124: the owner asked for this gear to become the preferred
+        // one for this activity type. The server writes the preference in the
+        // same transaction as the workout.
+        rememberGearAsPreferred: values.rememberGear === true,
         // The fallback for a file that names no UTC offset: the device that
         // wrote it is then the only reference there is. The server validates
         // the value before it stores it.
@@ -326,6 +361,34 @@ export const QuickWorkoutUploadDialog = ({
                 />
               ) : ownerGear.length > 0 ? (
                 <p className="text-muted-foreground text-sm">{t("quickWorkout.gearEmpty")}</p>
+              ) : null}
+
+              {/* feature-124: the control is offered only when a gear item is
+                  attached — there is nothing to remember otherwise. */}
+              {selectedGearId ? (
+                <FormField
+                  control={form.control}
+                  name="rememberGear"
+                  render={({ field }) => (
+                    <FormItem>
+                      <div className="flex items-center gap-2">
+                        <FormControl>
+                          <input
+                            type="checkbox"
+                            name={field.name}
+                            ref={field.ref}
+                            checked={field.value === true}
+                            onChange={(event) => field.onChange(event.target.checked)}
+                            onBlur={field.onBlur}
+                            disabled={isSaving}
+                            className="size-4 accent-primary"
+                          />
+                        </FormControl>
+                        <FormLabel className="font-normal">{rememberGearLabel}</FormLabel>
+                      </div>
+                    </FormItem>
+                  )}
+                />
               ) : null}
 
               <DialogFooter>
