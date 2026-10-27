@@ -1482,7 +1482,7 @@ const ensureUniqueTrackSlug = async (base: string) => {
  *
  * The owner drops a GPX file into a small dialog, the browser suggests a
  * title from the file, and the save fills in everything else: the activity
- * type the button was bound to, the kind (`TRAINING`), the status (`DRAFT`),
+ * type the button was bound to, the kind (`TRAINING`), the status (`PUBLISHED`),
  * a unique slug, the parsed metadata and the mirrored recording columns.
  *
  * The order of the checks is the order of the refusals:
@@ -1581,9 +1581,11 @@ export const createQuickWorkout = async (input: CreateQuickWorkoutInput): Promis
           title: normalizedTitle,
           slug,
           description: null,
-          // The quick upload creates a draft: publishing stays an explicit act
-          // in the track form.
-          status: "DRAFT",
+          // feature-125: the quick upload publishes. The recording is already
+          // made and the title is already suggested from the file, so the
+          // workout joins the public site without a second step — the owner
+          // unpublishes it from the track form if it was a mistake.
+          status: "PUBLISHED",
           // The button lives on "My workouts", and the kind is what that page
           // lists.
           kind: "TRAINING",
