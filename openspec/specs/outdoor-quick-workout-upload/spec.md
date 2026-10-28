@@ -145,7 +145,7 @@ The system SHALL create the workout from the uploaded file alone, SHALL bind it 
 - **THEN** the system creates a track that belongs to that owner
 - **AND** the track carries the dialog's activity type
 - **AND** the track is a workout
-- **AND** the track is a draft
+- **AND** the track is published
 - **AND** the track's distance, duration, and recording start come from the uploaded file
 - **AND** the track's slug is unique and is derived from the activity type and the recording date and time
 
@@ -186,6 +186,23 @@ The system SHALL create the workout from the uploaded file alone, SHALL bind it 
 - **WHEN** a signed-in owner saves the quick upload dialog with a gear item selected
 - **THEN** the system attaches that gear item to the created track
 - **AND** it refuses a gear item that belongs to another owner or that does not fit the dialog's activity type
+
+### Requirement: The quick upload publishes the workout it creates
+
+The system SHALL create the quick upload's track with the published status, so that the workout the owner has just recorded is part of the public site without a second step.
+
+#### Scenario: The saved workout is published
+
+- **WHEN** a signed-in owner saves the quick upload dialog with a file and a title
+- **THEN** the system creates the track with the published status
+- **AND** the track is listed among the published tracks
+- **AND** the public page of that track is reachable by its slug
+
+#### Scenario: The published workout offers no GPX download
+
+- **WHEN** a signed-in owner opens the public page of a track that a quick upload created from a parsed file
+- **THEN** the page shows the track's title and its parsed metadata
+- **AND** it offers no download of the GPX file
 
 ### Requirement: The quick upload reuses the shared upload and discard rules
 
