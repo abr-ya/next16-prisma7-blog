@@ -11,7 +11,7 @@ Found while extracting the shared discard lifecycle in `refactor-003-discard-gua
 ## What Changes
 
 - **The trip-side `Add track` dialog confirms the removal.** When a confirmed discard actually removes an uploaded GPX file, the trip creator now sees the same `Uploaded GPX file discarded` confirmation the admin form shows.
-- **The shared hook stops taking the toast text as an option.** The wording is one string in one place and both forms show it, so `discardedMsg` disappears from `useDiscardGuardedTrackForm` and the hook drops to five options: `savedFileAssetId`, `hasUnsavedChanges`, `hasUnsavedPoints`, `resetFormState`, `onOpenChange`.
+- **The shared hook stops taking the toast text as an option.** The wording is one string in one place and every consumer shows it, so `discardedMsg` disappears from `useDiscardGuardedTrackForm` and the hook drops to five options: `savedFileAssetId`, `hasUnsavedChanges`, `hasUnsavedPoints`, `resetFormState`, `onOpenChange`.
 
 Nothing else changes. A discard that removes no file still shows no confirmation (the toast stays inside the file-removal branch), the error path is untouched, and the admin form's behavior is byte-for-byte what it is today.
 
@@ -39,6 +39,6 @@ None.
 - **Schemas**: no Prisma migration, no database impact.
 - **Routes**: none. One call site is an admin-only component under `/admin`; the other is the public trip-page dialog.
 - **Public surfaces**: one new toast on the public trip-page `Add track` dialog. No new markup, no new route, no new data.
-- **Code**: 1 hook file modified, 1 admin component modified, 0 changes in the public form (it gains the toast through the hook).
+- **Code**: 1 hook file modified, 2 components modified (the admin track panel and the quick workout upload dialog, which already passed the same wording), 0 changes in the public form (it gains the toast through the hook).
 - **Server actions**: `markDiscardedTrackGpxFileAssetsPendingDelete` is unchanged and still called with the same id set.
 - **Depends on**: `refactor-003-discard-guarded-track-form` must land first — see `design.md`.

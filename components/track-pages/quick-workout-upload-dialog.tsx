@@ -147,7 +147,6 @@ export const QuickWorkoutUploadDialog = ({
     hasUnsavedChanges: form.formState.isDirty,
     resetFormState,
     onOpenChange,
-    discardedMsg: "Uploaded GPX file discarded",
   });
 
   const suggestTitle = useCallback(

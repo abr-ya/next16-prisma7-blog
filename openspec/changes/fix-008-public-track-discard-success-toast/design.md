@@ -33,6 +33,8 @@ if (discardedMsg) {
 
 The admin form passes `discardedMsg: "Uploaded GPX file discarded"`; the public form passes nothing.
 
+There is a **third** consumer: `components/track-pages/quick-workout-upload-dialog.tsx`, added by feature-123 after this change's artifacts were written. It passes the same option with the same wording, so it shows the same toast today and must be updated together with the admin form — otherwise the removed option breaks the type check.
+
 ## The change
 
 **1. In `lib/use-discard-guarded-track-form.ts`** — drop the option and hardcode the wording:
@@ -55,7 +57,9 @@ startDiscarding(async () => {
 
 **2. In `components/admin-pages/tracks-admin-panel.tsx`** — remove `discardedMsg: "Uploaded GPX file discarded"` from the hook call. The admin's behavior is unchanged: same toast, same place, same moment.
 
-**3. In `components/hike-pages/hike-track-contribution-form.tsx`** — no change. The public form gains the toast through the hook.
+**3. In `components/track-pages/quick-workout-upload-dialog.tsx`** — remove `discardedMsg: "Uploaded GPX file discarded"` from the hook call. This consumer also keeps its behavior: it already showed that wording, and now shows it through the hook instead of through the option.
+
+**4. In `components/hike-pages/hike-track-contribution-form.tsx`** — no change. The public form gains the toast through the hook.
 
 After this, the hook's options are `savedFileAssetId`, `hasUnsavedChanges`, `hasUnsavedPoints`, `resetFormState`, `onOpenChange` — of which two are empty on the public side and one carries a per-form dirty term. The success toast is no longer a divergence between the two forms.
 
@@ -81,13 +85,13 @@ If the action fails, the error toast shows and the modal stays open. The success
 
 ## What is left in the hook after this change
 
-| Option | Admin | Public | Why it stays |
-| --- | --- | --- | --- |
-| `savedFileAssetId` | the edited row's file | empty | the admin must not delete the persisted file |
-| `hasUnsavedChanges` | `formState.isDirty` | `isDirty && tab === "upload"` | each form's submit path uses different form values |
-| `hasUnsavedPoints` | staged map points | empty | only the admin can place points |
-| `resetFormState` | clears points + form | clears form | the admin has extra staged state |
-| `onOpenChange` | the admin dialog | the trip dialog | each wraps its own dialog |
+| Option | Admin | Quick workout | Public | Why it stays |
+| --- | --- | --- | --- | --- |
+| `savedFileAssetId` | the edited row's file | empty | empty | the admin must not delete the persisted file |
+| `hasUnsavedChanges` | `formState.isDirty` | `form.formState.isDirty` | `isDirty && tab === "upload"` | each form's submit path uses different form values |
+| `hasUnsavedPoints` | staged map points | empty | empty | only the admin can place points |
+| `resetFormState` | clears points + form | clears the file, the preview and the form | clears form | the admin has extra staged state |
+| `onOpenChange` | the admin dialog | the quick upload dialog | the trip dialog | each wraps its own dialog |
 
 Five options, three of them carrying a real per-form difference. That is the floor for a shared hook over two different forms — see `refactor-003`'s design for why the dirty term is not drift.
 
@@ -101,3 +105,4 @@ Five options, three of them carrying a real per-form difference. That is the flo
 | A success toast on the error path | The error branch returns before the toast; unchanged |
 | The fix lands inside the refactor's commit and forfeits the refactor pool | The refactor commits first; this change is a separate commit and a separate numbered change |
 | The public form's toast duplicates another one | The public form's own `toast` calls are on the attach and submit paths, not the discard path — confirmed in `refactor-003` |
+| A call site that still passes `discardedMsg` breaks the build | The quick workout dialog (feature-123) is the third consumer and is updated in the same change; `npm run tsc` catches any other one |

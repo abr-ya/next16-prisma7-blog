@@ -20,8 +20,6 @@ type DiscardGuardedTrackFormOptions = {
   resetFormState: () => void;
   /** Opens / closes the surrounding dialog. */
   onOpenChange: (open: boolean) => void;
-  /** Success toast after a successful discard. Omit for no success toast. */
-  discardedMsg?: string;
 };
 
 type DiscardGuardedTrackForm = {
@@ -50,11 +48,11 @@ type DiscardGuardedTrackForm = {
 };
 
 /**
- * Owns the "discard unsaved changes" lifecycle shared by the admin track form
- * and the public trip-page track form.
+ * Owns the "discard unsaved changes" lifecycle shared by the admin track form,
+ * the quick workout upload dialog and the public trip-page track form.
  *
- * The two forms guard different things and toast different messages, so the
- * differences are options rather than a unified behavior. See
+ * The forms guard different things, so the differences are options rather than
+ * a unified behavior. See
  * `openspec/changes/refactor-003-discard-guarded-track-form/design.md`.
  *
  * The hook deliberately does NOT reset the uploaded ids when the dialog opens:
@@ -67,7 +65,6 @@ export const useDiscardGuardedTrackForm = ({
   hasUnsavedPoints = false,
   resetFormState,
   onOpenChange,
-  discardedMsg,
 }: DiscardGuardedTrackFormOptions): DiscardGuardedTrackForm => {
   const [uploadedFileAssetIds, setUploadedFileAssetIds] = useState<string[]>([]);
   const [discardConfirmOpen, setDiscardConfirmOpen] = useState(false);
@@ -130,13 +127,11 @@ export const useDiscardGuardedTrackForm = ({
         return;
       }
 
-      if (discardedMsg) {
-        toast.success(discardedMsg);
-      }
+      toast.success("Uploaded GPX file discarded");
 
       closeWithoutGuard();
     });
-  }, [closeWithoutGuard, discardableFileAssetIds, discardedMsg]);
+  }, [closeWithoutGuard, discardableFileAssetIds]);
 
   const confirmDialogProps = {
     open: discardConfirmOpen,
