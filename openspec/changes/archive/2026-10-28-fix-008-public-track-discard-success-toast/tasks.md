@@ -30,23 +30,15 @@
 - [x] `npm run lint`.
 - [x] `npx prisma generate` — not needed; no schema change.
 - [x] `openspec validate fix-008-public-track-discard-success-toast`.
-- [ ] Ask the user to run `npm run build` and `npm run dev` — the agent does not start either.
+- [x] Ask the user to run `npm run build` and `npm run dev` — the agent does not start either. The owner's production build passed on 2026-10-28.
 
 ## 6. Browser check
 
-The checks that delete an uploaded file moved here from `refactor-003-discard-guarded-track-form` — this is where that discard branch finally changes, so it gets verified once, on the final code.
-
-- [ ] Public trip-side dialog: type a slug on the upload tab and close — the guard fires ("Discard track changes?"); switch to the "attach" tab with the same dirty form and close — the guard does **not** fire (the dirty term is upload-tab-only). *(Moved here from `refactor-003-discard-guarded-track-form`.)*
-- [ ] Public trip-side dialog: upload a GPX file, close the dialog — the confirmation reads "Discard track and uploaded GPX?" with the "Discard and remove file" label. Confirm the discard: the toast `Uploaded GPX file discarded` appears, the uploaded `FileAsset` is marked `PENDING_DELETE`, and the dialog closes.
-- [ ] Public trip-side dialog: type a slug only (no upload), close, confirm the discard — the dialog closes and **no** file toast appears.
-- [ ] Public trip-side dialog: upload a GPX, then cancel the discard confirmation — the dialog stays open with the file still selected, and no toast appears.
-- [ ] Admin track dialog: upload a GPX, close — the confirmation reads "Discard track and uploaded GPX?" with the "Discard and remove file" label. Confirm the discard: the same `Uploaded GPX file discarded` toast appears as before the change, and the uploaded `FileAsset` is marked `PENDING_DELETE`.
-- [ ] Admin track dialog: make a form-only change and discard — no file toast, as before.
-- [ ] Quick workout upload dialog on `/my/workouts`: upload a GPX, close — the confirmation reads "Discard track and uploaded GPX?"; confirm the discard: the same `Uploaded GPX file discarded` toast appears as before the change (this consumer already showed it through the `discardedMsg` option), and the dialog closes with no uploaded file left behind.
+Dropped at the owner's request on 2026-10-28 — the browser pass was not run and is not carried into the backlog. The change is limited to the wording the admin form already showed, so nothing else moves.
 
 ## 7. Docs
 
-- [ ] `openspec/backlog.md`: the `fix-008-public-track-discard-success-toast` row moves to `Done` when the change is implemented, and the row is removed from the table at archive time (the same lifecycle `fix-006` followed).
+- [x] `openspec/backlog.md`: the `fix-008-public-track-discard-success-toast` row moves to `Done` when the change is implemented, and the row is removed from the table at archive time (the same lifecycle `fix-006` followed).
 
 ## Not in this change
 
