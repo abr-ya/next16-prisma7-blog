@@ -1,0 +1,62 @@
+# Tasks
+
+## 1. Add the copy to the `trips` namespace
+
+- [ ] 1.1 In `app/i18n/locales/en/trips.json`, add the `discardGuard` block with the eleven keys from `design.md` — `titleWithFile`, `titleWithPoints`, `titleChanges`, `descriptionWithFile`, `descriptionWithPoints`, `descriptionChanges`, `confirmWithFile`, `confirmChanges`, `successToast`, `errorNotSafe`, `errorNotOwner` — appended after the `quickWorkout` block. Every English value is the current literal in `lib/use-discard-guarded-track-form.ts`, character for character; `errorNotSafe` and `errorNotOwner` are the action's two English messages from `app/_actions/files.ts`.
+- [ ] 1.2 In `app/i18n/locales/ru/trips.json`, add the same block with the same eleven keys, in the same order, using the approved Russian strings from `design.md`. No key uses a placeholder, so none can hit the single-brace interpolation bug the older `trips` keys carry.
+- [ ] 1.3 Verify both files still parse as JSON and carry the same keys: `node -e "const en=require('./app/i18n/locales/en/trips.json').discardGuard,ru=require('./app/i18n/locales/ru/trips.json').discardGuard,k=o=>Object.keys(o).sort().join(',');if(k(en)!==k(ru))throw new Error('key mismatch');console.log(Object.keys(en).length+' keys in both')"` — must print `11 keys in both`.
+
+## 2. Read the copy in the shared hook
+
+- [ ] 2.1 In `lib/use-discard-guarded-track-form.ts`, import `useT` from `next-i18next/client` and `tripsNamespace` from `@/app/i18n/settings`, and call `const { t } = useT(tripsNamespace);` at the top of the hook — the same shape as `lib/track-row-actions.ts`.
+- [ ] 2.2 Replace the three titles with `t("discardGuard.titleWithFile")`, `t("discardGuard.titleWithPoints")`, `t("discardGuard.titleChanges")`, keeping the ternary chain and its order (uploads → points → changes).
+- [ ] 2.3 Replace the three descriptions with `t("discardGuard.descriptionWithFile")`, `t("discardGuard.descriptionWithPoints")`, `t("discardGuard.descriptionChanges")`, same structure and order.
+- [ ] 2.4 Replace the two confirm labels with `t("discardGuard.confirmWithFile")` and `t("discardGuard.confirmChanges")`.
+- [ ] 2.5 Replace the success toast with `t("discardGuard.successToast")`, keeping it inside the branch that only runs when at least one uploaded file is actually marked for deletion — a discard with no uploaded file still shows no toast.
+- [ ] 2.6 Drop the unreachable fallback `"Uploaded GPX file could not be removed"` from the error branch; the branch is rewritten in group 3.
+- [ ] 2.7 Add `t` to `handleConfirmDiscard`'s dependency array, so a language change cannot leave a stale `t` in the closure.
+- [ ] 2.8 Update the hook's doc comment to say the guard's copy comes from the `trips` namespace, so the next reader does not look for the strings in the file.
+- [ ] 2.9 Confirm the guard's behavior is untouched: the same branches fire in the same order, `toast.success` still precedes `closeWithoutGuard()`, the error branch still returns before the toast, and `confirmDialogProps` keeps its shape — same keys, same `confirmVariant`, same `isPending`.
+
+## 3. Localize the failure toast through an error code
+
+- [ ] 3.1 In `app/_actions/files.ts`, declare `export type DiscardTrackGpxErrorCode = "NOT_SAFE" | "NOT_OWNER";` and a `DiscardTrackGpxResult` union — `{ success: true; message: string } | { success: false; message: string; code: DiscardTrackGpxErrorCode }` — and annotate `markDiscardedTrackGpxFileAssetsPendingDelete` with it, so `success` discriminates and `code` is reachable on the failure branch.
+- [ ] 3.2 Add `code: isAdmin ? "NOT_SAFE" : "NOT_OWNER"` to the failure return. `message` stays exactly as it is — both English strings are kept for the action's other caller.
+- [ ] 3.3 In the hook's error branch, toast `t("discardGuard.errorNotOwner")` when the code is `NOT_OWNER` and `t("discardGuard.errorNotSafe")` otherwise, and stop reading `result.message` there.
+- [ ] 3.4 Confirm the action's other caller — `cleanupSupersededUploads` in `components/admin-pages/tracks-admin-panel.tsx` — is untouched and still reads `result.message`. It is a different path (the save-side cleanup of a superseded upload) and its English toast stays as it is.
+- [ ] 3.5 Confirm the English failure toast is byte-identical to today's: `discardGuard.errorNotSafe` is `"An uploaded GPX file is no longer safe to discard."` and `discardGuard.errorNotOwner` is `"You can only discard GPX files you uploaded."`.
+
+## 4. Confirm the three consumers need no edit
+
+- [ ] 4.1 Confirm `components/admin-pages/tracks-admin-panel.tsx`, `components/hike-pages/hike-track-contribution-form.tsx` and `components/track-pages/quick-workout-upload-dialog.tsx` need no change — none of them passes a string to the hook, so all three pick the localized copy up through the shared hook.
+- [ ] 4.2 Confirm `components/common/confirm-dialog.tsx` is not touched: the guard keeps using its default `cancelLabel`, and the seventeen other call sites are unaffected.
+
+## 5. Validate
+
+- [ ] 5.1 `npm run tsc` — must pass clean.
+- [ ] 5.2 `npx eslint lib/use-discard-guarded-track-form.ts --quiet` — `lib/` is outside `app/`, so the root lint script does not cover it. Run it without `--quiet` too.
+- [ ] 5.3 `npm run lint`.
+- [ ] 5.4 `npx prisma generate` — not needed; no schema change.
+- [ ] 5.5 `openspec validate fix-010-discard-guard-localization`.
+- [ ] 5.6 Ask the user to run `npm run build` — the agent does not start the dev server or run the build.
+
+## 6. Browser check
+
+- [ ] 6.1 With the interface in Russian: open the trip-side `Add track` dialog on `/trips/[slug]`, upload a GPX file, change a field, and close it — the guard's title, description and confirm label are in Russian.
+- [ ] 6.2 Same on the quick workout upload dialog on `/my/workouts`.
+- [ ] 6.3 Same on the admin track create/edit modal on `/admin/tracks`.
+- [ ] 6.4 Confirm a discard with an uploaded file confirms the removal in Russian, and a discard with no uploaded file still shows no file confirmation.
+- [ ] 6.5 Switch the interface to English and confirm the guard still reads exactly as it does today, including the failure toast's English wording.
+
+## 7. Docs
+
+- [ ] 7.1 `openspec/backlog.md`: the `fix-010-discard-guard-localization` row moves to `Done` when the change is implemented, and the row is removed from the table at archive time (the same lifecycle `fix-008` followed).
+
+## Not in this change
+
+- The shared `ConfirmDialog`'s `Cancel` default label, and the other seventeen call sites that share it — a separate sweep over `components/common/confirm-dialog.tsx`.
+- The admin track panel's other hardcoded English (`Track created`, `Track updated`, `Choose a supported IANA timezone`, `Recording timezone saved`, `Earlier uploaded GPX file could not be removed`, `Failed to save track`).
+- The admin panel's separate `cleanupSupersededUploads` path, which keeps the action's English `message`.
+- `fix-007-track-form-stale-upload-ids-after-mark-as-manual` — the admin dialog's "mark as manual" close path.
+- The single-brace interpolation bug in four existing `trips` keys (`photoTimezoneDialogTitleWithPhoto`, `trackEditorDistanceLabel`, `trackEditorMapSelectedPointAria`, `trackTimeSourceBadgeLabel`) — a separate candidate; the new keys use no placeholders.
+- `lib/track-row-actions.ts`'s own hardcoded English toasts (`GPX parsed`, `GPX parsing failed`, `Failed to parse GPX`, `Failed to mark track as manual`).
