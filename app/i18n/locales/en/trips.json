@@ -121,5 +121,18 @@
         }
       }
     }
+  },
+  "discardGuard": {
+    "titleWithFile": "Discard track and uploaded GPX?",
+    "titleWithPoints": "Discard placed points?",
+    "titleChanges": "Discard track changes?",
+    "descriptionWithFile": "This form has unsaved changes and an uploaded GPX file. Discarding will mark the unsaved uploaded GPX file for deletion before closing.",
+    "descriptionWithPoints": "This form has unsaved changes and placed map points. Discarding will close the modal without saving them.",
+    "descriptionChanges": "This form has unsaved changes. Discarding will close the modal without saving them.",
+    "confirmWithFile": "Discard and remove file",
+    "confirmChanges": "Discard changes",
+    "successToast": "Uploaded GPX file discarded",
+    "errorNotSafe": "An uploaded GPX file is no longer safe to discard.",
+    "errorNotOwner": "You can only discard GPX files you uploaded."
   }
 }
