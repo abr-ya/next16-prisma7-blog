@@ -1,9 +1,11 @@
 "use client";
 
+import { useT } from "next-i18next/client";
 import { useCallback, useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { markDiscardedTrackGpxFileAssetsPendingDelete } from "@/app/_actions/files";
+import { tripsNamespace } from "@/app/i18n/settings";
 
 type DiscardGuardedTrackFormOptions = {
   /**
@@ -55,6 +57,10 @@ type DiscardGuardedTrackForm = {
  * a unified behavior. See
  * `openspec/changes/refactor-003-discard-guarded-track-form/design.md`.
  *
+ * The guard's copy — titles, descriptions, button labels and toasts — comes
+ * from the `trips` namespace (`discardGuard.*`), so every surface shows it in
+ * the interface language.
+ *
  * The hook deliberately does NOT reset the uploaded ids when the dialog opens:
  * the two forms reset them differently today, and normalizing that would
  * change what the user sees.
@@ -66,6 +72,7 @@ export const useDiscardGuardedTrackForm = ({
   resetFormState,
   onOpenChange,
 }: DiscardGuardedTrackFormOptions): DiscardGuardedTrackForm => {
+  const { t } = useT(tripsNamespace);
   const [uploadedFileAssetIds, setUploadedFileAssetIds] = useState<string[]>([]);
   const [discardConfirmOpen, setDiscardConfirmOpen] = useState(false);
   const [isDiscarding, startDiscarding] = useTransition();
@@ -123,30 +130,30 @@ export const useDiscardGuardedTrackForm = ({
       const result = await markDiscardedTrackGpxFileAssetsPendingDelete(fileIdsToDiscard);
 
       if (!result.success) {
-        toast.error(result.message || "Uploaded GPX file could not be removed");
+        toast.error(t(result.code === "NOT_OWNER" ? "discardGuard.errorNotOwner" : "discardGuard.errorNotSafe"));
         return;
       }
 
-      toast.success("Uploaded GPX file discarded");
+      toast.success(t("discardGuard.successToast"));
 
       closeWithoutGuard();
     });
-  }, [closeWithoutGuard, discardableFileAssetIds]);
+  }, [closeWithoutGuard, discardableFileAssetIds, t]);
 
   const confirmDialogProps = {
     open: discardConfirmOpen,
     onOpenChange: setDiscardConfirmOpen,
     title: hasUnsavedUploads
-      ? "Discard track and uploaded GPX?"
+      ? t("discardGuard.titleWithFile")
       : hasUnsavedPoints
-        ? "Discard placed points?"
-        : "Discard track changes?",
+        ? t("discardGuard.titleWithPoints")
+        : t("discardGuard.titleChanges"),
     description: hasUnsavedUploads
-      ? "This form has unsaved changes and an uploaded GPX file. Discarding will mark the unsaved uploaded GPX file for deletion before closing."
+      ? t("discardGuard.descriptionWithFile")
       : hasUnsavedPoints
-        ? "This form has unsaved changes and placed map points. Discarding will close the modal without saving them."
-        : "This form has unsaved changes. Discarding will close the modal without saving them.",
-    confirmLabel: hasUnsavedUploads ? "Discard and remove file" : "Discard changes",
+        ? t("discardGuard.descriptionWithPoints")
+        : t("discardGuard.descriptionChanges"),
+    confirmLabel: hasUnsavedUploads ? t("discardGuard.confirmWithFile") : t("discardGuard.confirmChanges"),
     confirmVariant: "destructive" as const,
     isPending: isDiscarding,
     onConfirm: handleConfirmDiscard,

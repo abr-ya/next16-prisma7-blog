@@ -35,7 +35,16 @@ export const markFileAssetPendingDelete = async (fileId: string) => {
   };
 };
 
-export const markDiscardedTrackGpxFileAssetsPendingDelete = async (fileIds: string[]) => {
+/** Machine-readable reason a track GPX discard was rejected. */
+export type DiscardTrackGpxErrorCode = "NOT_SAFE" | "NOT_OWNER";
+
+type DiscardTrackGpxResult =
+  | { success: true; message: string }
+  | { success: false; message: string; code: DiscardTrackGpxErrorCode };
+
+export const markDiscardedTrackGpxFileAssetsPendingDelete = async (
+  fileIds: string[],
+): Promise<DiscardTrackGpxResult> => {
   const actor = await requireActionUser();
 
   const uniqueFileIds = Array.from(new Set(fileIds.map((fileId) => fileId.trim()).filter(Boolean)));
@@ -80,6 +89,7 @@ export const markDiscardedTrackGpxFileAssetsPendingDelete = async (fileIds: stri
       message: isAdmin
         ? "An uploaded GPX file is no longer safe to discard."
         : "You can only discard GPX files you uploaded.",
+      code: isAdmin ? "NOT_SAFE" : "NOT_OWNER",
     };
   }
 
