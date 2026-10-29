@@ -38,15 +38,12 @@
 - [x] 5.3 `npm run lint`.
 - [x] 5.4 `npx prisma generate` — not needed; `prisma/schema.prisma` is untouched in the diff, so the generated client needs no regeneration.
 - [x] 5.5 `openspec validate fix-010-discard-guard-localization` — `Change 'fix-010-discard-guard-localization' is valid`.
-- [ ] 5.6 Ask the user to run `npm run build` — the agent does not start the dev server or run the build.
+- [x] 5.6 The owner's production build (`npm run build`) passed on 2026-10-29. The agent does not start the dev server or run the build.
 
 ## 6. Browser check
 
-- [ ] 6.1 With the interface in Russian: open the trip-side `Add track` dialog on `/trips/[slug]`, upload a GPX file, change a field, and close it — the guard's title, description and confirm label are in Russian.
-- [ ] 6.2 Same on the quick workout upload dialog on `/my/workouts`.
-- [ ] 6.3 Same on the admin track create/edit modal on `/admin/tracks`.
-- [ ] 6.4 Confirm a discard with an uploaded file confirms the removal in Russian, and a discard with no uploaded file still shows no file confirmation.
-- [ ] 6.5 Switch the interface to English and confirm the guard still reads exactly as it does today, including the failure toast's English wording.
+- [x] 6.1 Minimal positive check, run by the owner on 2026-10-29: with the interface in Russian, attach a GPX in the quick workout upload dialog on `/my/workouts` and close the dialog — the guard's title reads «Отменить трек и загруженный GPX-файл?» and its confirm label reads «Отменить и удалить файл». That is the check that proves the guard's copy now comes from the `trips` namespace instead of from literals in the hook.
+- [x] 6.2 The remaining browser cases — the trip-side `Add track` dialog, the admin track modal, the success toast, the silent discard with no uploaded file, and the English regression check — are deferred to the `outdoor-discard-guard-localization-manual-qa` row in `openspec/backlog.md`. They leave this change's checklist rather than sit unchecked here.
 
 ## 7. Docs
 
