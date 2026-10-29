@@ -224,7 +224,6 @@ const TrackFormDialog = ({
     hasUnsavedPoints: placedPoints.length > 0,
     resetFormState,
     onOpenChange,
-    discardedMsg: "Uploaded GPX file discarded",
   });
 
   useEffect(() => {
