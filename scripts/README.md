@@ -4,6 +4,23 @@ Ad-hoc development helpers. These are **not** part of the build, the test
 suite, or any production code path. Run them by hand when investigating
 a real photo or track that misbehaves on a public page.
 
+## `check-locale-placeholders.ts`
+
+Scans locale JSON files for unsupported single-brace placeholders and checks
+that the affected `trips` strings interpolate as expected in English and
+Russian, with HTML escaping disabled as in next-i18next.
+
+### Usage
+
+```bash
+npx tsx scripts/check-locale-placeholders.ts
+```
+
+### When to use it
+
+- After editing locale strings that contain interpolation values.
+- When a localized UI renders a placeholder such as `{title}` literally.
+
 ## `dump-exif.mjs`
 
 A one-off EXIF inspector for ad-hoc photo debugging. Reads the same
