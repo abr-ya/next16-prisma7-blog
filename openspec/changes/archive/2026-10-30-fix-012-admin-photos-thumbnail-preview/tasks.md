@@ -23,10 +23,10 @@
 
 - [x] 4.1 In `openspec/backlog.md`, replace the `admin-photos-full-size-preview-loads` row in the `## Fixes` table with `| In Progress | fix-012-admin-photos-thumbnail-preview | outdoor/admin-photos | … |`, recording the swap, the placeholder decision for an ineligible first image, and the rejected alternatives. Done at propose time.
 - [x] 4.2 Add a `## Fixes` row for the sibling gap this change deliberately leaves open: `/admin/hikes` **Manage photos** builds its thumbnail URL without checking eligibility, so a photo image marked pending delete renders a broken thumbnail there. Done on 2026-10-30, while implementing.
-- [ ] 4.3 Flip the `fix-012` row's status to `Done` once the implementation is complete, before the change is archived.
+- [x] 4.3 Flip the `fix-012` row's status to `Done` once the implementation is complete, before the change is archived. Done on 2026-10-30.
 
 ## 5. Browser and build check (the owner's)
 
-- [ ] 5.1 Open `/admin/photos` and confirm each row's preview renders a compact thumbnail, and that the browser network tab shows `/files/{fileId}/thumbnail` requests instead of the provider's original image.
-- [ ] 5.2 Confirm the photo edit dialog still shows its full-size images, and that editing and deleting a photo still work.
-- [ ] 5.3 The owner runs the production build (`npm run build`) and reports the result — the agent does not start the dev server or run the build.
+- [x] 5.1 Open `/admin/photos` and confirm each row's preview renders a compact thumbnail, and that the browser network tab shows `/files/{fileId}/thumbnail` requests instead of the provider's original image. Verified by the owner on 2026-10-30: the preview requests `/files/<fileId>/thumbnail` (a 640px-max-edge WebP) and no provider URL, and the `/admin/trips` **Manage photos** previews render as well.
+- [x] 5.2 Confirm the photo edit dialog still shows its full-size images, and that editing and deleting a photo still work. Waived by the owner on 2026-10-30; the deferred browser cases are recorded in `outdoor-admin-thumbnail-access-manual-qa` in the backlog.
+- [x] 5.3 The owner runs the production build (`npm run build`) and reports the result — the agent does not start the dev server or run the build. Verified by the owner on 2026-10-30: the production build passed.
