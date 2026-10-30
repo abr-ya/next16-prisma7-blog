@@ -30,9 +30,9 @@
 
 - [x] 4.1 In `openspec/backlog.md`, remove the `i18n-single-brace-placeholders-not-interpolated` row from the `## Unconfirmed Bugs` table — the defect is confirmed and now numbered. Done at propose time.
 - [x] 4.2 In the same file, add a row to the `## Fixes` table: `| In Progress | fix-011-i18n-single-brace-placeholders | outdoor/tracks | … |`, carrying the defect, the fix, and the rejected alternative. Done at propose time.
-- [ ] 4.3 Flip that row's status to `Done` once the implementation is complete, before the change is archived.
+- [x] 4.3 Flip that row's status to `Done` once the implementation is complete, before the change is archived. Done on 2026-10-30, before the change is archived.
 
 ## 5. Browser and build check (the owner's)
 
-- [ ] 5.1 With the interface in English, open the track dialog's Place-on-map tab on `/admin/tracks` or `/my/tracks`, place two points, and confirm the map heading, help text, point-list label, and distance label render as English copy; the distance line must show the measured value instead of `{distance}`, with no raw translation keys visible.
-- [ ] 5.2 The owner runs the production build (`npm run build`) after the `TrackEditor` namespace correction and reports the result — the agent does not start the dev server or run the build. The prior build passed on 2026-10-30 before this correction.
+- [x] 5.1 With the interface in English, open the track dialog's Place-on-map tab on `/admin/tracks` or `/my/tracks`, place two points, and confirm the map heading, help text, point-list label, and distance label render as English copy; the distance line must show the measured value instead of `{distance}`, with no raw translation keys visible. Verified by the owner on 2026-10-30 in English and, in the same pass, in Russian.
+- [x] 5.2 The owner runs the production build (`npm run build`) after the `TrackEditor` namespace correction and reports the result — the agent does not start the dev server or run the build. The prior build passed on 2026-10-30 before this correction. The owner reran it after the correction on 2026-10-30: the build finished with no errors (TypeScript, page-data collection, static generation and page optimization all reported success).

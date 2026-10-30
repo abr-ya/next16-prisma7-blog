@@ -13,7 +13,7 @@ The four affected keys and their call sites, all confirmed by reading the code:
 | `trackTimeSourceBadgeLabel` | `components/hike-pages/hike-trip-media.tsx:269` | the localized `timeSource` label, itself a `t()` call |
 | `photoTimezoneDialogTitleWithPhoto` | `components/hike-pages/hike-photo-gallery.tsx:622` | `timezonePhoto.title` — the photo title |
 
-The four interpolation call sites already pass their values. The shared `TrackEditor` currently calls `useT(navigationNamespace)`, however, even though its `trackEditor*` copy lives in the `trips` namespace; this causes all of its labels, including the distance line, to render raw keys. Its neighboring `TrackEditorMap` already calls `useT(tripsNamespace)`. The `trips` namespace is loaded for both languages in `app/layout.tsx:35`, so the fix is to align `TrackEditor` with the existing resource and map component.
+The four interpolation call sites already pass their values. The shared `TrackEditor` called `useT(navigationNamespace)`, however, even though its `trackEditor*` copy lives in the `trips` namespace; this caused all of its labels, including the distance line, to render raw keys. Its neighboring `TrackEditorMap` already calls `useT(tripsNamespace)`. The `trips` namespace is loaded for both languages in `app/layout.tsx:35`, so this change aligns `TrackEditor` with the existing resource and map component.
 
 Two facts about the interpolation setup constrain the approach:
 
@@ -77,7 +77,7 @@ A scan of all six locale files finds exactly four single-brace placeholders, all
 
 ## Risks / Trade-offs
 
-- **[The guard script's i18next instance drifts from next-i18next's configuration]** → the script pins the two settings next-i18next sets (`escapeValue: false`, default prefix and suffix) and names them in its header comment, so a change in the dependency shows up as a change to read.
+- **[The guard script's i18next instance drifts from next-i18next's configuration]** → the script pins the one setting next-i18next sets (`escapeValue: false`) and relies on i18next's default prefix and suffix, which next-i18next does not override; it names them in its header comment, so a change in the dependency shows up as a change to read.
 - **[A value that legitimately contains braces]** → none of the four values does: a formatted distance, an integer, a translated label, and a photo title. The "rendered as given" scenarios cover the case where a photo title does contain braces.
 - **[The static scan produces a false positive on a string that means a literal brace]** → i18next has no escape for a literal single brace in a value string, so a single brace in a locale string is always a mistake today. If that ever changes, the script is the place to learn the new rule.
 - **[The localized editor is not covered by any test suite]** → the project has no test suite; the guard script is the automated coverage, and this change keeps one English Place-on-map smoke check that confirms the editor labels resolve and the distance interpolates. The remaining visual checks, including all Russian strings and the other English surfaces, are tracked in Manual QA Follow-ups.
