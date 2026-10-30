@@ -13,7 +13,7 @@ The four affected keys and their call sites, all confirmed by reading the code:
 | `trackTimeSourceBadgeLabel` | `components/hike-pages/hike-trip-media.tsx:269` | the localized `timeSource` label, itself a `t()` call |
 | `photoTimezoneDialogTitleWithPhoto` | `components/hike-pages/hike-photo-gallery.tsx:622` | `timezonePhoto.title` — the photo title |
 
-All four components are `"use client"` and read the copy through `useT(tripsNamespace)`, the same client instance the rest of the app uses. The `trips` namespace is already loaded for both languages in `app/layout.tsx:35`.
+The four interpolation call sites already pass their values. The shared `TrackEditor` currently calls `useT(navigationNamespace)`, however, even though its `trackEditor*` copy lives in the `trips` namespace; this causes all of its labels, including the distance line, to render raw keys. Its neighboring `TrackEditorMap` already calls `useT(tripsNamespace)`. The `trips` namespace is loaded for both languages in `app/layout.tsx:35`, so the fix is to align `TrackEditor` with the existing resource and map component.
 
 Two facts about the interpolation setup constrain the approach:
 
@@ -27,13 +27,13 @@ The `quickWorkout` block in the same locale file already uses `{{ }}` (`statsSum
 **Goals:**
 
 - Make the four strings render their value, in both languages, with no change to the wording around the placeholder.
-- Keep the change to data: eight template strings and one guard script.
+- Keep the change focused: eight template strings, one translation-namespace correction, and one guard script.
 - Leave a check that fails loudly if a single-brace placeholder appears in any locale file again.
 
 **Non-Goals:**
 
 - Changing the interpolation configuration. `i18n.config.ts` and the `I18nProvider` props in `app/layout.tsx` are read-only for this change.
-- Changing any call site. They already pass their values.
+- Changing the four interpolation arguments. They already pass their values; only the shared editor's translation namespace needs correction.
 - Changing the wording of any string — including the Russian strings that name the `Delete` key in English, which is correct because the key is labelled `Delete` in the UI.
 
 ## Decisions
@@ -48,9 +48,9 @@ The four keys switch to `{{ }}`. The alternative — configuring the project to 
 
 `{{ }}` is i18next's standard, is already the syntax of this file's `quickWorkout` block, and is what the two working strings use.
 
-### 2. The call sites stay untouched
+### 2. Keep interpolation arguments; correct the editor namespace
 
-Every call site already passes its value, so the value never needed fixing — only the template that should consume it. Leaving the components alone also means the change cannot alter anything but the rendered text: no new prop, no renamed key, no changed conditional.
+Every interpolation call site already passes its value, so those arguments need no change. `TrackEditor` must use `tripsNamespace` because its strings are stored in `trips.json`; this matches `TrackEditorMap` and does not add a prop, rename a key, or change a conditional.
 
 ### 3. The guard is a static scan plus a runtime interpolation check
 
@@ -73,18 +73,18 @@ The new requirements therefore state the substitution rule where it is not state
 
 ### 6. The scope is the four keys and the guard
 
-A scan of all six locale files finds exactly four single-brace placeholders, all in `trips.json`. There is no wider sweep to do, and the guard script exists precisely so that a fifth one cannot slip in unnoticed.
+A scan of all six locale files finds exactly four single-brace placeholders, all in `trips.json`. The shared editor also needs to read those resources from the correct namespace; the guard script exists so another single-brace placeholder cannot slip in unnoticed.
 
 ## Risks / Trade-offs
 
 - **[The guard script's i18next instance drifts from next-i18next's configuration]** → the script pins the two settings next-i18next sets (`escapeValue: false`, default prefix and suffix) and names them in its header comment, so a change in the dependency shows up as a change to read.
 - **[A value that legitimately contains braces]** → none of the four values does: a formatted distance, an integer, a translated label, and a photo title. The "rendered as given" scenarios cover the case where a photo title does contain braces.
 - **[The static scan produces a false positive on a string that means a literal brace]** → i18next has no escape for a literal single brace in a value string, so a single brace in a locale string is always a mistake today. If that ever changes, the script is the place to learn the new rule.
-- **[The four strings are not covered by any test suite]** → the project has no test suite; the guard script and the owner's browser check are the coverage, which is why the browser check is a task rather than an assumption.
+- **[The localized editor is not covered by any test suite]** → the project has no test suite; the guard script is the automated coverage, and this change keeps one English Place-on-map smoke check that confirms the editor labels resolve and the distance interpolates. The remaining visual checks, including all Russian strings and the other English surfaces, are tracked in Manual QA Follow-ups.
 
 ## Migration Plan
 
-None. No schema, no data, no route, no permission change. The change is two locale files and one script; a revert is the same edit in reverse.
+None. No schema, no data, no route, no permission change. The change is two locale files, one translation-namespace correction, and one guard script; a revert is the same edit in reverse.
 
 ## Open Questions
 

@@ -6,7 +6,7 @@ import { useT } from "next-i18next/client";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
-import { navigationNamespace } from "@/app/i18n/settings";
+import { tripsNamespace } from "@/app/i18n/settings";
 import { distanceBetweenPoints, EARTH_RADIUS_METERS } from "@/lib/track-gpx-parser";
 import type { TrackGpxCoordinate } from "@/lib/track-gpx-metadata";
 import { formatTrackDistance } from "@/lib/track-gpx-metadata";
@@ -106,7 +106,7 @@ export const TrackEditor = ({
   renderExtraActions,
   mapAriaLabel,
 }: TrackEditorProps) => {
-  const { t } = useT(navigationNamespace);
+  const { t } = useT(tripsNamespace);
   const [points, setPoints] = useState<ManualTrackPoint[]>(initialPoints);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
 
