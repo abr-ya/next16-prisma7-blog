@@ -6,6 +6,7 @@ import { AUTH_TRUST_LEVELS } from "@/lib/auth-trust";
 import { VERIFIED_RESOURCE_LIMITS } from "@/lib/auth-trust-quotas.server";
 import { authSession, currentUserRole } from "@/lib/auth-utils";
 import { hasAdminRole } from "@/lib/auth-roles";
+import { getFileThumbnailUrl } from "@/lib/file-thumbnail";
 import {
   canRefreshHikePhotoExif,
   canReviewHikePhotoCoordinate,
@@ -97,7 +98,7 @@ export const getHikePhotoOptions = async (): Promise<HikePhotoOption[]> => {
       ? {
           id: photo.images[0].fileAsset.id,
           name: photo.images[0].fileAsset.name,
-          thumbnailUrl: `/files/${photo.images[0].fileAsset.id}/thumbnail`,
+          thumbnailUrl: getFileThumbnailUrl(photo.images[0].fileAsset.id),
         }
       : null,
   }));

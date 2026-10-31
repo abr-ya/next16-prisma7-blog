@@ -21,6 +21,7 @@ import { Badge } from "@/components/index";
 import { PageLayout } from "@/components/layout/page-layout";
 import { hasAdminRole } from "@/lib/auth-roles";
 import { authSession, currentUserRole } from "@/lib/auth-utils";
+import { getFileThumbnailUrl } from "@/lib/file-thumbnail";
 import { formatHikeDateRange, formatHikeType } from "@/lib/hikes";
 import { SITE_CONTENT_WIDTH } from "@/lib/site-content-width";
 import { buildPageMetadata, getTextMetadataDescription } from "@/lib/site-metadata";
@@ -118,7 +119,7 @@ export const TripPage = async ({ params }: HikePageProps) => {
         captureInstant: photo.captureInstant,
         dayKeys: photo.dayKeys,
         alt: preview?.name || photo.title,
-        thumbnailUrl: preview ? `/files/${preview.id}/thumbnail` : null,
+        thumbnailUrl: preview ? getFileThumbnailUrl(preview.id) : null,
         fullUrl: canViewFullPhotos && preview ? `/files/${preview.id}/download?disposition=inline` : null,
         detail: photoDetails.find((detail) => detail?.photoId === photo.id) ?? null,
         isLikedByViewer: photoLikeStates[photo.id]?.isLikedByViewer ?? false,

@@ -41,6 +41,7 @@ import {
   SortableHeader,
 } from "@/components/index";
 import type { PhotoStatus } from "@/generated/prisma/enums";
+import { getFileThumbnailUrl, isThumbnailEligibleFileAsset } from "@/lib/file-thumbnail";
 import { OUTDOOR_PHOTO_IMAGE_UPLOAD_MAX_COUNT, OUTDOOR_PHOTO_IMAGE_UPLOAD_MAX_SIZE } from "@/lib/file-upload-limits";
 import { formatHikeDateRange, formatHikeStatus, formatHikeType } from "@/lib/hikes";
 import {
@@ -97,7 +98,11 @@ const formatDate = (value: Date | string) =>
     day: "numeric",
   }).format(new Date(value));
 
-const getPhotoPreviewImage = (photo: PhotoListItem) => photo.images.at(0)?.fileAsset;
+const getPhotoPreviewImage = (photo: PhotoListItem) => {
+  const fileAsset = photo.images.at(0)?.fileAsset;
+
+  return fileAsset && isThumbnailEligibleFileAsset(fileAsset) ? fileAsset : null;
+};
 
 const getPhotoMetadataState = (photo: PhotoListItem): PhotoExifMetadataState =>
   getPhotoExifMetadataState(
@@ -724,7 +729,11 @@ export const PhotosAdminPanel = ({ photos }: { photos: PhotoListItem[] }) => {
           return (
             <div className="flex size-14 items-center justify-center overflow-hidden rounded-md border bg-muted">
               {preview ? (
-                <img src={preview.url} alt={row.original.title} className="size-full object-cover" />
+                <img
+                  src={getFileThumbnailUrl(preview.id)}
+                  alt={row.original.title}
+                  className="size-full object-cover"
+                />
               ) : (
                 <ImageIcon className="size-5 text-muted-foreground" />
               )}

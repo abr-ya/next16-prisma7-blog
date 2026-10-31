@@ -6,6 +6,7 @@ import type { FileAsset } from "@/generated/prisma/client";
 import type { FileAssetPurpose, FileAssetStatus, FileAssetVisibility } from "@/generated/prisma/enums";
 import { authSession } from "@/lib/auth-utils";
 import { hasAdminRole } from "@/lib/auth-roles";
+import { isThumbnailEligibleFileAsset } from "@/lib/file-thumbnail";
 import { GENERAL_FILE_USER_STORAGE_LIMIT_BYTES } from "@/lib/file-upload-limits";
 import prisma from "@/lib/prisma";
 
@@ -323,20 +324,22 @@ export const getFileAssetForThumbnail = async (fileId: string) => {
     include: publishedHikePhotoImageInclude,
   });
 
-  if (!fileAsset || fileAsset.status !== ACTIVE_FILE_STATUS) {
+  if (!fileAsset) {
     throw new Error("File not found");
   }
 
-  if (!fileAsset.mimeType.startsWith("image/")) {
+  if (!isThumbnailEligibleFileAsset(fileAsset)) {
+    // Keep the route's existing error codes: an inactive asset is reported as
+    // missing, every other rejection as forbidden.
+    if (fileAsset.status !== ACTIVE_FILE_STATUS) {
+      throw new Error("File not found");
+    }
+
     throw new Error("Access denied");
   }
 
   if (isPublishedHikePhotoImageAsset(fileAsset)) {
     return fileAsset;
-  }
-
-  if (fileAsset.purpose !== "OUTDOOR_PHOTO_IMAGE") {
-    throw new Error("Access denied");
   }
 
   const session = await authSession();

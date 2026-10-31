@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 import type { HikeParticipantStatus, HikeStatus, HikeType, Prisma } from "@/generated/prisma/client";
 import { authSession, currentUserRole, requireAdmin } from "@/lib/auth-utils";
 import { hasAdminRole } from "@/lib/auth-roles";
+import { getFileThumbnailUrl } from "@/lib/file-thumbnail";
 import { getHikeMapDays, getTimestampDayKey, getTrackDayKeys } from "@/lib/hike-map-days";
 import { isValidHikeNoteCoordinate, validateHikeNoteDayKey, type HikeNoteInput } from "@/lib/hike-notes";
 import {
@@ -163,7 +164,7 @@ export const toHikePhotoMapMarker = ({
 }) => {
   const state = getPhotoExifMetadataState(photo.metadata);
   const preview = photo.images.at(0)?.fileAsset;
-  const thumbnailUrl = preview ? `/files/${preview.id}/thumbnail` : null;
+  const thumbnailUrl = preview ? getFileThumbnailUrl(preview.id) : null;
 
   // Prefer direct EXIF GPS over approved inferred/manual coordinates.
   if (state.status === "SUCCESS" && state.summary.gps) {
