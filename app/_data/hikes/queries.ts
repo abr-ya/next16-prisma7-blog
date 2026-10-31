@@ -83,6 +83,14 @@ export const getHikePhotoOptions = async (): Promise<HikePhotoOption[]> => {
           },
         },
       },
+      // The trips each photo is already associated with. Ids only — the admin
+      // trip photo-association surface needs to know that a photo belongs to
+      // another trip, not which trip it is.
+      hikes: {
+        select: {
+          hikeId: true,
+        },
+      },
     },
     orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
   })) as HikePhotoOptionRecord[];
@@ -91,6 +99,7 @@ export const getHikePhotoOptions = async (): Promise<HikePhotoOption[]> => {
     id: photo.id,
     title: photo.title,
     status: photo.status,
+    attachedHikeIds: photo.hikes.map((association) => association.hikeId),
     trackTimeMatch: toTrackTimeMatchPhotoInput(photo),
     mapCoordinate: getPhotoMapCoordinate(photo.metadata),
     previewImage: photo.images.at(0)?.fileAsset
