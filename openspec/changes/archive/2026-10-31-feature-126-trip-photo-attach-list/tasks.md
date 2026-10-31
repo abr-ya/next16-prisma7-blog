@@ -21,8 +21,12 @@
 - [x] 3.2 `npx eslint app/_data/hikes/queries.ts app/_data/hikes/types.ts components/admin-pages/hikes-admin-panel.tsx --quiet` — expect no errors.
 - [x] 3.3 `npm run lint` — expect no errors.
 - [x] 3.4 `npx openspec validate feature-126-trip-photo-attach-list --strict` — expect the change to validate.
+- [x] 3.5 `npm run build` — the user runs the build; not run by the agent. The owner runs it and records the result here.
+  - Deferred on 2026-10-31 to the manual QA row `outdoor-trip-photo-attach-list-manual-qa`, which carries the remaining browser checks and the build. The owner ran the build on 2026-10-31 and it passed.
 
 ## 4. Browser check (the owner's)
 
-- [ ] 4.1 Open `/admin/trips`, open **Manage photos** for a trip that has photos attached to other trips, and confirm the **Available photos** list no longer shows them, that the reveal control reports how many are held back, and that checking it lists them with a working **Attach** button.
-- [ ] 4.2 Confirm the **Attached photos** section and its ordering are unchanged, that attaching and detaching still work, and that a trip whose photos are on no other trip shows no reveal control.
+- [x] 4.1 Open `/admin/trips`, open **Manage photos** for a trip that has photos attached to other trips, and confirm the **Available photos** list no longer shows them, that the reveal control reports how many are held back, and that checking it lists them with a working **Attach** button.
+  - Verified by the owner in the browser on 2026-10-31.
+- [x] 4.2 The remaining browser checks — the **Attached photos** section and its ordering unchanged, attach and detach still working, and no reveal control on a trip whose photos are on no other trip — are filed as a manual QA candidate in `openspec/backlog.md` rather than left open here.
+  - Filed as `outdoor-trip-photo-attach-list-manual-qa` in the Manual QA Follow-ups table.
