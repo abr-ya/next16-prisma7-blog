@@ -92,6 +92,8 @@ This project uses OpenSpec for change planning across five independent numbering
 
 **Workflow per pool:**
 
+Before starting a large or multi-file change, propose a short plan and get the user's go-ahead before implementing.
+
 1. Read `openspec/config.yaml` for project context.
 2. Read the pool's backlog file for the next available number.
 3. Create OpenSpec artifacts under `openspec/changes/<pool>-XXX-area-action/` — `proposal.md`, `design.md`, `tasks.md`, and `specs/<capability>/spec.md` when applicable. `refactor-XXX` and `research-XXX` changes omit `specs/` (no behavior change). For `research-XXX`, `design.md` describes the investigation method (scope, evidence standard, findings rubric, required output structure), `tasks.md` is the investigation checklist that fixes the write-up's required sections before the read begins, and the result itself lives in `output.md`.
@@ -111,6 +113,8 @@ Before completing a change:
 3. For route/behavior/schema changes, run or ask user to run `npm run build`
 4. For UI changes, manually test in browser
 
+Run only the checks relevant to the change; skip suites that cover untouched areas.
+
 For Prisma schema changes: validate schema, run `npx prisma generate`, and carefully review migration impact.
 
 ## Code Conventions
@@ -121,6 +125,8 @@ For Prisma schema changes: validate schema, run `npx prisma generate`, and caref
 - Reuse existing UI primitives from `components/ui` before adding new ones
 - Use lucide-react for icons
 - Keep changes scoped to requested capability — avoid broad refactors during feature work
+- Do not refactor unrelated code, even where the surrounding code would look cleaner
+- Do not create documentation unless it is requested or the OpenSpec workflow already requires it
 
 ## Safety Rules
 
@@ -133,9 +139,10 @@ For Prisma schema changes: validate schema, run `npx prisma generate`, and caref
 
 ## Token Economy
 
-- Prefer targeted reads over broad scans
+- Prefer targeted reads over broad scans; read only the files relevant to the current task
 - For broad multi-file exploration (mapping visibility rules across many files, locating a pattern across the repo, finding all references to a domain), delegate to the **Explore** subagent with a focused brief — do not fan out reads yourself
 - Use `rg`, `find`, `sed` with exact paths
 - Do not re-read large files, `node_modules`, `.next`, or `generated/prisma` unnecessarily
 - Summarize findings briefly before editing
 - For large output (full builds, test suites), ask user to run locally and paste result
+- Keep responses concise: state the outcome and the evidence, not a narration of every step taken

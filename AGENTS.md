@@ -15,6 +15,7 @@ For non-trivial feature work, behavior changes, schema changes, route changes, o
 - Start from the live repository state.
 - Inspect `openspec/config.yaml` first.
 - Check active OpenSpec changes/specs when they exist.
+- Before a large or multi-file change, propose a short plan and get the user's go-ahead before implementing.
 - Create or update OpenSpec proposal/design/tasks/spec artifacts before implementation when the scope is not already explicitly approved.
 - After preparing OpenSpec artifacts, explicitly tell the user that the spec is ready before starting implementation.
 - Keep code changes aligned with the accepted OpenSpec tasks.
@@ -77,7 +78,7 @@ Use product or code area scopes in commit messages, not workflow/tooling scopes 
 
 Spend tokens deliberately.
 
-- Prefer targeted reads over broad repository scans.
+- Prefer targeted reads over broad repository scans; read only the files relevant to the current task.
 - Use `rg`, `find`, `sed`, and exact file paths to inspect only the smallest useful set of files.
 - Do not re-read large files or generated files unless needed.
 - Summarize findings briefly before editing.
@@ -85,6 +86,7 @@ Spend tokens deliberately.
 - Work in small, reviewable slices and report only the useful evidence.
 - Avoid dumping long command output into chat; summarize the important lines.
 - Do not inspect `node_modules`, `.next`, `generated/prisma`, or large lock/build artifacts unless there is a specific reason.
+- Keep responses concise: state the outcome and the evidence, not a narration of every step taken.
 
 For commands with potentially large output, ask the user to run them and paste the result when that is more token-efficient or when the sandbox is likely to distort the result. This especially applies to full builds, full test suites, verbose logs, and long OpenSpec validation output.
 
@@ -101,6 +103,7 @@ Preferred checks:
 
 Notes:
 
+- Run only the checks relevant to the change; skip suites that cover untouched areas.
 - There is currently no dedicated `npm test` script.
 - The root lint script checks `./app/**/*.{js,ts,tsx}` only. For changed files under `components`, `lib`, or other folders, run targeted ESLint such as `npx eslint components/admin-pages/videos-table.tsx --quiet`.
 - When `npm run dev` is needed for manual/browser validation, ask the user to run it locally and report the URL/result instead of starting it in the sandbox.
@@ -115,6 +118,8 @@ Notes:
 - Do not edit `generated/prisma` manually.
 - Preserve user changes in the working tree.
 - Keep changes scoped to the requested capability.
+- Do not refactor unrelated code, even where the surrounding code would look cleaner.
+- Do not create documentation unless it is requested or the OpenSpec workflow already requires it.
 - Avoid new dependencies unless they clearly reduce implementation risk or match existing project direction.
 
 ## Prisma Migration Integrity
