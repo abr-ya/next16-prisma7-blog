@@ -18,6 +18,7 @@ import { assertVerifiedResourceQuota, createWithinVerifiedResourceQuota } from "
 import { gearFitsActivityType } from "@/lib/gear";
 import { validateGpxString } from "@/lib/gpx-validation";
 import { createSlug } from "@/lib/slug-generator";
+import { buildTrackGpxMetadata, fetchTrackGpxContent } from "@/lib/track-gpx-file";
 import { resolveTrackGeometry } from "@/lib/track-geometry";
 import {
   parseDurationSeconds,
@@ -25,7 +26,7 @@ import {
   TrackDurationInputError,
   TrackStartAtParseError,
 } from "@/lib/track-duration-input";
-import { parseTrackGpxMetadata, parseTrackGpxUtcOffsetMinutes } from "@/lib/track-gpx-parser";
+import { parseTrackGpxUtcOffsetMinutes } from "@/lib/track-gpx-parser";
 import {
   requireTrackRecordingTimezone,
   resolveQuickWorkoutRecordingTimezone,
@@ -625,55 +626,6 @@ const toPublicTrack = (
       type: association.hike.type,
       assignedAt: association.assignedAt,
     })),
-  };
-};
-
-const fetchTrackGpxContent = async (url: string) => {
-  try {
-    const response = await fetch(url);
-
-    if (!response.ok) {
-      throw new Error("Unable to read GPX file from storage");
-    }
-
-    return response.text();
-  } catch {
-    throw new Error("Unable to read GPX file from storage");
-  }
-};
-
-/**
- * The metadata a track row carries for a GPX file, parsed from the file's
- * content.
- *
- * A file that could not be read from storage leaves the row in the state the
- * owner can repair from the track form: the parse failed, and the reason says
- * why. The owner re-parses it there. Every other parse result is persisted as
- * it is.
- */
-const buildTrackGpxMetadata = ({
-  content,
-  fileAssetId,
-  fileKey,
-}: {
-  content: string;
-  fileAssetId: string;
-  fileKey: string;
-}) => {
-  const metadata = parseTrackGpxMetadata({
-    content,
-    sourceFileAssetId: fileAssetId,
-    sourceFileKey: fileKey,
-  });
-
-  if (content.length > 0) return metadata;
-
-  return {
-    ...metadata,
-    gpxParse: {
-      ...metadata.gpxParse,
-      errorMessage: "Unable to read GPX file from storage",
-    },
   };
 };
 

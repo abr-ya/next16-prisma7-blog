@@ -19,9 +19,9 @@
 
 ## 3. Route data layer
 
-- [ ] 3.1 Add `createRouteFromPoints` in `app/_data/routes.ts`: validate the points, build the synthetic GPX (reuse `buildSyntheticGpxBytes`), upload it with `purpose = TRACK_GPX`, store the `Route`, and parse its metadata.
-- [ ] 3.2 Add `getOwnerRoutes()` returning each route with its linked track count, ordered newest first — the payload the track dialog's route picker consumes.
-- [ ] 3.3 Add `getRouteGeometry(routeId, userId)` for the dialog preview, so the picker shows the route's shape before a track exists.
+- [x] 3.1 Add `createRouteFromPoints` in `app/_data/routes.ts`: validate the points, build the synthetic GPX (reuse `buildSyntheticGpxBytes`), upload it with `purpose = TRACK_GPX`, store the `Route`, and parse its metadata.
+- [x] 3.2 Add `getOwnerRoutes()` returning each route with its linked track count, ordered newest first — the payload the track dialog's route picker consumes.
+- [x] 3.3 Add `getRouteById(routeId)` for the dialog preview, so the picker shows the route's shape before a track exists.
 
 ## 4. Track creation from a route
 
