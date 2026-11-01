@@ -42,6 +42,17 @@ export const hikeListInclude = {
               fileKey: true,
             },
           },
+          route: {
+            select: {
+              metadata: true,
+              fileAsset: {
+                select: {
+                  id: true,
+                  fileKey: true,
+                },
+              },
+            },
+          },
         },
       },
     },
@@ -133,6 +144,17 @@ export const publicHikeInclude = (options: PublicHikeIncludeOptions) => {
               select: {
                 id: true,
                 fileKey: true,
+              },
+            },
+            route: {
+              select: {
+                metadata: true,
+                fileAsset: {
+                  select: {
+                    id: true,
+                    fileKey: true,
+                  },
+                },
               },
             },
           },
@@ -245,7 +267,8 @@ export type HikePhotoIdAssociation = {
 export type HikeTrackAssociationWithStoredMetadata = {
   track: {
     metadata: Prisma.JsonValue | null;
-    fileAsset: { id: string; fileKey: string };
+    fileAsset: { id: string; fileKey: string } | null;
+    route?: { metadata: Prisma.JsonValue | null; fileAsset: { id: string; fileKey: string } | null } | null;
   };
 };
 

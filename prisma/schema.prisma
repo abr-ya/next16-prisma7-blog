@@ -41,6 +41,7 @@ model User {
   hikeParticipants               HikeParticipant[] @relation("HikeParticipantUser")
   sentHikeParticipantInvitations HikeParticipant[] @relation("HikeParticipantInviter")
   tracks                         Track[]
+  routes                         Route[]
   gears                          Gear[]
   // feature-124: the per-activity-type gear preferences of this owner.
   gearPreferences                GearPreference[]
@@ -340,15 +341,39 @@ model HikeNote {
   @@index([hikeId, dayKey])
 }
 
+// feature-127: a route owns the reusable geometry of one shape — the GPX
+// file and its parsed metadata — and stores no recording data. A track
+// either owns its own file or reads file and metadata from one route.
+model Route {
+  id          String    @id @default(uuid())
+  title       String
+  description String?
+  fileAssetId String    @unique
+  fileAsset   FileAsset @relation(fields: [fileAssetId], references: [id], onDelete: Restrict)
+  metadata    Json?
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tracks      Track[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @default(now()) @updatedAt
+
+  @@index([userId])
+}
+
 model Track {
   id                       String             @id @default(uuid())
   title                    String
   slug                     String             @unique
   description              String?
   status                   TrackStatus        @default(DRAFT)
-  fileAssetId              String             @unique
-  fileAsset                FileAsset          @relation(fields: [fileAssetId], references: [id], onDelete: Restrict)
+  // feature-127: nullable because a route-based track resolves geometry
+  // through `route` instead. `@unique` stays — Postgres allows many NULLs,
+  // so one file still belongs to one track.
+  fileAssetId              String?            @unique
+  fileAsset                FileAsset?         @relation(fields: [fileAssetId], references: [id], onDelete: Restrict)
   metadata                 Json?
+  routeId                  String?
+  route                    Route?             @relation(fields: [routeId], references: [id], onDelete: Restrict)
   recordingTimezone        String?
   recordingStartAt         DateTime?
   recordingDurationSeconds Int?
@@ -560,6 +585,7 @@ model FileAsset {
   ownerUserId String
   owner       User                @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
   track       Track?
+  route       Route?
   photoImages PhotoImage[]
   uploadedAt  DateTime            @default(now())
   updatedAt   DateTime            @default(now()) @updatedAt

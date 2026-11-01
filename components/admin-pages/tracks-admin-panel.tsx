@@ -246,8 +246,8 @@ const TrackFormDialog = ({
         // feature-120: restore the saved kind, otherwise opening a workout
         // in the edit dialog would show "Route" and saving would demote it.
         kind: track.kind,
-        fileAssetId: track.fileAssetId,
-        fileAssetName: track.fileAsset.name,
+        fileAssetId: track.fileAssetId ?? "",
+        fileAssetName: track.fileAsset?.name ?? "",
         activityTypeId: track.activityTypeId ?? "",
         // feature-122: the attached gear, read from the row the table was
         // built from — no second query for it.

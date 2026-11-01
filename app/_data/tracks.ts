@@ -18,6 +18,7 @@ import { assertVerifiedResourceQuota, createWithinVerifiedResourceQuota } from "
 import { gearFitsActivityType } from "@/lib/gear";
 import { validateGpxString } from "@/lib/gpx-validation";
 import { createSlug } from "@/lib/slug-generator";
+import { resolveTrackGeometry } from "@/lib/track-geometry";
 import {
   parseDurationSeconds,
   parseManualTrackStartAt,
@@ -135,6 +136,23 @@ type PublicTrackRecord = Prisma.TrackGetPayload<{
         updatedAt: true;
       };
     };
+    route: {
+      select: {
+        metadata: true;
+        fileAsset: {
+          select: {
+            id: true;
+            name: true;
+            fileKey: true;
+            sizeBytes: true;
+            status: true;
+            visibility: true;
+            uploadedAt: true;
+            updatedAt: true;
+          };
+        };
+      };
+    };
     metadata: true;
     hikes: {
       select: {
@@ -207,6 +225,25 @@ const getRequiredUserId = async () => {
   if (!session) throw new Error("Unauthorized: User Id not found");
 
   return session.user.id;
+};
+
+/**
+ * feature-127: replace the row's own file and metadata with the resolved
+ * geometry source, so every consumer keeps reading `track.fileAsset` and
+ * `track.metadata` without knowing about routes.
+ */
+const withResolvedGeometry = <
+  TTrack extends {
+    fileAsset: { id: string } | null;
+    metadata: Prisma.JsonValue | null;
+    route?: { fileAsset: { id: string } | null; metadata: Prisma.JsonValue | null } | null;
+  },
+>(
+  track: TTrack,
+): TTrack => {
+  const geometry = resolveTrackGeometry(track);
+
+  return geometry ? { ...track, fileAsset: geometry.fileAsset, metadata: geometry.metadata } : track;
 };
 
 const normalizeRequiredText = (value: string, fieldName: string) => {
@@ -405,6 +442,12 @@ const trackListSelect = {
   createdAt: true,
   activityType: true,
   fileAsset: true,
+  route: {
+    select: {
+      metadata: true,
+      fileAsset: true,
+    },
+  },
   user: {
     select: {
       id: true,
@@ -505,17 +548,39 @@ const publicTrackSelect = {
       updatedAt: true,
     },
   },
+  route: {
+    select: {
+      metadata: true,
+      fileAsset: {
+        select: {
+          id: true,
+          name: true,
+          fileKey: true,
+          sizeBytes: true,
+          status: true,
+          visibility: true,
+          uploadedAt: true,
+          updatedAt: true,
+        },
+      },
+    },
+  },
 } satisfies Prisma.TrackSelect;
 
 const toPublicTrack = (
   track: PublicTrackRecord,
   { includeMapGeometry }: { includeMapGeometry: boolean },
-): PublicTrack => {
+): PublicTrack | null => {
+  const geometry = resolveTrackGeometry(track);
+
+  if (!geometry) return null;
+
+  const { fileAsset, metadata } = geometry;
   const downloadAvailable =
-    track.fileAsset.status === ACTIVE_FILE_STATUS && PUBLIC_DOWNLOAD_VISIBILITIES.has(track.fileAsset.visibility);
-  const parsedState = getTrackGpxMetadataState(track.metadata, {
-    fileAssetId: track.fileAsset.id,
-    fileKey: track.fileAsset.fileKey,
+    fileAsset.status === ACTIVE_FILE_STATUS && PUBLIC_DOWNLOAD_VISIBILITIES.has(fileAsset.visibility);
+  const parsedState = getTrackGpxMetadataState(metadata, {
+    fileAssetId: fileAsset.id,
+    fileKey: fileAsset.fileKey,
   });
 
   return {
@@ -530,12 +595,12 @@ const toPublicTrack = (
     updatedAt: track.updatedAt,
     createdAt: track.createdAt,
     file: {
-      id: track.fileAsset.id,
-      name: track.fileAsset.name,
-      sizeBytes: track.fileAsset.sizeBytes,
-      uploadedAt: track.fileAsset.uploadedAt,
-      updatedAt: track.fileAsset.updatedAt,
-      downloadUrl: downloadAvailable ? `/files/${track.fileAsset.id}/download` : null,
+      id: fileAsset.id,
+      name: fileAsset.name,
+      sizeBytes: fileAsset.sizeBytes,
+      uploadedAt: fileAsset.uploadedAt,
+      updatedAt: fileAsset.updatedAt,
+      downloadUrl: downloadAvailable ? `/files/${fileAsset.id}/download` : null,
       downloadAvailable,
     },
     parsed:
@@ -546,9 +611,9 @@ const toPublicTrack = (
           }
         : null,
     map: includeMapGeometry
-      ? toTrackMapViewModel(track.title, track.metadata, {
-          fileAssetId: track.fileAsset.id,
-          fileKey: track.fileAsset.fileKey,
+      ? toTrackMapViewModel(track.title, metadata, {
+          fileAssetId: fileAsset.id,
+          fileKey: fileAsset.fileKey,
         })
       : null,
     hikes: track.hikes.map((association) => ({
@@ -633,18 +698,22 @@ export const getAllTracks = async ({ includeGear = false }: { includeGear?: bool
   const { default: prisma } = await import("@/lib/prisma");
 
   if (includeGear) {
-    return prisma.track.findMany({
+    const tracks: TrackListItem[] = await prisma.track.findMany({
       where: { userId },
       select: trackListSelectWithGear,
       orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
     });
+
+    return tracks.map((track) => withResolvedGeometry(track));
   }
 
-  return prisma.track.findMany({
+  const tracks: TrackListItem[] = await prisma.track.findMany({
     where: { userId },
     select: trackListSelect,
     orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
   });
+
+  return tracks.map((track) => withResolvedGeometry(track));
 };
 
 /**
@@ -659,18 +728,22 @@ export const getOwnerWorkoutTracks = async ({ includeGear = false }: { includeGe
   const { default: prisma } = await import("@/lib/prisma");
 
   if (includeGear) {
-    return prisma.track.findMany({
+    const tracks: TrackListItem[] = await prisma.track.findMany({
       where: { userId, kind: "TRAINING" },
       select: trackListSelectWithGear,
       orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
     });
+
+    return tracks.map((track) => withResolvedGeometry(track));
   }
 
-  return prisma.track.findMany({
+  const tracks: TrackListItem[] = await prisma.track.findMany({
     where: { userId, kind: "TRAINING" },
     select: trackListSelect,
     orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
   });
+
+  return tracks.map((track) => withResolvedGeometry(track));
 };
 
 /**
@@ -737,10 +810,12 @@ export const getTrackById = async (id: string): Promise<TrackListItem | null> =>
   const userId = await getRequiredUserId();
   const { default: prisma } = await import("@/lib/prisma");
 
-  return prisma.track.findFirst({
+  const track = await prisma.track.findFirst({
     where: { id, userId },
     select: trackListSelect,
   });
+
+  return track ? withResolvedGeometry(track) : null;
 };
 
 export const getPublicTracks = async (): Promise<PublicTrack[]> => {
@@ -751,7 +826,9 @@ export const getPublicTracks = async (): Promise<PublicTrack[]> => {
     orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
   })) as PublicTrackRecord[];
 
-  return tracks.map((track) => toPublicTrack(track, { includeMapGeometry: false }));
+  return tracks
+    .map((track) => toPublicTrack(track, { includeMapGeometry: false }))
+    .filter((track): track is PublicTrack => track !== null);
 };
 
 export const getPublicTrackBySlug = async (slug: string): Promise<PublicTrack | null> => {
@@ -792,7 +869,7 @@ export const createTrack = async (values: TrackActionValues) => {
 
   revalidateTrackPaths();
 
-  return track;
+  return withResolvedGeometry(track);
 };
 
 export const updateTrack = async (values: TrackActionValues) => {
@@ -863,7 +940,7 @@ export const updateTrack = async (values: TrackActionValues) => {
 
   revalidateTrackDetailPaths(track.slug);
 
-  return track;
+  return withResolvedGeometry(track);
 };
 
 export const updateTrackRecordingTimezone = async ({
@@ -1024,7 +1101,7 @@ export const updateTrackRecordingMetadata = async (
     revalidatePath(`/hikes/${association.hike.slug}`);
   }
 
-  return { ok: true, track };
+  return { ok: true, track: withResolvedGeometry(track) };
 };
 
 export type MarkTrackAsManualInput = {
@@ -1085,7 +1162,7 @@ export const markTrackAsManual = async (input: MarkTrackAsManualInput): Promise<
     revalidatePath(`/hikes/${association.hike.slug}`);
   }
 
-  return { ok: true, track };
+  return { ok: true, track: withResolvedGeometry(track) };
 };
 
 export const parseTrackGpx = async (id: string) => {
@@ -1112,6 +1189,10 @@ export const parseTrackGpx = async (id: string) => {
 
   if (!track) {
     throw new Error("Track not found");
+  }
+
+  if (!track.fileAsset) {
+    throw new Error("A route-based track has no GPX file of its own to reparse");
   }
 
   if (track.fileAsset.purpose !== "TRACK_GPX" || track.fileAsset.status !== ACTIVE_FILE_STATUS) {
