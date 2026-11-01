@@ -73,6 +73,8 @@ Use product or code area scopes in commit messages, not workflow/tooling scopes 
 - Example: prefer `docs(localization): propose feature-039 public navbar language switcher` over `docs(openspec): ...`.
 - Start the commit subject after the colon with a capital letter (for example, `docs(localization): Propose feature-039 public navbar language switcher`).
 
+Never commit without the user's explicit go-ahead. Prepare the change, show the diff summary and the proposed message, and ask a question that can be answered with a yes or a correction. Do not stage and commit silently, even when the change is small or was already discussed.
+
 ## Token Economy
 
 Spend tokens deliberately.
