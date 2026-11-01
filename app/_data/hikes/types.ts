@@ -211,6 +211,10 @@ export type HikePhotoOption = {
   id: string;
   title: string;
   status: PhotoStatus;
+  // The trips this photo is already associated with. The admin trip
+  // photo-association surface uses them to hold back the photos that belong
+  // to another trip, without restricting the attach action itself.
+  attachedHikeIds: string[];
   trackTimeMatch: TrackTimeMatchPhotoInput;
   mapCoordinate: PhotoMapCoordinate | null;
   previewImage: {
@@ -228,6 +232,9 @@ export type HikePhotoOptionRecord = {
   metadata: Prisma.JsonValue | null;
   images: {
     fileAsset: NonNullable<HikePhotoOption["previewImage"]>;
+  }[];
+  hikes: {
+    hikeId: string;
   }[];
 };
 

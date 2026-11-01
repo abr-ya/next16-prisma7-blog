@@ -366,6 +366,7 @@ const HikePhotosDialog = ({
 }) => {
   const [pendingPhotoId, setPendingPhotoId] = useState<string | null>(null);
   const [attachedPhotoIds, setAttachedPhotoIds] = useState<string[]>([]);
+  const [showOtherTripPhotos, setShowOtherTripPhotos] = useState(false);
   const [matchingPhoto, setMatchingPhoto] = useState<HikePhotoOption | null>(null);
   const [pendingCandidateId, setPendingCandidateId] = useState<string | null>(null);
   const [manualLat, setManualLat] = useState("");
@@ -380,6 +381,16 @@ const HikePhotosDialog = ({
     return photo ? [photo] : [];
   });
   const availablePhotos = photos.filter((photo) => !associatedPhotoIds.has(photo.id));
+  // Photos that already belong to another trip. They stay attachable — the
+  // reveal control below brings them back into the list — but they are held
+  // back by default so the list starts from the genuinely unused photos.
+  const currentHikeId = hike?.id;
+  const isOtherTripPhoto = (photo: HikePhotoOption) =>
+    currentHikeId !== undefined && photo.attachedHikeIds.some((attachedHikeId) => attachedHikeId !== currentHikeId);
+  const otherTripPhotos = availablePhotos.filter(isOtherTripPhoto);
+  const visibleAvailablePhotos = showOtherTripPhotos
+    ? availablePhotos
+    : availablePhotos.filter((photo) => !isOtherTripPhoto(photo));
   const matchCandidates = useMemo(
     () => (matchingPhoto ? proposeTrackTimeMatchCandidates(matchingPhoto.trackTimeMatch, matchTracks) : []),
     [matchTracks, matchingPhoto],
@@ -389,6 +400,7 @@ const HikePhotosDialog = ({
     if (!open) return;
 
     setAttachedPhotoIds(hike?.photos.map(({ photo }) => photo.id) ?? []);
+    setShowOtherTripPhotos(false);
   }, [hike, open]);
 
   useEffect(() => {
@@ -650,12 +662,29 @@ const HikePhotosDialog = ({
               )}
             </section>
             <section className="grid gap-3">
-              <h3 className="text-sm font-medium">Available photos</h3>
-              {availablePhotos.length > 0 ? (
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <h3 className="text-sm font-medium">Available photos</h3>
+                {otherTripPhotos.length > 0 ? (
+                  <label className="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground">
+                    <input
+                      type="checkbox"
+                      checked={showOtherTripPhotos}
+                      onChange={(event) => setShowOtherTripPhotos(event.target.checked)}
+                      className="size-4 accent-primary"
+                    />
+                    Show photos attached to other trips ({otherTripPhotos.length})
+                  </label>
+                ) : null}
+              </div>
+              {visibleAvailablePhotos.length > 0 ? (
                 <div className="grid gap-2">
-                  {availablePhotos.map((photo) => (
+                  {visibleAvailablePhotos.map((photo) => (
                     <PhotoRow key={photo.id} photo={photo} />
                   ))}
+                </div>
+              ) : otherTripPhotos.length > 0 ? (
+                <div className="rounded-md border p-4 text-sm text-muted-foreground">
+                  Every available photo is attached to another trip. Reveal them to attach one here.
                 </div>
               ) : (
                 <div className="rounded-md border p-4 text-sm text-muted-foreground">
