@@ -38,7 +38,7 @@
 - [x] 5.3 Convert `nabahino-na-stanciyu` the same way; its recording data stays on the track.
 - [x] 5.4 Add the `Track_geometry_source_check` constraint from `design.md` after the conversion; it ships inside the same migration, after 5.1–5.3, so a missed row rolls the whole change back.
 - [x] 5.5 Verify before adding the constraint that no `Track` row has both sources or neither: `SELECT count(*) FROM "Track" WHERE ("routeId" IS NULL) = ("fileAssetId" IS NULL);` must return `0`.
-- [ ] 5.6 Confirm the three tracks resolve their geometry through their new routes on `/my/tracks`, `/admin/tracks`, and the public track page.
+- [x] 5.6 Confirm the three tracks resolve their geometry through their new routes on `/my/tracks`, `/admin/tracks`, and the public track page.
 
 ## 6. Validation
 
@@ -50,7 +50,7 @@
 
 ## 7. Browser check (the owner's)
 
-- [ ] 7.1 Create a track from a newly placed route, with a start time and a duration; confirm the track renders the route's geometry.
-- [ ] 7.2 Create a second track from the same route and confirm both render the same geometry.
+Minimal positive pass. The owner already confirmed the three migrated legacy tracks render their route geometry (5.6 and 7.4). Creating a track from a new route and reusing that route for a second track are deferred to the `outdoor-route-track-creation-manual-qa` candidate in `openspec/backlog.md`.
+
 - [ ] 7.3 Upload a GPX file through the main path and confirm nothing about it changed: own file, own metadata, no route involved.
-- [ ] 7.4 Open the three converted legacy tracks and confirm they render their geometry from their new routes.
+- [x] 7.4 Open the three converted legacy tracks and confirm they render their geometry from their new routes.
