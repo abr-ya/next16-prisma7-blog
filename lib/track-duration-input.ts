@@ -148,6 +148,45 @@ const getTimezoneOffsetMinutes = (timezone: string, utcDate: Date): number => {
 };
 
 /**
+ * Render a stored UTC instant back as the wall clock the owner typed, in the
+ * recording timezone. The edit form's `datetime-local` input has no offset, so
+ * showing the raw UTC value there would turn 09:32 Moscow into 06:32 next to a
+ * timezone field that still says Moscow.
+ *
+ * A missing or unsupported timezone falls back to UTC, matching the previous
+ * behaviour for rows that never carried a zone.
+ */
+export const formatManualTrackStartAt = ({ value, timezone }: { value: Date; timezone?: string | null }): string => {
+  if (Number.isNaN(value.getTime())) return "";
+
+  let zone = "UTC";
+  if (timezone?.trim()) {
+    try {
+      zone = requireTrackRecordingTimezone(timezone);
+    } catch {
+      zone = "UTC";
+    }
+  }
+
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone: zone,
+    hour12: false,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  const parts = formatter.formatToParts(value);
+  const get = (type: string) => parts.find((part) => part.type === type)?.value;
+
+  // Some locales emit "24" for midnight — normalise to 0.
+  const hour = get("hour") === "24" ? "00" : (get("hour") ?? "00");
+
+  return `${get("year")}-${get("month")}-${get("day")}T${hour}:${get("minute")}`;
+};
+
+/**
  * Parse a wall-clock datetime (no offset, no Z) plus an IANA timezone into a
  * UTC `Date`. Validates the wall-clock shape and the timezone through
  * `requireTrackRecordingTimezone` so unsupported zones throw a typed error.

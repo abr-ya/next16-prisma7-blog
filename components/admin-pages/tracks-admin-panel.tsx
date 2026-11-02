@@ -75,7 +75,12 @@ import {
 } from "@/components/admin-pages/tracks-admin-panel-parse-cell";
 import { createTracksAdminColumns } from "@/components/admin-pages/tracks-admin-columns";
 import { createTrackWorkoutColumns } from "@/components/admin-pages/tracks-workout-columns";
-import { TrackDurationInputError, parseDurationInput, parseStoredDurationToHms } from "@/lib/track-duration-input";
+import {
+  TrackDurationInputError,
+  formatManualTrackStartAt,
+  parseDurationInput,
+  parseStoredDurationToHms,
+} from "@/lib/track-duration-input";
 
 const formSchema = z.object({
   title: z.string().min(1, { message: "Title is required" }),
@@ -204,6 +209,9 @@ const TrackFormDialog = ({
       track.recordingDurationSeconds !== null ||
       (track.recordingTimezone !== null && track.recordingTimezone.length > 0));
   const savedFileAssetId = track?.fileAssetId ?? null;
+  // feature-127: a route-based track owns no file; its geometry comes from
+  // the linked route. The edit form must not demand a GPX file for it.
+  const isRouteBasedTrack = Boolean(track && !track.fileAssetId && track.route);
   const fileAssetId = useWatch({ control: form.control, name: "fileAssetId" });
   const fileAssetName = useWatch({ control: form.control, name: "fileAssetName" });
   const [activeTab, setActiveTab] = useState<TrackCreationMode>("gpx");
@@ -247,7 +255,9 @@ const TrackFormDialog = ({
       // `updateTrackRecordingMetadata` action; the form renders the inputs
       // read-only for GPX rows via the `isReadOnlyRecording` flag.
       const storedDuration = parseStoredDurationToHms(track.recordingDurationSeconds);
-      const startWallClock = track.recordingStartAt ? track.recordingStartAt.toISOString().slice(0, 16) : "";
+      const startWallClock = track.recordingStartAt
+        ? formatManualTrackStartAt({ value: track.recordingStartAt, timezone: track.recordingTimezone })
+        : "";
       form.reset({
         title: track.title,
         slug: track.slug,
@@ -884,7 +894,7 @@ const TrackFormDialog = ({
   );
 
   const canSubmit = isEditing
-    ? Boolean(fileAssetId)
+    ? isRouteBasedTrack || Boolean(fileAssetId)
     : activeTab === "gpx"
       ? Boolean(fileAssetId)
       : (selectedRouteId !== NEW_ROUTE_VALUE || placedPoints.length >= 2) && hasStart && hasDuration && hasTimezone;
@@ -917,85 +927,95 @@ const TrackFormDialog = ({
                 ) : null}
                 <TabsContent value="gpx" className="grid gap-4">
                   {renderTextFields()}
-                  <FormField
-                    control={form.control}
-                    name="fileAssetId"
-                    render={() => (
-                      <FormItem>
-                        <FormLabel>GPX file</FormLabel>
-                        <div className="rounded-md border p-3 text-sm">
-                          <div className="flex min-h-5 items-center gap-2">
-                            <FileUp className="size-4 text-muted-foreground" />
-                            <span className="truncate">{fileAssetName || "No GPX file uploaded"}</span>
-                          </div>
-                        </div>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <TrackGpxUploadSection
-                    isEditing={isEditing}
-                    onUploadComplete={({ fileAssetId, fileName }) => {
-                      form.setValue("fileAssetId", fileAssetId, { shouldDirty: true, shouldValidate: true });
-                      form.setValue("fileAssetName", fileName, { shouldDirty: true, shouldValidate: true });
-                      discardGuard.registerUploadedFileAssetId(fileAssetId);
-                    }}
-                    onUploadError={() => {
-                      // toast already emitted by the section
-                    }}
-                  />
-                  {track && parseState ? (
-                    <div className="grid gap-3 rounded-md border p-3 text-sm">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">GPX parsing</span>
-                          <Badge variant={getParseStatusVariant(parseState)}>{getParseStatusLabel(parseState)}</Badge>
-                        </div>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          disabled={isParsing || form.formState.isDirty}
-                          onClick={() => onParse(track)}
-                        >
-                          <RefreshCw className={isParsing ? "animate-spin" : undefined} />
-                          {isParsing ? "Parsing..." : parseState.status === "SUCCESS" ? "Reparse" : "Parse GPX"}
-                        </Button>
-                      </div>
-                      {parseState.status === "SUCCESS" ? (
-                        <div className="grid gap-2 text-muted-foreground">
-                          <div className="flex flex-wrap gap-3">
-                            <span>{formatTrackDistance(parseState.summary.distanceMeters)}</span>
-                            <span>{formatTrackPointCount(parseState.summary.points)}</span>
-                            <span>{formatTrackTimelinePresence(parseState.timeline)}</span>
-                            <span>Parsed {formatDate(parseState.metadata.gpxParse.parsedAt)}</span>
-                          </div>
-                          {parseState.summary.time ? (
-                            <div className="flex flex-wrap gap-2">
-                              <span>
-                                {formatTrackRecordingTimeRange(parseState.summary.time, track.recordingTimezone)}
-                              </span>
-                              <Badge
-                                variant={
-                                  parseState.summary.time.timezoneEvidence === "UTC_OR_OFFSET" ? "secondary" : "outline"
-                                }
-                              >
-                                {formatTrackTimezoneEvidence(parseState.summary.time.timezoneEvidence)}
+                  {isRouteBasedTrack ? (
+                    <p className="text-sm text-muted-foreground">{t("trackFormGeometryFromRoute")}</p>
+                  ) : (
+                    <>
+                      <FormField
+                        control={form.control}
+                        name="fileAssetId"
+                        render={() => (
+                          <FormItem>
+                            <FormLabel>GPX file</FormLabel>
+                            <div className="rounded-md border p-3 text-sm">
+                              <div className="flex min-h-5 items-center gap-2">
+                                <FileUp className="size-4 text-muted-foreground" />
+                                <span className="truncate">{fileAssetName || "No GPX file uploaded"}</span>
+                              </div>
+                            </div>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <TrackGpxUploadSection
+                        isEditing={isEditing}
+                        onUploadComplete={({ fileAssetId, fileName }) => {
+                          form.setValue("fileAssetId", fileAssetId, { shouldDirty: true, shouldValidate: true });
+                          form.setValue("fileAssetName", fileName, { shouldDirty: true, shouldValidate: true });
+                          discardGuard.registerUploadedFileAssetId(fileAssetId);
+                        }}
+                        onUploadError={() => {
+                          // toast already emitted by the section
+                        }}
+                      />
+                      {track && parseState ? (
+                        <div className="grid gap-3 rounded-md border p-3 text-sm">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium">GPX parsing</span>
+                              <Badge variant={getParseStatusVariant(parseState)}>
+                                {getParseStatusLabel(parseState)}
                               </Badge>
+                            </div>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              disabled={isParsing || form.formState.isDirty}
+                              onClick={() => onParse(track)}
+                            >
+                              <RefreshCw className={isParsing ? "animate-spin" : undefined} />
+                              {isParsing ? "Parsing..." : parseState.status === "SUCCESS" ? "Reparse" : "Parse GPX"}
+                            </Button>
+                          </div>
+                          {parseState.status === "SUCCESS" ? (
+                            <div className="grid gap-2 text-muted-foreground">
+                              <div className="flex flex-wrap gap-3">
+                                <span>{formatTrackDistance(parseState.summary.distanceMeters)}</span>
+                                <span>{formatTrackPointCount(parseState.summary.points)}</span>
+                                <span>{formatTrackTimelinePresence(parseState.timeline)}</span>
+                                <span>Parsed {formatDate(parseState.metadata.gpxParse.parsedAt)}</span>
+                              </div>
+                              {parseState.summary.time ? (
+                                <div className="flex flex-wrap gap-2">
+                                  <span>
+                                    {formatTrackRecordingTimeRange(parseState.summary.time, track.recordingTimezone)}
+                                  </span>
+                                  <Badge
+                                    variant={
+                                      parseState.summary.time.timezoneEvidence === "UTC_OR_OFFSET"
+                                        ? "secondary"
+                                        : "outline"
+                                    }
+                                  >
+                                    {formatTrackTimezoneEvidence(parseState.summary.time.timezoneEvidence)}
+                                  </Badge>
+                                </div>
+                              ) : null}
+                            </div>
+                          ) : null}
+                          {parseState.status === "FAILED" || parseState.status === "STALE" ? (
+                            <div className="text-muted-foreground">{parseState.errorMessage}</div>
+                          ) : null}
+                          {form.formState.isDirty ? (
+                            <div className="text-xs text-muted-foreground">
+                              Save track changes before parsing the current GPX file.
                             </div>
                           ) : null}
                         </div>
                       ) : null}
-                      {parseState.status === "FAILED" || parseState.status === "STALE" ? (
-                        <div className="text-muted-foreground">{parseState.errorMessage}</div>
-                      ) : null}
-                      {form.formState.isDirty ? (
-                        <div className="text-xs text-muted-foreground">
-                          Save track changes before parsing the current GPX file.
-                        </div>
-                      ) : null}
-                    </div>
-                  ) : null}
+                    </>
+                  )}
                 </TabsContent>
                 <TabsContent value="route" className="grid gap-4">
                   <div className="grid gap-2">

@@ -58,6 +58,7 @@
   "trackFormRouteEmpty": "У вас пока нет маршрутов. Поставьте точки для нового.",
   "trackFormRouteRequired": "Выберите маршрут или создайте новый.",
   "trackFormRouteCreateError": "Не удалось создать маршрут.",
+  "trackFormGeometryFromRoute": "Геометрия берётся из привязанного маршрута. Чтобы изменить форму, отредактируйте маршрут.",
   "trackFormRecordingStartRequired": "Укажите начало записи.",
   "trackFormRecordingTimezoneRequired": "Укажите часовой пояс записи.",
   "trackFormRecordingDurationRequired": "Укажите длительность записи.",

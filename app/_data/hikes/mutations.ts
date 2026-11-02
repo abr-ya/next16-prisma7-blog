@@ -572,7 +572,7 @@ export const createTrackAndAttachToHike = async (
       const data = await getTrackData(trackValues);
       try {
         await ensureSlugAvailable({ slug: data.slug });
-        await ensureEligibleTrackFileAsset({ fileAssetId: data.fileAssetId, userId });
+        await ensureEligibleTrackFileAsset({ fileAssetId: data.fileAssetId ?? "", userId });
       } catch (error) {
         const message = error instanceof Error ? error.message : "Track input is invalid";
         if (message.toLowerCase().includes("slug")) {

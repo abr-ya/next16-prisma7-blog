@@ -58,6 +58,7 @@
   "trackFormRouteEmpty": "You have no routes yet. Place points for a new one.",
   "trackFormRouteRequired": "Choose a route or place a new one.",
   "trackFormRouteCreateError": "Could not create the route.",
+  "trackFormGeometryFromRoute": "Geometry comes from the linked route. Edit the route to change the shape.",
   "trackFormRecordingStartRequired": "Enter the recording start.",
   "trackFormRecordingTimezoneRequired": "Enter the recording timezone.",
   "trackFormRecordingDurationRequired": "Enter the recording duration.",

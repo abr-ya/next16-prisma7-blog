@@ -273,18 +273,17 @@ const normalizeTrackSlug = (title: string, value?: string | null) => {
   return slug;
 };
 
-export const getTrackData = async ({
-  title,
-  slug,
-  description,
-  status,
-  fileAssetId,
-  activityTypeId,
-  kind,
-}: TrackActionValues) => {
+export const getTrackData = async (
+  { title, slug, description, status, fileAssetId, activityTypeId, kind }: TrackActionValues,
+  { requireFileAsset = true }: { requireFileAsset?: boolean } = {},
+) => {
   const normalizedTitle = normalizeRequiredText(title, "Title");
   const normalizedStatus = status ?? DEFAULT_TRACK_STATUS;
-  const normalizedFileAssetId = normalizeRequiredText(fileAssetId ?? "", "GPX file");
+  // feature-127: a route-based track owns no file of its own, so an update
+  // must be able to normalize the presentation fields without demanding one.
+  const normalizedFileAssetId = requireFileAsset
+    ? normalizeRequiredText(fileAssetId ?? "", "GPX file")
+    : fileAssetId?.trim() || null;
 
   if (!TRACK_STATUSES.has(normalizedStatus)) {
     throw new Error("Track status is invalid");
@@ -798,7 +797,7 @@ export const createTrack = async (values: TrackActionValues) => {
   const userId = user.id;
   const data = await getTrackData(values);
   await ensureSlugAvailable({ slug: data.slug });
-  await ensureEligibleTrackFileAsset({ fileAssetId: data.fileAssetId, userId });
+  await ensureEligibleTrackFileAsset({ fileAssetId: data.fileAssetId ?? "", userId });
   const gear = await ensureEligibleTrackGear({ gearId: values.gearId, userId, activityTypeId: data.activityTypeId });
 
   const track = await createWithinVerifiedResourceQuota(user, "track", (tx) =>
@@ -830,7 +829,6 @@ export const updateTrack = async (values: TrackActionValues) => {
   }
 
   const userId = await getRequiredUserId();
-  const data = await getTrackData(values);
   const { default: prisma } = await import("@/lib/prisma");
   const existingTrack = await prisma.track.findFirst({
     where: { id: values.id, userId },
@@ -838,6 +836,7 @@ export const updateTrack = async (values: TrackActionValues) => {
       id: true,
       metadata: true,
       fileAssetId: true,
+      routeId: true,
       gearId: true,
       fileAsset: {
         select: {
@@ -851,12 +850,20 @@ export const updateTrack = async (values: TrackActionValues) => {
     throw new Error("Track not found");
   }
 
+  // feature-127: a route-based track has no file of its own. Its presentation
+  // and training fields are still editable; only the geometry belongs to the
+  // route.
+  const isRouteBased = Boolean(existingTrack.routeId);
+  const data = await getTrackData(values, { requireFileAsset: !isRouteBased });
+
   await ensureSlugAvailable({ slug: data.slug, id: existingTrack.id });
-  const fileAsset = await ensureEligibleTrackFileAsset({
-    fileAssetId: data.fileAssetId,
-    userId,
-    trackId: existingTrack.id,
-  });
+  const fileAsset = isRouteBased
+    ? null
+    : await ensureEligibleTrackFileAsset({
+        fileAssetId: data.fileAssetId ?? "",
+        userId,
+        trackId: existingTrack.id,
+      });
   // feature-122: the attachment that this update ends up with is the one the
   // caller names, or the one the track already carries when the caller says
   // nothing about it. Either way it is checked against the activity type
@@ -869,7 +876,10 @@ export const updateTrack = async (values: TrackActionValues) => {
     activityTypeId: data.activityTypeId,
   });
   const staleMetadata =
-    existingTrack.fileAssetId !== data.fileAssetId || existingTrack.fileAsset.fileKey !== fileAsset.fileKey
+    !isRouteBased &&
+    fileAsset &&
+    existingTrack.fileAsset &&
+    (existingTrack.fileAssetId !== data.fileAssetId || existingTrack.fileAsset.fileKey !== fileAsset.fileKey)
       ? markTrackGpxMetadataStale(existingTrack.metadata, fileAsset.id, fileAsset.fileKey)
       : null;
 
