@@ -157,8 +157,9 @@ const createTracksAdminColumns = ({
   },
   {
     accessorKey: "updatedAt",
-    header: "Updated",
+    header: ({ column }) => <SortableHeader column={column} label="Updated" />,
     cell: ({ row }) => formatDate(row.original.updatedAt),
+    sortingFn: "datetime",
   },
   {
     id: "actions",

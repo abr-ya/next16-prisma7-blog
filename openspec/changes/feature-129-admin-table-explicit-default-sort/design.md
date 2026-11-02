@@ -4,7 +4,7 @@
 
 `components/common/data-table.tsx` builds a TanStack table without a sorting state. `getSortedRowModel()` is registered, so a click on `SortableHeader` sorts the rows in memory, but the initial render is whatever order the server sent.
 
-The track queries order by `[{ updatedAt: "desc" }, { createdAt: "desc" }]`. The full track columns already carry an `updatedAt` accessor with a plain **Updated** header; the workout variant has no Updated column at all. **Title** is the only sortable header in the full variant, and its neutral `ArrowUpDown` glyph is easy to read as "the current sort".
+The track queries order by `[{ updatedAt: "desc" }, { createdAt: "desc" }]`. The full track columns carry an `updatedAt` accessor with a plain **Updated** header. The workout variant is deliberately short and has no Updated column; the meaningful order there is when the workout was recorded — the **Started** value, which falls back from the recording-start mirror to the parsed summary. **Title** is the only sortable header in the full variant, and its neutral `ArrowUpDown` glyph is easy to read as "the current sort".
 
 `feature-119` made the glyph reflect the actual state and `fix-006` restored the unsorted leg of the cycle. Neither gives the table an initial state to reflect.
 
@@ -12,9 +12,12 @@ The track queries order by `[{ updatedAt: "desc" }, { createdAt: "desc" }]`. The
 
 `DataTable` gains `initialSorting?: SortingState` and passes it to TanStack through `initialState: { sorting: initialSorting }`. The caller decides whether its page has a meaningful default; the shared component does not guess one.
 
-The track panel passes `[{ id: "updatedAt", desc: true }]` — the same order the data layer already uses. The **Updated** accessor becomes sortable, so a fresh load shows `ArrowDown` there and no longer implies Title is active.
+The panel declares a default per table variant:
 
-The workout variant gains a sortable **Updated** column for the same reason: without a column bound to `updatedAt`, the declared initial sort would have no header to render it.
+- the full track table (My Tracks, admin tracks) passes `[{ id: "updatedAt", desc: true }]` — the same order the data layer already uses; the **Updated** accessor becomes sortable, so a fresh load shows `ArrowDown` there and no longer implies Title is active;
+- the workout table passes `[{ id: "started", desc: true }]` and makes **Started** sortable, so the owner opens on the most recently recorded workout. Its short column set stays as it is: **Updated** is not business information for this list.
+
+The **Started** column gets an accessor that returns the same effective value its cell renders — the recording-start mirror or the parsed-summary fallback. The client sorts the already-loaded owner set on first render, then paginates. Rows without a start sort after dated rows in descending order.
 
 ### Why not sort by Title by default
 
@@ -32,15 +35,16 @@ Controlled state adds a prop and a callback for every table and buys nothing her
 
 The initial sort is a starting state, not a special mode:
 
-1. Fresh load: `updatedAt desc`, **Updated** shows `ArrowDown`.
-2. Click **Updated**: asc.
-3. Click again: desc.
-4. Click again: the sort clears, rows return to the page-supplied array order — which is still `updatedAt desc` — and the glyph becomes neutral.
+1. Fresh load on the full table: `updatedAt desc`, **Updated** shows `ArrowDown`.
+2. Fresh load on workouts: `started desc`, **Started** shows `ArrowDown`, and rows without a start sit at the end.
+3. Clicking the active header moves it through asc and desc.
+4. Clicking once more clears the sort, rows return to the page-supplied array order — still `updatedAt desc` — and the glyph becomes neutral.
 
 Step 4 is intentionally unchanged. Making the visible hint cover that cleared state is `feature-130-admin-table-default-sort-hint`, not this change.
 
 ## Risks
 
-- A declared sort id must match an accessor/column id. `updatedAt` exists in both track variants after this change, so the initial state is rendered rather than silently ignored.
-- Adding a column to the workout table changes its visible layout. That is accepted as the smallest change that makes the default order representable, and it is the "add a sortable column" kind of work the existing table already expects.
-- The server order and the client default can drift if a query changes without the panel. Both are `updatedAt desc` today; a future query change must update the panel constant.
+- A declared sort id must match an accessor/column id. `updatedAt` exists in the full variant and `started` exists in the workout variant after this change, so the initial state is rendered rather than silently ignored.
+- The workout default overrides the server's `updatedAt` order on first render. That is deliberate: the owner set is fully loaded before pagination, and "most recently recorded first" is the order that matters on this page.
+- Rows without a start have no natural position. Returning `null` from the accessor and using the datetime sorting function puts them after dated rows in descending order; this must stay consistent when `feature-131` adds the remaining columns.
+- The server order and the full-table client default can drift if a query changes without the panel. Both are `updatedAt desc` today; a future query change must update the panel constant.

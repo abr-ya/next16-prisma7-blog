@@ -8,7 +8,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import type { PaginationState } from "@tanstack/react-table";
+import type { PaginationState, SortingState } from "@tanstack/react-table";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useState } from "react";
 
@@ -23,9 +23,16 @@ interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
   pagination?: DataTablePaginationOptions;
+  /** feature-129: the order the page already supplies, made visible in the headers. */
+  initialSorting?: SortingState;
 }
 
-export const DataTable = <TData, TValue>({ columns, data, pagination }: DataTableProps<TData, TValue>) => {
+export const DataTable = <TData, TValue>({
+  columns,
+  data,
+  pagination,
+  initialSorting,
+}: DataTableProps<TData, TValue>) => {
   const [paginationState, setPaginationState] = useState<PaginationState>({
     pageIndex: 0,
     pageSize: pagination?.pageSize ?? data.length,
@@ -38,6 +45,7 @@ export const DataTable = <TData, TValue>({ columns, data, pagination }: DataTabl
     columns,
     state: isPaginated ? { pagination: paginationState } : undefined,
     onPaginationChange: isPaginated ? setPaginationState : undefined,
+    initialState: initialSorting ? { sorting: initialSorting } : undefined,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getPaginationRowModel: isPaginated ? getPaginationRowModel() : undefined,

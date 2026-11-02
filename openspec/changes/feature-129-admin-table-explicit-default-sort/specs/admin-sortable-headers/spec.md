@@ -23,9 +23,9 @@ The shared data table SHALL accept an optional initial sorting state and apply i
 - **WHEN** a table declares an initial sort and the page supplies rows in that same order
 - **THEN** the first render neither reorders the rows nor shows a different direction
 
-### Requirement: Track tables declare recently updated order
+### Requirement: Track and workout tables declare a meaningful initial sort
 
-The owner-facing track tables SHALL declare `updatedAt` descending as their initial sort and SHALL expose a sortable **Updated** column that renders that state. This SHALL apply to the full track table used by My Tracks and the admin track page, and to the workout table used by My Workouts.
+The owner-facing track tables SHALL declare `updatedAt` descending as their initial sort and SHALL expose a sortable **Updated** column that renders that state. This SHALL apply to the full track table used by My Tracks and the admin track page. The workout table used by My Workouts SHALL declare `started` descending as its initial sort — using the same effective start value its cell renders — and SHALL expose a sortable **Started** column. The workout table SHALL keep its short owner-side column set and SHALL NOT add an **Updated** column.
 
 #### Scenario: My Tracks opens with a visible default sort
 
@@ -40,14 +40,16 @@ The owner-facing track tables SHALL declare `updatedAt` descending as their init
 - **THEN** the **Updated** header shows the down-arrow glyph
 - **AND** the rows match the order supplied by the data layer
 
-#### Scenario: Workout table represents its order
+#### Scenario: Workout table opens on the most recently started workout
 
 - **WHEN** an owner opens `/my/workouts`
-- **THEN** the table has a sortable **Updated** column
-- **AND** that header shows the down-arrow glyph on first render
+- **THEN** the rows are ordered most recently started first
+- **AND** the **Started** header shows the down-arrow glyph
+- **AND** the table shows no **Updated** column
+- **AND** workouts without a start appear after workouts with one
 
 #### Scenario: Clearing the default sort is still possible
 
-- **WHEN** the owner clicks the **Updated** header until the sort is cleared
+- **WHEN** the owner clicks the active default header until the sort is cleared
 - **THEN** the header returns to the neutral glyph
 - **AND** the rows keep the page-supplied order

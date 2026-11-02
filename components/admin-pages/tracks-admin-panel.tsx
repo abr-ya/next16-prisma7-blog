@@ -1245,7 +1245,14 @@ export const TrackManagementPanel = ({
           Add track
         </Button>
       </div>
-      <DataTable data={tracks} columns={columns} pagination={{ pageSize: 10 }} />
+      <DataTable
+        data={tracks}
+        columns={columns}
+        pagination={{ pageSize: 10 }}
+        initialSorting={
+          tableVariant === "workouts" ? [{ id: "started", desc: true }] : [{ id: "updatedAt", desc: true }]
+        }
+      />
       {quickActivityType ? (
         <QuickWorkoutUploadDialog
           // The dialog is keyed by the activity type: another type gets its
