@@ -5,7 +5,7 @@ import { Edit, Trash2 } from "lucide-react";
 import Link from "next/link";
 
 import type { TrackListItem } from "@/app/_data/tracks";
-import { Badge, Button } from "@/components/index";
+import { Badge, Button, SortableHeader } from "@/components/index";
 import { getTrackParseState } from "@/components/admin-pages/tracks-admin-panel-parse-cell";
 import { formatTrackDistance, formatTrackDuration, formatTrackRecordingDateTime } from "@/lib/track-gpx-metadata";
 import { formatTrackRecordingTimezone } from "@/lib/track-recording-timezone";
@@ -69,7 +69,16 @@ const createTrackWorkoutColumns = ({
   },
   {
     id: "started",
-    header: "Started",
+    // feature-129: the effective start is the recording start mirror or the
+    // parsed summary fallback; the accessor exposes the same value the cell
+    // renders so the default `Started desc` sort and the visible order agree.
+    accessorFn: (row) => {
+      const state = getTrackParseState(row);
+      return (
+        row.recordingStartAt?.toISOString() ?? (state.status === "SUCCESS" ? (state.summary.time?.start ?? null) : null)
+      );
+    },
+    header: ({ column }) => <SortableHeader column={column} label="Started" />,
     cell: ({ row }) => {
       const state = getTrackParseState(row.original);
       // `recordingStartAt` is the mirror of the parsed GPX start, but the
@@ -86,6 +95,7 @@ const createTrackWorkoutColumns = ({
 
       return <span className="text-sm">{formatted ?? "—"}</span>;
     },
+    sortingFn: "datetime",
   },
   {
     id: "timezone",
