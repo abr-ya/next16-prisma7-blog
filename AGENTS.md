@@ -95,6 +95,14 @@ For commands with potentially large output, ask the user to run them and paste t
 
 When asking the user to run a command, provide the exact command and say what result is needed.
 
+## Repository Reports
+
+For a period report of merged numbered changes, start with:
+
+`node scripts/report-merged-features.mjs --since 2026-10-01 --until 2026-10-31 --out docs/merged-features-2026-10.md`
+
+It defaults to `feature` merges from `origin/master`; use `--kinds all` for every pool and `--ref` for another branch. The generated descriptions are drafts extracted from archived proposals — review and shorten them before committing.
+
 ## Validation Commands
 
 Preferred checks:
