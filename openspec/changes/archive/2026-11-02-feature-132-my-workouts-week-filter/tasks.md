@@ -30,10 +30,10 @@
 
 ## 5. Browser check (the owner's)
 
+The happy path (5.1, 5.2, 5.4, 5.6, 5.7) was verified in the browser. Year-boundary/53-week navigation and the no-start edge case are deferred to the `outdoor-workout-week-filter-edge-manual-qa` candidate in `openspec/backlog.md`.
+
 - [x] 5.1 Open `/my/workouts` and confirm `All time` with every workout listed and the existing `started desc` order.
 - [x] 5.2 Select week 45 of 2026 and confirm only 2–8 November workouts remain, the label shows the range, and the picker closes.
-- [ ] 5.3 Use the arrows across a year boundary and across a 53-week year; confirm the ISO week and dates move correctly.
 - [x] 5.4 Press **This week** and confirm the current week is selected with the right range.
-- [ ] 5.5 Confirm workouts without a start disappear under a selected week and return under `All time`.
 - [x] 5.6 Sort by another column while a week is selected and confirm the filter stays in effect.
 - [x] 5.7 On `All time`, go to a later page, select a week, confirm the week renders in full with no pagination, then return to `All time` and confirm it starts on page 1 with the same column sort.
