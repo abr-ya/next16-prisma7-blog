@@ -10,7 +10,7 @@ import {
 } from "@tanstack/react-table";
 import type { PaginationState, SortingState } from "@tanstack/react-table";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -25,6 +25,12 @@ interface DataTableProps<TData, TValue> {
   pagination?: DataTablePaginationOptions;
   /** feature-129: the order the page already supplies, made visible in the headers. */
   initialSorting?: SortingState;
+  /**
+   * feature-132: changing this key returns the table to its first page without
+   * touching the selected sort. Used when a filter switches between paginated
+   * and unpaginated modes.
+   */
+  pageResetKey?: string | number;
 }
 
 export const DataTable = <TData, TValue>({
@@ -32,6 +38,7 @@ export const DataTable = <TData, TValue>({
   data,
   pagination,
   initialSorting,
+  pageResetKey,
 }: DataTableProps<TData, TValue>) => {
   const [paginationState, setPaginationState] = useState<PaginationState>({
     pageIndex: 0,
@@ -52,6 +59,13 @@ export const DataTable = <TData, TValue>({
     autoResetPageIndex: true,
   });
   const pageCount = Math.max(table.getPageCount(), 1);
+
+  useEffect(() => {
+    table.setPageIndex(0);
+    // feature-132: only the reset key should trigger this; including `table`
+    // would reset the page on every render and break the pagination buttons.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pageResetKey]);
 
   return (
     <div className="flex flex-col gap-3">

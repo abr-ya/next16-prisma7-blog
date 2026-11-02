@@ -110,7 +110,9 @@ const createTrackWorkoutColumns = ({
 
       if (!start) return <span className="text-sm text-muted-foreground">—</span>;
 
-      const formatted = formatTrackRecordingDateTime(start, row.original.recordingTimezone);
+      const formatted = formatTrackRecordingDateTime(start, row.original.recordingTimezone, {
+        includeWeekday: true,
+      });
 
       return <span className="text-sm">{formatted ?? "—"}</span>;
     },

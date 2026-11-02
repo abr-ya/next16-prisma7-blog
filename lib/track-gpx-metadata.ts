@@ -359,10 +359,15 @@ export const formatTrackDuration = (seconds?: number | null) => {
   return `${minutes} min`;
 };
 
-export const formatTrackRecordingDateTime = (value?: string | null, recordingTimezone?: string | null) => {
+export const formatTrackRecordingDateTime = (
+  value?: string | null,
+  recordingTimezone?: string | null,
+  options: { includeWeekday?: boolean } = {},
+) => {
   if (!value || Number.isNaN(Date.parse(value))) return null;
 
   return new Intl.DateTimeFormat("en", {
+    ...(options.includeWeekday ? { weekday: "short" as const } : {}),
     year: "numeric",
     month: "short",
     day: "numeric",

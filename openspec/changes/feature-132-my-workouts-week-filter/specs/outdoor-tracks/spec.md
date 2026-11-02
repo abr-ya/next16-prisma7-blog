@@ -18,6 +18,7 @@ The owner's workout list SHALL support narrowing to a single ISO 8601 week: Mond
 - **WHEN** an owner selects week 45 of 2026
 - **THEN** only workouts whose effective recording start falls in 2–8 November 2026 are listed
 - **AND** the control reads `Week 45 · 2–8 Nov 2026`
+- **AND** the week picker closes
 
 #### Scenario: Owner moves to the previous or next week
 
@@ -48,3 +49,25 @@ The owner's workout list SHALL support narrowing to a single ISO 8601 week: Mond
 - **WHEN** the owner picks an ISO week-year that has 53 weeks
 - **THEN** the week selector offers week 53 with its date range
 - **AND** a 52-week year does not offer week 53
+
+### Requirement: Week filtering controls the pagination scope
+
+The workout list SHALL paginate `All time` and SHALL render a selected week in full without pagination. Switching between the two modes SHALL return a paginated view to its first page without resetting the selected column sort.
+
+#### Scenario: All time is paginated
+
+- **WHEN** the owner views `/my/workouts` on `All time`
+- **THEN** the list uses the existing page size and pagination controls
+- **AND** the rows can be paged
+
+#### Scenario: A selected week is not paginated
+
+- **WHEN** the owner selects a week
+- **THEN** every workout in that week is rendered
+- **AND** no pagination controls are shown
+
+#### Scenario: Returning to All time starts on the first page
+
+- **WHEN** the owner leaves a selected week and returns to `All time`
+- **THEN** the paginated list starts on its first page
+- **AND** the column sort the owner chose is still applied

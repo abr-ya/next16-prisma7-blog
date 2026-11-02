@@ -43,6 +43,14 @@ A compact control above the table:
 
 The year list contains the ISO week-years present in the loaded workouts plus the current one, so an owner with older data can still reach it.
 
+### Pagination follows the filter
+
+- `All time` stays paginated with the existing page size.
+- A selected week renders the whole week without pagination. A week is a naturally small set, and paging inside it is more friction than value.
+- Switching between the two modes returns the paginated view to its first page without resetting the chosen column sort. `DataTable` gets a small `pageResetKey` input for that; it is not a second sorting mechanism.
+
+Future month/year filters decide their own pagination when they are designed; the default is paginated unless the result set is known to be small.
+
 ### Why not a native `<input type="week">`
 
 Browser styling and locale behaviour differ, the date range is not visible, and the value shape is not ISO-week-aware across browsers. The project already has select and popover primitives.
@@ -55,4 +63,5 @@ The page already loads the whole owner set before client sorting and pagination.
 
 - A workout near midnight can change week depending on the timezone used. Using the recording timezone keeps it aligned with the displayed start; rows without a zone fall back to the browser.
 - Hiding no-start rows can make a selected week look empty; the table's existing empty state covers it, and `All time` restores the rows.
-- Filtering must not reset the owner's chosen sort. Only the row set changes; `DataTable` already resets pagination when its data changes.
+- Filtering must not reset the owner's chosen sort. Only the row set changes; `DataTable` resets the page through `pageResetKey` while leaving sorting alone.
+- A week with more rows than the old page size renders in full. That is intended for the week view; if weekly volume ever grows enough to hurt, the filter and pagination both move to the server together.

@@ -12,6 +12,7 @@
 - Add a **This week** shortcut inside the picker.
 - Filter each workout by the week of its effective recording start in the workout's own recording timezone, matching the **Started** column.
 - Hide workouts without a recording start while a week is selected; `All time` shows them again.
+- Keep `All time` paginated; render a selected week in full without pagination, while preserving the chosen sort.
 - Keep the existing sorting, the `started desc` default, and the short column set unchanged.
 
 ## Capabilities
