@@ -14,9 +14,8 @@ import type {
 import { Prisma } from "@/generated/prisma/client";
 import { authSession } from "@/lib/auth-utils";
 import { InsufficientTrustError, requireTrustGatedAction } from "@/lib/auth-trust-gates.server";
-import { assertVerifiedResourceQuota, createWithinVerifiedResourceQuota } from "@/lib/auth-trust-quotas.server";
+import { createWithinVerifiedResourceQuota } from "@/lib/auth-trust-quotas.server";
 import { gearFitsActivityType } from "@/lib/gear";
-import { validateGpxString } from "@/lib/gpx-validation";
 import { createSlug } from "@/lib/slug-generator";
 import { buildTrackGpxMetadata, fetchTrackGpxContent } from "@/lib/track-gpx-file";
 import { resolveTrackGeometry } from "@/lib/track-geometry";
@@ -32,8 +31,6 @@ import {
   resolveQuickWorkoutRecordingTimezone,
   toRecordingTimezoneFromUtcOffset,
 } from "@/lib/track-recording-timezone";
-import { uploadSyntheticTrackGpx } from "@/lib/uploadthing/server-gpx";
-import { buildSyntheticGpxBytes } from "@/lib/track-synthetic-gpx";
 import {
   getTrackGpxMetadataState,
   markTrackGpxMetadataStale,
@@ -58,25 +55,30 @@ export type TrackActionValues = {
   kind?: TrackKind;
 };
 
-export type CreateManualTrackInput = {
+export type CreateManualTrackResult =
+  | { ok: true; trackId: string; trackSlug: string }
+  | { ok: false; code: "TRUST" | "QUOTA" | "SLUG" | "VALIDATION" | "INTERNAL"; message: string };
+
+/**
+ * feature-127: a track created from a route carries no geometry of its own —
+ * the route owns the file and the metadata. The recording data is entered by
+ * the owner and is required before the save.
+ */
+export type CreateTrackFromRouteInput = {
+  routeId: string;
   title: string;
   slug?: string | null;
   description?: string | null;
   status?: TrackStatus;
-  points: { lat: number; lng: number }[];
   activityTypeId?: string | null;
   kind?: TrackKind;
-  // feature-122: the gear the track was run in. Optional — a track without
-  // an attachment is the normal case.
   gearId?: string | null;
-  recordingStartAt?: string | null;
-  recordingDurationSeconds?: number | null;
+  recordingStartAt: string;
+  recordingDurationSeconds: number;
   recordingTimezone?: string | null;
 };
 
-export type CreateManualTrackResult =
-  | { ok: true; trackId: string; trackSlug: string }
-  | { ok: false; code: "TRUST" | "QUOTA" | "SLUG" | "VALIDATION" | "INTERNAL"; message: string };
+export type CreateTrackFromRouteResult = CreateManualTrackResult;
 
 /**
  * feature-123: the quick upload creates a workout from one file, so it sends
@@ -108,10 +110,8 @@ export type CreateQuickWorkoutInput = {
   deviceTimezone?: string | null;
 };
 
-/** The quick upload answers with the same vocabulary as `createManualTrack`. */
+/** The quick upload answers with the same vocabulary as `createTrackFromRoute`. */
 export type CreateQuickWorkoutResult = CreateManualTrackResult;
-
-export type ManualTrackPoint = { lat: number; lng: number };
 
 type PublicTrackRecord = Prisma.TrackGetPayload<{
   select: {
@@ -1239,63 +1239,29 @@ class ManualTrackValidationError extends Error {
 }
 
 /**
- * Create a new `Track` row from points placed on a map (feature-111's
- * "Place on map" tab). The flow:
+ * feature-127: create a track from a route the owner already owns.
  *
- *   1. Gate the actor on the existing `track-upload` trust action and the
- *      verified `track` quota (10).
- *   2. Build a synthetic GPX 1.1 byte string from the placed points
- *      (no `<time>` elements — manual tracks have no recording time).
- *   3. Validate the synthetic bytes with `validateGpxString` (root `<gpx>`,
- *      at least one parseable `<trkpt>`) and reject invalid inputs.
- *   4. Upload the bytes via `uploadSyntheticTrackGpx` (server-side UploadThing
- *      write path) and persist a `FileAsset` row with
- *      `purpose: TRACK_GPX`, `ownerUserId: actor.id`, `visibility: PRIVATE`,
- *      `status: ACTIVE`. `visibility: PRIVATE` intentionally fails the
- *      public-track-detail download affordance so manual tracks never expose
- *      the synthetic GPX as a downloadable artifact.
- *   5. Create the `Track` row bound to that file asset.
- *   6. After commit, call `parseTrackGpx(trackId).catch(() => null)` outside
- *      the transaction so a parse failure does not roll back the successful
- *      write — it just leaves the metadata in the "stale" state for the
- *      user to reparse.
+ * The route owns the geometry (file + parsed metadata), so the new row stores
+ * only `routeId` and leaves `fileAssetId` and `metadata` `NULL` — the
+ * `Track_geometry_source_check` constraint enforces the same rule. The
+ * recording start and duration are required: a manual track is a training on
+ * a known shape, and without them it would be indistinguishable from a
+ * half-filled row.
  *
- * Returns a discriminated `CreateManualTrackResult` mirroring
- * `createTrackAndAttachToHike` so the client can map the same `code`
- * vocabulary into localized toast messages.
+ * The checks and their order mirror the shared track creation path: trust gate, route
+ * ownership, activity type, gear, slug, quota, then the write.
  */
-export const createManualTrack = async (input: CreateManualTrackInput): Promise<CreateManualTrackResult> => {
+export const createTrackFromRoute = async (input: CreateTrackFromRouteInput): Promise<CreateTrackFromRouteResult> => {
   try {
     const user = await requireTrustGatedAction("track-upload");
     const userId = user.id;
     const { default: prisma } = await import("@/lib/prisma");
-
-    if (!Array.isArray(input.points) || input.points.length < 2) {
-      return { ok: false, code: "VALIDATION", message: "Place at least two points on the map" };
-    }
-
-    for (const point of input.points) {
-      if (
-        typeof point?.lat !== "number" ||
-        typeof point?.lng !== "number" ||
-        !Number.isFinite(point.lat) ||
-        !Number.isFinite(point.lng) ||
-        point.lat < -90 ||
-        point.lat > 90 ||
-        point.lng < -180 ||
-        point.lng > 180
-      ) {
-        return { ok: false, code: "VALIDATION", message: "Placed points have invalid coordinates" };
-      }
-    }
 
     const normalizedTitle = normalizeRequiredText(input.title, "Title");
     const normalizedStatus = input.status ?? DEFAULT_TRACK_STATUS;
     if (!TRACK_STATUSES.has(normalizedStatus)) {
       return { ok: false, code: "VALIDATION", message: "Track status is invalid" };
     }
-    // feature-120: same default-and-validate contract as the status — a
-    // missing kind is a route, an unknown kind is a validation error.
     const normalizedKind = input.kind ?? DEFAULT_TRACK_KIND;
     if (!TRACK_KINDS.has(normalizedKind)) {
       return { ok: false, code: "VALIDATION", message: "Track kind is invalid" };
@@ -1303,10 +1269,20 @@ export const createManualTrack = async (input: CreateManualTrackInput): Promise<
     const normalizedSlug = normalizeTrackSlug(normalizedTitle, input.slug ?? null);
     const normalizedDescription = normalizeOptionalText(input.description);
 
-    // feature-112 Place on map tab fields: activity type + recording time
-    // + duration + timezone. None are required; when start is set the
-    // timezone must also be set. `timeSource` is derived: any of start or
-    // duration set → MANUAL, else NONE.
+    const routeId = input.routeId?.trim();
+    if (!routeId) {
+      return { ok: false, code: "VALIDATION", message: "Choose a route or place a new one" };
+    }
+
+    const route = await prisma.route.findFirst({
+      where: { id: routeId, userId },
+      select: { id: true },
+    });
+
+    if (!route) {
+      return { ok: false, code: "VALIDATION", message: "Selected route is not available" };
+    }
+
     const normalizedActivityTypeId = input.activityTypeId?.trim() || null;
     if (normalizedActivityTypeId) {
       const activityType = await getTrackActivityTypeById(normalizedActivityTypeId);
@@ -1315,9 +1291,6 @@ export const createManualTrack = async (input: CreateManualTrackInput): Promise<
       }
     }
 
-    // feature-122: the gear is optional and is checked against the owner and
-    // against the activity type before anything is written — a refused gear
-    // never reaches the upload or the row.
     let normalizedGearId: string | null = null;
     try {
       const gear = await ensureEligibleTrackGear({
@@ -1334,110 +1307,65 @@ export const createManualTrack = async (input: CreateManualTrackInput): Promise<
       };
     }
 
-    const trimmedStart = input.recordingStartAt?.trim();
-    const hasStart = Boolean(trimmedStart);
-    const hasDuration = input.recordingDurationSeconds !== undefined && input.recordingDurationSeconds !== null;
-
-    let normalizedRecordingStartAt: Date | null = null;
-    let normalizedRecordingDurationSeconds: number | null = null;
-    let normalizedRecordingTimezone: string | null = null;
-
-    if (hasStart || hasDuration) {
-      if (hasStart) {
-        if (!input.recordingTimezone || !input.recordingTimezone.trim()) {
-          return {
-            ok: false,
-            code: "VALIDATION",
-            message: "Recording timezone is required when start time is set",
-          };
-        }
-        try {
-          normalizedRecordingStartAt = parseManualTrackStartAt({
-            wallClock: trimmedStart!,
-            timezone: input.recordingTimezone,
-          });
-          normalizedRecordingTimezone = requireTrackRecordingTimezone(input.recordingTimezone);
-        } catch (error) {
-          if (error instanceof TrackStartAtParseError) {
-            return { ok: false, code: "VALIDATION", message: error.message };
-          }
-          throw error;
-        }
-      }
-
-      if (hasDuration) {
-        try {
-          normalizedRecordingDurationSeconds = parseDurationSeconds(input.recordingDurationSeconds!);
-        } catch (error) {
-          if (error instanceof TrackDurationInputError) {
-            return { ok: false, code: "VALIDATION", message: error.message };
-          }
-          throw error;
-        }
-      }
+    const trimmedStart = input.recordingStartAt?.trim() ?? "";
+    if (!trimmedStart) {
+      return { ok: false, code: "VALIDATION", message: "Recording start is required" };
+    }
+    if (!input.recordingTimezone?.trim()) {
+      return {
+        ok: false,
+        code: "VALIDATION",
+        message: "Recording timezone is required when start time is set",
+      };
     }
 
-    const computedTimeSource: "MANUAL" | "NONE" = hasStart || hasDuration ? "MANUAL" : "NONE";
-
-    const gpxBytes = buildSyntheticGpxBytes(normalizedTitle, input.points);
-    const gpxValidation = validateGpxString(gpxBytes);
-    if (!gpxValidation.ok) {
-      const reason =
-        gpxValidation.reason === "no-gpx-root"
-          ? "Synthetic GPX is missing a <gpx> root element"
-          : gpxValidation.reason === "invalid-coordinates"
-            ? "Synthetic GPX has no usable coordinates"
-            : "Synthetic GPX has no track points";
-      return { ok: false, code: "VALIDATION", message: reason };
-    }
-
-    let uploadResult: Awaited<ReturnType<typeof uploadSyntheticTrackGpx>>;
+    let normalizedRecordingStartAt: Date;
+    let normalizedRecordingTimezone: string;
     try {
-      uploadResult = await uploadSyntheticTrackGpx({
-        bytes: gpxBytes,
-        ownerUserId: userId,
-        filename: `${normalizedSlug}.gpx`,
+      normalizedRecordingStartAt = parseManualTrackStartAt({
+        wallClock: trimmedStart,
+        timezone: input.recordingTimezone,
       });
+      normalizedRecordingTimezone = requireTrackRecordingTimezone(input.recordingTimezone);
     } catch (error) {
-      throw new ManualTrackValidationError(error instanceof Error ? error.message : "Synthetic GPX upload failed");
+      if (error instanceof TrackStartAtParseError) {
+        return { ok: false, code: "VALIDATION", message: error.message };
+      }
+      throw error;
     }
 
-    const { id: trackId, slug: trackSlug } = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      await assertVerifiedResourceQuota(tx, user, "track");
-      try {
-        await ensureSlugAvailable({ slug: normalizedSlug });
-      } catch (error) {
-        const message = error instanceof Error ? error.message : "Slug is unavailable";
-        if (message.toLowerCase().includes("slug")) {
-          throw new ManualTrackSlugConflictError(message);
-        }
-        throw new ManualTrackValidationError(message);
+    if (typeof input.recordingDurationSeconds !== "number") {
+      return { ok: false, code: "VALIDATION", message: "Recording duration is required" };
+    }
+
+    let normalizedRecordingDurationSeconds: number;
+    try {
+      normalizedRecordingDurationSeconds = parseDurationSeconds(input.recordingDurationSeconds);
+    } catch (error) {
+      if (error instanceof TrackDurationInputError) {
+        return { ok: false, code: "VALIDATION", message: error.message };
       }
+      throw error;
+    }
 
-      const fileAsset = await tx.fileAsset.create({
-        data: {
-          provider: "UPLOADTHING",
-          fileKey: uploadResult.key,
-          customId: null,
-          url: uploadResult.url,
-          name: uploadResult.name,
-          mimeType: "application/gpx+xml",
-          sizeBytes: uploadResult.sizeBytes,
-          purpose: "TRACK_GPX",
-          visibility: "PRIVATE",
-          status: ACTIVE_FILE_STATUS,
-          ownerUserId: userId,
-        },
-        select: { id: true },
-      });
+    try {
+      await ensureSlugAvailable({ slug: normalizedSlug });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Slug is unavailable";
+      if (message.toLowerCase().includes("slug")) {
+        throw new ManualTrackSlugConflictError(message);
+      }
+      throw new ManualTrackValidationError(message);
+    }
 
-      return tx.track.create({
+    const track = await createWithinVerifiedResourceQuota(user, "track", (tx) =>
+      tx.track.create({
         data: {
           title: normalizedTitle,
           slug: normalizedSlug,
           description: normalizedDescription,
           status: normalizedStatus,
-          fileAssetId: fileAsset.id,
+          routeId: route.id,
           userId,
           activityTypeId: normalizedActivityTypeId,
           gearId: normalizedGearId,
@@ -1445,21 +1373,16 @@ export const createManualTrack = async (input: CreateManualTrackInput): Promise<
           recordingStartAt: normalizedRecordingStartAt,
           recordingDurationSeconds: normalizedRecordingDurationSeconds,
           recordingTimezone: normalizedRecordingTimezone,
-          timeSource: computedTimeSource,
-          metadata: Prisma.JsonNull,
+          timeSource: "MANUAL",
         },
-        select: { id: true, slug: true },
-      });
-    });
-
-    // Parse outside the transaction so a parse failure does not roll back
-    // the successful track write — it just leaves the metadata in the
-    // "stale" state for the user to reparse.
-    await parseTrackGpx(trackId).catch(() => null);
+        select: trackListSelect,
+      }),
+    );
 
     revalidateTrackPaths();
+    revalidatePath("/my/routes");
 
-    return { ok: true, trackId, trackSlug };
+    return { ok: true, trackId: track.id, trackSlug: track.slug };
   } catch (error) {
     if (error instanceof InsufficientTrustError) {
       return { ok: false, code: "TRUST", message: error.message };
@@ -1470,11 +1393,8 @@ export const createManualTrack = async (input: CreateManualTrackInput): Promise<
     if (error instanceof ManualTrackValidationError) {
       return { ok: false, code: "VALIDATION", message: error.message };
     }
-    if (error instanceof Error) {
-      const message = error.message;
-      if (message.toLowerCase().includes("limit reached")) {
-        return { ok: false, code: "QUOTA", message };
-      }
+    if (error instanceof Error && error.message.toLowerCase().includes("limit reached")) {
+      return { ok: false, code: "QUOTA", message: error.message };
     }
     return {
       ok: false,
@@ -1529,7 +1449,7 @@ const ensureUniqueTrackSlug = async (base: string) => {
  *      the row. A file that cannot be read still creates the track, in the
  *      same state the owner can repair from the track form.
  *
- * The answer carries the same codes as `createManualTrack`, so the dialog can
+ * The answer carries the same codes as `createTrackFromRoute`, so the dialog can
  * say *why* a save was refused instead of showing one generic failure.
  */
 export const createQuickWorkout = async (input: CreateQuickWorkoutInput): Promise<CreateQuickWorkoutResult> => {

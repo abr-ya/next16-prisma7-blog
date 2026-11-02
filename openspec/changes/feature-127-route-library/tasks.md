@@ -25,11 +25,11 @@
 
 ## 4. Track creation from a route
 
-- [ ] 4.1 In `components/track-pages/track-editor.tsx`, split the dialog into route selection and training data: a **New route** option and a list of the owner's routes.
-- [ ] 4.2 Make `recordingStartAt` and `recordingDurationSeconds` required in this flow, with the existing localization and validation messages reused.
-- [ ] 4.3 Add `createTrackFromRoute` in `app/_data/tracks.ts`: set `routeId`, leave `fileAssetId` and `metadata` `NULL`, set `timeSource = "MANUAL"`, and reuse the existing slug, quota, trust, and activity-type checks.
-- [ ] 4.4 Keep the uploaded-GPX path untouched: it still writes `fileAssetId`, `metadata`, and no `routeId`.
-- [ ] 4.5 Remove the old place-points-on-a-map entry from track creation so a track can no longer be created without a route or an uploaded file; the editor's point placement moves behind route creation.
+- [x] 4.1 In `components/track-pages/track-editor.tsx`, split the dialog into route selection and training data: a **New route** option and a list of the owner's routes.
+- [x] 4.2 Make `recordingStartAt` and `recordingDurationSeconds` required in this flow, with the existing localization and validation messages reused.
+- [x] 4.3 Add `createTrackFromRoute` in `app/_data/tracks.ts`: set `routeId`, leave `fileAssetId` and `metadata` `NULL`, set `timeSource = "MANUAL"`, and reuse the existing slug, quota, trust, and activity-type checks.
+- [x] 4.4 Keep the uploaded-GPX path untouched: it still writes `fileAssetId`, `metadata`, and no `routeId`.
+- [x] 4.5 Remove the old place-points-on-a-map entry from track creation so a track can no longer be created without a route or an uploaded file; the editor's point placement moves behind route creation.
 
 ## 5. Legacy routes
 
@@ -42,10 +42,10 @@
 
 ## 6. Validation
 
-- [ ] 6.1 `npm run tsc` — expect no type errors.
-- [ ] 6.2 `npx eslint app/_data/tracks.ts app/_data/routes.ts app/_data/hikes/queries.ts app/_data/hikes/internal.ts components/track-pages/track-editor.tsx components/admin-pages/tracks-admin-panel.tsx components/admin-pages/hikes-admin-panel.tsx --quiet` — expect no errors.
-- [ ] 6.3 `npm run lint` — expect no errors.
-- [ ] 6.4 `npx openspec validate feature-127-route-library --strict` — expect the change to validate.
+- [x] 6.1 `npm run tsc` — expect no type errors.
+- [x] 6.2 `npx eslint app/_data/tracks.ts app/_data/routes.ts app/_data/hikes/queries.ts app/_data/hikes/internal.ts components/track-pages/track-editor.tsx components/admin-pages/tracks-admin-panel.tsx components/admin-pages/hikes-admin-panel.tsx --quiet` — expect no errors.
+- [x] 6.3 `npm run lint` — expect no errors.
+- [x] 6.4 `npx openspec validate feature-127-route-library --strict` — expect the change to validate.
 - [ ] 6.5 `npm run build` — the user runs the build locally; the agent records the result here.
 
 ## 7. Browser check (the owner's)

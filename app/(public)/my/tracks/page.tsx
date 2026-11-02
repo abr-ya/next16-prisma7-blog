@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { getOwnerGear } from "@/app/_data/gear";
+import { getOwnerRoutes } from "@/app/_data/routes";
 import { getAllTracks } from "@/app/_data/tracks";
 import { getActiveTrackActivityTypes } from "@/app/_data/track-activity-types";
 import { TrackManagementPanel } from "@/components/admin-pages/tracks-admin-panel";
@@ -21,15 +22,16 @@ const MyTracksPage = async () => {
   // feature-122: the gear is owner-private, so the owner pages read their own
   // gear and ask for the attachment projection — the administrative panel
   // asks for neither.
-  const [tracks, activityTypes, gear] = await Promise.all([
+  const [tracks, activityTypes, gear, routes] = await Promise.all([
     getAllTracks({ includeGear: true }),
     getActiveTrackActivityTypes(),
     getOwnerGear(),
+    getOwnerRoutes(),
   ]);
 
   return (
     <PageLayout title="My tracks" contentWidth="wide" className="pt-6">
-      <TrackManagementPanel tracks={tracks} activityTypes={activityTypes} ownerGear={gear} />
+      <TrackManagementPanel tracks={tracks} activityTypes={activityTypes} routes={routes} ownerGear={gear} />
     </PageLayout>
   );
 };

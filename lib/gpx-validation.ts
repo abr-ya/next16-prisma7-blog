@@ -43,7 +43,7 @@ const isFiniteCoordinate = (lat: number, lng: number) =>
   Number.isFinite(lat) && Number.isFinite(lng) && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180;
 
 /**
- * String-level GPX validator used by `createManualTrack` to confirm a
+ * String-level GPX validator used by `createRouteFromPoints` to confirm a
  * server-built synthetic GPX byte string is well-formed before the upload.
  * Mirrors the structural checks the existing `validateGpxContent` byte-level
  * sniff performs (root `<gpx>` element + at least one `<trkpt>`) and

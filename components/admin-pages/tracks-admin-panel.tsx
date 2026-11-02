@@ -12,9 +12,10 @@ import z from "zod";
 import { markDiscardedTrackGpxFileAssetsPendingDelete } from "@/app/_actions/files";
 import { navigationNamespace, tripsNamespace } from "@/app/i18n/settings";
 import type { GearListItem, OwnerGearPreferences } from "@/app/_data/gear";
+import { createRouteFromPoints, type RouteListItem } from "@/app/_data/routes";
 import {
-  createManualTrack,
   createTrack,
+  createTrackFromRoute,
   deleteTrack,
   markTrackAsManual,
   updateTrack,
@@ -86,9 +87,8 @@ const formSchema = z.object({
   // defaults to a route.
   kind: z.enum(["ROUTE", "TRAINING"]),
   // `fileAssetId` is required by the GPX-upload tab and left empty by the
-  // Place on map tab (where the file asset is built server-side from the
-  // placed points). The submit button enforces "tab-appropriate" non-empty
-  // values per active tab.
+  // route tab (where the geometry lives on the route). The submit button
+  // enforces "tab-appropriate" non-empty values per active tab.
   fileAssetId: z.string().optional(),
   fileAssetName: z.string().optional(),
   activityTypeId: z.string().optional(),
@@ -96,10 +96,10 @@ const formSchema = z.object({
   // as no gear; a form that never touched the field leaves the attachment
   // alone.
   gearId: z.string().optional(),
-  // feature-112 Place on map tab fields. The form layer carries them as
-  // strings so react-hook-form can manage a single text/datetime input per
-  // component; parsing through `parseDurationInput` happens at submit time
-  // and `timeSource` is derived live from these values for the badge.
+  // feature-127 route tab fields. The form layer carries them as strings so
+  // react-hook-form can manage a single text/datetime input per component;
+  // parsing through `parseDurationInput` happens at submit time and
+  // `timeSource` is derived live from these values for the badge.
   recordingStartAt: z.string().optional(),
   recordingTimezone: z.string().optional(),
   recordingDurationHours: z.string().optional(),
@@ -110,7 +110,10 @@ const formSchema = z.object({
 
 type TrackFormValues = z.infer<typeof formSchema>;
 
-type TrackCreationMode = "gpx" | "placeOnMap";
+type TrackCreationMode = "gpx" | "route";
+
+/** `"new"` means "place a route on the map"; every other value is a route id. */
+const NEW_ROUTE_VALUE = "new";
 
 const TRACK_FORM_DEFAULTS: TrackFormValues = {
   title: "",
@@ -143,6 +146,7 @@ const formatActivityTypeName = (activityType: TrackActivityType | null, language
 const TrackFormDialog = ({
   track,
   activityTypes,
+  routes,
   ownerGear,
   open,
   onOpenChange,
@@ -153,6 +157,9 @@ const TrackFormDialog = ({
 }: {
   track: TrackListItem | null;
   activityTypes: TrackActivityType[];
+  // feature-127: the owner's route library, read on the page so the dialog
+  // can offer "pick an existing route" next to the map editor.
+  routes: RouteListItem[];
   // feature-122: the owner's own gear. The field is rendered only when the
   // caller has gear to offer — the administrative panel has none, so it
   // cannot show the control at all.
@@ -200,6 +207,7 @@ const TrackFormDialog = ({
   const fileAssetId = useWatch({ control: form.control, name: "fileAssetId" });
   const fileAssetName = useWatch({ control: form.control, name: "fileAssetName" });
   const [activeTab, setActiveTab] = useState<TrackCreationMode>("gpx");
+  const [selectedRouteId, setSelectedRouteId] = useState<string>(NEW_ROUTE_VALUE);
   const [placedPoints, setPlacedPoints] = useState<ManualTrackPoint[]>([]);
   const [isMarkingAsManual, setIsMarkingAsManual] = useState(false);
   const [markAsManualError, setMarkAsManualError] = useState<string | null>(null);
@@ -210,11 +218,13 @@ const TrackFormDialog = ({
     setPrevOpen(open);
     if (open) {
       setActiveTab("gpx");
+      setSelectedRouteId(NEW_ROUTE_VALUE);
       setPlacedPoints([]);
     }
   }
   const resetFormState = useCallback(() => {
     setPlacedPoints([]);
+    setSelectedRouteId(NEW_ROUTE_VALUE);
     form.reset(defaultValues);
   }, [form, defaultValues]);
 
@@ -270,16 +280,18 @@ const TrackFormDialog = ({
   // feature-122: the gear list narrows itself to the activity type the form
   // carries at the moment.
   const activityTypeIdValue = useWatch({ control: form.control, name: "activityTypeId" }) ?? "";
-  // feature-112 Place on map metadata. `useWatch` re-renders the timeSource
-  // badge and duration layout as the user edits the inputs, mirroring the
-  // server-side derivation in `createManualTrack`.
+  // feature-127: `useWatch` re-renders the time source badge, the duration
+  // layout, and the submit availability as the owner fills the recording
+  // fields that are now required on the route tab.
   const recordingStartAtValue = useWatch({ control: form.control, name: "recordingStartAt" }) ?? "";
   const recordingDurationHoursValue = useWatch({ control: form.control, name: "recordingDurationHours" }) ?? "0";
   const recordingDurationMinutesValue = useWatch({ control: form.control, name: "recordingDurationMinutes" }) ?? "0";
   const recordingDurationSecondsValue = useWatch({ control: form.control, name: "recordingDurationSeconds" }) ?? "0";
   const includeSecondsValue = Boolean(useWatch({ control: form.control, name: "includeSeconds" }));
   const recordingTimezoneOptions = useMemo(() => getSupportedTrackRecordingTimezones(), []);
+  const recordingTimezoneValue = useWatch({ control: form.control, name: "recordingTimezone" }) ?? "";
   const hasStart = recordingStartAtValue.trim().length > 0;
+  const hasTimezone = recordingTimezoneValue.trim().length > 0;
   const hasDuration =
     Number(recordingDurationHoursValue) > 0 ||
     Number(recordingDurationMinutesValue) > 0 ||
@@ -434,20 +446,29 @@ const TrackFormDialog = ({
         }
 
         toast.success("Track updated");
-      } else if (activeTab === "placeOnMap") {
-        if (placedPoints.length < 2) {
+      } else if (activeTab === "route") {
+        const isNewRoute = selectedRouteId === NEW_ROUTE_VALUE;
+
+        if (isNewRoute && placedPoints.length < 2) {
           toast.error(t("trackEditorMinimumPoints"));
           return;
         }
+        if (!isNewRoute && !selectedRouteId) {
+          toast.error(t("trackFormRouteRequired"));
+          return;
+        }
 
-        // Parse the feature-112 metadata at submit time so the typed
-        // `parseDurationInput` / `parseManualTrackStartAt` helpers run before
-        // we touch `createManualTrack`. `timeSource` is derived server-side
-        // from the parsed fields so the client only sends the scalar inputs.
         const trimmedStart = values.recordingStartAt?.trim() ?? "";
         const trimmedTimezone = values.recordingTimezone?.trim() ?? "";
-        const hasStart = trimmedStart.length > 0;
-        const hasTimezone = trimmedTimezone.length > 0;
+        if (!trimmedStart) {
+          toast.error(t("trackFormRecordingStartRequired"));
+          return;
+        }
+        if (!trimmedTimezone) {
+          toast.error(t("trackFormRecordingTimezoneRequired"));
+          return;
+        }
+
         const durationHours = Number(values.recordingDurationHours ?? "0");
         const durationMinutes = Number(values.recordingDurationMinutes ?? "0");
         const durationSecondsInput =
@@ -461,35 +482,65 @@ const TrackFormDialog = ({
               ? true
               : durationSecondsInput !== undefined && Number.isFinite(durationSecondsInput) && durationSecondsInput > 0;
 
-        let parsedDurationSeconds: number | null = null;
-        if (hasDuration) {
-          try {
-            parsedDurationSeconds = parseDurationInput({
-              hours: Number.isFinite(durationHours) ? durationHours : 0,
-              minutes: Number.isFinite(durationMinutes) ? durationMinutes : 0,
-              seconds: durationSecondsInput,
-            });
-          } catch (error) {
-            if (error instanceof TrackDurationInputError) {
-              toast.error(error.message);
-              return;
-            }
-            throw error;
-          }
+        if (!hasDuration) {
+          toast.error(t("trackFormRecordingDurationRequired"));
+          return;
         }
 
-        const result = await createManualTrack({
+        let parsedDurationSeconds: number;
+        try {
+          parsedDurationSeconds = parseDurationInput({
+            hours: Number.isFinite(durationHours) ? durationHours : 0,
+            minutes: Number.isFinite(durationMinutes) ? durationMinutes : 0,
+            seconds: durationSecondsInput,
+          });
+        } catch (error) {
+          if (error instanceof TrackDurationInputError) {
+            toast.error(error.message);
+            return;
+          }
+          throw error;
+        }
+
+        let routeId = selectedRouteId;
+        if (isNewRoute) {
+          // feature-127: a new route gets the track's title and description as
+          // its first values; the owner can rename it later from /my/routes.
+          const routeResult = await createRouteFromPoints({
+            title: values.title,
+            description: values.description ?? null,
+            points: placedPoints,
+          });
+
+          if (!routeResult.ok) {
+            if (routeResult.code === "TRUST") {
+              toast.error(t("placeOnMapErrorTrust"));
+            } else if (routeResult.code === "VALIDATION") {
+              toast.error(routeResult.message || t("placeOnMapErrorValidation"));
+            } else {
+              toast.error(t("trackFormRouteCreateError"));
+            }
+            return;
+          }
+
+          routeId = routeResult.routeId;
+          // The route now exists even if the track save below fails. Refresh
+          // the page so the picker can offer it on a retry.
+          onSaved();
+        }
+
+        const result = await createTrackFromRoute({
+          routeId,
           title: values.title,
           slug: values.slug,
           description: values.description ?? null,
           status: values.status,
-          points: placedPoints,
           activityTypeId: values.activityTypeId?.trim() || null,
           kind: values.kind,
           gearId: values.gearId || null,
-          recordingStartAt: hasStart ? trimmedStart : null,
+          recordingStartAt: trimmedStart,
           recordingDurationSeconds: parsedDurationSeconds,
-          recordingTimezone: hasTimezone ? trimmedTimezone : null,
+          recordingTimezone: trimmedTimezone,
         });
 
         if (!result.ok) {
@@ -507,8 +558,9 @@ const TrackFormDialog = ({
           return;
         }
 
-        toast.success(t("placeOnMapSuccess"));
+        toast.success(t("routeTabSuccess"));
         setPlacedPoints([]);
+        setSelectedRouteId(NEW_ROUTE_VALUE);
         discardGuard.closeWithoutGuard();
         onSaved();
         return;
@@ -633,10 +685,9 @@ const TrackFormDialog = ({
           )}
         />
       </div>
-      {/* feature-112 Place on map tab fields. Rendered for both tabs per
-          design decision 4 (the slot is shared) — the values are optional and
-          only consumed by `createManualTrack`; on the GPX tab the upload
-          itself supplies any time-related metadata via `parseTrackGpx`.
+      {/* feature-127: recording fields. On the route tab the start, timezone,
+          and duration are required before a track can be saved; on the GPX tab
+          the upload supplies the time-related metadata via `parseTrackGpx`.
           feature-116: when the saved row is GPX-sourced (`isReadOnlyRecording`),
           the four inputs render read-only with a "from file" hint and the
           include-seconds toggle is disabled. */}
@@ -836,7 +887,7 @@ const TrackFormDialog = ({
     ? Boolean(fileAssetId)
     : activeTab === "gpx"
       ? Boolean(fileAssetId)
-      : placedPoints.length >= 2;
+      : (selectedRouteId !== NEW_ROUTE_VALUE || placedPoints.length >= 2) && hasStart && hasDuration && hasTimezone;
 
   return (
     <>
@@ -858,9 +909,9 @@ const TrackFormDialog = ({
                       <FileUp />
                       {t("uploadGpxTab")}
                     </TabsTrigger>
-                    <TabsTrigger value="placeOnMap">
+                    <TabsTrigger value="route">
                       <MapPin />
-                      {t("placeOnMapTab")}
+                      {t("routeTab")}
                     </TabsTrigger>
                   </TabsList>
                 ) : null}
@@ -946,21 +997,44 @@ const TrackFormDialog = ({
                     </div>
                   ) : null}
                 </TabsContent>
-                <TabsContent value="placeOnMap" className="grid gap-4">
-                  <TrackEditor
-                    initialPoints={[]}
-                    onChangePoints={setPlacedPoints}
-                    renderFormFields={renderTextFields}
-                    mapAriaLabel={t("trackEditorMapAriaLabel")}
-                  />
+                <TabsContent value="route" className="grid gap-4">
+                  <div className="grid gap-2">
+                    <div className="text-sm font-medium">{t("trackFormRouteSelectLabel")}</div>
+                    <Select value={selectedRouteId} onValueChange={setSelectedRouteId}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value={NEW_ROUTE_VALUE}>{t("trackFormRouteNew")}</SelectItem>
+                        {routes.map((route) => (
+                          <SelectItem key={route.id} value={route.id}>
+                            {route.title}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      {routes.length === 0 ? t("trackFormRouteEmpty") : t("trackFormRouteHelp")}
+                    </p>
+                  </div>
+                  {selectedRouteId === NEW_ROUTE_VALUE ? (
+                    <TrackEditor
+                      initialPoints={placedPoints}
+                      onChangePoints={setPlacedPoints}
+                      renderFormFields={renderTextFields}
+                      mapAriaLabel={t("trackEditorMapAriaLabel")}
+                    />
+                  ) : (
+                    renderTextFields()
+                  )}
                 </TabsContent>
               </Tabs>
               <div className="flex justify-end">
                 <Button type="submit" disabled={form.formState.isSubmitting || !canSubmit}>
                   {form.formState.isSubmitting
                     ? "Saving..."
-                    : !isEditing && activeTab === "placeOnMap"
-                      ? t("placeOnMapCreate")
+                    : !isEditing && activeTab === "route"
+                      ? t("routeTabCreate")
                       : "Save track"}
                 </Button>
               </div>
@@ -976,6 +1050,7 @@ const TrackFormDialog = ({
 export const TrackManagementPanel = ({
   tracks,
   activityTypes,
+  routes,
   ownerGear,
   ownerGearPreferences,
   defaultKind = "ROUTE",
@@ -984,6 +1059,8 @@ export const TrackManagementPanel = ({
 }: {
   tracks: TrackListItem[];
   activityTypes: TrackActivityType[];
+  // feature-127: the owner's route library, offered by the creation dialog.
+  routes: RouteListItem[];
   // feature-122: the owner's own gear. The gear field is rendered only when
   // this prop is present, so a surface without gear — the administrative
   // panel — cannot show the control at all.
@@ -1167,6 +1244,7 @@ export const TrackManagementPanel = ({
       <TrackFormDialog
         track={editingTrack}
         activityTypes={activityTypes}
+        routes={routes}
         ownerGear={ownerGear}
         open={formOpen}
         defaultKind={defaultKind}
