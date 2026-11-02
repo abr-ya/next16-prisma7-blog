@@ -21,9 +21,8 @@ Each sortable column exposes exactly the value its cell renders:
 | Started | effective start (already present from feature-129) | datetime |
 | Distance | parsed `distanceMeters`, or `undefined` | numeric |
 | Duration | stored or parsed duration in seconds, or `undefined` | numeric |
-| Type | localized activity-type name, or the unclassified label | text |
 
-**Type** sorts by the label the owner sees, so switching the interface language keeps the visible order consistent with the words in the column. Sorting by the underlying activity-type key would put rows in an order the owner cannot predict from the screen.
+**Type** stays a display-only badge. It answers "what kind of workout was this", not "how do these workouts rank", and adding it to the sort cycle would add a control the owner did not ask for.
 
 ### Missing values
 
@@ -45,4 +44,3 @@ The default remains `started desc`. Clicking any sortable header replaces the ac
 
 - `getTrackParseState` is called by both the accessor and the cell, doubling the per-row work for those columns. The owner list is small and paginated after sorting; the parse state is derived from already-loaded metadata.
 - A column's accessor and cell can drift. The accessor and the cell must keep using the same fallback chain; the tasks call this out for duration and started.
-- Type labels depend on the active language. Sorting by the visible label is deliberate, but a locale switch can change the relative order of names across languages.

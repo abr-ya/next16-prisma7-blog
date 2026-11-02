@@ -4,7 +4,7 @@
 
 ### Requirement: Workout columns sort by the value they display
 
-Every meaningful data column in the owner's workout table SHALL be sortable: **Title**, **Started**, **Distance**, **Duration**, and **Type**. A derived column SHALL sort by the same underlying value its cell renders, not by the formatted label. Distance and duration SHALL sort numerically, and **Type** SHALL sort by the activity-type name shown in the current interface language. The short workout column set SHALL stay unchanged.
+Every meaningful ranking column in the owner's workout table SHALL be sortable: **Title**, **Started**, **Distance**, and **Duration**. A derived column SHALL sort by the same underlying value its cell renders, not by the formatted label. Distance and duration SHALL sort numerically. **Type** SHALL stay a static classification badge with no sort control. The short workout column set SHALL stay unchanged.
 
 #### Scenario: Owner sorts workouts by distance
 
@@ -24,12 +24,6 @@ Every meaningful data column in the owner's workout table SHALL be sortable: **T
 - **THEN** the rows sort by the workout title
 - **AND** the header cycles through ascending, descending, and cleared like every other sortable header
 
-#### Scenario: Owner sorts workouts by type
-
-- **WHEN** an owner clicks the **Type** header on `/my/workouts`
-- **THEN** the rows sort by the activity-type name shown in the current interface language
-- **AND** unclassified workouts are grouped together under the unclassified label
-
 #### Scenario: Started remains the default sort
 
 - **WHEN** an owner opens `/my/workouts` without touching a header
@@ -41,6 +35,7 @@ Every meaningful data column in the owner's workout table SHALL be sortable: **T
 - **WHEN** the owner opens `/my/workouts`
 - **THEN** no column is added by making the existing ones sortable
 - **AND** the table still shows no **Updated** column
+- **AND** the **Type** badge has no sort control
 
 ### Requirement: Missing derived values have a defined sort position
 
