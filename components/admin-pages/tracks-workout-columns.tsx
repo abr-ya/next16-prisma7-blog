@@ -25,6 +25,33 @@ import { formatTrackStatus } from "@/lib/tracks";
 // The row actions are kept to edit and delete so the page stays manageable;
 // parsing, the timezone action and trip assignment remain on the full table.
 
+// feature-131: derived sort values. The accessors and the cells must keep the
+// same fallback chain, so both read through these helpers instead of repeating
+// it in two places.
+const getEffectiveStart = (track: TrackListItem): string | undefined => {
+  const state = getTrackParseState(track);
+
+  return (
+    track.recordingStartAt?.toISOString() ??
+    (state.status === "SUCCESS" ? (state.summary.time?.start ?? undefined) : undefined)
+  );
+};
+
+const getEffectiveDistanceMeters = (track: TrackListItem): number | undefined => {
+  const state = getTrackParseState(track);
+
+  return state.status === "SUCCESS" ? state.summary.distanceMeters : undefined;
+};
+
+const getEffectiveDurationSeconds = (track: TrackListItem): number | undefined => {
+  const state = getTrackParseState(track);
+
+  return (
+    track.recordingDurationSeconds ??
+    (state.status === "SUCCESS" ? (state.summary.time?.durationSeconds ?? undefined) : undefined)
+  );
+};
+
 type CreateTrackWorkoutColumnsInput = {
   activeLanguage: string;
   onEditTrack: (track: TrackListItem) => void;
@@ -54,7 +81,7 @@ const createTrackWorkoutColumns = ({
   },
   {
     accessorKey: "title",
-    header: "Title",
+    header: ({ column }) => <SortableHeader column={column} label="Title" />,
     cell: ({ row }) =>
       row.original.status === "PUBLISHED" ? (
         <Link
@@ -72,22 +99,14 @@ const createTrackWorkoutColumns = ({
     // feature-129: the effective start is the recording start mirror or the
     // parsed summary fallback; the accessor exposes the same value the cell
     // renders so the default `Started desc` sort and the visible order agree.
-    accessorFn: (row) => {
-      const state = getTrackParseState(row);
-      return (
-        row.recordingStartAt?.toISOString() ?? (state.status === "SUCCESS" ? (state.summary.time?.start ?? null) : null)
-      );
-    },
+    accessorFn: (row) => getEffectiveStart(row),
     header: ({ column }) => <SortableHeader column={column} label="Started" />,
     cell: ({ row }) => {
-      const state = getTrackParseState(row.original);
       // `recordingStartAt` is the mirror of the parsed GPX start, but the
       // mirror only exists for rows parsed after it was added — an older
       // track keeps the start in its parsed summary only. Fall back to the
       // summary so those rows are not blank.
-      const start =
-        row.original.recordingStartAt?.toISOString() ??
-        (state.status === "SUCCESS" ? (state.summary.time?.start ?? null) : null);
+      const start = getEffectiveStart(row.original);
 
       if (!start) return <span className="text-sm text-muted-foreground">—</span>;
 
@@ -96,6 +115,7 @@ const createTrackWorkoutColumns = ({
       return <span className="text-sm">{formatted ?? "—"}</span>;
     },
     sortingFn: "datetime",
+    sortUndefined: "last",
   },
   {
     id: "timezone",
@@ -108,33 +128,36 @@ const createTrackWorkoutColumns = ({
   },
   {
     id: "distance",
-    header: "Distance",
+    accessorFn: (row) => getEffectiveDistanceMeters(row),
+    header: ({ column }) => <SortableHeader column={column} label="Distance" />,
     cell: ({ row }) => {
-      const state = getTrackParseState(row.original);
+      const distanceMeters = getEffectiveDistanceMeters(row.original);
 
-      if (state.status !== "SUCCESS") return <span className="text-sm text-muted-foreground">—</span>;
+      if (distanceMeters === undefined) return <span className="text-sm text-muted-foreground">—</span>;
 
-      const distance = formatTrackDistance(state.summary.distanceMeters);
+      const distance = formatTrackDistance(distanceMeters);
 
       return <span className="text-sm">{distance ?? "—"}</span>;
     },
+    sortingFn: "basic",
+    sortUndefined: "last",
   },
   {
     id: "duration",
-    header: "Duration",
+    accessorFn: (row) => getEffectiveDurationSeconds(row),
+    header: ({ column }) => <SortableHeader column={column} label="Duration" />,
     cell: ({ row }) => {
-      const state = getTrackParseState(row.original);
       // The mirrored column is the duration the owner confirmed; a row parsed
       // before the column existed keeps its duration in the parsed summary.
-      const seconds =
-        row.original.recordingDurationSeconds ??
-        (state.status === "SUCCESS" ? (state.summary.time?.durationSeconds ?? null) : null);
+      const seconds = getEffectiveDurationSeconds(row.original);
       const duration = formatTrackDuration(seconds);
 
       if (!duration) return <span className="text-sm text-muted-foreground">—</span>;
 
       return <span className="text-sm">{duration}</span>;
     },
+    sortingFn: "basic",
+    sortUndefined: "last",
   },
   {
     id: "activityType",
