@@ -22,5 +22,5 @@
 - [x] 3.1 Open `/my/workouts` and confirm **Title**, **Started**, **Distance**, and **Duration** show sort controls, while **Type**, timezone, and actions do not.
 - [x] 3.2 Sort **Distance** ascending and descending and confirm `9 km` sorts before `10 km`, and workouts without a distance stay last in both directions.
 - [x] 3.3 Sort **Duration** the same way and confirm the numeric order and last-place blanks.
-- [ ] 3.4 Confirm **Type** has no sort control and still renders only the classification badge.
+- [x] 3.4 Confirm **Type** has no sort control and still renders only the classification badge.
 - [x] 3.5 Clear every sort and confirm the rows return to the page-supplied order and the neutral glyphs.
