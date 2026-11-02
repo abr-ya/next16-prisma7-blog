@@ -18,8 +18,8 @@ export const getActiveTrackActivityTypes = async () => {
 
 /**
  * Fetch a single active `TrackActivityType` by id, or `null` if the id is
- * unknown / inactive. Used by `createManualTrack` (feature-112) to validate
- * the optional `activityTypeId` from the Place on map form before persisting.
+ * unknown / inactive. Used by `createTrackFromRoute` (feature-127) to validate
+ * the optional `activityTypeId` from the route form before persisting.
  */
 export const getTrackActivityTypeById = async (id: string) => {
   if (!id || typeof id !== "string") return null;

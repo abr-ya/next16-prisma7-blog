@@ -74,6 +74,7 @@ import {
   getTrackGpxMetadataState,
   type TrackGpxTimeSummary,
 } from "@/lib/track-gpx-metadata";
+import { resolveTrackGeometry } from "@/lib/track-geometry";
 import { formatTrackRecordingTimezone } from "@/lib/track-recording-timezone";
 import { useDeleteRowConfirm } from "@/lib/use-delete-row-confirm";
 
@@ -101,9 +102,13 @@ const formatCandidateTrackContext = (candidate: TrackTimeMatchCandidate) => {
 const getAttachedTrackRecordingTime = (association?: HikeListItem["tracks"][number]): TrackGpxTimeSummary | null => {
   if (!association) return null;
 
-  const state = getTrackGpxMetadataState(association.track.metadata, {
-    fileAssetId: association.track.fileAsset.id,
-    fileKey: association.track.fileAsset.fileKey,
+  const geometry = resolveTrackGeometry(association.track);
+
+  if (!geometry) return null;
+
+  const state = getTrackGpxMetadataState(geometry.metadata, {
+    fileAssetId: geometry.fileAsset.id,
+    fileKey: geometry.fileAsset.fileKey,
   });
 
   return state.status === "SUCCESS" ? state.summary.time : null;

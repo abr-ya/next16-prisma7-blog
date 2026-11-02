@@ -4,6 +4,7 @@ import { Loader2 } from "lucide-react";
 
 import type { TrackListItem } from "@/app/_data/tracks";
 import { Badge } from "@/components/index";
+import { resolveTrackGeometry } from "@/lib/track-geometry";
 import {
   formatTrackDistance,
   formatTrackDuration,
@@ -24,11 +25,16 @@ import {
 // current rendering unchanged. Future readers looking for the parse status
 // rendering or its helper should look here, not in the panel file.
 
-const getTrackParseState = (track: TrackListItem): TrackGpxMetadataState =>
-  getTrackGpxMetadataState(track.metadata, {
-    fileAssetId: track.fileAsset.id,
-    fileKey: track.fileAsset.fileKey,
+const getTrackParseState = (track: TrackListItem): TrackGpxMetadataState => {
+  const geometry = resolveTrackGeometry(track);
+
+  if (!geometry) return { status: "MISSING", metadata: null };
+
+  return getTrackGpxMetadataState(geometry.metadata, {
+    fileAssetId: geometry.fileAsset.id,
+    fileKey: geometry.fileAsset.fileKey,
   });
+};
 
 const getParseStatusLabel = (state: TrackGpxMetadataState) => {
   if (state.status === "SUCCESS") return "Parsed";

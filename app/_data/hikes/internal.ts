@@ -26,6 +26,7 @@ import {
 import type { TrackTimelineLookup } from "@/lib/outdoor-photo-track-time-coordinate";
 import { createSlug } from "@/lib/slug-generator";
 import { getTrackGpxMetadataState } from "@/lib/track-gpx-metadata";
+import { resolveTrackGeometry } from "@/lib/track-geometry";
 
 import type { HikeActionValues, HikeTrackAssociationWithStoredMetadata, PublicHike, PublicHikeRecord } from "./types";
 
@@ -126,9 +127,13 @@ export const ensureSlugAvailable = async ({ slug, id }: { slug: string; id?: str
 };
 
 const getStoredTrackRecordingStart = (association: HikeTrackAssociationWithStoredMetadata) => {
-  const state = getTrackGpxMetadataState(association.track.metadata, {
-    fileAssetId: association.track.fileAsset.id,
-    fileKey: association.track.fileAsset.fileKey,
+  const geometry = resolveTrackGeometry(association.track);
+
+  if (!geometry) return null;
+
+  const state = getTrackGpxMetadataState(geometry.metadata, {
+    fileAssetId: geometry.fileAsset.id,
+    fileKey: geometry.fileAsset.fileKey,
   });
 
   if (state.status !== "SUCCESS" || !state.summary.time) return null;
@@ -348,19 +353,22 @@ export const toPublicHike = (hike: PublicHikeRecord): PublicHike => {
   return {
     ...hike,
     tracks: tracks.map((association) => {
-      const { metadata, fileAsset, ...track } = association.track;
-      const parsedState = getTrackGpxMetadataState(metadata, {
-        fileAssetId: fileAsset.id,
-        fileKey: fileAsset.fileKey,
-      });
+      const { metadata, fileAsset, route, ...track } = association.track;
+      const geometry = resolveTrackGeometry({ metadata, fileAsset, route });
+      const parsedState = geometry
+        ? getTrackGpxMetadataState(geometry.metadata, {
+            fileAssetId: geometry.fileAsset.id,
+            fileKey: geometry.fileAsset.fileKey,
+          })
+        : null;
 
       return {
         ...association,
         track: {
           ...track,
-          parsed: parsedState.status === "SUCCESS" ? { summary: parsedState.summary } : null,
+          parsed: parsedState?.status === "SUCCESS" ? { summary: parsedState.summary } : null,
           map:
-            parsedState.status === "SUCCESS" && parsedState.mapGeometry.length > 0
+            parsedState?.status === "SUCCESS" && parsedState.mapGeometry.length > 0
               ? {
                   title: track.title,
                   bounds: parsedState.summary.bounds,

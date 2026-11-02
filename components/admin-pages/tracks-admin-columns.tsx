@@ -85,19 +85,27 @@ const createTracksAdminColumns = ({
   {
     accessorKey: "fileAsset.name",
     header: "GPX file",
-    cell: ({ row }) => (
-      <div className="grid max-w-64 gap-1">
-        <div className="truncate" title={row.original.fileAsset.name}>
-          {row.original.fileAsset.name}
+    cell: ({ row }) => {
+      const fileAsset = row.original.fileAsset;
+
+      if (!fileAsset) {
+        return <span className="text-sm text-muted-foreground">No GPX file</span>;
+      }
+
+      return (
+        <div className="grid max-w-64 gap-1">
+          <div className="truncate" title={fileAsset.name}>
+            {fileAsset.name}
+          </div>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <Badge variant={row.original.status === "PUBLISHED" ? "default" : "secondary"}>
+              {formatTrackStatus(row.original.status)}
+            </Badge>
+            <span className="text-xs text-muted-foreground">{formatFileSize(fileAsset.sizeBytes)}</span>
+          </div>
         </div>
-        <div className="flex flex-wrap items-center gap-1.5">
-          <Badge variant={row.original.status === "PUBLISHED" ? "default" : "secondary"}>
-            {formatTrackStatus(row.original.status)}
-          </Badge>
-          <span className="text-xs text-muted-foreground">{formatFileSize(row.original.fileAsset.sizeBytes)}</span>
-        </div>
-      </div>
-    ),
+      );
+    },
   },
   {
     id: "parse",

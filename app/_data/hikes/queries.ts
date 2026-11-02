@@ -19,6 +19,7 @@ import {
   type TrackTimeMatchTrackInput,
 } from "@/lib/outdoor-photo-track-time-matching";
 import { getTrackGpxMetadataState } from "@/lib/track-gpx-metadata";
+import { resolveTrackGeometry } from "@/lib/track-geometry";
 
 import {
   expireHikeParticipantIfNeeded,
@@ -347,6 +348,12 @@ export const getPhotoDetailAccess = async ({ hikeId, photoId }: { hikeId: string
                 recordingTimezone: true,
                 metadata: true,
                 fileAsset: { select: { id: true, fileKey: true } },
+                route: {
+                  select: {
+                    metadata: true,
+                    fileAsset: { select: { id: true, fileKey: true } },
+                  },
+                },
               },
             },
           },
@@ -402,10 +409,17 @@ export const getHikePhotoDetail = async ({
         slug: string | null;
         recordingTimezone: string | null;
         metadata: Prisma.JsonValue | null;
-        fileAsset: { id: string; fileKey: string };
+        fileAsset: { id: string; fileKey: string } | null;
+        route?: { metadata: Prisma.JsonValue | null; fileAsset: { id: string; fileKey: string } | null } | null;
       };
     }>
-  ).map(({ track }) => toTrackTimeMatchTrackInput(track));
+  ).flatMap(({ track }) => {
+    const geometry = resolveTrackGeometry(track);
+
+    return geometry
+      ? [toTrackTimeMatchTrackInput({ ...track, metadata: geometry.metadata, fileAsset: geometry.fileAsset })]
+      : [];
+  });
   const linkedTrackTimezones = [
     ...new Set(
       trackInputs.map((track) => track.recordingTimezone).filter((timezone): timezone is string => Boolean(timezone)),
@@ -435,14 +449,17 @@ export const getHikePhotoDetail = async ({
             id: string;
             title: string;
             metadata: Prisma.JsonValue | null;
-            fileAsset: { id: string; fileKey: string };
+            fileAsset: { id: string; fileKey: string } | null;
+            route?: { metadata: Prisma.JsonValue | null; fileAsset: { id: string; fileKey: string } | null } | null;
           };
         }>
       ).find(({ track }) => track.id === candidate.trackId)?.track;
       if (!track) continue;
-      const state = getTrackGpxMetadataState(track.metadata, {
-        fileAssetId: track.fileAsset.id,
-        fileKey: track.fileAsset.fileKey,
+      const geometry = resolveTrackGeometry(track);
+      if (!geometry) continue;
+      const state = getTrackGpxMetadataState(geometry.metadata, {
+        fileAssetId: geometry.fileAsset.id,
+        fileKey: geometry.fileAsset.fileKey,
       });
       if (state.status !== "SUCCESS" || !state.timeline?.length || !state.mapGeometry.length) continue;
       previewByCandidateId[candidate.id] = {

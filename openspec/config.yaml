@@ -40,6 +40,8 @@ project:
     - components/common: shared rich text and table building blocks.
     - lib/prisma.ts: Prisma access.
     - lib/auth.ts, lib/auth-client.ts, lib/auth-utils.ts: auth setup and helpers.
+    - lib/auth-roles.ts: role definitions for the better-auth admin plugin.
+    - app/api/uploadthing/core.ts: two upload routes — imageUploader (legacy, open access) and fileUploader (authenticated, storage limits tracked in FileAsset).
     - lib/uploadthing.ts: UploadThing helpers.
     - lib/video-providers and lib/video-thumbnail-url.ts: video provider/thumbnail logic.
     - docs: implementation notes, plans, reports, and backlog-style project docs.

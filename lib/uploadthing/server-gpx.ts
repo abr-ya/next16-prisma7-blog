@@ -24,7 +24,7 @@ export type UploadSyntheticTrackGpxResult = {
 
 /**
  * Server-side equivalent of the browser `trackGpxUploader` route used by
- * feature-111's `createManualTrack` to persist a synthetic GPX byte string
+ * feature-127's `createRouteFromPoints` to persist a synthetic GPX byte string
  * (built from placed map points) into the same UploadThing storage bucket
  * that uploaded GPX files use. Returns the canonical UploadThing key/url
  * pair so the caller can persist a `FileAsset` row that matches the shape
