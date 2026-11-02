@@ -1,6 +1,10 @@
-# Spec Delta
+# outdoor-routes Specification
 
-## ADDED Requirements
+## Purpose
+
+Defines a route as the owner of reusable track geometry: the GPX file and parsed metadata for a shape that several tracks can share, with no recording data of its own.
+
+## Requirements
 
 ### Requirement: A route stores geometry without recording data
 

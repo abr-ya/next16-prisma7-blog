@@ -46,11 +46,10 @@
 - [x] 6.2 `npx eslint app/_data/tracks.ts app/_data/routes.ts app/_data/hikes/queries.ts app/_data/hikes/internal.ts components/track-pages/track-editor.tsx components/admin-pages/tracks-admin-panel.tsx components/admin-pages/hikes-admin-panel.tsx --quiet` — expect no errors.
 - [x] 6.3 `npm run lint` — expect no errors.
 - [x] 6.4 `npx openspec validate feature-127-route-library --strict` — expect the change to validate.
-- [ ] 6.5 `npm run build` — the user runs the build locally; the agent records the result here.
+- [x] 6.5 `npm run build` — the owner ran the production build locally on 2026-11-02; it passed.
 
 ## 7. Browser check (the owner's)
 
-Minimal positive pass. The owner already confirmed the three migrated legacy tracks render their route geometry (5.6 and 7.4). Creating a track from a new route and reusing that route for a second track are deferred to the `outdoor-route-track-creation-manual-qa` candidate in `openspec/backlog.md`.
+Minimal positive pass. The owner confirmed on 2026-11-02 that the three migrated legacy tracks render their route geometry (5.6 and 7.4) and that the quick workout upload creates a track with its own file and no route. Creating a track from a route, reusing that route for a second track, and the main Upload GPX path are deferred to the `outdoor-route-track-creation-manual-qa` candidate in `openspec/backlog.md`.
 
-- [ ] 7.3 Upload a GPX file through the main path and confirm nothing about it changed: own file, own metadata, no route involved.
 - [x] 7.4 Open the three converted legacy tracks and confirm they render their geometry from their new routes.
