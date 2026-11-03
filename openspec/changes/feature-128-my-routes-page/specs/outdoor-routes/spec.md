@@ -4,7 +4,7 @@
 
 ### Requirement: The owner manages a route library
 
-The system SHALL give each signed-in owner a route library at `/my/routes` that lists only their own routes, shows how many tracks reference each route, and lets them create, rename, edit, and delete a route.
+The system SHALL give each signed-in owner a route library at `/my/routes` that lists only their own routes, shows how many tracks reference each route, lets them preview a route's shape, and lets them create, rename, edit, and delete a route.
 
 #### Scenario: Owner opens the route library
 
@@ -24,6 +24,18 @@ The system SHALL give each signed-in owner a route library at `/my/routes` that 
 - **WHEN** a signed-in owner renames a route
 - **THEN** the new title is stored and shown in the library
 - **AND** the route's file and geometry are unchanged
+
+#### Scenario: Owner edits a route description
+
+- **WHEN** a signed-in owner changes a route's description
+- **THEN** the new description is stored and shown in the library
+- **AND** the route's title, file, and geometry are unchanged
+
+#### Scenario: Owner previews a route
+
+- **WHEN** a signed-in owner opens the preview for a route
+- **THEN** the surface draws the route's shape from its stored geometry
+- **AND** a route without parseable geometry shows a fallback message instead of an empty map
 
 ### Requirement: A shared route edit warns before it reaches every linked track
 
@@ -47,7 +59,7 @@ The system SHALL warn the owner before saving a geometry change to a route that 
 
 ### Requirement: A route with linked tracks cannot be deleted
 
-The system SHALL refuse to delete a route that still has linked tracks, SHALL report how many tracks keep it in use, and SHALL leave the route and its tracks unchanged.
+The system SHALL refuse to delete a route that still has linked tracks, SHALL report how many tracks keep it in use, and SHALL leave the route and its tracks unchanged. When an unused route is deleted, the system SHALL remove the route and retire its stored GPX file together, with no partial result.
 
 #### Scenario: Owner attempts to delete a route in use
 
@@ -60,3 +72,4 @@ The system SHALL refuse to delete a route that still has linked tracks, SHALL re
 - **WHEN** an owner deletes a route with no linked tracks
 - **THEN** the route is removed from the library
 - **AND** it no longer appears in the track creation dialog's route picker
+- **AND** its stored GPX file is retired rather than left active

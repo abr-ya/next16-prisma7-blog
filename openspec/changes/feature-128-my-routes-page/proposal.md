@@ -6,11 +6,11 @@
 
 ## What Changes
 
-- Add `/my/routes`: the owner's route library, listing their own routes with title, description, creation date, and the number of linked tracks.
-- Let the owner create a route from placed points, rename it, edit its description, and re-place its geometry.
+- Add `/my/routes`: the owner's route library, listing their own routes with title, description, creation date, and the number of linked tracks, plus a preview dialog that draws the route's shape.
+- Let the owner create a route from placed points, rename it, edit its description, and re-place its geometry. Re-placing geometry rewrites the route's synthetic GPX file and parsed metadata together.
 - Warn before a geometry edit that reaches more than one linked track, naming how many tracks will change.
-- Refuse deletion while a route still has linked tracks, and say how many keep it in use.
-- Add the library entry to the user menu next to the existing `/my/*` destinations, localized like them.
+- Refuse deletion while a route still has linked tracks, and say how many keep it in use. Deleting an unused route also retires its synthetic GPX file in the same transaction.
+- Add the library entry to the user menu next to the existing `/my/*` destinations. The entry and the new page use English copy like those siblings; localizing the whole owner workspace is a separate follow-up.
 
 ## Capabilities
 
@@ -24,9 +24,9 @@
 
 ## Impact
 
-- New route: `app/(public)/my/routes/`, plus the delete and edit actions in `app/_data/routes.ts`.
-- Components: a route list, a rename/description dialog, and reuse of the existing map editor for geometry changes.
-- Localization resources for the new `/my/routes` copy.
+- New route: `app/(public)/my/routes/`, plus `updateRoute` / `deleteRoute` / `getRoutePreview` in `app/_data/routes.ts`.
+- Components: a route list, a rename/description dialog, a preview dialog using the existing read-only `TrackMap`, and reuse of `TrackEditor` for geometry changes.
+- No localization resources in this change; the owner workspace is localized as a separate feature.
 - Depends on `feature-127-route-library` for the `Route` model, `createRouteFromPoints`, `getOwnerRoutes`, and geometry resolution.
 - No schema change of its own and no change to the track creation path.
 
