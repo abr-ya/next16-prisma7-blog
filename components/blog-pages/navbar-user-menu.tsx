@@ -1,6 +1,6 @@
 "use client";
 
-import { Dumbbell, Footprints, LayoutDashboard, LogOut, Route, UserRound } from "lucide-react";
+import { Dumbbell, Footprints, LayoutDashboard, LogOut, Route, UserRound, Waypoints } from "lucide-react";
 import Link from "next/link";
 import { useT } from "next-i18next/client";
 import { useRouter } from "next/navigation";
@@ -69,6 +69,12 @@ export const NavbarUserMenu = ({ userName, userImage }: NavbarUserMenuProps) => 
               <Link href="/my/tracks" className="flex-row items-center gap-2">
                 <Route />
                 My tracks
+              </Link>
+            </NavigationMenuLink>
+            <NavigationMenuLink asChild>
+              <Link href="/my/routes" className="flex-row items-center gap-2">
+                <Waypoints />
+                My routes
               </Link>
             </NavigationMenuLink>
             <NavigationMenuLink asChild>

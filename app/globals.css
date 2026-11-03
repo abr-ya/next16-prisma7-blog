@@ -232,3 +232,13 @@ h3.tiptap-heading + h2.tiptap-heading {
 	width: 20px;
 }
 /* End of Copy code buttons for code blocks and inline code */
+
+/* Point-placement maps read as a click surface: Leaflet's grab hand suggests
+   dragging the map, while the editor's primary action is "click to add a
+   point". Read-only maps keep Leaflet's grab affordance. */
+.track-editor-map.leaflet-grab,
+.leaflet-dragging .track-editor-map.leaflet-grab,
+.track-editor-map.leaflet-grab .leaflet-interactive,
+.leaflet-dragging .track-editor-map.leaflet-grab .leaflet-interactive {
+	cursor: default;
+}

@@ -116,7 +116,7 @@ export const TrackEditorMap = ({
         bounds={bounds}
         center={!hasExtent && firstPoint ? toLatLng(firstPoint) : [0, 0]}
         zoom={!hasExtent && firstPoint ? 13 : 2}
-        className="h-full w-full"
+        className="track-editor-map h-full w-full"
         scrollWheelZoom
       >
         <TileLayer

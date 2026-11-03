@@ -19,6 +19,7 @@ import { gearFitsActivityType } from "@/lib/gear";
 import { createSlug } from "@/lib/slug-generator";
 import { buildTrackGpxMetadata, fetchTrackGpxContent } from "@/lib/track-gpx-file";
 import { resolveTrackGeometry } from "@/lib/track-geometry";
+import { revalidateTrackPaths } from "@/lib/track-revalidation";
 import {
   parseDurationSeconds,
   parseManualTrackStartAt,
@@ -626,14 +627,6 @@ const toPublicTrack = (
       assignedAt: association.assignedAt,
     })),
   };
-};
-
-const revalidateTrackPaths = () => {
-  revalidatePath("/admin/tracks");
-  revalidatePath("/my/tracks");
-  revalidatePath("/admin/files");
-  revalidatePath("/tracks");
-  revalidatePath("/hikes");
 };
 
 const revalidateTrackDetailPaths = (slug?: string | null) => {
