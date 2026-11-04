@@ -1,8 +1,7 @@
 import { addDays, addWeeks, getISOWeek, getISOWeekYear, startOfISOWeek } from "date-fns";
 
 import type { TrackListItem } from "@/app/_data/tracks";
-import { resolveTrackGeometry } from "@/lib/track-geometry";
-import { getTrackGpxMetadataState } from "@/lib/track-gpx-metadata";
+import { getEffectiveTrackStart } from "@/lib/track-effective-values";
 
 /** feature-132: ISO 8601 week date — Monday start, week 1 contains 4 January. */
 export type IsoWeekRef = {
@@ -13,24 +12,6 @@ export type IsoWeekRef = {
 export type IsoWeekRange = {
   start: Date;
   end: Date;
-};
-
-/**
- * The effective start the workout table shows: the recording-start mirror
- * first, the parsed GPX summary second. A row without either has no week.
- */
-export const getEffectiveTrackStart = (track: TrackListItem): string | undefined => {
-  if (track.recordingStartAt) return track.recordingStartAt.toISOString();
-
-  const geometry = resolveTrackGeometry(track);
-  if (!geometry) return undefined;
-
-  const state = getTrackGpxMetadataState(geometry.metadata, {
-    fileAssetId: geometry.fileAsset.id,
-    fileKey: geometry.fileAsset.fileKey,
-  });
-
-  return state.status === "SUCCESS" ? (state.summary.time?.start ?? undefined) : undefined;
 };
 
 const normalizeTimezone = (timezone?: string | null) => {
