@@ -12,7 +12,7 @@
 - [x] 2.2 Add `components/admin-pages/workout-week-summary.tsx`: a compact summary button placed to the right of the week controls, rendered only for the workouts variant while a week is selected.
 - [x] 2.3 Make the summary open a read-only `Dialog` with the week label, the workout count, the total distance, and the distance-missing note when relevant.
 - [x] 2.4 Handle a week with no workouts and a week with no parsed distance without showing a misleading `0 m`.
-- [ ] 2.5 Confirm the toolbar still wraps cleanly on narrow viewports with the summary present.
+- [x] 2.5 Confirm the toolbar still wraps cleanly on narrow viewports with the summary present. Verified by the owner at 375 px and 320 px on 2026-11-04: no horizontal overflow, the summary wraps below the week control, and the dialog fits the screen.
 - [x] 2.6 Keep the selected week's full set visible: the shared `DataTable` no longer retains the previous page size when pagination is switched off, so the week renders every row and the summary count matches the table.
 
 ## 3. Localization
