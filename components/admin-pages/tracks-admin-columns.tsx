@@ -69,6 +69,7 @@ const createTracksAdminColumns = ({
   },
   {
     accessorKey: "title",
+    meta: { sortLabel: "Title" },
     header: ({ column }) => <SortableHeader column={column} label="Title" />,
     cell: ({ row }) =>
       row.original.status === "PUBLISHED" ? (
@@ -157,6 +158,7 @@ const createTracksAdminColumns = ({
   },
   {
     accessorKey: "updatedAt",
+    meta: { sortLabel: "Updated" },
     header: ({ column }) => <SortableHeader column={column} label="Updated" />,
     cell: ({ row }) => formatDate(row.original.updatedAt),
     sortingFn: "datetime",

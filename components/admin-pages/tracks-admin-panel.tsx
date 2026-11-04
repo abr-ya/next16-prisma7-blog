@@ -1324,146 +1324,132 @@ export const TrackManagementPanel = ({
 
   return (
     <div className="flex flex-col gap-4 p-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        {tableVariant === "workouts" ? (
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="flex items-center rounded-md border">
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                aria-label={t("workoutWeekPrevious")}
-                disabled={!selectedWeek}
-                onClick={() => setSelectedWeek((current) => (current ? shiftIsoWeek(current, -1) : current))}
-              >
-                <ChevronLeft className="size-4" />
-              </Button>
-              <Popover
-                open={weekPickerOpen}
-                onOpenChange={(open) => {
-                  setWeekPickerOpen(open);
-                  handleWeekPopoverOpen(open);
-                }}
-              >
-                <PopoverTrigger asChild>
-                  <Button type="button" variant="ghost" className="gap-2 rounded-none border-x px-3">
-                    <CalendarDays className="size-4" />
-                    {selectedWeek
-                      ? t("workoutWeekLabel", {
-                          week: selectedWeek.week,
-                          range: formatIsoWeekRange(
-                            getIsoWeekRange(selectedWeek.isoYear, selectedWeek.week),
-                            activeLanguage,
-                          ),
-                        })
-                      : t("workoutWeekAll")}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent align="start" className="w-80">
-                  <div className="grid gap-3">
-                    <div className="grid gap-1">
-                      <span className="text-sm font-medium">{t("workoutWeekYearLabel")}</span>
-                      <Select value={String(pickerYear)} onValueChange={handlePickerYearChange}>
-                        <SelectTrigger className="w-full">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {isoYearOptions.map((year) => (
-                            <SelectItem key={year} value={String(year)}>
-                              {year}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="grid gap-1">
-                      <span className="text-sm font-medium">{t("workoutWeekSelectLabel")}</span>
-                      <Select
-                        value={selectedWeek?.isoYear === pickerYear ? String(selectedWeek.week) : undefined}
-                        onValueChange={handleWeekSelect}
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder={t("workoutWeekSelectLabel")} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {pickerWeeks.map((week) => (
-                            <SelectItem key={week} value={String(week)}>
-                              {t("workoutWeekLabel", {
-                                week,
-                                range: formatIsoWeekRange(getIsoWeekRange(pickerYear, week), activeLanguage),
-                              })}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="flex items-center justify-between gap-2">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedWeek(null);
-                          setWeekPickerOpen(false);
-                        }}
-                      >
-                        {t("workoutWeekAll")}
-                      </Button>
-                      <Button
-                        type="button"
-                        size="sm"
-                        onClick={() => {
-                          setPickerYear(currentWeek.isoYear);
-                          setSelectedWeek(currentWeek);
-                          setWeekPickerOpen(false);
-                        }}
-                      >
-                        {t("workoutWeekThisWeek")}
-                      </Button>
-                    </div>
-                  </div>
-                </PopoverContent>
-              </Popover>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                aria-label={t("workoutWeekNext")}
-                disabled={!selectedWeek}
-                onClick={() => setSelectedWeek((current) => (current ? shiftIsoWeek(current, 1) : current))}
-              >
-                <ChevronRight className="size-4" />
-              </Button>
-            </div>
-            {selectedWeek && weekSummary ? (
-              <WorkoutWeekSummary
-                selectedWeek={selectedWeek}
-                activeLanguage={activeLanguage}
-                workoutCount={weekSummary.workoutCount}
-                distanceMeters={weekSummary.distanceMeters}
-                distanceCount={weekSummary.distanceCount}
-              />
-            ) : null}
-            {selectedWeek ? (
-              <Button type="button" variant="ghost" size="sm" onClick={() => setSelectedWeek(null)}>
-                {t("workoutWeekAll")}
-              </Button>
-            ) : null}
-          </div>
-        ) : null}
-        <div className="ml-auto flex flex-wrap justify-end gap-2">
-          {quickActivityTypes.map((activityType) => (
-            <Button key={activityType.id} type="button" onClick={() => setQuickActivityType(activityType)}>
-              <Plus />
-              {t(`quickWorkout.activities.${activityType.key}.addLabel`)}
+      {tableVariant === "workouts" ? (
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center rounded-md border">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              aria-label={t("workoutWeekPrevious")}
+              disabled={!selectedWeek}
+              onClick={() => setSelectedWeek((current) => (current ? shiftIsoWeek(current, -1) : current))}
+            >
+              <ChevronLeft className="size-4" />
             </Button>
-          ))}
-          <Button type="button" onClick={handleCreateClick}>
-            <Plus />
-            Add track
-          </Button>
+            <Popover
+              open={weekPickerOpen}
+              onOpenChange={(open) => {
+                setWeekPickerOpen(open);
+                handleWeekPopoverOpen(open);
+              }}
+            >
+              <PopoverTrigger asChild>
+                <Button type="button" variant="ghost" className="gap-2 rounded-none border-x px-3">
+                  <CalendarDays className="size-4" />
+                  {selectedWeek
+                    ? t("workoutWeekLabel", {
+                        week: selectedWeek.week,
+                        range: formatIsoWeekRange(
+                          getIsoWeekRange(selectedWeek.isoYear, selectedWeek.week),
+                          activeLanguage,
+                        ),
+                      })
+                    : t("workoutWeekAll")}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="start" className="w-80">
+                <div className="grid gap-3">
+                  <div className="grid gap-1">
+                    <span className="text-sm font-medium">{t("workoutWeekYearLabel")}</span>
+                    <Select value={String(pickerYear)} onValueChange={handlePickerYearChange}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {isoYearOptions.map((year) => (
+                          <SelectItem key={year} value={String(year)}>
+                            {year}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid gap-1">
+                    <span className="text-sm font-medium">{t("workoutWeekSelectLabel")}</span>
+                    <Select
+                      value={selectedWeek?.isoYear === pickerYear ? String(selectedWeek.week) : undefined}
+                      onValueChange={handleWeekSelect}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder={t("workoutWeekSelectLabel")} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {pickerWeeks.map((week) => (
+                          <SelectItem key={week} value={String(week)}>
+                            {t("workoutWeekLabel", {
+                              week,
+                              range: formatIsoWeekRange(getIsoWeekRange(pickerYear, week), activeLanguage),
+                            })}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setSelectedWeek(null);
+                        setWeekPickerOpen(false);
+                      }}
+                    >
+                      {t("workoutWeekAll")}
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() => {
+                        setPickerYear(currentWeek.isoYear);
+                        setSelectedWeek(currentWeek);
+                        setWeekPickerOpen(false);
+                      }}
+                    >
+                      {t("workoutWeekThisWeek")}
+                    </Button>
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              aria-label={t("workoutWeekNext")}
+              disabled={!selectedWeek}
+              onClick={() => setSelectedWeek((current) => (current ? shiftIsoWeek(current, 1) : current))}
+            >
+              <ChevronRight className="size-4" />
+            </Button>
+          </div>
+          {selectedWeek && weekSummary ? (
+            <WorkoutWeekSummary
+              selectedWeek={selectedWeek}
+              activeLanguage={activeLanguage}
+              workoutCount={weekSummary.workoutCount}
+              distanceMeters={weekSummary.distanceMeters}
+              distanceCount={weekSummary.distanceCount}
+            />
+          ) : null}
+          {selectedWeek ? (
+            <Button type="button" variant="ghost" size="sm" onClick={() => setSelectedWeek(null)}>
+              {t("workoutWeekAll")}
+            </Button>
+          ) : null}
         </div>
-      </div>
+      ) : null}
       <DataTable
         data={visibleTracks}
         columns={columns}
@@ -1472,8 +1458,28 @@ export const TrackManagementPanel = ({
         // more friction than value.
         pagination={tableVariant === "workouts" && selectedWeek ? undefined : { pageSize: 10 }}
         pageResetKey={selectedWeek ? `${selectedWeek.isoYear}-${selectedWeek.week}` : "all"}
+        defaultSortHint={
+          tableVariant === "workouts" ? t("tableDefaultSortHintStarted") : t("tableDefaultSortHintUpdated")
+        }
+        formatSortStatus={(label, descending) =>
+          t(descending ? "tableSortStatusDescending" : "tableSortStatusAscending", { column: label })
+        }
         initialSorting={
           tableVariant === "workouts" ? [{ id: "started", desc: true }] : [{ id: "updatedAt", desc: true }]
+        }
+        headerActions={
+          <>
+            {quickActivityTypes.map((activityType) => (
+              <Button key={activityType.id} type="button" onClick={() => setQuickActivityType(activityType)}>
+                <Plus />
+                {t(`quickWorkout.activities.${activityType.key}.addLabel`)}
+              </Button>
+            ))}
+            <Button type="button" onClick={handleCreateClick}>
+              <Plus />
+              Add track
+            </Button>
+          </>
         }
       />
       {quickActivityType ? (
