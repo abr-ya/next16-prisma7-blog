@@ -6,7 +6,11 @@ import Link from "next/link";
 
 import type { TrackListItem } from "@/app/_data/tracks";
 import { Badge, Button, SortableHeader } from "@/components/index";
-import { getTrackParseState } from "@/components/admin-pages/tracks-admin-panel-parse-cell";
+import {
+  getEffectiveTrackDistanceMeters,
+  getEffectiveTrackDurationSeconds,
+  getEffectiveTrackStart,
+} from "@/lib/track-effective-values";
 import { formatTrackDistance, formatTrackDuration, formatTrackRecordingDateTime } from "@/lib/track-gpx-metadata";
 import { formatTrackRecordingTimezone } from "@/lib/track-recording-timezone";
 import { formatTrackStatus } from "@/lib/tracks";
@@ -28,29 +32,8 @@ import { formatTrackStatus } from "@/lib/tracks";
 // feature-131: derived sort values. The accessors and the cells must keep the
 // same fallback chain, so both read through these helpers instead of repeating
 // it in two places.
-const getEffectiveStart = (track: TrackListItem): string | undefined => {
-  const state = getTrackParseState(track);
-
-  return (
-    track.recordingStartAt?.toISOString() ??
-    (state.status === "SUCCESS" ? (state.summary.time?.start ?? undefined) : undefined)
-  );
-};
-
-const getEffectiveDistanceMeters = (track: TrackListItem): number | undefined => {
-  const state = getTrackParseState(track);
-
-  return state.status === "SUCCESS" ? state.summary.distanceMeters : undefined;
-};
-
-const getEffectiveDurationSeconds = (track: TrackListItem): number | undefined => {
-  const state = getTrackParseState(track);
-
-  return (
-    track.recordingDurationSeconds ??
-    (state.status === "SUCCESS" ? (state.summary.time?.durationSeconds ?? undefined) : undefined)
-  );
-};
+// feature-135: the helpers moved to `lib/track-effective-values.ts` so the
+// week summary sums exactly the distance this column shows.
 
 type CreateTrackWorkoutColumnsInput = {
   activeLanguage: string;
@@ -99,14 +82,14 @@ const createTrackWorkoutColumns = ({
     // feature-129: the effective start is the recording start mirror or the
     // parsed summary fallback; the accessor exposes the same value the cell
     // renders so the default `Started desc` sort and the visible order agree.
-    accessorFn: (row) => getEffectiveStart(row),
+    accessorFn: (row) => getEffectiveTrackStart(row),
     header: ({ column }) => <SortableHeader column={column} label="Started" />,
     cell: ({ row }) => {
       // `recordingStartAt` is the mirror of the parsed GPX start, but the
       // mirror only exists for rows parsed after it was added — an older
       // track keeps the start in its parsed summary only. Fall back to the
       // summary so those rows are not blank.
-      const start = getEffectiveStart(row.original);
+      const start = getEffectiveTrackStart(row.original);
 
       if (!start) return <span className="text-sm text-muted-foreground">—</span>;
 
@@ -130,10 +113,10 @@ const createTrackWorkoutColumns = ({
   },
   {
     id: "distance",
-    accessorFn: (row) => getEffectiveDistanceMeters(row),
+    accessorFn: (row) => getEffectiveTrackDistanceMeters(row),
     header: ({ column }) => <SortableHeader column={column} label="Distance" />,
     cell: ({ row }) => {
-      const distanceMeters = getEffectiveDistanceMeters(row.original);
+      const distanceMeters = getEffectiveTrackDistanceMeters(row.original);
 
       if (distanceMeters === undefined) return <span className="text-sm text-muted-foreground">—</span>;
 
@@ -146,12 +129,12 @@ const createTrackWorkoutColumns = ({
   },
   {
     id: "duration",
-    accessorFn: (row) => getEffectiveDurationSeconds(row),
+    accessorFn: (row) => getEffectiveTrackDurationSeconds(row),
     header: ({ column }) => <SortableHeader column={column} label="Duration" />,
     cell: ({ row }) => {
       // The mirrored column is the duration the owner confirmed; a row parsed
       // before the column existed keeps its duration in the parsed summary.
-      const seconds = getEffectiveDurationSeconds(row.original);
+      const seconds = getEffectiveTrackDurationSeconds(row.original);
       const duration = formatTrackDuration(seconds);
 
       if (!duration) return <span className="text-sm text-muted-foreground">—</span>;

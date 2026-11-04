@@ -85,12 +85,14 @@ import {
 } from "@/components/admin-pages/tracks-admin-panel-parse-cell";
 import { createTracksAdminColumns } from "@/components/admin-pages/tracks-admin-columns";
 import { createTrackWorkoutColumns } from "@/components/admin-pages/tracks-workout-columns";
+import { WorkoutWeekSummary } from "@/components/admin-pages/workout-week-summary";
 import {
   TrackDurationInputError,
   formatManualTrackStartAt,
   parseDurationInput,
   parseStoredDurationToHms,
 } from "@/lib/track-duration-input";
+import { getEffectiveTrackDistanceMeters } from "@/lib/track-effective-values";
 
 const formSchema = z.object({
   title: z.string().min(1, { message: "Title is required" }),
@@ -1192,6 +1194,30 @@ export const TrackManagementPanel = ({
     });
   }, [selectedWeek, tableVariant, tracks]);
 
+  // feature-135: the summary describes the whole selected week, and a week is
+  // rendered in full, so `visibleTracks` is already that complete set. Distance
+  // is summed through the same helper the table's Distance column uses.
+  const weekSummary = useMemo(() => {
+    if (tableVariant !== "workouts" || !selectedWeek) return null;
+
+    let distanceMeters = 0;
+    let distanceCount = 0;
+
+    for (const track of visibleTracks) {
+      const distance = getEffectiveTrackDistanceMeters(track);
+      if (typeof distance === "number" && Number.isFinite(distance)) {
+        distanceMeters += distance;
+        distanceCount += 1;
+      }
+    }
+
+    return {
+      workoutCount: visibleTracks.length,
+      distanceMeters: distanceCount > 0 ? distanceMeters : null,
+      distanceCount,
+    };
+  }, [selectedWeek, tableVariant, visibleTracks]);
+
   const handleWeekPopoverOpen = (open: boolean) => {
     if (open) setPickerYear(selectedWeek?.isoYear ?? currentWeek.isoYear);
   };
@@ -1409,6 +1435,15 @@ export const TrackManagementPanel = ({
                 <ChevronRight className="size-4" />
               </Button>
             </div>
+            {selectedWeek && weekSummary ? (
+              <WorkoutWeekSummary
+                selectedWeek={selectedWeek}
+                activeLanguage={activeLanguage}
+                workoutCount={weekSummary.workoutCount}
+                distanceMeters={weekSummary.distanceMeters}
+                distanceCount={weekSummary.distanceCount}
+              />
+            ) : null}
             {selectedWeek ? (
               <Button type="button" variant="ghost" size="sm" onClick={() => setSelectedWeek(null)}>
                 {t("workoutWeekAll")}

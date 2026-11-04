@@ -46,16 +46,25 @@ export const DataTable = <TData, TValue>({
   });
   const isPaginated = Boolean(pagination);
 
+  // feature-135 follow-up: TanStack memoizes `getPaginationRowModel` on the
+  // table instance. Dropping the option later does not remove the memo, so a
+  // table that starts paginated and then switches to "show everything" kept
+  // slicing rows with the old page size. Keep the model installed and control
+  // the state instead: unpaginated mode uses one page that holds every row.
+  const effectivePagination: PaginationState = isPaginated
+    ? paginationState
+    : { pageIndex: 0, pageSize: Math.max(data.length, 1) };
+
   // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
     data,
     columns,
-    state: isPaginated ? { pagination: paginationState } : undefined,
+    state: { pagination: effectivePagination },
     onPaginationChange: isPaginated ? setPaginationState : undefined,
     initialState: initialSorting ? { sorting: initialSorting } : undefined,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
-    getPaginationRowModel: isPaginated ? getPaginationRowModel() : undefined,
+    getPaginationRowModel: getPaginationRowModel(),
     autoResetPageIndex: true,
   });
   const pageCount = Math.max(table.getPageCount(), 1);
