@@ -10,6 +10,7 @@ import {
 } from "@tanstack/react-table";
 import type { PaginationState, SortingState } from "@tanstack/react-table";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -26,6 +27,30 @@ interface DataTableProps<TData, TValue> {
   /** feature-129: the order the page already supplies, made visible in the headers. */
   initialSorting?: SortingState;
   /**
+   * feature-130: the page-supplied order this table falls back to when no
+   * column sort is active. Pass one already-localized sentence that names the
+   * same order the page renders, for example `Sorted by: recently updated`.
+   * The hint is plain text and never changes sorting, row order, or
+   * pagination. A table whose order has no sortable column can pass this
+   * alone; a table with a declared initial sort passes it so the cleared
+   * state is explained too.
+   */
+  defaultSortHint?: string;
+  /**
+   * feature-130: formats the always-visible sort status for an active column
+   * sort. Receives the localized column label and the direction; return the
+   * complete sentence. The table falls back to `defaultSortHint` when no
+   * column sort is active.
+   */
+  formatSortStatus?: (label: string, descending: boolean) => string;
+  /**
+   * feature-130: page-level controls that belong with the table. Rendered to
+   * the right of the fallback-order hint in the same row above the table
+   * header, so the page's primary action sits on the hint's line instead of
+   * one row above it. Pass a localized node; the table only lays it out.
+   */
+  headerActions?: ReactNode;
+  /**
    * feature-132: changing this key returns the table to its first page without
    * touching the selected sort. Used when a filter switches between paginated
    * and unpaginated modes.
@@ -38,6 +63,9 @@ export const DataTable = <TData, TValue>({
   data,
   pagination,
   initialSorting,
+  defaultSortHint,
+  formatSortStatus,
+  headerActions,
   pageResetKey,
 }: DataTableProps<TData, TValue>) => {
   const [paginationState, setPaginationState] = useState<PaginationState>({
@@ -68,6 +96,18 @@ export const DataTable = <TData, TValue>({
     autoResetPageIndex: true,
   });
   const pageCount = Math.max(table.getPageCount(), 1);
+  // feature-130: name the current sort when one is active, and the page-supplied
+  // order otherwise. The column label comes from `meta.sortLabel`, because the
+  // rendered header is a component rather than a plain string.
+  const activeSort = table.getState().sorting[0];
+  const activeSortLabel = activeSort
+    ? ((table.getColumn(activeSort.id)?.columnDef.meta as { sortLabel?: string } | undefined)?.sortLabel ??
+      activeSort.id)
+    : null;
+  const sortStatusText =
+    activeSort && activeSortLabel && formatSortStatus
+      ? formatSortStatus(activeSortLabel, activeSort.desc)
+      : defaultSortHint;
 
   useEffect(() => {
     table.setPageIndex(0);
@@ -78,6 +118,14 @@ export const DataTable = <TData, TValue>({
 
   return (
     <div className="flex flex-col gap-3">
+      {sortStatusText || headerActions ? (
+        <div className="flex flex-wrap items-center gap-2">
+          {sortStatusText ? <p className="mr-auto text-sm text-muted-foreground">{sortStatusText}</p> : null}
+          {headerActions ? (
+            <div className="ml-auto flex flex-wrap items-center justify-end gap-2">{headerActions}</div>
+          ) : null}
+        </div>
+      ) : null}
       <div className="overflow-hidden rounded-md border">
         <Table>
           <TableHeader>
@@ -113,7 +161,7 @@ export const DataTable = <TData, TValue>({
         </Table>
       </div>
       {isPaginated ? (
-        <div className="flex items-center justify-end gap-3 text-sm text-muted-foreground">
+        <div className="flex flex-wrap items-center justify-end gap-3 text-sm text-muted-foreground">
           <span>
             Page {table.getState().pagination.pageIndex + 1} of {pageCount}
           </span>

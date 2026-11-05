@@ -64,6 +64,7 @@ const createTrackWorkoutColumns = ({
   },
   {
     accessorKey: "title",
+    meta: { sortLabel: "Title" },
     header: ({ column }) => <SortableHeader column={column} label="Title" />,
     cell: ({ row }) =>
       row.original.status === "PUBLISHED" ? (
@@ -79,6 +80,7 @@ const createTrackWorkoutColumns = ({
   },
   {
     id: "started",
+    meta: { sortLabel: "Started" },
     // feature-129: the effective start is the recording start mirror or the
     // parsed summary fallback; the accessor exposes the same value the cell
     // renders so the default `Started desc` sort and the visible order agree.
@@ -113,6 +115,7 @@ const createTrackWorkoutColumns = ({
   },
   {
     id: "distance",
+    meta: { sortLabel: "Distance" },
     accessorFn: (row) => getEffectiveTrackDistanceMeters(row),
     header: ({ column }) => <SortableHeader column={column} label="Distance" />,
     cell: ({ row }) => {
@@ -129,6 +132,7 @@ const createTrackWorkoutColumns = ({
   },
   {
     id: "duration",
+    meta: { sortLabel: "Duration" },
     accessorFn: (row) => getEffectiveTrackDurationSeconds(row),
     header: ({ column }) => <SortableHeader column={column} label="Duration" />,
     cell: ({ row }) => {
