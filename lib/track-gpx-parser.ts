@@ -21,6 +21,18 @@ type ParsedGpxPoint = TrackGpxCoordinate & {
   utcOffsetMinutes?: number;
 };
 
+/**
+ * feature-138: a parsed point with the ordinal it occupies in the usable
+ * point list and the byte span of its XML element. The span lets the point
+ * cleanup rewrite remove exactly this element while leaving elevation,
+ * timestamps, and vendor extensions untouched.
+ */
+export type EditableGpxPoint = ParsedGpxPoint & {
+  index: number;
+  start: number;
+  end: number;
+};
+
 type ParseTrackGpxInput = {
   content: string;
   sourceFileAssetId: string;
@@ -94,8 +106,8 @@ export const readGpxUtcOffsetMinutes = (value: string): number | null => {
 const getTimeTimezoneEvidence = (value: string): Exclude<TrackGpxTimezoneEvidence, "MIXED" | "UNKNOWN"> =>
   TIMEZONE_OFFSET_PATTERN.test(value.trim()) ? "UTC_OR_OFFSET" : "MISSING";
 
-const parseGpxPoints = (content: string): ParsedGpxPoint[] => {
-  const points: ParsedGpxPoint[] = [];
+export const parseGpxEditablePoints = (content: string): EditableGpxPoint[] => {
+  const points: EditableGpxPoint[] = [];
   const pointPattern =
     /<\s*(?:[\w-]+:)?(?:trkpt|rtept)\b([^>/]*)(?:\/>|>([\s\S]*?)<\s*\/\s*(?:[\w-]+:)?(?:trkpt|rtept)\s*>)/gi;
 
@@ -113,8 +125,12 @@ const parseGpxPoints = (content: string): ParsedGpxPoint[] => {
     const time = timeValue && !Number.isNaN(Date.parse(timeValue)) ? new Date(timeValue).toISOString() : undefined;
     const timeTimezoneEvidence = time && timeValue ? getTimeTimezoneEvidence(timeValue) : undefined;
     const utcOffsetMinutes = timeValue ? readGpxUtcOffsetMinutes(timeValue) : null;
+    const start = match.index ?? 0;
 
     points.push({
+      index: points.length,
+      start,
+      end: start + match[0].length,
       lat,
       lng,
       ...(Number.isFinite(ele) ? { ele } : {}),
@@ -126,6 +142,16 @@ const parseGpxPoints = (content: string): ParsedGpxPoint[] => {
 
   return points;
 };
+
+const parseGpxPoints = (content: string): ParsedGpxPoint[] =>
+  parseGpxEditablePoints(content).map((point) => ({
+    lat: point.lat,
+    lng: point.lng,
+    ...(point.ele !== undefined ? { ele: point.ele } : {}),
+    ...(point.time !== undefined ? { time: point.time } : {}),
+    ...(point.timeTimezoneEvidence !== undefined ? { timeTimezoneEvidence: point.timeTimezoneEvidence } : {}),
+    ...(point.utcOffsetMinutes !== undefined ? { utcOffsetMinutes: point.utcOffsetMinutes } : {}),
+  }));
 
 const toRadians = (value: number) => (value * Math.PI) / 180;
 

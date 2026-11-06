@@ -119,6 +119,8 @@ type PublicTrackRecord = Prisma.TrackGetPayload<{
     id: true;
     title: true;
     slug: true;
+    userId: true;
+    routeId: true;
     description: true;
     recordingTimezone: true;
     recordingStartAt: true;
@@ -134,6 +136,7 @@ type PublicTrackRecord = Prisma.TrackGetPayload<{
         sizeBytes: true;
         status: true;
         visibility: true;
+        purpose: true;
         uploadedAt: true;
         updatedAt: true;
       };
@@ -149,6 +152,7 @@ type PublicTrackRecord = Prisma.TrackGetPayload<{
             sizeBytes: true;
             status: true;
             visibility: true;
+            purpose: true;
             uploadedAt: true;
             updatedAt: true;
           };
@@ -186,6 +190,8 @@ export type PublicTrack = {
   timeSource: TrackTimeSource | null;
   updatedAt: Date;
   createdAt: Date;
+  /** feature-138: the viewer owns this track and may clean up its GPX points. */
+  canCleanPoints: boolean;
   file: {
     id: string;
     name: string;
@@ -505,6 +511,8 @@ const publicTrackSelect = {
   id: true,
   title: true,
   slug: true,
+  userId: true,
+  routeId: true,
   description: true,
   recordingTimezone: true,
   recordingStartAt: true,
@@ -545,6 +553,7 @@ const publicTrackSelect = {
       sizeBytes: true,
       status: true,
       visibility: true,
+      purpose: true,
       uploadedAt: true,
       updatedAt: true,
     },
@@ -560,6 +569,7 @@ const publicTrackSelect = {
           sizeBytes: true,
           status: true,
           visibility: true,
+          purpose: true,
           uploadedAt: true,
           updatedAt: true,
         },
@@ -570,7 +580,7 @@ const publicTrackSelect = {
 
 const toPublicTrack = (
   track: PublicTrackRecord,
-  { includeMapGeometry }: { includeMapGeometry: boolean },
+  { includeMapGeometry, viewerId }: { includeMapGeometry: boolean; viewerId?: string | null },
 ): PublicTrack | null => {
   const geometry = resolveTrackGeometry(track);
 
@@ -579,6 +589,15 @@ const toPublicTrack = (
   const { fileAsset, metadata } = geometry;
   const downloadAvailable =
     fileAsset.status === ACTIVE_FILE_STATUS && PUBLIC_DOWNLOAD_VISIBILITIES.has(fileAsset.visibility);
+  // feature-138: cleanup is offered only for the owner's own file; a
+  // route-based track borrows geometry it cannot rewrite here.
+  const canCleanPoints = Boolean(
+    viewerId &&
+    track.userId === viewerId &&
+    !track.routeId &&
+    fileAsset.purpose === "TRACK_GPX" &&
+    fileAsset.status === ACTIVE_FILE_STATUS,
+  );
   const parsedState = getTrackGpxMetadataState(metadata, {
     fileAssetId: fileAsset.id,
     fileKey: fileAsset.fileKey,
@@ -595,6 +614,7 @@ const toPublicTrack = (
     timeSource: track.timeSource,
     updatedAt: track.updatedAt,
     createdAt: track.createdAt,
+    canCleanPoints,
     file: {
       id: fileAsset.id,
       name: fileAsset.name,
@@ -775,14 +795,14 @@ export const getPublicTracks = async (): Promise<PublicTrack[]> => {
     .filter((track): track is PublicTrack => track !== null);
 };
 
-export const getPublicTrackBySlug = async (slug: string): Promise<PublicTrack | null> => {
+export const getPublicTrackBySlug = async (slug: string, viewerId?: string | null): Promise<PublicTrack | null> => {
   const { default: prisma } = await import("@/lib/prisma");
   const track = (await prisma.track.findFirst({
     where: { slug, status: "PUBLISHED" },
     select: publicTrackSelect,
   })) as PublicTrackRecord | null;
 
-  return track ? toPublicTrack(track, { includeMapGeometry: true }) : null;
+  return track ? toPublicTrack(track, { includeMapGeometry: true, viewerId }) : null;
 };
 
 export const createTrack = async (values: TrackActionValues) => {

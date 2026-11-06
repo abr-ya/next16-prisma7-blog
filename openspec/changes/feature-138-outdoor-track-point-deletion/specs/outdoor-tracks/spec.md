@@ -4,7 +4,7 @@
 
 ### Requirement: Owner can remove bad points from a saved track
 
-The public track detail page SHALL offer an owner-only **Clean up points** action when the track owns its GPX file and the viewer is the track owner. The action SHALL open a modal showing the track on a map and, when the GPX carries timestamps, a speed chart. The owner SHALL be able to select a single point by clicking it and a contiguous range by dragging on the speed chart, see which points are selected and how many, and save the cleanup. Saving SHALL rewrite the stored GPX without dropping elevation, timestamps, or unrelated GPX content, replace the track's file asset, retire the previous asset as `PENDING_DELETE`, and re-parse the metadata so distance, point count, map line, and timeline match the new file.
+The public track detail page SHALL offer an owner-only **Clean up points** action when the track owns its GPX file and the viewer is the track owner. The action SHALL open a modal showing the track on a map and, when the GPX carries timestamps, a speed chart. The owner SHALL be able to select a single point by clicking it and a contiguous range by clicking two points or by entering the first and last point number, see which points are selected and how many, and save the cleanup. Saving SHALL rewrite the stored GPX without dropping elevation, timestamps, or unrelated GPX content, keep the original file name plus a single edit date, replace the track's file asset, retire the previous asset as `PENDING_DELETE`, and re-parse the metadata so distance, point count, map line, and timeline match the new file.
 
 #### Scenario: Owner opens the cleanup action
 
@@ -26,9 +26,30 @@ The public track detail page SHALL offer an owner-only **Clean up points** actio
 
 #### Scenario: Select and save a range
 
-- **WHEN** the owner drags a range on the speed chart and saves
-- **THEN** every GPX point whose index falls inside that range is removed
-- **AND** points outside the range remain in their original order
+- **WHEN** the owner clicks one point and then a second point
+- **THEN** every point whose index falls between the two clicked points is selected
+- **AND** the From and To fields show those point numbers
+- **AND** saving removes exactly that range and keeps the remaining points in order
+
+#### Scenario: Type a range
+
+- **WHEN** the owner enters a first and last point number and applies the range
+- **THEN** the same contiguous range is selected and highlighted on the map, chart, and fields
+- **AND** the range is rejected when either number is outside the track's point count
+- **AND** the speed chart labels points with their full GPX point numbers
+
+#### Scenario: A lone outlier is always selectable
+
+- **WHEN** a track has a GPS spike between the points that the sampled view would normally skip
+- **THEN** the spike is included in the modal's map and speed chart
+- **AND** the owner can select it and remove it like any other point
+
+#### Scenario: Distance preview
+
+- **WHEN** the owner selects one or more points or a range
+- **THEN** the modal shows the current track distance and an approximate distance after cleanup
+- **AND** the estimate updates with the selection
+- **AND** the saved track replaces the estimate with the exact re-parsed distance
 
 #### Scenario: Rewrite preserves the rest of the GPX
 
@@ -41,6 +62,13 @@ The public track detail page SHALL offer an owner-only **Clean up points** actio
 - **WHEN** the rewritten file is saved successfully
 - **THEN** the track's distance, point count, map geometry, and timeline are re-parsed from the new file
 - **AND** the previous file asset is retired and no longer served as the track's GPX
+
+#### Scenario: File name keeps its base and one edit timestamp
+
+- **WHEN** a cleanup saves a rewritten GPX
+- **THEN** the new file name starts from the track's original GPX file name
+- **AND** it ends with one `(YYYY-MM-DD_HHmmss)` edit timestamp in the track's recording timezone
+- **AND** a name that already ends with an edit timestamp has that suffix replaced, not chained, so repeated cleanups keep exactly one timestamp
 
 #### Scenario: Cleanup would leave too few points
 
