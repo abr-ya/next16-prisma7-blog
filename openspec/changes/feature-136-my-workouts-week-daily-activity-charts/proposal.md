@@ -13,6 +13,7 @@ This narrows the existing backlog candidate `feature-136-my-workouts-week-detail
   - **Distance per day** — summed kilometres for walks and runs, each series in its own bar.
 - Derive the chart data from the same `visibleTracks` set and the same effective-distance helper the table and the existing totals use, so the dialog cannot disagree with its own summary.
 - Attribute each workout to a weekday through the same timezone-aware calendar date the ISO-week filter uses (`recordingTimezone`), so a late-night workout stays on the day it happened.
+- Add a compact per-activity breakdown directly under the totals: one row per covered activity type (walks, runs) with its workout count and summed distance, so "22 workouts / 129.7 km" can be read as "12 walks / 34.5 km plus 10 runs / 95.2 km".
 - Keep the existing "Workouts" and "Distance" totals above the charts.
 - Ignore other activity types (cycling, skiing, rowing, other) in both charts and state how many workouts were left out.
 - Localize the new copy in English and Russian.
@@ -30,9 +31,9 @@ This narrows the existing backlog candidate `feature-136-my-workouts-week-detail
 
 ## Impact
 
-- `components/admin-pages/workout-week-summary.tsx`: receives the per-day series, keeps the totals, renders the charts.
+- `components/admin-pages/workout-week-summary.tsx`: receives the per-day series and the per-activity totals, keeps the totals, renders the breakdown table and the charts.
 - New `components/admin-pages/workout-week-day-charts.tsx`: the recharts bar charts, legend, tooltip and empty states.
-- `components/admin-pages/tracks-admin-panel.tsx`: derives the 7-day × 2-series matrix next to the existing `weekSummary` memo and passes it down.
+- `components/admin-pages/tracks-admin-panel.tsx`: derives the 7-day × 2-series matrix and the per-activity totals next to the existing `weekSummary` memo and passes them down.
 - `lib/track-iso-week.ts`: expose the timezone-aware calendar-date/weekday helper that the week filter already computes internally.
 - `app/i18n/locales/{en,ru}/trips.json`: new `workoutWeekChart*` keys.
 - `package.json` / `package-lock.json`: `recharts@3.10.1` (peer range includes React 19).

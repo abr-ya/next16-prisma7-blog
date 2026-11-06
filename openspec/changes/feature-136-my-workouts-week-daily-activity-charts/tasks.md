@@ -14,6 +14,7 @@
 - [x] 3.1 Extend the `weekSummary` memo in `components/admin-pages/tracks-admin-panel.tsx` with a seven-entry `days` array of `{ walking: { count, distanceMeters }, running: { count, distanceMeters } }`, plus the resolved series labels and the count of workouts of other activity types.
 - [x] 3.2 Sum distance only for finite `getEffectiveTrackDistanceMeters` values; count every walking/running workout in the count chart; track how many plotted workouts lack a distance.
 - [x] 3.3 Resolve the two legend labels from the `activityTypes` rows via `formatActivityTypeName`, with i18n fallbacks; pass everything to the summary component as props.
+- [ ] 3.4 Extend `weekSummary` with per-activity totals for walking and running (`count`, `distanceMeters`, `distanceCount`) filled in the same `visibleTracks` loop; leave the week-wide totals unchanged.
 
 ## 4. Charts
 
@@ -24,13 +25,16 @@
 
 ## 5. Dialog
 
-- [x] 5.1 In `components/admin-pages/workout-week-summary.tsx`, keep the existing totals `<dl>` at the top and render the charts below it; widen the dialog to `sm:max-w-2xl`.
+- [x] 5.1 In `components/admin-pages/workout-week-summary.tsx`, keep the existing totals `<dl>` at the top, add the per-activity breakdown below it, and render the charts under both; widen the dialog to `sm:max-w-2xl`.
 - [x] 5.2 Render the "other activity types" note when the week contains workouts outside walking/running.
 - [x] 5.3 Keep the dialog read-only and the `All time` view free of any summary or chart.
+- [ ] 5.4 Render the per-activity breakdown between the totals `<dl>` and the charts: a compact table with one row per activity type (walks, runs), columns for workout count and distance, reusing `walkingLabel` / `runningLabel` and `formatTrackDistance`; zero-workout categories still render with a `0` count.
+- [ ] 5.5 Show `workoutWeekSummaryNoDistance` in a category's distance cell when that category has workouts but no finite distance, so a missing value never renders as `0`; add a caption that names the breakdown for assistive technology.
 
 ## 6. Localization
 
 - [x] 6.1 Add the `workoutWeekChart*` keys (chart headings, series fallbacks, "no walks or runs", "no distance", "other activity types" note, accessible-label template, day short labels if needed) to `app/i18n/locales/en/trips.json` and `app/i18n/locales/ru/trips.json`, with plural forms where a count appears.
+- [ ] 6.2 Add the breakdown caption key and any column label that cannot reuse the existing totals keys to `app/i18n/locales/en/trips.json` and `app/i18n/locales/ru/trips.json`.
 
 ## 7. Validation
 
@@ -46,3 +50,4 @@
 - [ ] 8.3 Confirm a week with unparsed distances shows the distance note instead of `0` bars, and a week without walks/runs shows the empty line.
 - [ ] 8.4 Confirm a week containing another activity type shows the exclusion note and that the extra workout does not appear in either chart.
 - [ ] 8.5 Confirm the dialog fits a narrow viewport, Russian weekday labels and plural wording read naturally, and light/dark themes both render readable bars.
+- [ ] 8.6 Confirm the per-activity rows add up to the week totals together with the excluded-types note, and that a category without a parsed distance shows the no-distance text rather than `0`.
