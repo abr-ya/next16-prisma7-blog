@@ -1,7 +1,9 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { useT } from "next-i18next/client";
 
+import { commonNamespace } from "@/app/i18n/settings";
 import {
   Dialog,
   DialogContent,
@@ -30,13 +32,17 @@ export const ConfirmDialog = ({
   onOpenChange,
   title,
   description,
-  confirmLabel = "Confirm",
-  cancelLabel = "Cancel",
+  confirmLabel,
+  cancelLabel,
   confirmVariant = "default",
   isPending = false,
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) => {
+  const { t } = useT(commonNamespace);
+  const resolvedConfirmLabel = confirmLabel ?? t("confirmDialog.confirm");
+  const resolvedCancelLabel = cancelLabel ?? t("confirmDialog.cancel");
+
   const handleCancel = () => {
     onCancel?.();
     onOpenChange(false);
@@ -56,10 +62,10 @@ export const ConfirmDialog = ({
         </DialogHeader>
         <DialogFooter>
           <Button type="button" variant="outline" disabled={isPending} onClick={handleCancel}>
-            {cancelLabel}
+            {resolvedCancelLabel}
           </Button>
           <Button type="button" variant={confirmVariant} disabled={isPending} onClick={handleConfirm}>
-            {confirmLabel}
+            {resolvedConfirmLabel}
           </Button>
         </DialogFooter>
       </DialogContent>

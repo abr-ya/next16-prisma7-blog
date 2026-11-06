@@ -5,3 +5,5 @@ export const fallbackLanguage: SupportedLanguage = "en";
 export const navigationNamespace = "navigation";
 export const guideNamespace = "guide";
 export const tripsNamespace = "trips";
+export const workspaceNamespace = "workspace";
+export const commonNamespace = "common";

@@ -1,18 +1,20 @@
 import type { I18nConfig } from "next-i18next/proxy";
 
 import {
+  commonNamespace,
   fallbackLanguage,
   guideNamespace,
   navigationNamespace,
   supportedLanguages,
   tripsNamespace,
+  workspaceNamespace,
 } from "@/app/i18n/settings";
 
 const i18nConfig: I18nConfig = {
   supportedLngs: [...supportedLanguages],
   fallbackLng: fallbackLanguage,
   defaultNS: navigationNamespace,
-  ns: [navigationNamespace, guideNamespace, tripsNamespace],
+  ns: [navigationNamespace, guideNamespace, tripsNamespace, workspaceNamespace, commonNamespace],
   localeInPath: false,
   resourceLoader: (language, namespace) => import(`./app/i18n/locales/${language}/${namespace}.json`),
 };

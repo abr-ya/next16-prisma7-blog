@@ -10,9 +10,11 @@ import {
 } from "@tanstack/react-table";
 import type { PaginationState, SortingState } from "@tanstack/react-table";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useT } from "next-i18next/client";
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 
+import { commonNamespace } from "@/app/i18n/settings";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
@@ -68,6 +70,7 @@ export const DataTable = <TData, TValue>({
   headerActions,
   pageResetKey,
 }: DataTableProps<TData, TValue>) => {
+  const { t } = useT(commonNamespace);
   const [paginationState, setPaginationState] = useState<PaginationState>({
     pageIndex: 0,
     pageSize: pagination?.pageSize ?? data.length,
@@ -153,7 +156,7 @@ export const DataTable = <TData, TValue>({
             ) : (
               <TableRow>
                 <TableCell colSpan={columns.length} className="h-24 text-center">
-                  No results.
+                  {t("dataTable.noResults")}
                 </TableCell>
               </TableRow>
             )}
@@ -162,15 +165,13 @@ export const DataTable = <TData, TValue>({
       </div>
       {isPaginated ? (
         <div className="flex flex-wrap items-center justify-end gap-3 text-sm text-muted-foreground">
-          <span>
-            Page {table.getState().pagination.pageIndex + 1} of {pageCount}
-          </span>
+          <span>{t("dataTable.pageOf", { page: table.getState().pagination.pageIndex + 1, count: pageCount })}</span>
           <div className="flex items-center gap-1">
             <Button
               type="button"
               variant="outline"
               size="icon"
-              title="Previous page"
+              title={t("dataTable.previousPage")}
               disabled={!table.getCanPreviousPage()}
               onClick={() => table.previousPage()}
             >
@@ -180,7 +181,7 @@ export const DataTable = <TData, TValue>({
               type="button"
               variant="outline"
               size="icon"
-              title="Next page"
+              title={t("dataTable.nextPage")}
               disabled={!table.getCanNextPage()}
               onClick={() => table.nextPage()}
             >
