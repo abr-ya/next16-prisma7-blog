@@ -53,16 +53,29 @@ export const getIsoWeekForDate = (date: Date): IsoWeekRef => ({
   week: getISOWeek(date),
 });
 
-export const getIsoWeekForTrack = (track: TrackListItem): IsoWeekRef | null => {
+/**
+ * feature-136: the calendar date a workout happened on, read in the
+ * recording's own timezone. The week filter and the week charts both go
+ * through this, so a late-night session cannot land on one day in the table
+ * and another in the charts when the browser sits in a different zone.
+ */
+export const getTrackCalendarDate = (track: TrackListItem): Date | null => {
   const start = getEffectiveTrackStart(track);
   if (!start) return null;
 
   const instant = new Date(start);
   if (Number.isNaN(instant.getTime())) return null;
 
-  const calendarDate = toCalendarDate(instant, track.recordingTimezone);
+  return toCalendarDate(instant, track.recordingTimezone);
+};
+
+export const getIsoWeekForTrack = (track: TrackListItem): IsoWeekRef | null => {
+  const calendarDate = getTrackCalendarDate(track);
   return calendarDate ? getIsoWeekForDate(calendarDate) : null;
 };
+
+/** Monday-first index of a calendar date: 0 = Monday … 6 = Sunday. */
+export const getIsoWeekdayIndex = (date: Date): number => (date.getDay() + 6) % 7;
 
 /** Monday of the given ISO week. 4 January always belongs to week 1. */
 export const getIsoWeekStart = (isoYear: number, week: number): Date => {

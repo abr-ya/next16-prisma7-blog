@@ -56,8 +56,10 @@ import {
   formatIsoWeekRange,
   getIsoWeekForDate,
   getIsoWeekForTrack,
+  getIsoWeekdayIndex,
   getIsoWeekRange,
   getIsoWeeksInYear,
+  getTrackCalendarDate,
   shiftIsoWeek,
   type IsoWeekRef,
 } from "@/lib/track-iso-week";
@@ -86,6 +88,7 @@ import {
 import { createTracksAdminColumns } from "@/components/admin-pages/tracks-admin-columns";
 import { createTrackWorkoutColumns } from "@/components/admin-pages/tracks-workout-columns";
 import { WorkoutWeekSummary } from "@/components/admin-pages/workout-week-summary";
+import type { WorkoutWeekDayPoint } from "@/components/admin-pages/workout-week-day-charts";
 import {
   TrackDurationInputError,
   formatManualTrackStartAt,
@@ -1197,26 +1200,90 @@ export const TrackManagementPanel = ({
   // feature-135: the summary describes the whole selected week, and a week is
   // rendered in full, so `visibleTracks` is already that complete set. Distance
   // is summed through the same helper the table's Distance column uses.
+  // feature-136: the same pass builds the per-day chart series, attributing a
+  // workout through the timezone-aware calendar date the week filter uses.
   const weekSummary = useMemo(() => {
     if (tableVariant !== "workouts" || !selectedWeek) return null;
 
     let distanceMeters = 0;
     let distanceCount = 0;
+    let otherActivityCount = 0;
+
+    const categories = {
+      walking: { count: 0, distanceMeters: 0, distanceCount: 0 },
+      running: { count: 0, distanceMeters: 0, distanceCount: 0 },
+    };
+
+    const days: WorkoutWeekDayPoint[] = Array.from({ length: 7 }, () => ({
+      walkingCount: 0,
+      runningCount: 0,
+      walkingDistanceMeters: 0,
+      runningDistanceMeters: 0,
+    }));
 
     for (const track of visibleTracks) {
-      const distance = getEffectiveTrackDistanceMeters(track);
-      if (typeof distance === "number" && Number.isFinite(distance)) {
-        distanceMeters += distance;
+      const rawDistance = getEffectiveTrackDistanceMeters(track);
+      const trackDistance = typeof rawDistance === "number" && Number.isFinite(rawDistance) ? rawDistance : null;
+
+      if (trackDistance !== null) {
+        distanceMeters += trackDistance;
         distanceCount += 1;
       }
+
+      const activityKey = track.activityType?.key;
+
+      if (activityKey !== "walking" && activityKey !== "running") {
+        otherActivityCount += 1;
+        continue;
+      }
+
+      const calendarDate = getTrackCalendarDate(track);
+      if (!calendarDate) continue;
+
+      const day = days[getIsoWeekdayIndex(calendarDate)];
+      if (!day) continue;
+
+      if (activityKey === "walking") {
+        day.walkingCount += 1;
+        if (trackDistance !== null) day.walkingDistanceMeters += trackDistance;
+        categories.walking.count += 1;
+        if (trackDistance !== null) {
+          categories.walking.distanceMeters += trackDistance;
+          categories.walking.distanceCount += 1;
+        }
+      } else {
+        day.runningCount += 1;
+        if (trackDistance !== null) day.runningDistanceMeters += trackDistance;
+        categories.running.count += 1;
+        if (trackDistance !== null) {
+          categories.running.distanceMeters += trackDistance;
+          categories.running.distanceCount += 1;
+        }
+      }
     }
+
+    const walkingLabel =
+      formatActivityTypeName(
+        activityTypes.find((activityType) => activityType.key === "walking") ?? null,
+        activeLanguage,
+      ) || t("workoutWeekChartWalkingFallback");
+    const runningLabel =
+      formatActivityTypeName(
+        activityTypes.find((activityType) => activityType.key === "running") ?? null,
+        activeLanguage,
+      ) || t("workoutWeekChartRunningFallback");
 
     return {
       workoutCount: visibleTracks.length,
       distanceMeters: distanceCount > 0 ? distanceMeters : null,
       distanceCount,
+      days,
+      categories,
+      walkingLabel,
+      runningLabel,
+      otherActivityCount,
     };
-  }, [selectedWeek, tableVariant, visibleTracks]);
+  }, [activeLanguage, activityTypes, selectedWeek, t, tableVariant, visibleTracks]);
 
   const handleWeekPopoverOpen = (open: boolean) => {
     if (open) setPickerYear(selectedWeek?.isoYear ?? currentWeek.isoYear);
@@ -1441,6 +1508,11 @@ export const TrackManagementPanel = ({
               workoutCount={weekSummary.workoutCount}
               distanceMeters={weekSummary.distanceMeters}
               distanceCount={weekSummary.distanceCount}
+              days={weekSummary.days}
+              categories={weekSummary.categories}
+              walkingLabel={weekSummary.walkingLabel}
+              runningLabel={weekSummary.runningLabel}
+              otherActivityCount={weekSummary.otherActivityCount}
             />
           ) : null}
           {selectedWeek ? (
