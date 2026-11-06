@@ -73,9 +73,11 @@ The system SHALL provide an authenticated admin page for listing, creating, edit
 
 #### Scenario: Admin deletes track
 
-- **WHEN** an authenticated admin deletes a track
-- **THEN** the track is removed from the admin tracks list
-- **AND** the linked GPX file asset remains stored unless removed through existing file-management workflows
+- **WHEN** an authenticated admin deletes a track, or an owner deletes a track they own
+- **THEN** the track is removed from the track list
+- **AND** when the track owns its GPX file, that file asset is retired as `PENDING_DELETE` in the same transaction
+- **AND** the retired file's direct download URL stops serving it
+- **AND** a route-based track leaves the route's GPX file untouched
 
 #### Scenario: Admin sees the kind of a track
 

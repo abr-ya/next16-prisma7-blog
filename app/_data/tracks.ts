@@ -1231,15 +1231,27 @@ export const deleteTrack = async (id: string) => {
   const { default: prisma } = await import("@/lib/prisma");
   const existingTrack = await prisma.track.findFirst({
     where: { id, userId },
-    select: { id: true },
+    select: { id: true, fileAssetId: true, routeId: true },
   });
 
   if (!existingTrack) {
     return { success: false };
   }
 
-  await prisma.track.delete({
-    where: { id: existingTrack.id },
+  await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+    await tx.track.delete({
+      where: { id: existingTrack.id },
+    });
+
+    // fix-013: a self-owned GPX has no owner after the track is gone. Retire
+    // it with the same status the route deletion and point cleanup use, while
+    // a route-based track leaves the route's file untouched.
+    if (existingTrack.fileAssetId && !existingTrack.routeId) {
+      await tx.fileAsset.updateMany({
+        where: { id: existingTrack.fileAssetId, status: ACTIVE_FILE_STATUS },
+        data: { status: "PENDING_DELETE", deletedAt: new Date() },
+      });
+    }
   });
 
   revalidateTrackPaths();
