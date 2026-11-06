@@ -7,6 +7,8 @@ import { getPublicTrackBySlug } from "@/app/_data/tracks";
 import { Badge, Button } from "@/components/index";
 import { PageLayout } from "@/components/layout/page-layout";
 import { TrackMap } from "@/components/track-pages/track-map";
+import { TrackPointCleanupButton } from "@/components/track-pages/track-point-cleanup-dialog";
+import { authSession } from "@/lib/auth-utils";
 import { formatFileSize } from "@/lib/file-upload-limits";
 import { formatHikeDateRange, formatHikeType } from "@/lib/hikes";
 import { buildPageMetadata, getTextMetadataDescription } from "@/lib/site-metadata";
@@ -25,6 +27,11 @@ import { formatTrackRecordingTimezone } from "@/lib/track-recording-timezone";
 type TrackPageProps = {
   params: Promise<{ slug: string }>;
 };
+
+// feature-138: the page reads the viewer's session for the owner-only cleanup
+// action and must never be served from a stale static/ISR cache after a GPX
+// rewrite swaps the track's file and metadata.
+export const dynamic = "force-dynamic";
 
 const formatDate = (value: Date | string) =>
   new Intl.DateTimeFormat("en", {
@@ -55,7 +62,8 @@ export const generateMetadata = async ({ params }: TrackPageProps): Promise<Meta
 
 const TrackPage = async ({ params }: TrackPageProps) => {
   const { slug } = await params;
-  const track = await getPublicTrackBySlug(slug);
+  const session = await authSession();
+  const track = await getPublicTrackBySlug(slug, session?.user.id ?? null);
 
   if (!track) notFound();
 
@@ -85,7 +93,7 @@ const TrackPage = async ({ params }: TrackPageProps) => {
         <section className="grid gap-3">
           <h2 className="text-base font-semibold">Route map</h2>
           {track.map ? (
-            <TrackMap track={track.map} />
+            <TrackMap key={track.file.id} track={track.map} />
           ) : (
             <div className="flex h-48 min-h-48 items-center justify-center rounded-md border bg-muted p-4 text-center text-sm text-muted-foreground">
               Map preview is unavailable until this track has parsed route geometry.
@@ -231,6 +239,7 @@ const TrackPage = async ({ params }: TrackPageProps) => {
               </div>
             )}
           </div>
+          {track.canCleanPoints ? <TrackPointCleanupButton trackId={track.id} trackTitle={track.title} /> : null}
         </section>
       </article>
     </PageLayout>
