@@ -1,0 +1,15 @@
+{
+  "dataTable": {
+    "noResults": "No results.",
+    "pageOf": "Page {{page}} of {{count}}",
+    "previousPage": "Previous page",
+    "nextPage": "Next page"
+  },
+  "confirmDialog": {
+    "confirm": "Confirm",
+    "cancel": "Cancel"
+  },
+  "actions": {
+    "delete": "Delete"
+  }
+}

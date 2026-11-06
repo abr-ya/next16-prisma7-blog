@@ -1,0 +1,15 @@
+{
+  "dataTable": {
+    "noResults": "Ничего не найдено.",
+    "pageOf": "Страница {{page}} из {{count}}",
+    "previousPage": "Предыдущая страница",
+    "nextPage": "Следующая страница"
+  },
+  "confirmDialog": {
+    "confirm": "Подтвердить",
+    "cancel": "Отмена"
+  },
+  "actions": {
+    "delete": "Удалить"
+  }
+}

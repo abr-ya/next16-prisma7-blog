@@ -1,8 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useT } from "next-i18next/client";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
+
+import { commonNamespace } from "@/app/i18n/settings";
 
 // refactor-001: the delete-row confirmation lifecycle that
 // `tracks-admin-panel.tsx`, `hikes-admin-panel.tsx`, and
@@ -57,6 +60,7 @@ const useDeleteRowConfirm = <T extends { id: string }>({
   notFoundMsg,
 }: UseDeleteRowConfirmInput<T>): UseDeleteRowConfirmResult<T> => {
   const router = useRouter();
+  const { t } = useT(commonNamespace);
   const [target, setTarget] = useState<T | null>(null);
   const [isPending, startPending] = useTransition();
 
@@ -91,7 +95,7 @@ const useDeleteRowConfirm = <T extends { id: string }>({
       },
       title,
       description: target ? getDescription(target) : undefined,
-      confirmLabel: "Delete",
+      confirmLabel: t("actions.delete"),
       confirmVariant: "destructive",
       isPending,
       onConfirm: handleConfirm,

@@ -46,7 +46,12 @@ export const NavbarUserMenu = ({ userName, userImage }: NavbarUserMenuProps) => 
     <>
       <NavigationMenuTrigger>
         <Avatar className="w-8 h-8 rounded-full">
-          {userImage ? <AvatarImage src={userImage} alt={userName ? `${userName}'s avatar` : "User avatar"} /> : null}
+          {userImage ? (
+            <AvatarImage
+              src={userImage}
+              alt={userName ? t("userAvatarAlt", { name: userName }) : t("userAvatarAltFallback")}
+            />
+          ) : null}
           <AvatarFallback delayMs={userImage ? 600 : 0}>{fallbackLabel}</AvatarFallback>
         </Avatar>
       </NavigationMenuTrigger>
@@ -56,7 +61,7 @@ export const NavbarUserMenu = ({ userName, userImage }: NavbarUserMenuProps) => 
             <NavigationMenuLink asChild>
               <Link href="/profile" className="flex-row items-center gap-2">
                 <UserRound />
-                Profile
+                {t("profile")}
               </Link>
             </NavigationMenuLink>
             <NavigationMenuLink asChild>
@@ -68,25 +73,25 @@ export const NavbarUserMenu = ({ userName, userImage }: NavbarUserMenuProps) => 
             <NavigationMenuLink asChild>
               <Link href="/my/tracks" className="flex-row items-center gap-2">
                 <Route />
-                My tracks
+                {t("myTracks")}
               </Link>
             </NavigationMenuLink>
             <NavigationMenuLink asChild>
               <Link href="/my/routes" className="flex-row items-center gap-2">
                 <Waypoints />
-                My routes
+                {t("myRoutes")}
               </Link>
             </NavigationMenuLink>
             <NavigationMenuLink asChild>
               <Link href="/my/workouts" className="flex-row items-center gap-2">
                 <Dumbbell />
-                My workouts
+                {t("myWorkouts")}
               </Link>
             </NavigationMenuLink>
             <NavigationMenuLink asChild>
               <Link href="/my/gear" className="flex-row items-center gap-2">
                 <Footprints />
-                My gear
+                {t("myGear")}
               </Link>
             </NavigationMenuLink>
             <NavigationMenuLink asChild>
