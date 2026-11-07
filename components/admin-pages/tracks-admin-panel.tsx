@@ -60,9 +60,20 @@ import {
   getIsoWeekRange,
   getIsoWeeksInYear,
   getTrackCalendarDate,
-  shiftIsoWeek,
   type IsoWeekRef,
 } from "@/lib/track-iso-week";
+import {
+  ALL_WORKOUT_PERIOD,
+  formatWorkoutDateInput,
+  getCurrentWorkoutMonthPeriod,
+  getCurrentWorkoutYearPeriod,
+  getWorkoutPeriodKey,
+  isWorkoutPeriodPaginated,
+  matchesWorkoutPeriod,
+  parseWorkoutDateInput,
+  shiftWorkoutPeriod,
+  type WorkoutPeriod,
+} from "@/lib/track-period";
 import { useTrackRowActions } from "@/lib/track-row-actions";
 import { useDeleteRowConfirm } from "@/lib/use-delete-row-confirm";
 import { useDiscardGuardedTrackForm } from "@/lib/use-discard-guarded-track-form";
@@ -1130,13 +1141,23 @@ export const TrackManagementPanel = ({
   const [recordingTimezone, setRecordingTimezone] = useState("");
   const [browserTimezone, setBrowserTimezone] = useState<string | null>(null);
   const [isSavingTimezone, startSavingTimezone] = useTransition();
-  // feature-132: `null` means All time, the unchanged default. The picker
-  // year is separate so browsing a year does not filter until a week is
-  // chosen.
-  const currentWeek = useMemo(() => getIsoWeekForDate(new Date()), []);
-  const [selectedWeek, setSelectedWeek] = useState<IsoWeekRef | null>(null);
+  // feature-134: one period value drives All time, the existing ISO week,
+  // calendar month/year, and a custom range. The picker year and the custom
+  // inputs stay separate so browsing does not filter until a choice is made.
+  const currentDate = useMemo(() => new Date(), []);
+  const currentWeek = useMemo(() => getIsoWeekForDate(currentDate), [currentDate]);
+  const currentMonth = useMemo(() => getCurrentWorkoutMonthPeriod(currentDate), [currentDate]);
+  const currentYearPeriod = useMemo(() => getCurrentWorkoutYearPeriod(currentDate), [currentDate]);
+  const [period, setPeriod] = useState<WorkoutPeriod>(ALL_WORKOUT_PERIOD);
+  const [pickerKind, setPickerKind] = useState<WorkoutPeriod["kind"]>("week");
+  const [pickerWeek, setPickerWeek] = useState<IsoWeekRef>(currentWeek);
+  const [pickerMonth, setPickerMonth] = useState(currentMonth.month);
   const [pickerYear, setPickerYear] = useState(() => currentWeek.isoYear);
-  const [weekPickerOpen, setWeekPickerOpen] = useState(false);
+  const [periodPickerOpen, setPeriodPickerOpen] = useState(false);
+  const [customFrom, setCustomFrom] = useState("");
+  const [customTo, setCustomTo] = useState("");
+  const [customError, setCustomError] = useState<string | null>(null);
+  const selectedWeek = period.kind === "week" ? period.week : null;
 
   const rowActions = useTrackRowActions({
     onSuccess: () => router.refresh(),
@@ -1170,7 +1191,7 @@ export const TrackManagementPanel = ({
   // feature-132: ISO week-year options come from the loaded workouts plus the
   // current week-year, so older data stays reachable without hardcoding years.
   const isoYearOptions = useMemo(() => {
-    const years = new Set<number>([currentWeek.isoYear]);
+    const years = new Set<number>([currentWeek.isoYear, pickerYear]);
 
     for (const track of tracks) {
       const week = getIsoWeekForTrack(track);
@@ -1178,24 +1199,36 @@ export const TrackManagementPanel = ({
     }
 
     return [...years].sort((first, second) => second - first);
-  }, [currentWeek.isoYear, tracks]);
+  }, [currentWeek.isoYear, pickerYear, tracks]);
+
+  // feature-134: calendar years come from the recording-timezone dates of the
+  // loaded workouts plus the current year, so older data stays reachable.
+  const calendarYearOptions = useMemo(() => {
+    const years = new Set<number>([currentYearPeriod.year, pickerYear]);
+
+    for (const track of tracks) {
+      const date = getTrackCalendarDate(track);
+      if (date) years.add(date.getFullYear());
+    }
+
+    return [...years].sort((first, second) => second - first);
+  }, [currentYearPeriod.year, pickerYear, tracks]);
+
+  const monthOptions = useMemo(() => Array.from({ length: 12 }, (_, index) => index + 1), []);
 
   const pickerWeeks = useMemo(
     () => Array.from({ length: getIsoWeeksInYear(pickerYear) }, (_, index) => index + 1),
     [pickerYear],
   );
 
-  // feature-132: filter before the table; a workout without an effective start
-  // has no week and is hidden while a week is selected.
+  // feature-134: filter before the table through the shared period matcher; a
+  // workout without an effective start has no calendar date and is hidden
+  // while any period other than All time is selected.
   const visibleTracks = useMemo(() => {
-    if (tableVariant !== "workouts" || !selectedWeek) return tracks;
+    if (tableVariant !== "workouts" || period.kind === "all") return tracks;
 
-    return tracks.filter((track) => {
-      const week = getIsoWeekForTrack(track);
-
-      return week?.isoYear === selectedWeek.isoYear && week.week === selectedWeek.week;
-    });
-  }, [selectedWeek, tableVariant, tracks]);
+    return tracks.filter((track) => matchesWorkoutPeriod(track, period));
+  }, [period, tableVariant, tracks]);
 
   // feature-135: the summary describes the whole selected week, and a week is
   // rendered in full, so `visibleTracks` is already that complete set. Distance
@@ -1285,23 +1318,152 @@ export const TrackManagementPanel = ({
     };
   }, [activeLanguage, activityTypes, selectedWeek, t, tableVariant, visibleTracks]);
 
-  const handleWeekPopoverOpen = (open: boolean) => {
-    if (open) setPickerYear(selectedWeek?.isoYear ?? currentWeek.isoYear);
+  const handlePeriodPopoverOpen = (open: boolean) => {
+    if (!open) return;
+
+    // Opening from All time primes the Week picker without filtering: the
+    // table stays on All time until the owner actually chooses a week.
+    setPickerKind(period.kind === "all" ? "week" : period.kind);
+
+    if (period.kind === "week") {
+      setPickerWeek(period.week);
+      setPickerYear(period.week.isoYear);
+    } else if (period.kind === "month") {
+      setPickerMonth(period.month);
+      setPickerYear(period.year);
+    } else if (period.kind === "year") {
+      setPickerYear(period.year);
+    } else if (period.kind === "custom") {
+      setCustomFrom(period.from);
+      setCustomTo(period.to);
+    } else {
+      setPickerWeek(currentWeek);
+      setPickerMonth(currentMonth.month);
+      setPickerYear(currentWeek.isoYear);
+    }
   };
 
   const handlePickerYearChange = (value: string) => {
     const year = Number(value);
     setPickerYear(year);
 
-    if (selectedWeek?.isoYear === year && selectedWeek.week > getIsoWeeksInYear(year)) {
-      setSelectedWeek({ isoYear: year, week: getIsoWeeksInYear(year) });
+    if (pickerKind === "week") {
+      if (pickerWeek.isoYear === year && pickerWeek.week > getIsoWeeksInYear(year)) {
+        setPickerWeek({ isoYear: year, week: getIsoWeeksInYear(year) });
+      }
+      return;
+    }
+
+    if (pickerKind === "month") {
+      setPeriod({ kind: "month", year, month: pickerMonth });
+      return;
+    }
+
+    if (pickerKind === "year") {
+      setPeriod({ kind: "year", year });
     }
   };
 
   const handleWeekSelect = (value: string) => {
-    setSelectedWeek({ isoYear: pickerYear, week: Number(value) });
-    setWeekPickerOpen(false);
+    const week = Number(value);
+
+    setPickerWeek({ isoYear: pickerYear, week });
+    setPeriod({ kind: "week", week: { isoYear: pickerYear, week } });
+    setPeriodPickerOpen(false);
   };
+
+  const handleMonthSelect = (value: string) => {
+    const month = Number(value);
+
+    setPickerMonth(month);
+    setPeriod({ kind: "month", year: pickerYear, month });
+  };
+
+  const applyCustomRange = () => {
+    const from = parseWorkoutDateInput(customFrom);
+    const to = parseWorkoutDateInput(customTo);
+
+    if (!from || !to) {
+      setCustomError(t("workoutPeriodCustomInvalid"));
+      return;
+    }
+
+    if (from.getTime() > to.getTime()) {
+      setCustomError(t("workoutPeriodCustomReversed"));
+      return;
+    }
+
+    setCustomError(null);
+    setPeriod({ kind: "custom", from: customFrom, to: customTo });
+    setPeriodPickerOpen(false);
+  };
+
+  const selectCustomDefaults = () => {
+    const from = formatWorkoutDateInput(new Date(currentMonth.year, currentMonth.month - 1, 1, 12));
+    const to = formatWorkoutDateInput(new Date(currentMonth.year, currentMonth.month, 0, 12));
+
+    setCustomFrom(from);
+    setCustomTo(to);
+    setCustomError(null);
+
+    return { from, to };
+  };
+
+  const handlePeriodKindChange = (kind: WorkoutPeriod["kind"]) => {
+    setPickerKind(kind);
+    setCustomError(null);
+
+    if (kind === "all") {
+      setPeriod(ALL_WORKOUT_PERIOD);
+      setPeriodPickerOpen(false);
+      return;
+    }
+
+    if (kind === "week") {
+      setPickerWeek(currentWeek);
+      setPickerYear(currentWeek.isoYear);
+      setPeriod({ kind: "week", week: currentWeek });
+      return;
+    }
+
+    if (kind === "month") {
+      setPickerMonth(currentMonth.month);
+      setPickerYear(currentMonth.year);
+      setPeriod(currentMonth);
+      return;
+    }
+
+    if (kind === "year") {
+      setPickerYear(currentYearPeriod.year);
+      setPeriod(currentYearPeriod);
+      return;
+    }
+
+    const { from, to } = selectCustomDefaults();
+
+    setPeriod({ kind: "custom", from, to });
+  };
+
+  const periodLabel = useMemo(() => {
+    if (period.kind === "all") return t("workoutWeekAll");
+
+    if (period.kind === "week") {
+      return t("workoutWeekLabel", {
+        week: period.week.week,
+        range: formatIsoWeekRange(getIsoWeekRange(period.week.isoYear, period.week.week), activeLanguage),
+      });
+    }
+
+    if (period.kind === "month") {
+      return new Intl.DateTimeFormat(activeLanguage, { month: "long", year: "numeric" }).format(
+        new Date(period.year, period.month - 1, 1, 12),
+      );
+    }
+
+    if (period.kind === "year") return String(period.year);
+
+    return `${period.from} — ${period.to}`;
+  }, [activeLanguage, period, t]);
 
   // The two effects below are pre-existing patterns that the new
   // eslint-plugin-react-hooks v7 (React Compiler) flags as
@@ -1398,95 +1560,212 @@ export const TrackManagementPanel = ({
               type="button"
               variant="ghost"
               size="icon"
-              aria-label={t("workoutWeekPrevious")}
-              disabled={!selectedWeek}
-              onClick={() => setSelectedWeek((current) => (current ? shiftIsoWeek(current, -1) : current))}
+              aria-label={t("workoutPeriodPrevious")}
+              disabled={period.kind === "all" || period.kind === "custom"}
+              onClick={() => setPeriod((current) => shiftWorkoutPeriod(current, -1))}
             >
               <ChevronLeft className="size-4" />
             </Button>
             <Popover
-              open={weekPickerOpen}
+              open={periodPickerOpen}
               onOpenChange={(open) => {
-                setWeekPickerOpen(open);
-                handleWeekPopoverOpen(open);
+                setPeriodPickerOpen(open);
+                handlePeriodPopoverOpen(open);
               }}
             >
               <PopoverTrigger asChild>
                 <Button type="button" variant="ghost" className="gap-2 rounded-none border-x px-3">
                   <CalendarDays className="size-4" />
-                  {selectedWeek
-                    ? t("workoutWeekLabel", {
-                        week: selectedWeek.week,
-                        range: formatIsoWeekRange(
-                          getIsoWeekRange(selectedWeek.isoYear, selectedWeek.week),
-                          activeLanguage,
-                        ),
-                      })
-                    : t("workoutWeekAll")}
+                  {periodLabel}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent align="start" className="w-80">
+              <PopoverContent align="start" className="w-96">
                 <div className="grid gap-3">
                   <div className="grid gap-1">
-                    <span className="text-sm font-medium">{t("workoutWeekYearLabel")}</span>
-                    <Select value={String(pickerYear)} onValueChange={handlePickerYearChange}>
+                    <span className="text-sm font-medium">{t("workoutPeriodModeLabel")}</span>
+                    <Select
+                      value={pickerKind}
+                      onValueChange={(value) => handlePeriodKindChange(value as WorkoutPeriod["kind"])}
+                    >
                       <SelectTrigger className="w-full">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {isoYearOptions.map((year) => (
-                          <SelectItem key={year} value={String(year)}>
-                            {year}
-                          </SelectItem>
-                        ))}
+                        <SelectItem value="all">{t("workoutWeekAll")}</SelectItem>
+                        <SelectItem value="week">{t("workoutPeriodWeek")}</SelectItem>
+                        <SelectItem value="month">{t("workoutPeriodMonth")}</SelectItem>
+                        <SelectItem value="year">{t("workoutPeriodYear")}</SelectItem>
+                        <SelectItem value="custom">{t("workoutPeriodCustom")}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="grid gap-1">
-                    <span className="text-sm font-medium">{t("workoutWeekSelectLabel")}</span>
-                    <Select
-                      value={selectedWeek?.isoYear === pickerYear ? String(selectedWeek.week) : undefined}
-                      onValueChange={handleWeekSelect}
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder={t("workoutWeekSelectLabel")} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {pickerWeeks.map((week) => (
-                          <SelectItem key={week} value={String(week)}>
-                            {t("workoutWeekLabel", {
-                              week,
-                              range: formatIsoWeekRange(getIsoWeekRange(pickerYear, week), activeLanguage),
-                            })}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="flex items-center justify-between gap-2">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setSelectedWeek(null);
-                        setWeekPickerOpen(false);
-                      }}
-                    >
-                      {t("workoutWeekAll")}
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      onClick={() => {
-                        setPickerYear(currentWeek.isoYear);
-                        setSelectedWeek(currentWeek);
-                        setWeekPickerOpen(false);
-                      }}
-                    >
-                      {t("workoutWeekThisWeek")}
-                    </Button>
-                  </div>
+                  {pickerKind === "week" ? (
+                    <>
+                      <div className="grid gap-1">
+                        <span className="text-sm font-medium">{t("workoutWeekYearLabel")}</span>
+                        <Select value={String(pickerYear)} onValueChange={handlePickerYearChange}>
+                          <SelectTrigger className="w-full">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {isoYearOptions.map((year) => (
+                              <SelectItem key={year} value={String(year)}>
+                                {year}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="grid gap-1">
+                        <span className="text-sm font-medium">{t("workoutWeekSelectLabel")}</span>
+                        <Select
+                          value={pickerWeek.isoYear === pickerYear ? String(pickerWeek.week) : undefined}
+                          onValueChange={handleWeekSelect}
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder={t("workoutWeekSelectLabel")} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {pickerWeeks.map((week) => (
+                              <SelectItem key={week} value={String(week)}>
+                                {t("workoutWeekLabel", {
+                                  week,
+                                  range: formatIsoWeekRange(getIsoWeekRange(pickerYear, week), activeLanguage),
+                                })}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="flex items-center justify-between gap-2">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setPeriod(ALL_WORKOUT_PERIOD);
+                            setPeriodPickerOpen(false);
+                          }}
+                        >
+                          {t("workoutWeekAll")}
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={() => {
+                            setPickerYear(currentWeek.isoYear);
+                            setPeriod({ kind: "week", week: currentWeek });
+                            setPeriodPickerOpen(false);
+                          }}
+                        >
+                          {t("workoutWeekThisWeek")}
+                        </Button>
+                      </div>
+                    </>
+                  ) : null}
+                  {pickerKind === "month" ? (
+                    <>
+                      <div className="grid gap-1">
+                        <span className="text-sm font-medium">{t("workoutPeriodYearLabel")}</span>
+                        <Select value={String(pickerYear)} onValueChange={handlePickerYearChange}>
+                          <SelectTrigger className="w-full">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {calendarYearOptions.map((year) => (
+                              <SelectItem key={year} value={String(year)}>
+                                {year}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="grid gap-1">
+                        <span className="text-sm font-medium">{t("workoutPeriodMonthLabel")}</span>
+                        <Select value={String(pickerMonth)} onValueChange={handleMonthSelect}>
+                          <SelectTrigger className="w-full">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {monthOptions.map((month) => (
+                              <SelectItem key={month} value={String(month)}>
+                                {new Intl.DateTimeFormat(activeLanguage, { month: "long" }).format(
+                                  new Date(pickerYear, month - 1, 1, 12),
+                                )}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="flex justify-end">
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={() => {
+                            setPeriod(currentMonth);
+                            setPickerYear(currentMonth.year);
+                          }}
+                        >
+                          {t("workoutPeriodThisMonth")}
+                        </Button>
+                      </div>
+                    </>
+                  ) : null}
+                  {pickerKind === "year" ? (
+                    <>
+                      <div className="grid gap-1">
+                        <span className="text-sm font-medium">{t("workoutPeriodYearLabel")}</span>
+                        <Select value={String(pickerYear)} onValueChange={handlePickerYearChange}>
+                          <SelectTrigger className="w-full">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {calendarYearOptions.map((year) => (
+                              <SelectItem key={year} value={String(year)}>
+                                {year}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="flex justify-end">
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={() => {
+                            setPeriod(currentYearPeriod);
+                            setPickerYear(currentYearPeriod.year);
+                          }}
+                        >
+                          {t("workoutPeriodThisYear")}
+                        </Button>
+                      </div>
+                    </>
+                  ) : null}
+                  {pickerKind === "custom" ? (
+                    <>
+                      <div className="grid grid-cols-2 gap-2">
+                        <label className="grid gap-1 text-sm">
+                          <span className="text-muted-foreground">{t("workoutPeriodCustomFrom")}</span>
+                          <Input
+                            type="date"
+                            value={customFrom}
+                            onChange={(event) => setCustomFrom(event.target.value)}
+                          />
+                        </label>
+                        <label className="grid gap-1 text-sm">
+                          <span className="text-muted-foreground">{t("workoutPeriodCustomTo")}</span>
+                          <Input type="date" value={customTo} onChange={(event) => setCustomTo(event.target.value)} />
+                        </label>
+                      </div>
+                      {customError ? <p className="text-sm text-destructive">{customError}</p> : null}
+                      <div className="flex justify-end">
+                        <Button type="button" size="sm" onClick={applyCustomRange}>
+                          {t("workoutPeriodCustomApply")}
+                        </Button>
+                      </div>
+                    </>
+                  ) : null}
                 </div>
               </PopoverContent>
             </Popover>
@@ -1494,9 +1773,9 @@ export const TrackManagementPanel = ({
               type="button"
               variant="ghost"
               size="icon"
-              aria-label={t("workoutWeekNext")}
-              disabled={!selectedWeek}
-              onClick={() => setSelectedWeek((current) => (current ? shiftIsoWeek(current, 1) : current))}
+              aria-label={t("workoutPeriodNext")}
+              disabled={period.kind === "all" || period.kind === "custom"}
+              onClick={() => setPeriod((current) => shiftWorkoutPeriod(current, 1))}
             >
               <ChevronRight className="size-4" />
             </Button>
@@ -1515,8 +1794,8 @@ export const TrackManagementPanel = ({
               otherActivityCount={weekSummary.otherActivityCount}
             />
           ) : null}
-          {selectedWeek ? (
-            <Button type="button" variant="ghost" size="sm" onClick={() => setSelectedWeek(null)}>
+          {period.kind !== "all" ? (
+            <Button type="button" variant="ghost" size="sm" onClick={() => setPeriod(ALL_WORKOUT_PERIOD)}>
               {t("workoutWeekAll")}
             </Button>
           ) : null}
@@ -1525,11 +1804,10 @@ export const TrackManagementPanel = ({
       <DataTable
         data={visibleTracks}
         columns={columns}
-        // feature-132: All time stays paginated; a selected week renders in
-        // full, since a week is a naturally small set and paging inside it is
-        // more friction than value.
-        pagination={tableVariant === "workouts" && selectedWeek ? undefined : { pageSize: 10 }}
-        pageResetKey={selectedWeek ? `${selectedWeek.isoYear}-${selectedWeek.week}` : "all"}
+        // feature-134: a selected week still renders in full; All time, a
+        // month, a year, and a custom range paginate at the existing size.
+        pagination={tableVariant !== "workouts" || isWorkoutPeriodPaginated(period) ? { pageSize: 10 } : undefined}
+        pageResetKey={getWorkoutPeriodKey(period)}
         defaultSortHint={
           tableVariant === "workouts" ? t("tableDefaultSortHintStarted") : t("tableDefaultSortHintUpdated")
         }

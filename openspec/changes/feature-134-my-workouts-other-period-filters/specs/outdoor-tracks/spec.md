@@ -30,6 +30,12 @@ The owner's workout list SHALL offer, next to `All time` and the existing ISO we
 - **THEN** the range is not applied
 - **AND** the control explains that the start must not be after the end
 
+#### Scenario: Opening the picker from All time preselects Week
+
+- **WHEN** the owner opens the period picker while `All time` is active
+- **THEN** the picker shows Week with the current week's controls
+- **AND** the table still shows `All time` until the owner chooses a week
+
 #### Scenario: Month and year navigation
 
 - **WHEN** the owner uses the previous or next arrow while a month or year is selected
