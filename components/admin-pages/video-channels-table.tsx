@@ -90,10 +90,10 @@ const VideoChannelActions = ({ channel }: { channel: VideoChannel }) => {
 const columns: ColumnDef<VideoChannel>[] = [
   {
     accessorKey: "name",
-    header: ({ column }) => <SortableHeader column={column} label="Name" />,
+    header: ({ column }) => <SortableHeader column={column} label="Name" className="w-56 justify-start" />,
     cell: ({ row }) => (
-      <div className="min-w-56 max-w-md whitespace-normal wrap-anywhere">
-        <h3 className="font-semibold leading-snug">{row.original.name}</h3>
+      <div className="w-56 max-w-56 truncate" title={row.original.name}>
+        <h3 className="truncate font-semibold leading-snug">{row.original.name}</h3>
       </div>
     ),
   },

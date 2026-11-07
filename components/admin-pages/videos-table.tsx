@@ -167,14 +167,15 @@ const VideoActions = ({ video }: { video: VideoWithChannel }) => {
 const columns: ColumnDef<VideoWithChannel>[] = [
   {
     accessorKey: "title",
-    header: ({ column }) => <SortableHeader column={column} label="Title" />,
+    header: ({ column }) => <SortableHeader column={column} label="Title" className="w-80 justify-start" />,
     cell: ({ row }) => (
       <Link
         href={`/admin/videos/${row.original.id}`}
         key={row.original.id}
-        className="block min-w-80 max-w-xl whitespace-normal wrap-anywhere"
+        title={row.original.title}
+        className="block w-80 max-w-80 truncate"
       >
-        <h3 className="font-semibold leading-snug">{row.original.title}</h3>
+        <h3 className="truncate font-semibold leading-snug">{row.original.title}</h3>
       </Link>
     ),
   },
