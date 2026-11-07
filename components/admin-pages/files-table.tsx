@@ -180,13 +180,13 @@ const FileActions = ({
 const getColumns = (onPreview: (file: FileAssetWithOwner) => void): ColumnDef<FileAssetWithOwner>[] => [
   {
     accessorKey: "name",
-    header: ({ column }) => <SortableHeader column={column} label="Name" />,
+    header: ({ column }) => <SortableHeader column={column} label="Name" className="w-72 justify-start" />,
     cell: ({ row }) => {
       const file = row.original;
       const isActive = file.status === "ACTIVE";
 
       return (
-        <div className="flex min-w-72 max-w-96 flex-col gap-1">
+        <div className="flex w-72 max-w-72 flex-col gap-1">
           {isActive ? (
             <a
               href={`/files/${file.id}/download`}
