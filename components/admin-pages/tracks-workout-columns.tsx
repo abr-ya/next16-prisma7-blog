@@ -40,6 +40,9 @@ type CreateTrackWorkoutColumnsInput = {
   onEditTrack: (track: TrackListItem) => void;
   onSetDeleteTarget: (track: TrackListItem) => void;
   formatActivityTypeName: (activityType: TrackListItem["activityType"], language?: string) => string;
+  // feature-141: the draft row needs a visible "no track yet" marker next to
+  // the Draft status.
+  incompleteLabel: string;
 };
 
 const createTrackWorkoutColumns = ({
@@ -47,6 +50,7 @@ const createTrackWorkoutColumns = ({
   onEditTrack,
   onSetDeleteTarget,
   formatActivityTypeName,
+  incompleteLabel,
 }: CreateTrackWorkoutColumnsInput): ColumnDef<TrackListItem>[] => [
   {
     id: "badges",
@@ -59,6 +63,7 @@ const createTrackWorkoutColumns = ({
         <Badge variant={row.original.status === "PUBLISHED" ? "default" : "secondary"}>
           {formatTrackStatus(row.original.status)}
         </Badge>
+        {row.original.geometryState === "PENDING" ? <Badge variant="outline">{incompleteLabel}</Badge> : null}
       </div>
     ),
   },

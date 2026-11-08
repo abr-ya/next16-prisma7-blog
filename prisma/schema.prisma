@@ -253,6 +253,13 @@ enum TrackKind {
   TRAINING
 }
 
+// feature-141: a draft workout may exist before its geometry does. READY keeps
+// the exactly-one-source rule; PENDING stores no file, route, or metadata.
+enum TrackGeometryState {
+  PENDING
+  READY
+}
+
 enum PhotoStatus {
   DRAFT
   PUBLISHED
@@ -378,6 +385,9 @@ model Track {
   recordingStartAt         DateTime?
   recordingDurationSeconds Int?
   timeSource               TrackTimeSource?
+  // feature-141: owner-only note; never projected to public or admin surfaces.
+  privateNote              String?
+  geometryState            TrackGeometryState @default(READY)
   activityTypeId           String?
   activityType             TrackActivityType? @relation(fields: [activityTypeId], references: [id], onDelete: Restrict)
   // feature-122: one gear item per track — the pair of shoes a walk was

@@ -45,7 +45,7 @@ Alternative considered: make `fileAssetId`/`routeId` nullable without a state co
 
 ### 2. `privateNote` is a separate owner-only column
 
-Add `Track.privateNote String?`. It is never part of `publicTrackSelect` and never part of the default `trackListSelect` used by the administrative page. The owner queries opt in through an explicit `includePrivateNote` projection; `TrackListItem` carries it as an optional field so an administrative row cannot accidentally render it.
+Add `Track.privateNote String?`. It is never part of the public list projection or the default `trackListSelect` used by the administrative page. The owner queries opt in through an explicit `includePrivateNote` projection; `TrackListItem` carries it as an optional field so an administrative row cannot accidentally render it. The public detail query selects the note and returns it only when the viewer is the track owner, so the owner sees it on their own published page while every other viewer receives no note. The detail page is already `force-dynamic`, so the owner-only block is never served from a stale cache.
 
 Alternative considered: reuse `description`. Rejected because `description` is public and the example note is personal.
 
@@ -67,12 +67,12 @@ Alternative considered: reuse the full track form for creation. Rejected because
 
 ### 4. Completion is explicit, and route always wins
 
-- **GPX file**: reuse the existing upload and parse path. Attaching the file sets `geometryState = "READY"`; the parse sets `timeSource = "GPX"` because the draft starts with `null`, and the parsed recording time replaces the provisional values.
+- **GPX file**: reuse the existing upload and parse path. Attaching the file sets `geometryState = "READY"`; the parse sets `timeSource = "GPX"` when the file carries usable timestamps, and the parsed start and duration replace the provisional values. A file without usable `<time>` values keeps the draft's start, duration, and timezone and is marked `MANUAL`, while still supplying geometry and distance.
 - **Existing or new route**: a new `attachRouteToTrack(trackId, routeId)` action validates ownership and `PENDING`, then updates `routeId`, clears the file fields, sets `geometryState = "READY"` and `timeSource = "MANUAL"` in one transaction. The entered start, duration, and timezone stay.
 
 This slice deliberately does not demote a file to secondary geometry; that belongs to `feature-142`.
 
-Alternative considered: keep the draft's manual time even when a GPX is attached. Rejected for this slice because the uploaded file is then the better source and the existing parse already owns the recording mirror; an owner who wants the entered time can edit it afterward.
+Alternative considered: always let the file win, even when it carries no usable timestamps. Rejected because it would erase the only recording record the owner has — exactly the case the draft exists for.
 
 ### 5. Draft editing stays small; the full track form remains the post-completion editor
 
@@ -87,7 +87,8 @@ Public listing and detail queries add `geometryState: "READY"` to their `where` 
 ## Risks / Trade-offs
 
 - [Drafts consume the track quota] → Accepted: a draft is a track row and counting it prevents quota evasion. If this proves annoying, excluding `PENDING` from the quota is a separate decision.
-- [A GPX completion overwrites the entered time] → Accepted and documented; the file is the source of truth once uploaded. Route completion keeps the entered time.
+- [A GPX completion overwrites the entered time] → Only when the file carries usable timestamps; a file without them keeps the draft's values and marks the track `MANUAL`.
+- [The private note is selected by the public detail query] → It is returned only when the viewer is the owner; the public list never selects it, and the detail page is `force-dynamic`.
 - [Read paths that assume geometry exists] → `resolveTrackGeometry` already returns `null`; `withResolvedGeometry` already returns the row unchanged. Update the comments/types and verify the list, admin table, and edit surfaces against a `PENDING` row.
 - [A manually published pending row could reach the public page] → The publish guard rejects it in the database, and the public queries also filter on `READY`.
 - [The migration's default `READY` hides a missed backfill] → The default is intentional: every existing row already satisfies the ready-state check, and only the draft action writes `PENDING`.

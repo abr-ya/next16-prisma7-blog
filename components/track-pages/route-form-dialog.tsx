@@ -47,9 +47,14 @@ type RouteFormDialogProps = {
   route: RouteListItem | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /**
+   * feature-141: a caller that creates a route as part of another flow (a
+   * draft workout) needs the new route id to attach it immediately.
+   */
+  onCreated?: (routeId: string) => void;
 };
 
-export const RouteFormDialog = ({ route, open, onOpenChange }: RouteFormDialogProps) => {
+export const RouteFormDialog = ({ route, open, onOpenChange, onCreated }: RouteFormDialogProps) => {
   const router = useRouter();
   const isEdit = Boolean(route);
   const [points, setPoints] = useState<ManualTrackPoint[]>([]);
@@ -109,6 +114,7 @@ export const RouteFormDialog = ({ route, open, onOpenChange }: RouteFormDialogPr
     }
 
     toast.success("Route created");
+    onCreated?.(result.routeId);
     router.refresh();
     handleOpenChange(false);
   };

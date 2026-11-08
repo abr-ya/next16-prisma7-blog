@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { CalendarDays, ChevronLeft, ChevronRight, FileUp, MapPin, Plus, RefreshCw } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, FileUp, MapPin, NotebookPen, Plus, RefreshCw } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useT } from "next-i18next/client";
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
@@ -81,6 +81,7 @@ import { TrackGpxUploadSection } from "@/components/track-pages/track-gpx-upload
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { TrackGearSelect } from "@/components/track-pages/track-gear-select";
 import { QuickWorkoutUploadDialog } from "@/components/track-pages/quick-workout-upload-dialog";
+import { DraftWorkoutDialog } from "@/components/track-pages/draft-workout-dialog";
 import { TrackEditor, type ManualTrackPoint } from "@/components/track-pages/track-editor";
 import { getSupportedTrackRecordingTimezones, normalizeTrackRecordingTimezone } from "@/lib/track-recording-timezone";
 import { trackStatusOptions } from "@/lib/tracks";
@@ -112,6 +113,9 @@ const formSchema = z.object({
   title: z.string().min(1, { message: "Title is required" }),
   slug: z.string().min(1, { message: "Slug is required" }),
   description: z.string().optional(),
+  // feature-141: the owner-only note. The field is rendered only on owner
+  // surfaces; the administrative form never receives or sends it.
+  privateNote: z.string().max(2000).optional(),
   status: z.enum(["DRAFT", "PUBLISHED"]),
   // feature-120: the kind answers "what is this track for" — a routine
   // training session versus a route. It is a private owner-side label and
@@ -150,6 +154,7 @@ const TRACK_FORM_DEFAULTS: TrackFormValues = {
   title: "",
   slug: "",
   description: "",
+  privateNote: "",
   status: "DRAFT",
   kind: "ROUTE",
   fileAssetId: "",
@@ -185,6 +190,7 @@ const TrackFormDialog = ({
   parsingTrackId,
   onSaved,
   defaultKind = "ROUTE",
+  showPrivateNote = false,
 }: {
   track: TrackListItem | null;
   activityTypes: TrackActivityType[];
@@ -204,6 +210,9 @@ const TrackFormDialog = ({
   // "TRAINING"; everywhere else a track starts as a route. The saved kind of
   // an edited track always wins over this default.
   defaultKind?: TrackKind;
+  // feature-141: the private note is an owner-only field. The administrative
+  // panel leaves this false so the field never renders or gets written there.
+  showPrivateNote?: boolean;
 }) => {
   const { i18n, t } = useT(tripsNamespace);
   const activeLanguage = i18n.resolvedLanguage ?? i18n.language;
@@ -288,6 +297,7 @@ const TrackFormDialog = ({
         title: track.title,
         slug: track.slug,
         description: track.description ?? "",
+        privateNote: track.privateNote ?? "",
         status: track.status,
         // feature-120: restore the saved kind, otherwise opening a workout
         // in the edit dialog would show "Route" and saving would demote it.
@@ -386,6 +396,9 @@ const TrackFormDialog = ({
       title: values.title,
       slug: values.slug,
       description: values.description,
+      // feature-141: only the owner surface carries the note; the admin form
+      // omits the key entirely, so its update cannot clear the owner's note.
+      ...(showPrivateNote ? { privateNote: values.privateNote?.trim() || null } : {}),
       status: values.status as TrackStatus,
       fileAssetId: values.fileAssetId,
       activityTypeId: values.activityTypeId || null,
@@ -892,6 +905,25 @@ const TrackFormDialog = ({
           </FormItem>
         )}
       />
+      {showPrivateNote ? (
+        <FormField
+          control={form.control}
+          name="privateNote"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>{t("draftWorkout.noteLabel")}</FormLabel>
+              <FormControl>
+                <textarea
+                  {...field}
+                  className="border-input focus-visible:border-ring focus-visible:ring-ring/50 min-h-24 w-full rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
+                  placeholder={t("draftWorkout.notePlaceholder")}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      ) : null}
       <FormField
         control={form.control}
         name="status"
@@ -1102,6 +1134,8 @@ export const TrackManagementPanel = ({
   defaultKind = "ROUTE",
   tableVariant = "full",
   quickWorkoutUpload = false,
+  draftWorkoutUpload = false,
+  showPrivateNote = false,
 }: {
   tracks: TrackListItem[];
   activityTypes: TrackActivityType[];
@@ -1127,6 +1161,12 @@ export const TrackManagementPanel = ({
   // where the owner asked for it — "My workouts" — and only for the activity
   // types that have a wording entry in the interface language.
   quickWorkoutUpload?: boolean;
+  // feature-141: the draft capture lives on the same owner page. It is bound
+  // to the walking activity type in this slice.
+  draftWorkoutUpload?: boolean;
+  // feature-141: the owner-only private note is editable only on owner
+  // surfaces. The admin panel leaves this false.
+  showPrivateNote?: boolean;
 }) => {
   const router = useRouter();
   const { i18n } = useT(navigationNamespace);
@@ -1137,6 +1177,10 @@ export const TrackManagementPanel = ({
   // feature-123: the activity type whose quick-upload button was clicked.
   // `null` means no quick dialog is open.
   const [quickActivityType, setQuickActivityType] = useState<TrackActivityType | null>(null);
+  // feature-141: the walking activity type whose draft dialog is open, and the
+  // pending row being edited. `editingDraft` null means a new draft.
+  const [draftDialogOpen, setDraftDialogOpen] = useState(false);
+  const [editingDraft, setEditingDraft] = useState<TrackListItem | null>(null);
   const [timezoneTarget, setTimezoneTarget] = useState<TrackListItem | null>(null);
   const [recordingTimezone, setRecordingTimezone] = useState("");
   const [browserTimezone, setBrowserTimezone] = useState<string | null>(null);
@@ -1187,6 +1231,18 @@ export const TrackManagementPanel = ({
         : [],
     [activityTypes, i18n, quickWorkoutUpload],
   );
+
+  // feature-141: the draft capture is walking-only in this slice. It needs the
+  // active type and the same wording check the quick buttons use.
+  const draftActivityType = useMemo(() => {
+    if (!draftWorkoutUpload) return null;
+
+    const walking = activityTypes.find((activityType) => activityType.key === "walking" && activityType.isActive);
+    if (!walking) return null;
+    if (!i18n.exists("quickWorkout.activities.walking.addLabel", { ns: tripsNamespace })) return null;
+
+    return walking;
+  }, [activityTypes, draftWorkoutUpload, i18n]);
 
   // feature-132: ISO week-year options come from the loaded workouts plus the
   // current week-year, so older data stays reachable without hardcoding years.
@@ -1488,10 +1544,30 @@ export const TrackManagementPanel = ({
   }, [timezoneTarget]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
-  const handleEditTrack = useCallback((track: TrackListItem) => {
-    setEditingTrack(track);
-    setFormOpen(true);
-  }, []);
+  const handleEditTrack = useCallback(
+    (track: TrackListItem) => {
+      // feature-141: a pending draft has no geometry, so the full track form
+      // would reject it. The small draft dialog owns its fields and completion.
+      if (track.geometryState === "PENDING") {
+        if (!draftWorkoutUpload) {
+          // The admin table must not expose the owner's private note, so the
+          // draft editor is only available from My workouts.
+          toast.error(t("draftWorkout.ownerOnlyEdit"));
+
+          return;
+        }
+
+        setEditingDraft(track);
+        setDraftDialogOpen(true);
+
+        return;
+      }
+
+      setEditingTrack(track);
+      setFormOpen(true);
+    },
+    [draftWorkoutUpload, t],
+  );
 
   const columns = useMemo(
     () =>
@@ -1501,6 +1577,7 @@ export const TrackManagementPanel = ({
             onEditTrack: handleEditTrack,
             onSetDeleteTarget: deleteConfirm.setTarget,
             formatActivityTypeName,
+            incompleteLabel: t("draftWorkout.incomplete"),
           })
         : createTracksAdminColumns({
             activeLanguage,
@@ -1825,6 +1902,19 @@ export const TrackManagementPanel = ({
                 {t(`quickWorkout.activities.${activityType.key}.addLabel`)}
               </Button>
             ))}
+            {draftActivityType ? (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setEditingDraft(null);
+                  setDraftDialogOpen(true);
+                }}
+              >
+                <NotebookPen />
+                {t("draftWorkout.addLabel")}
+              </Button>
+            ) : null}
             <Button type="button" onClick={handleCreateClick}>
               <Plus />
               Add track
@@ -1847,6 +1937,22 @@ export const TrackManagementPanel = ({
           onSaved={() => router.refresh()}
         />
       ) : null}
+      {draftActivityType && draftDialogOpen ? (
+        <DraftWorkoutDialog
+          key={editingDraft?.id ?? "new-draft"}
+          open
+          onOpenChange={(open) => {
+            setDraftDialogOpen(open);
+            if (!open) setEditingDraft(null);
+          }}
+          activityType={{ id: draftActivityType.id, key: draftActivityType.key }}
+          ownerGear={ownerGear ?? []}
+          preferredGearId={ownerGearPreferences?.[draftActivityType.id]?.gearId ?? null}
+          routes={routes}
+          draft={editingDraft}
+          onSaved={() => router.refresh()}
+        />
+      ) : null}
       <TrackFormDialog
         track={editingTrack}
         activityTypes={activityTypes}
@@ -1857,6 +1963,7 @@ export const TrackManagementPanel = ({
         onParse={rowActions.handleParse}
         parsingTrackId={rowActions.parsingTrackId}
         onSaved={() => router.refresh()}
+        showPrivateNote={showPrivateNote}
         onOpenChange={(open) => {
           setFormOpen(open);
           if (!open) setEditingTrack(null);

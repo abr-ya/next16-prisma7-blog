@@ -58,7 +58,15 @@ The system SHALL complete a `PENDING` draft when the owner attaches geometry, mo
 - **WHEN** the owner attaches a GPX file to a pending draft
 - **THEN** the file becomes the draft's primary geometry and the draft becomes `READY`
 - **AND** the file is parsed and its summary and map geometry become available
-- **AND** the parsed recording time replaces the draft's provisional values
+- **AND** when the file carries usable recording timestamps, the parsed start and duration replace the draft's provisional values
+- **AND** when the file carries no usable recording timestamps, the draft's entered start, duration, and timezone are kept and the track is marked `MANUAL`
+
+#### Scenario: Owner completes a draft with a GPX file that has no timestamps
+
+- **WHEN** the owner attaches a GPX file without usable `<time>` values to a pending draft
+- **THEN** the file supplies the geometry and distance
+- **AND** the draft's entered start, duration, and recording timezone remain
+- **AND** the track's time source is `MANUAL`
 
 #### Scenario: Owner completes a draft with an existing route
 
@@ -123,7 +131,7 @@ The system SHALL list a `PENDING` workout in the owner's workouts page and perio
 
 ### Requirement: A private workout note stays owner-only
 
-The system SHALL store `Track.privateNote` as an owner-only field. The owner SHALL be able to add, edit, and clear it in the draft and owner edit surfaces. The field SHALL NOT appear in public projections, public pages, administrative lists, or administrative edit dialogs.
+The system SHALL store `Track.privateNote` as an owner-only field. The owner SHALL be able to add, edit, and clear it in the draft and owner edit surfaces. The owner SHALL also see it on their own published track page. The field SHALL NOT appear in public projections or public pages for any viewer other than the owner, nor in administrative lists or administrative edit dialogs.
 
 #### Scenario: Owner reads and edits the private note
 
@@ -131,9 +139,16 @@ The system SHALL store `Track.privateNote` as an owner-only field. The owner SHA
 - **THEN** the private note is shown and editable
 - **AND** clearing it stores no note
 
+#### Scenario: Owner sees the private note on the published track page
+
+- **WHEN** the owner opens `/tracks/[slug]` for their published workout that has a private note
+- **THEN** the page renders the note in an owner-only block
+- **AND** the block is not rendered for any other viewer
+- **AND** the note is absent from the public payload served to other viewers
+
 #### Scenario: Public page hides the private note
 
-- **WHEN** a visitor opens the public page of a published workout that has a private note
+- **WHEN** a visitor who is not the owner opens the public page of a published workout that has a private note
 - **THEN** the note is not rendered and is absent from the public payload
 
 #### Scenario: Administrator cannot see the private note

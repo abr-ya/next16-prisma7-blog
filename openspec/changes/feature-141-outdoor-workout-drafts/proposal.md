@@ -15,7 +15,7 @@ The owner often knows when and what they did before any usable geometry exists: 
   - the shoes, using the existing walking gear preference as the default.
 - Generate the draft's title and slug automatically, set `status = DRAFT`, `kind = TRAINING`, and activity type `walking`.
 - Show drafts in the owner's workouts list and period filters; the distance column shows `—`, and the week summary counts the draft as a workout without adding distance.
-- Complete a draft by uploading a GPX file, choosing an existing route, or creating a route. A route always becomes the primary geometry; the draft moves to `READY`.
+- Complete a draft by uploading a GPX file, choosing an existing route, or creating a route. A route always becomes the primary geometry; the draft moves to `READY`. A GPX with usable timestamps supplies the start and duration; a GPX without them keeps the draft's entered values and marks the recording as `MANUAL`.
 - Keep `privateNote` owner-only: it never appears on a public page, in an admin table, or in an admin edit dialog.
 - Prevent publishing a `PENDING` workout, and exclude `PENDING` rows from public track queries even if their status is changed outside the application.
 

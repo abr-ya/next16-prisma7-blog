@@ -1,4 +1,4 @@
-import { CalendarDays, Download, FileText, Map, Route, Upload } from "lucide-react";
+import { CalendarDays, Download, FileText, Lock, Map, Route, Upload } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -89,6 +89,17 @@ const TrackPage = async ({ params }: TrackPageProps) => {
         ) : (
           <p className="text-sm text-muted-foreground">No description yet.</p>
         )}
+
+        {track.privateNote ? (
+          <section className="grid gap-2 rounded-md border border-dashed bg-muted/40 p-4">
+            <div className="flex items-center gap-2 text-sm font-semibold">
+              <Lock className="size-4" />
+              Your private note
+            </div>
+            <p className="whitespace-pre-wrap text-sm text-muted-foreground">{track.privateNote}</p>
+            <p className="text-xs text-muted-foreground">Only you can see this note.</p>
+          </section>
+        ) : null}
 
         <section className="grid gap-3">
           <h2 className="text-base font-semibold">Route map</h2>

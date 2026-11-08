@@ -28,6 +28,7 @@ import {
 } from "@/lib/track-duration-input";
 import { parseTrackGpxUtcOffsetMinutes } from "@/lib/track-gpx-parser";
 import {
+  normalizeTrackRecordingTimezone,
   requireTrackRecordingTimezone,
   resolveQuickWorkoutRecordingTimezone,
   toRecordingTimezoneFromUtcOffset,
@@ -54,6 +55,9 @@ export type TrackActionValues = {
   // and an id attaches that item.
   gearId?: string | null;
   kind?: TrackKind;
+  // feature-141: owner-only note. `undefined` leaves it unchanged on update;
+  // `null` or an empty string clears it.
+  privateNote?: string | null;
 };
 
 export type CreateManualTrackResult =
@@ -80,6 +84,45 @@ export type CreateTrackFromRouteInput = {
 };
 
 export type CreateTrackFromRouteResult = CreateManualTrackResult;
+
+/**
+ * feature-141: a draft workout is captured before any geometry exists. The
+ * client proposes the title and slug base from the recording's daypart; the
+ * server validates the values and makes the slug unique.
+ */
+export type CreateDraftWorkoutInput = {
+  title: string;
+  slug?: string | null;
+  /** ISO instant computed by the browser from the entered wall-clock. */
+  recordingStartAt: string;
+  /** Device timezone; an unsupported value is stored as null. */
+  recordingTimezone?: string | null;
+  /** Fractional minutes are allowed; the server stores whole seconds. */
+  durationMinutes: number;
+  privateNote?: string | null;
+  gearId?: string | null;
+};
+
+export type CreateDraftWorkoutResult = CreateManualTrackResult;
+
+export type AttachRouteToTrackResult = { ok: true } | { ok: false; code: "VALIDATION" | "INTERNAL"; message: string };
+
+export type UpdateDraftWorkoutInput = {
+  id: string;
+  recordingStartAt: string;
+  recordingTimezone?: string | null;
+  durationMinutes: number;
+  privateNote?: string | null;
+  gearId?: string | null;
+};
+
+export type UpdateDraftWorkoutResult =
+  | { ok: true }
+  | { ok: false; code: "NOT_FOUND" | "VALIDATION" | "INTERNAL"; message: string };
+
+export type CompleteDraftWithFileResult =
+  | { ok: true }
+  | { ok: false; code: "VALIDATION" | "INTERNAL"; message: string };
 
 /**
  * feature-123: the quick upload creates a workout from one file, so it sends
@@ -122,6 +165,7 @@ type PublicTrackRecord = Prisma.TrackGetPayload<{
     userId: true;
     routeId: true;
     description: true;
+    privateNote: true;
     recordingTimezone: true;
     recordingStartAt: true;
     recordingDurationSeconds: true;
@@ -184,6 +228,8 @@ export type PublicTrack = {
   title: string;
   slug: string;
   description: string | null;
+  /** feature-141: owner-only note; null for every non-owner viewer. */
+  privateNote: string | null;
   recordingTimezone: string | null;
   recordingStartAt: Date | null;
   recordingDurationSeconds: number | null;
@@ -268,6 +314,16 @@ const normalizeOptionalText = (value?: string | null) => {
   const normalized = value?.trim();
 
   return normalized ? normalized : null;
+};
+
+const normalizePrivateNote = (value?: string | null) => {
+  const note = normalizeOptionalText(value);
+
+  if (note && note.length > 2000) {
+    throw new Error("Private note must be 2000 characters or fewer");
+  }
+
+  return note;
 };
 
 const normalizeTrackSlug = (title: string, value?: string | null) => {
@@ -445,6 +501,9 @@ const trackListSelect = {
   recordingStartAt: true,
   recordingDurationSeconds: true,
   timeSource: true,
+  // feature-141: the readiness state drives the draft indicator and the public
+  // filter. It is not sensitive, so it stays in the shared projection.
+  geometryState: true,
   updatedAt: true,
   createdAt: true,
   activityType: true,
@@ -490,7 +549,21 @@ export type TrackListItem = Prisma.TrackGetPayload<{
   // caller asked for the projection — the administrative listing reads the
   // rows without it and stays free of gear names.
   gear?: { id: string; name: string } | null;
+  // feature-141: the private note is projected only to the owner's surfaces.
+  // The administrative and public rows never select it, so it stays undefined
+  // there instead of leaking into a shared payload.
+  privateNote?: string | null;
 };
+
+/**
+ * feature-141: the owner-only projection. `privateNote` is added on top of the
+ * shared list select so the administrative listing, which uses the shared
+ * select, can never carry the note.
+ */
+const ownerTrackListSelect = {
+  ...trackListSelect,
+  privateNote: true,
+} satisfies Prisma.TrackSelect;
 
 /**
  * feature-122: the attachment is projected only when a caller asks for it, so
@@ -500,6 +573,16 @@ export type TrackListItem = Prisma.TrackGetPayload<{
  */
 const trackListSelectWithGear = {
   ...trackListSelect,
+  gear: { select: { id: true, name: true } },
+} satisfies Prisma.TrackSelect;
+
+/**
+ * feature-141: the owner-only projection with the gear attachment. The
+ * administrative panel never asks for gear, so this select is used only by the
+ * owner's pages.
+ */
+const ownerTrackListSelectWithGear = {
+  ...ownerTrackListSelect,
   gear: { select: { id: true, name: true } },
 } satisfies Prisma.TrackSelect;
 
@@ -514,6 +597,7 @@ const publicTrackSelect = {
   userId: true,
   routeId: true,
   description: true,
+  privateNote: true,
   recordingTimezone: true,
   recordingStartAt: true,
   recordingDurationSeconds: true,
@@ -608,6 +692,10 @@ const toPublicTrack = (
     title: track.title,
     slug: track.slug,
     description: track.description,
+    // feature-141: the note is owner-only, so the public detail payload carries
+    // it only when the viewer is the owner. The public list never passes a
+    // viewer id and therefore never carries it.
+    privateNote: viewerId && viewerId === track.userId ? track.privateNote : null,
     recordingTimezone: track.recordingTimezone,
     recordingStartAt: track.recordingStartAt,
     recordingDurationSeconds: track.recordingDurationSeconds,
@@ -655,27 +743,31 @@ const revalidateTrackDetailPaths = (slug?: string | null) => {
   if (slug) revalidatePath(`/tracks/${slug}`);
 };
 
-export const getAllTracks = async ({ includeGear = false }: { includeGear?: boolean } = {}): Promise<
-  TrackListItem[]
-> => {
+export const getAllTracks = async ({
+  includeGear = false,
+  includePrivateNote = false,
+}: {
+  includeGear?: boolean;
+  includePrivateNote?: boolean;
+} = {}): Promise<TrackListItem[]> => {
   const userId = await getRequiredUserId();
   const { default: prisma } = await import("@/lib/prisma");
 
-  if (includeGear) {
-    const tracks: TrackListItem[] = await prisma.track.findMany({
-      where: { userId },
-      select: trackListSelectWithGear,
-      orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
-    });
+  // feature-141: the owner's pages opt in to the private note; the admin page
+  // calls this without the flag and keeps the shared projection.
+  const select = includePrivateNote
+    ? includeGear
+      ? ownerTrackListSelectWithGear
+      : ownerTrackListSelect
+    : includeGear
+      ? trackListSelectWithGear
+      : trackListSelect;
 
-    return tracks.map((track) => withResolvedGeometry(track));
-  }
-
-  const tracks: TrackListItem[] = await prisma.track.findMany({
+  const tracks = (await prisma.track.findMany({
     where: { userId },
-    select: trackListSelect,
+    select,
     orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
-  });
+  })) as TrackListItem[];
 
   return tracks.map((track) => withResolvedGeometry(track));
 };
@@ -685,27 +777,29 @@ export const getAllTracks = async ({ includeGear = false }: { includeGear?: bool
  * sessions. Owner-scoped like every other personal track query; the kind
  * filter narrows it in SQL rather than in the table.
  */
-export const getOwnerWorkoutTracks = async ({ includeGear = false }: { includeGear?: boolean } = {}): Promise<
-  TrackListItem[]
-> => {
+export const getOwnerWorkoutTracks = async ({
+  includeGear = false,
+  includePrivateNote = false,
+}: {
+  includeGear?: boolean;
+  includePrivateNote?: boolean;
+} = {}): Promise<TrackListItem[]> => {
   const userId = await getRequiredUserId();
   const { default: prisma } = await import("@/lib/prisma");
 
-  if (includeGear) {
-    const tracks: TrackListItem[] = await prisma.track.findMany({
-      where: { userId, kind: "TRAINING" },
-      select: trackListSelectWithGear,
-      orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
-    });
+  const select = includePrivateNote
+    ? includeGear
+      ? ownerTrackListSelectWithGear
+      : ownerTrackListSelect
+    : includeGear
+      ? trackListSelectWithGear
+      : trackListSelect;
 
-    return tracks.map((track) => withResolvedGeometry(track));
-  }
-
-  const tracks: TrackListItem[] = await prisma.track.findMany({
+  const tracks = (await prisma.track.findMany({
     where: { userId, kind: "TRAINING" },
-    select: trackListSelect,
+    select,
     orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
-  });
+  })) as TrackListItem[];
 
   return tracks.map((track) => withResolvedGeometry(track));
 };
@@ -776,7 +870,9 @@ export const getTrackById = async (id: string): Promise<TrackListItem | null> =>
 
   const track = await prisma.track.findFirst({
     where: { id, userId },
-    select: trackListSelect,
+    // feature-141: the owner's edit surface reads the private note; the
+    // administrative and public paths never use this helper.
+    select: ownerTrackListSelect,
   });
 
   return track ? withResolvedGeometry(track) : null;
@@ -785,7 +881,9 @@ export const getTrackById = async (id: string): Promise<TrackListItem | null> =>
 export const getPublicTracks = async (): Promise<PublicTrack[]> => {
   const { default: prisma } = await import("@/lib/prisma");
   const tracks = (await prisma.track.findMany({
-    where: { status: "PUBLISHED" },
+    // feature-141: a pending draft is never public, even if its status was
+    // changed outside the application.
+    where: { status: "PUBLISHED", geometryState: "READY" },
     select: publicTrackSelect,
     orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
   })) as PublicTrackRecord[];
@@ -798,7 +896,7 @@ export const getPublicTracks = async (): Promise<PublicTrack[]> => {
 export const getPublicTrackBySlug = async (slug: string, viewerId?: string | null): Promise<PublicTrack | null> => {
   const { default: prisma } = await import("@/lib/prisma");
   const track = (await prisma.track.findFirst({
-    where: { slug, status: "PUBLISHED" },
+    where: { slug, status: "PUBLISHED", geometryState: "READY" },
     select: publicTrackSelect,
   })) as PublicTrackRecord | null;
 
@@ -818,6 +916,9 @@ export const createTrack = async (values: TrackActionValues) => {
       data: {
         ...data,
         userId,
+        // feature-141: the owner-only note is written with the row when the
+        // owner surface supplies it; the administrative form leaves it alone.
+        privateNote: normalizePrivateNote(values.privateNote),
         // feature-122: the gear is written with the row, or left empty when
         // the owner did not pick one.
         gearId: gear?.id ?? null,
@@ -851,6 +952,7 @@ export const updateTrack = async (values: TrackActionValues) => {
       fileAssetId: true,
       routeId: true,
       gearId: true,
+      geometryState: true,
       fileAsset: {
         select: {
           fileKey: true,
@@ -868,6 +970,12 @@ export const updateTrack = async (values: TrackActionValues) => {
   // route.
   const isRouteBased = Boolean(existingTrack.routeId);
   const data = await getTrackData(values, { requireFileAsset: !isRouteBased });
+
+  // feature-141: a pending draft is completed first and published in a later
+  // edit. Attaching a file in the same request is not enough to publish it.
+  if (existingTrack.geometryState === "PENDING" && data.status === "PUBLISHED") {
+    throw new Error("Complete the draft before publishing it");
+  }
 
   await ensureSlugAvailable({ slug: data.slug, id: existingTrack.id });
   const fileAsset = isRouteBased
@@ -908,7 +1016,14 @@ export const updateTrack = async (values: TrackActionValues) => {
       // feature-122: the same three states as in `createTrack` — `undefined`
       // keeps the attachment, `null` clears it, an id replaces it.
       ...(values.gearId !== undefined ? { gearId: gear?.id ?? null } : { gearId: undefined }),
+      // feature-141: `undefined` keeps the owner's note; the admin form never
+      // sends the field, so an administrative edit cannot clear it.
+      ...(values.privateNote !== undefined ? { privateNote: normalizePrivateNote(values.privateNote) } : {}),
       ...(staleMetadata ? { metadata: staleMetadata as Prisma.InputJsonValue } : {}),
+      // feature-141: attaching a file to a pending draft completes its
+      // geometry. The publish guard in the database still rejects a pending
+      // row, so this transition has to happen in the same write.
+      ...(existingTrack.geometryState === "PENDING" && data.fileAssetId ? { geometryState: "READY" as const } : {}),
     },
     select: trackListSelect,
   });
@@ -1622,6 +1737,365 @@ export const createQuickWorkout = async (input: CreateQuickWorkoutInput): Promis
       ok: false,
       code: "INTERNAL",
       message: error instanceof Error ? error.message : "Could not create workout",
+    };
+  }
+};
+
+/**
+ * feature-141: create a draft workout before its geometry exists.
+ *
+ * The draft is a real `Track` with `geometryState = PENDING`: it appears in the
+ * owner's workouts list and period filters, but it carries no file, route, or
+ * metadata until the owner completes it. The title and slug are proposed by the
+ * browser from the recording's daypart, the same way the quick upload does;
+ * the server validates them and makes the slug unique.
+ */
+export const createDraftWorkout = async (input: CreateDraftWorkoutInput): Promise<CreateDraftWorkoutResult> => {
+  try {
+    const user = await requireTrustGatedAction("track-upload");
+    const userId = user.id;
+    const { default: prisma } = await import("@/lib/prisma");
+
+    const normalizedTitle = normalizeRequiredText(input.title, "Title");
+
+    const startAt = new Date(input.recordingStartAt);
+    if (!input.recordingStartAt?.trim() || Number.isNaN(startAt.getTime())) {
+      return { ok: false, code: "VALIDATION", message: "Recording start is required" };
+    }
+
+    const minutes = Number(input.durationMinutes);
+    if (!Number.isFinite(minutes) || minutes <= 0) {
+      return { ok: false, code: "VALIDATION", message: "Recording duration is required" };
+    }
+
+    let durationSeconds: number;
+    try {
+      durationSeconds = parseDurationSeconds(Math.round(minutes * 60));
+    } catch (error) {
+      return {
+        ok: false,
+        code: "VALIDATION",
+        message: error instanceof Error ? error.message : "Recording duration is invalid",
+      };
+    }
+
+    const privateNote = normalizeOptionalText(input.privateNote);
+    if (privateNote && privateNote.length > 2000) {
+      return { ok: false, code: "VALIDATION", message: "Private note must be 2000 characters or fewer" };
+    }
+
+    // The first slice is walking-only. The client only offers the action when
+    // this type is active and worded, but the server remains the authority.
+    const walkingType = await prisma.trackActivityType.findFirst({
+      where: { key: "walking", isActive: true },
+      select: { id: true },
+    });
+    if (!walkingType) {
+      return { ok: false, code: "VALIDATION", message: "Walking activity type is unavailable" };
+    }
+
+    let gearId: string | null = null;
+    try {
+      const gear = await ensureEligibleTrackGear({
+        gearId: input.gearId,
+        userId,
+        activityTypeId: walkingType.id,
+      });
+      gearId = gear?.id ?? null;
+    } catch (error) {
+      return {
+        ok: false,
+        code: "VALIDATION",
+        message: error instanceof Error ? error.message : "Selected gear is not available",
+      };
+    }
+
+    // The device zone is a default, not a requirement: an unsupported value is
+    // stored as null and the instant still comes from the browser.
+    const recordingTimezone = normalizeTrackRecordingTimezone(input.recordingTimezone);
+
+    const slug = await ensureUniqueTrackSlug(input.slug?.trim() || normalizedTitle);
+
+    const track = await createWithinVerifiedResourceQuota(user, "track", (tx) =>
+      tx.track.create({
+        data: {
+          title: normalizedTitle,
+          slug,
+          description: null,
+          status: "DRAFT",
+          kind: "TRAINING",
+          geometryState: "PENDING",
+          timeSource: null,
+          userId,
+          activityTypeId: walkingType.id,
+          gearId,
+          recordingStartAt: startAt,
+          recordingDurationSeconds: durationSeconds,
+          recordingTimezone,
+          privateNote,
+        },
+        select: { id: true, slug: true },
+      }),
+    );
+
+    revalidateTrackPaths();
+    revalidatePath("/my/workouts");
+
+    return { ok: true, trackId: track.id, trackSlug: track.slug };
+  } catch (error) {
+    if (error instanceof InsufficientTrustError) {
+      return { ok: false, code: "TRUST", message: error.message };
+    }
+    if (error instanceof Error && error.message.toLowerCase().includes("limit reached")) {
+      return { ok: false, code: "QUOTA", message: error.message };
+    }
+    return {
+      ok: false,
+      code: "INTERNAL",
+      message: error instanceof Error ? error.message : "Could not create draft workout",
+    };
+  }
+};
+
+/**
+ * feature-141: complete a pending draft with a route. A route always becomes
+ * the primary geometry; this slice has no secondary geometry to demote.
+ */
+export const attachRouteToTrack = async (trackId: string, routeId: string): Promise<AttachRouteToTrackResult> => {
+  try {
+    const userId = await getRequiredUserId();
+    const { default: prisma } = await import("@/lib/prisma");
+
+    const normalizedTrackId = trackId?.trim();
+    const normalizedRouteId = routeId?.trim();
+
+    if (!normalizedTrackId || !normalizedRouteId) {
+      return { ok: false, code: "VALIDATION", message: "Track and route are required" };
+    }
+
+    const track = await prisma.track.findFirst({
+      where: { id: normalizedTrackId, userId },
+      select: { id: true, geometryState: true },
+    });
+
+    if (!track) {
+      return { ok: false, code: "VALIDATION", message: "Track not found" };
+    }
+
+    if (track.geometryState !== "PENDING") {
+      return { ok: false, code: "VALIDATION", message: "Only a pending draft can attach a route" };
+    }
+
+    const route = await prisma.route.findFirst({
+      where: { id: normalizedRouteId, userId },
+      select: { id: true },
+    });
+
+    if (!route) {
+      return { ok: false, code: "VALIDATION", message: "Selected route is not available" };
+    }
+
+    await prisma.track.update({
+      where: { id: track.id },
+      data: {
+        routeId: route.id,
+        fileAssetId: null,
+        metadata: null,
+        geometryState: "READY",
+        // The recording values were entered by the owner, so the completed
+        // track is a manual-recording track even though its geometry is a route.
+        timeSource: "MANUAL",
+      },
+    });
+
+    revalidateTrackPaths();
+    revalidatePath("/my/workouts");
+    revalidatePath("/my/routes");
+
+    return { ok: true };
+  } catch (error) {
+    return {
+      ok: false,
+      code: "INTERNAL",
+      message: error instanceof Error ? error.message : "Could not attach the route",
+    };
+  }
+};
+
+/**
+ * feature-141: edit the fields a pending draft owns. Geometry is completed
+ * through `attachRouteToTrack` or the existing upload path, not here.
+ */
+export const updateDraftWorkout = async (input: UpdateDraftWorkoutInput): Promise<UpdateDraftWorkoutResult> => {
+  try {
+    const userId = await getRequiredUserId();
+    const { default: prisma } = await import("@/lib/prisma");
+
+    const existingTrack = await prisma.track.findFirst({
+      where: { id: input.id, userId },
+      select: { id: true, slug: true, geometryState: true, activityTypeId: true },
+    });
+
+    if (!existingTrack) {
+      return { ok: false, code: "NOT_FOUND", message: "Track not found" };
+    }
+
+    if (existingTrack.geometryState !== "PENDING") {
+      return { ok: false, code: "VALIDATION", message: "Only a pending draft can be edited here" };
+    }
+
+    const startAt = new Date(input.recordingStartAt);
+    if (!input.recordingStartAt?.trim() || Number.isNaN(startAt.getTime())) {
+      return { ok: false, code: "VALIDATION", message: "Recording start is required" };
+    }
+
+    const minutes = Number(input.durationMinutes);
+    if (!Number.isFinite(minutes) || minutes <= 0) {
+      return { ok: false, code: "VALIDATION", message: "Recording duration is required" };
+    }
+
+    let durationSeconds: number;
+    try {
+      durationSeconds = parseDurationSeconds(Math.round(minutes * 60));
+    } catch (error) {
+      return {
+        ok: false,
+        code: "VALIDATION",
+        message: error instanceof Error ? error.message : "Recording duration is invalid",
+      };
+    }
+
+    const privateNote = normalizeOptionalText(input.privateNote);
+    if (privateNote && privateNote.length > 2000) {
+      return { ok: false, code: "VALIDATION", message: "Private note must be 2000 characters or fewer" };
+    }
+
+    let gearId: string | null = null;
+    try {
+      const gear = await ensureEligibleTrackGear({
+        gearId: input.gearId,
+        userId,
+        activityTypeId: existingTrack.activityTypeId,
+      });
+      gearId = gear?.id ?? null;
+    } catch (error) {
+      return {
+        ok: false,
+        code: "VALIDATION",
+        message: error instanceof Error ? error.message : "Selected gear is not available",
+      };
+    }
+
+    const recordingTimezone = normalizeTrackRecordingTimezone(input.recordingTimezone);
+
+    await prisma.track.update({
+      where: { id: existingTrack.id },
+      data: {
+        recordingStartAt: startAt,
+        recordingDurationSeconds: durationSeconds,
+        recordingTimezone,
+        privateNote,
+        gearId,
+      },
+    });
+
+    revalidateTrackPaths();
+    revalidatePath("/my/workouts");
+
+    return { ok: true };
+  } catch (error) {
+    return {
+      ok: false,
+      code: "INTERNAL",
+      message: error instanceof Error ? error.message : "Could not update the draft",
+    };
+  }
+};
+
+/**
+ * feature-141: complete a pending draft with an uploaded GPX file. The file
+ * becomes the primary geometry and the existing parse fills the summary and
+ * recording values. A parse failure leaves the track ready but unparsed; the
+ * owner can retry the parse from the track table.
+ */
+export const completeDraftWithFile = async (
+  trackId: string,
+  fileAssetId: string,
+): Promise<CompleteDraftWithFileResult> => {
+  try {
+    const userId = await getRequiredUserId();
+    const { default: prisma } = await import("@/lib/prisma");
+
+    const track = await prisma.track.findFirst({
+      where: { id: trackId, userId },
+      select: {
+        id: true,
+        geometryState: true,
+        recordingStartAt: true,
+        recordingDurationSeconds: true,
+        recordingTimezone: true,
+      },
+    });
+
+    if (!track) {
+      return { ok: false, code: "VALIDATION", message: "Track not found" };
+    }
+
+    if (track.geometryState !== "PENDING") {
+      return { ok: false, code: "VALIDATION", message: "Only a pending draft can be completed" };
+    }
+
+    const fileAsset = await ensureEligibleTrackFileAsset({ fileAssetId, userId, trackId: track.id });
+
+    await prisma.track.update({
+      where: { id: track.id },
+      data: {
+        fileAssetId: fileAsset.id,
+        routeId: null,
+        metadata: null,
+        geometryState: "READY",
+        // The parse below sets GPX when the file is readable. Keeping this null
+        // lets the parse own the transition instead of preserving a MANUAL
+        // classification the draft never really had.
+        timeSource: null,
+      },
+    });
+
+    let parsedHasTime = false;
+
+    try {
+      const metadata = await parseTrackGpx(track.id);
+      parsedHasTime = Boolean(metadata.summary?.time);
+    } catch {
+      // The geometry is attached; the owner can retry the parse from the track
+      // table when the file turns out to be unreadable.
+    }
+
+    // feature-141: a file without usable `<time>` values must not erase the
+    // start and duration the owner entered when the draft was the only record
+    // of them. The file still supplies the geometry and distance; the
+    // recording data stays manual.
+    if (!parsedHasTime && track.recordingStartAt) {
+      await prisma.track.update({
+        where: { id: track.id },
+        data: {
+          recordingStartAt: track.recordingStartAt,
+          recordingDurationSeconds: track.recordingDurationSeconds,
+          recordingTimezone: track.recordingTimezone,
+          timeSource: "MANUAL",
+        },
+      });
+    }
+
+    revalidateTrackPaths();
+    revalidatePath("/my/workouts");
+
+    return { ok: true };
+  } catch (error) {
+    return {
+      ok: false,
+      code: "INTERNAL",
+      message: error instanceof Error ? error.message : "Could not complete the draft",
     };
   }
 };

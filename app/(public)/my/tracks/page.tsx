@@ -29,7 +29,7 @@ const MyTracksPage = async () => {
   // gear and ask for the attachment projection — the administrative panel
   // asks for neither.
   const [tracks, activityTypes, gear, routes] = await Promise.all([
-    getAllTracks({ includeGear: true }),
+    getAllTracks({ includeGear: true, includePrivateNote: true }),
     getActiveTrackActivityTypes(),
     getOwnerGear(),
     getOwnerRoutes(),
@@ -37,7 +37,13 @@ const MyTracksPage = async () => {
 
   return (
     <PageLayout title={t("pages.myTracks")} contentWidth="wide" className="pt-6">
-      <TrackManagementPanel tracks={tracks} activityTypes={activityTypes} routes={routes} ownerGear={gear} />
+      <TrackManagementPanel
+        tracks={tracks}
+        activityTypes={activityTypes}
+        routes={routes}
+        ownerGear={gear}
+        showPrivateNote
+      />
     </PageLayout>
   );
 };
