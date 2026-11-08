@@ -40,3 +40,24 @@ export const getEffectiveTrackDurationSeconds = (track: TrackListItem): number |
 
   return state?.status === "SUCCESS" ? (state.summary.time?.durationSeconds ?? undefined) : undefined;
 };
+
+/**
+ * feature-133: the finish shown next to the effective start. A parsed GPX end
+ * wins; a MANUAL row derives its finish from the confirmed start + duration.
+ */
+export const getEffectiveTrackFinish = (track: TrackListItem): string | undefined => {
+  const state = getTrackParseState(track);
+
+  if (state?.status === "SUCCESS" && state.summary.time?.end) return state.summary.time.end;
+
+  const start = getEffectiveTrackStart(track);
+  const duration = getEffectiveTrackDurationSeconds(track);
+
+  if (!start || typeof duration !== "number" || duration <= 0) return undefined;
+
+  const startTime = Date.parse(start);
+
+  if (!Number.isFinite(startTime)) return undefined;
+
+  return new Date(startTime + duration * 1000).toISOString();
+};

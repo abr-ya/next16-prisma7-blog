@@ -7,10 +7,7 @@ import { Badge } from "@/components/index";
 import { resolveTrackGeometry } from "@/lib/track-geometry";
 import {
   formatTrackDistance,
-  formatTrackDuration,
   formatTrackPointCount,
-  formatTrackRecordingDateTime,
-  formatTrackRecordingTimeRange,
   formatTrackTimeSource,
   formatTrackTimezoneEvidence,
   formatTrackTimelinePresence,
@@ -56,19 +53,8 @@ const TrackParseStatus = ({ track }: { track: TrackListItem }) => {
   const distance = state.status === "SUCCESS" ? formatTrackDistance(state.summary.distanceMeters) : null;
   const points = state.status === "SUCCESS" ? formatTrackPointCount(state.summary.points) : null;
   const timeline = state.status === "SUCCESS" ? formatTrackTimelinePresence(state.timeline) : null;
-  const recordingTime =
-    state.status === "SUCCESS" ? formatTrackRecordingTimeRange(state.summary.time, track.recordingTimezone) : null;
-  const manualStart =
-    track.timeSource === "MANUAL" && track.recordingStartAt
-      ? formatTrackRecordingDateTime(track.recordingStartAt.toISOString(), track.recordingTimezone)
-      : null;
-  const manualDuration =
-    track.timeSource === "MANUAL" && track.recordingDurationSeconds !== null
-      ? formatTrackDuration(track.recordingDurationSeconds)
-      : null;
-
   return (
-    <div className="flex max-w-72 flex-wrap items-center gap-1.5">
+    <div className="flex w-52 max-w-52 flex-wrap items-center gap-1.5">
       <div className="flex basis-full flex-wrap items-center gap-1.5">
         <Badge variant={getParseStatusVariant(state)}>{getParseStatusLabel(state)}</Badge>
         {state.status === "SUCCESS" && state.summary.time ? (
@@ -87,14 +73,7 @@ const TrackParseStatus = ({ track }: { track: TrackListItem }) => {
               {value}
             </span>
           ))}
-          {recordingTime ? <span className="text-xs text-muted-foreground">Recording {recordingTime}</span> : null}
         </>
-      ) : null}
-      {track.timeSource === "MANUAL" && (manualStart || manualDuration) ? (
-        <div className="flex basis-full flex-col gap-0.5 text-xs text-muted-foreground">
-          {manualStart ? <span>Recording start: {manualStart}</span> : null}
-          {manualDuration ? <span>Recording duration: {manualDuration}</span> : null}
-        </div>
       ) : null}
       {state.status === "FAILED" || state.status === "STALE" ? (
         <div className="line-clamp-2 text-xs text-muted-foreground">{state.errorMessage}</div>
@@ -166,7 +145,7 @@ const TracksAdminPanelParseCell = ({
     track.timeSource === "GPX" && parseState.status === "SUCCESS" && !hasTrackTimedTimeline(parseState.timeline);
 
   return (
-    <div className="flex max-w-72 flex-wrap items-center gap-1.5">
+    <div className="flex w-52 max-w-52 flex-wrap items-center gap-1.5">
       <SourceBadge
         track={track}
         hasNoTimedTimeline={hasNoTimedTimeline}
