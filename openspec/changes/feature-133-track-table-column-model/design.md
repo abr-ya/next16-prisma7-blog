@@ -23,7 +23,9 @@ The effective values already exist in `lib/track-effective-values.ts`: `getEffec
 
 ## Decisions
 
-**Column order.** Classification, Title, GPX file, GPX summary, Recording, Trips, Updated, actions. Classification replaces the first two columns; Recording replaces the old Timezone slot and moves next to the GPX summary.
+**Column order.** Classification, Title, GPX summary, Recording, Trips, Updated, actions. Classification replaces Kind and Type; Recording replaces the old Timezone slot and moves next to the GPX summary; the standalone GPX file column is removed.
+
+**GPX file moves into the actions column.** The download target comes from `resolveTrackGeometry(track)?.fileAsset`, so an own file and a linked route's file both work. The actions cell gains a small stacked block: a `Download` icon link to `/files/<id>/download` with the file name as its title, and the formatted size beneath it. A row without geometry renders a disabled icon and no size. The title cell absorbs the draft/published status badge that used to live in the GPX file column.
 
 **Classification cell.** A `flex flex-wrap gap-1` with the existing kind badge and activity-type badge. The kind keeps its `Workout` / `Route` wording; the type keeps the activity name or `Unclassified`. The cell is capped (`max-w-48`) so a long type name cannot stretch the table.
 
@@ -38,7 +40,7 @@ Dates use `formatTrackRecordingDateTime(value, track.recordingTimezone)` so they
 
 **GPX summary cleanup.** Remove `recordingTime`, `manualStart`, and `manualDuration` from `TrackParseStatus`. Keep the parse badge, timezone-evidence badge, timeline badge, distance, and point count. The timezone-evidence badge stays because it describes the timestamp evidence rather than the recording timezone.
 
-**Fixed widths over content-driven growth.** The new cells use capped widths (`max-w-48` for classification, a fixed `w-64`/`max-w-64` for Recording) so sorting different rows cannot resize the table. This follows the `fix-014` fix.
+**Fixed widths over content-driven growth.** The new cells use fixed widths: `w-24` for Classification (badges truncate), `w-40` for Title (with truncation), `w-52` for GPX summary, and `w-44` for Recording and `w-28` for Updated, so sorting different rows cannot resize the table. This follows the `fix-014` fix.
 
 **No new server data.** Both start and duration already come from `TrackListItem` plus the parsed metadata. The finish helper stays client-safe in `lib/track-effective-values.ts`, joining the existing start/distance/duration helpers.
 

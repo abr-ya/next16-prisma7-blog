@@ -9,6 +9,7 @@ The full track tables (`/my/tracks` and `/admin/tracks`) spread one piece of inf
 - Merge **Kind** and **Type** into one **Classification** column: a kind badge (`Route` / `Workout`) plus the activity-type badge.
 - Add a **Recording** column that owns the recording time: effective start, derived finish, and the recording-timezone badge in the same cell.
 - Remove the standalone **Timezone** column.
+- Remove the standalone **GPX file** column: the actions column gains a download action for the resolved GPX (own file or linked route file) with the file size beneath the button, and the draft/published status badge moves into the title cell.
 - Reduce the **GPX summary** cell to parsing state, distance, point count, and timeline (plus its existing timezone-evidence badge); it no longer duplicates the recording start/finish or manual start/duration.
 - Make **Recording** sortable through the same effective-start accessor `feature-129`/`feature-131` use on `/my/workouts`, so the header glyph and the visible order agree.
 - Size the new cells so the table does not become content-driven again (the `fix-014` lesson).

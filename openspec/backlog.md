@@ -83,6 +83,7 @@ These are small, independent browser-verification candidates for already shipped
 
 | Candidate | fix-013-route-track-delete-manual-qa | outdoor/tracks-edit | Verify after fix-013: deleting a route-based track leaves the route's GPX download working, and deleting a track that owns its GPX retires only that file. Deferred from fix-013; low priority. |
 | Candidate | fix-014-admin-table-width-manual-qa | admin/tables | Verify the deferred checks from fix-014: `/admin/files` truncates long file names and keeps a stable width when sorting by Uploaded, and a narrow viewport keeps horizontal scrolling inside the table without the page overflowing. Low priority. |
+| Candidate | feature-133-track-table-recording-manual-qa | outdoor/tracks-tables | Verify the deferred edge cases from feature-133: a MANUAL track derives its finish from start + duration, rows without recording values render empty, a route-based track downloads the route's GPX, and the download action shows the file size while a missing file is disabled. |
 ## Outdoor Content High-Priority Roadmap
 
 These candidates track the hikes/tracks/photos initiative as small increments. They stay unnumbered until promoted; when a slice is promoted, take the next number from the pool that matches it — `feature-XXX` for user-visible work, `refactor-XXX` for pure internal restructuring (see [`refactor-backlog.md`](./refactor-backlog.md)), `research-XXX` for investigation-only work. Pure panel-split candidates were moved out of this table to `refactor-backlog.md` when the 5-pool split landed.
