@@ -29,7 +29,7 @@ const MyWorkoutsPage = async () => {
   // same pair the "My tracks" page reads. feature-124 adds the preferred
   // gear per activity type, read with the same scope.
   const [tracks, activityTypes, gear, gearPreferences, routes] = await Promise.all([
-    getOwnerWorkoutTracks({ includeGear: true }),
+    getOwnerWorkoutTracks({ includeGear: true, includePrivateNote: true }),
     getActiveTrackActivityTypes(),
     getOwnerGear(),
     getOwnerGearPreferences(),
@@ -50,6 +50,10 @@ const MyWorkoutsPage = async () => {
         // rows are workouts. "My tracks" and the administrative panel keep the
         // full form only.
         quickWorkoutUpload
+        // feature-141: draft capture is a walking-only owner action on the same
+        // page.
+        draftWorkoutUpload
+        showPrivateNote
       />
     </PageLayout>
   );
