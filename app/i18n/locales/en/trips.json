@@ -205,6 +205,27 @@
           "night": "Night"
         }
       }
+    },
+    "routeMode": {
+      "action": "Create with route",
+      "title": "Walk an existing route",
+      "routeLabel": "Route",
+      "routePlaceholder": "Choose a route",
+      "startLabel": "Start",
+      "durationLabel": "Duration (minutes)",
+      "durationPlaceholder": "60",
+      "gearLabel": "Shoes",
+      "gearNone": "No shoes",
+      "gearEmpty": "No shoes for walking",
+      "back": "Back to GPX upload",
+      "emptyTitle": "No parsed routes",
+      "emptyHint": "Create and parse a route first — a route becomes a workout only when its file has been parsed.",
+      "emptyLink": "Open My routes",
+      "sourceHint": "Pick one source: an uploaded GPX file or an existing route.",
+      "save": "Save",
+      "saving": "Saving…",
+      "success": "Workout added",
+      "error": "Failed to add the workout"
     }
   },
   "draftWorkout": {

@@ -157,6 +157,38 @@ export type CreateQuickWorkoutInput = {
 /** The quick upload answers with the same vocabulary as `createTrackFromRoute`. */
 export type CreateQuickWorkoutResult = CreateManualTrackResult;
 
+/**
+ * feature-146: the quick route workout — a published walk whose geometry is a
+ * route the owner already owns.
+ *
+ * The dialog sends the route, the entered wall-clock and its duration; the
+ * title and the slug base are proposed by the browser the same way the quick
+ * upload proposes them.
+ */
+export type CreateQuickRouteWorkoutInput = {
+  /** The route the workout's geometry comes from. */
+  routeId: string;
+  /** The activity type the button was bound to. */
+  activityTypeId: string;
+  title: string;
+  /** The slug base the browser proposed; the server makes it unique. */
+  slug?: string | null;
+  /** The owner's own gear for the activity type; optional. */
+  gearId?: string | null;
+  /** The entered wall clock, without an offset: `YYYY-MM-DDTHH:MM`. */
+  recordingStartAt: string;
+  /** Fractional minutes are allowed; the server stores whole seconds. */
+  durationMinutes: number;
+  /**
+   * The timezone of the device the walk was recorded on. It is the zone the
+   * entered wall clock is read in, and it is validated the way any other
+   * recording timezone is.
+   */
+  deviceTimezone?: string | null;
+};
+
+export type CreateQuickRouteWorkoutResult = CreateManualTrackResult;
+
 type PublicTrackRecord = Prisma.TrackGetPayload<{
   select: {
     id: true;
@@ -1732,6 +1764,186 @@ export const createQuickWorkout = async (input: CreateQuickWorkoutInput): Promis
     }
     if (error instanceof Error && error.message.toLowerCase().includes("limit reached")) {
       return { ok: false, code: "QUOTA", message: error.message };
+    }
+    return {
+      ok: false,
+      code: "INTERNAL",
+      message: error instanceof Error ? error.message : "Could not create workout",
+    };
+  }
+};
+
+/**
+ * feature-146: the one-click route walk.
+ *
+ * The owner already has a route — a GPX file with parsed metadata — and wants
+ * the walk to be recorded against it. The action creates the same published
+ * training workout the quick upload creates, but its geometry comes from the
+ * route instead of a fresh file: the row stores `routeId` and leaves
+ * `fileAssetId` and `metadata` `NULL`, exactly as `createTrackFromRoute` does.
+ *
+ * The order of the checks is the order of the refusals:
+ *
+ *   1. The `track-upload` trust gate and the verified `track` quota.
+ *   2. The title and the activity type — walking, the only type the quick
+ *      buttons are bound to.
+ *   3. The route — it has to be the owner's own and to carry parsed metadata,
+ *      because a route without it has no points to draw.
+ *   4. The gear — optional, the owner's own, and fitting the activity type.
+ *   5. The start and the duration — the entered wall clock, read in the
+ *      device's own timezone.
+ *   6. The slug — the browser proposed it, the server makes it unique. The
+ *      quick dialog has no slug field, so a second walk in the same minute
+ *      takes a numeric suffix instead of failing the save.
+ */
+export const createQuickRouteWorkout = async (
+  input: CreateQuickRouteWorkoutInput,
+): Promise<CreateQuickRouteWorkoutResult> => {
+  try {
+    const user = await requireTrustGatedAction("track-upload");
+    const userId = user.id;
+    const { default: prisma } = await import("@/lib/prisma");
+
+    const normalizedTitle = input.title?.trim() ?? "";
+    if (!normalizedTitle) {
+      return { ok: false, code: "VALIDATION", message: "Title is required" };
+    }
+
+    const normalizedActivityTypeId = input.activityTypeId?.trim() ?? "";
+    if (!normalizedActivityTypeId) {
+      return { ok: false, code: "VALIDATION", message: "Activity type is required" };
+    }
+
+    const activityType = await getTrackActivityTypeById(normalizedActivityTypeId);
+    if (!activityType) {
+      return { ok: false, code: "VALIDATION", message: "Activity type is unavailable" };
+    }
+
+    // feature-146: the first slice is walking-only. The client offers the
+    // action only for that type, but the server remains the authority.
+    if (activityType.key !== "walking") {
+      return { ok: false, code: "VALIDATION", message: "Activity type is unavailable" };
+    }
+
+    const routeId = input.routeId?.trim() ?? "";
+    if (!routeId) {
+      return { ok: false, code: "VALIDATION", message: "Choose a route" };
+    }
+
+    const route = await prisma.route.findFirst({
+      where: { id: routeId, userId },
+      select: { id: true, metadata: true },
+    });
+
+    if (!route) {
+      return { ok: false, code: "VALIDATION", message: "Selected route is not available" };
+    }
+
+    // A route without parsed metadata carries no points, so it cannot become
+    // a workout's geometry — the map would be empty.
+    if (!route.metadata) {
+      return { ok: false, code: "VALIDATION", message: "Selected route has no parsed metadata" };
+    }
+
+    let normalizedGearId: string | null = null;
+    try {
+      const gear = await ensureEligibleTrackGear({
+        gearId: input.gearId,
+        userId,
+        activityTypeId: normalizedActivityTypeId,
+      });
+      normalizedGearId = gear?.id ?? null;
+    } catch (error) {
+      return {
+        ok: false,
+        code: "VALIDATION",
+        message: error instanceof Error ? error.message : "Selected gear is not available",
+      };
+    }
+
+    const wallClock = input.recordingStartAt?.trim() ?? "";
+    if (!wallClock) {
+      return { ok: false, code: "VALIDATION", message: "Recording start is required" };
+    }
+
+    const timezone = input.deviceTimezone?.trim() ?? "";
+    if (!timezone) {
+      return { ok: false, code: "VALIDATION", message: "Recording timezone is required" };
+    }
+
+    // The entered value is a wall clock with no offset: it is read in the
+    // device's own zone, the way the owner sees it.
+    let normalizedRecordingStartAt: Date;
+    let normalizedRecordingTimezone: string;
+    try {
+      normalizedRecordingTimezone = requireTrackRecordingTimezone(timezone);
+      normalizedRecordingStartAt = parseManualTrackStartAt({
+        wallClock,
+        timezone: normalizedRecordingTimezone,
+      });
+    } catch (error) {
+      if (error instanceof TrackStartAtParseError) {
+        return { ok: false, code: "VALIDATION", message: error.message };
+      }
+      throw error;
+    }
+
+    const minutes = Number(input.durationMinutes);
+    if (!Number.isFinite(minutes) || minutes <= 0) {
+      return { ok: false, code: "VALIDATION", message: "Recording duration is required" };
+    }
+
+    let normalizedRecordingDurationSeconds: number;
+    try {
+      normalizedRecordingDurationSeconds = parseDurationSeconds(Math.round(minutes * 60));
+    } catch (error) {
+      if (error instanceof TrackDurationInputError) {
+        return { ok: false, code: "VALIDATION", message: error.message };
+      }
+      throw error;
+    }
+
+    const slug = await ensureUniqueTrackSlug(input.slug?.trim() || normalizedTitle);
+
+    const track = await createWithinVerifiedResourceQuota(user, "track", (tx) =>
+      tx.track.create({
+        data: {
+          title: normalizedTitle,
+          slug,
+          description: null,
+          // feature-125: the quick upload publishes, and the route walk is
+          // the same one-click path — the recording is already made and the
+          // title is already suggested from the daypart.
+          status: "PUBLISHED",
+          kind: "TRAINING",
+          // The route owns the geometry, so the row carries no file of its
+          // own and no metadata: the track reads the route's.
+          routeId: route.id,
+          userId,
+          activityTypeId: normalizedActivityTypeId,
+          gearId: normalizedGearId,
+          timeSource: "MANUAL",
+          recordingStartAt: normalizedRecordingStartAt,
+          recordingDurationSeconds: normalizedRecordingDurationSeconds,
+          recordingTimezone: normalizedRecordingTimezone,
+        },
+        select: { id: true, slug: true },
+      }),
+    );
+
+    revalidateTrackPaths();
+    revalidatePath("/my/workouts");
+
+    return { ok: true, trackId: track.id, trackSlug: track.slug };
+  } catch (error) {
+    if (error instanceof InsufficientTrustError) {
+      return { ok: false, code: "TRUST", message: error.message };
+    }
+    if (error instanceof Error && error.message.toLowerCase().includes("limit reached")) {
+      return { ok: false, code: "QUOTA", message: error.message };
+    }
+    if (error instanceof Error && error.message.toLowerCase().includes("slug")) {
+      return { ok: false, code: "SLUG", message: error.message };
     }
     return {
       ok: false,

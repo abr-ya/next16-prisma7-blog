@@ -1930,6 +1930,9 @@ export const TrackManagementPanel = ({
           activityType={{ id: quickActivityType.id, key: quickActivityType.key }}
           ownerGear={ownerGear ?? []}
           preferredGearId={ownerGearPreferences?.[quickActivityType.id]?.gearId ?? null}
+          // feature-146: the route mode of the quick dialog offers the
+          // owner's own routes.
+          routes={routes}
           open
           onOpenChange={(open) => {
             if (!open) setQuickActivityType(null);
