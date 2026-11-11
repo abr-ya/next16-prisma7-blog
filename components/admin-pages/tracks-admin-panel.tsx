@@ -1,7 +1,19 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { CalendarDays, ChevronLeft, ChevronRight, FileUp, MapPin, NotebookPen, Plus, RefreshCw } from "lucide-react";
+import {
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+  FileUp,
+  Footprints,
+  MapPin,
+  NotebookPen,
+  Plus,
+  RefreshCw,
+  Zap,
+  type LucideIcon,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useT } from "next-i18next/client";
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
@@ -178,6 +190,19 @@ const formatDate = (value: Date | string) =>
 
 const formatActivityTypeName = (activityType: TrackActivityType | null, language?: string) =>
   activityType ? (language === "ru" ? activityType.nameRu || activityType.nameEn : activityType.nameEn) : "";
+
+// feature-140: the quick-add buttons are told apart by an icon and a button
+// variant, not by the label alone. Walking keeps the primary look the page
+// has today — it is the established action — and running is the outline
+// button. An unknown activity type falls back to the generic plus sign and
+// the outline style, so a new wording entry alone still yields a usable
+// button.
+const QUICK_ACTIVITY_VISUALS: Record<string, { icon: LucideIcon; variant: "default" | "outline" }> = {
+  walking: { icon: Footprints, variant: "default" },
+  running: { icon: Zap, variant: "outline" },
+};
+
+const DEFAULT_QUICK_ACTIVITY_VISUAL = { icon: Plus, variant: "outline" } as const;
 
 const TrackFormDialog = ({
   track,
@@ -1222,15 +1247,22 @@ export const TrackManagementPanel = ({
   // language has a wording entry for it. A type without one gets no button —
   // the fallback would either be a generic label that fits the wrong type, or
   // a wrong noun.
-  const quickActivityTypes = useMemo(
-    () =>
-      quickWorkoutUpload
-        ? activityTypes.filter((activityType) =>
-            i18n.exists(`quickWorkout.activities.${activityType.key}.addLabel`, { ns: tripsNamespace }),
-          )
-        : [],
-    [activityTypes, i18n, quickWorkoutUpload],
-  );
+  // feature-140: the walking button keeps the first place in the row; the
+  // other types follow it in alphabetical order, so the secondary button does
+  // not stand in front of the page's main one.
+  const quickActivityTypes = useMemo(() => {
+    if (!quickWorkoutUpload) return [];
+
+    return activityTypes
+      .filter((activityType) =>
+        i18n.exists(`quickWorkout.activities.${activityType.key}.addLabel`, { ns: tripsNamespace }),
+      )
+      .sort((a, b) => {
+        if (a.key === "walking") return -1;
+        if (b.key === "walking") return 1;
+        return a.nameEn.localeCompare(b.nameEn);
+      });
+  }, [activityTypes, i18n, quickWorkoutUpload]);
 
   // feature-141: the draft capture is walking-only in this slice. It needs the
   // active type and the same wording check the quick buttons use.
@@ -1896,12 +1928,22 @@ export const TrackManagementPanel = ({
         }
         headerActions={
           <>
-            {quickActivityTypes.map((activityType) => (
-              <Button key={activityType.id} type="button" onClick={() => setQuickActivityType(activityType)}>
-                <Plus />
-                {t(`quickWorkout.activities.${activityType.key}.addLabel`)}
-              </Button>
-            ))}
+            {quickActivityTypes.map((activityType) => {
+              const { icon: QuickIcon, variant } =
+                QUICK_ACTIVITY_VISUALS[activityType.key] ?? DEFAULT_QUICK_ACTIVITY_VISUAL;
+
+              return (
+                <Button
+                  key={activityType.id}
+                  type="button"
+                  variant={variant}
+                  onClick={() => setQuickActivityType(activityType)}
+                >
+                  <QuickIcon />
+                  {t(`quickWorkout.activities.${activityType.key}.addLabel`)}
+                </Button>
+              );
+            })}
             {draftActivityType ? (
               <Button
                 type="button"

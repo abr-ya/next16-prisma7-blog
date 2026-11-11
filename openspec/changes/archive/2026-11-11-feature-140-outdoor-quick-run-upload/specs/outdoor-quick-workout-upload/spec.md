@@ -34,6 +34,12 @@ The system SHALL offer a quick workout upload on the owner's workouts page, SHAL
 #### Scenario: Running is visually distinct from walking
 
 - **WHEN** the owner's workouts page renders both the walking and the running quick-add buttons
-- **THEN** the walking button is an outline button with a footprints icon
-- **AND** the running button is a primary button with an activity icon
+- **THEN** the walking button is a primary button with a footprints icon
+- **AND** the running button is an outline button with a lightning icon
 - **AND** neither button relies on its label alone to be told apart
+
+#### Scenario: The walking quick-add button comes first
+
+- **WHEN** the owner's workouts page renders more than one quick-add button
+- **THEN** the walking button comes first
+- **AND** the other quick-add buttons follow it in alphabetical order by activity type name

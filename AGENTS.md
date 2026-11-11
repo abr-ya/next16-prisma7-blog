@@ -22,6 +22,7 @@ For non-trivial feature work, behavior changes, schema changes, route changes, o
 - After preparing OpenSpec artifacts, explicitly tell the user that the spec is ready before starting implementation.
 - Keep code changes aligned with the accepted OpenSpec tasks.
 - Update docs/checklists together with behavior changes when the project already tracks the feature in docs.
+- Run the OpenSpec workflow steps through the project's OpenSpec skills — `openspec-sync-specs` to sync delta specs into the main specs and `openspec-archive-change` to archive a completed change. Do not sync or archive by hand with file edits or ad-hoc CLI calls: the skills carry the merge rules, the validation steps, and the archive bookkeeping.
 - Before archiving a change, report any unchecked tasks in its `tasks.md` and wait for the user's go-ahead. Do not pass `--yes` to silence the CLI's incomplete-task warning: a warning printed by the CLI is not a report the user has seen.
 
 If the developer asks to bypass or violates the OpenSpec methodology, say so explicitly and get clear confirmation before continuing outside the OpenSpec flow.

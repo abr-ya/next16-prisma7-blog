@@ -204,6 +204,17 @@
           "evening": "Evening",
           "night": "Night"
         }
+      },
+      "running": {
+        "addLabel": "Add a run",
+        "noun": "run",
+        "rememberGearLabel": "Remember this gear for runs",
+        "dayparts": {
+          "morning": "Morning",
+          "day": "Daytime",
+          "evening": "Evening",
+          "night": "Night"
+        }
       }
     },
     "routeMode": {

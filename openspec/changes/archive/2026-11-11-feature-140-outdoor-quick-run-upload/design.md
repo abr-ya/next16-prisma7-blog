@@ -2,7 +2,7 @@
 
 ## Context
 
-See `proposal.md` for motivation and `specs/outdoor-quick-workout-upload/spec.md` for the required behavior.
+See `proposal.md` for motivation, `specs/outdoor-quick-workout-upload/spec.md` for the quick-add behavior, and `specs/outdoor-quick-route-workout/spec.md` for the route-mode rule.
 
 The quick-add path is already activity-type-parameterized:
 
@@ -20,6 +20,8 @@ The seeded `running` activity type already exists; its dictionary entry is missi
 - Make the running quick-add button appear through the existing mechanism.
 - Make walking and running unmistakably different at a glance.
 - Keep the wording, title grammar, and slug behavior consistent with walking.
+- Keep the route mode out of a dialog that cannot save it.
+- Keep the walking button where the owner expects it — first in the row.
 
 **Non-Goals:**
 
@@ -27,6 +29,7 @@ The seeded `running` activity type already exists; its dictionary entry is missi
 - A separate "favorite shoes" concept.
 - Quick-add buttons for other activity types.
 - Restyling the unrelated `Add track` action.
+- A route workout for any activity type but walking.
 
 ## Decisions
 
@@ -42,12 +45,14 @@ Alternative considered: a dedicated running branch or component. Rejected becaus
 
 ### 2. Icons plus button variant for the distinction
 
-- Walking: `Footprints` icon, `outline` variant.
-- Running: `Activity` icon, default (primary) variant.
+- Walking: `Footprints` icon, default (primary) variant.
+- Running: `Zap` icon, `outline` variant.
 
-The icon names the activity; the variant gives the stronger contrast the owner asked for. The `Add track` action stays primary with its `Plus` icon, and the running button is still identifiable by its own icon and label.
+The icon names the activity; the variant tells the two apart at a glance. Walking keeps the primary variant it has today, so the page's established action does not lose its weight — the new running button is the secondary one. The `Add track` action stays primary with its `Plus` icon, and the running button is still identifiable by its own icon and label.
 
-Alternative considered: different icons only. Rejected by the owner in favour of the stronger variant contrast.
+Alternative considered: `Activity` (a pulse line) for running. Rejected by the owner — it reads as a heart rate, while `Zap` names the speed.
+
+Alternative considered: walking outline, running primary. Rejected by the owner — it demotes the established walk button, which is the page's main action.
 
 Alternative considered: colour-only distinction. Rejected because it is less accessible and does not name the activity.
 
@@ -63,13 +68,32 @@ The generic requirement already says that any active type with a wording gets a 
 
 Alternative considered: `skip_specs: true`. Rejected because the change is user-visible and the running button is worth pinning as an acceptance criterion.
 
+### 5. The route mode stays a walking feature
+
+The quick upload dialog is shared by every quick-add button, and the route mode that feature-146 added lives inside it. The route workout it creates is a walking workout: `createQuickRouteWorkout` refuses any activity type but walking. The dialog therefore renders the **Create with route** action and its source hint for walking only, and the running dialog offers the file mode alone.
+
+Alternative considered: widen `createQuickRouteWorkout` to any activity type. Rejected — a route run is a different product decision, and the change stays a slice.
+
+Alternative considered: leave the button visible and let the server refuse. Rejected — a button that always fails is worse than no button.
+
+### 6. The walking button comes first
+
+The activity types arrive from the database sorted by their English name, and `Running` sorts before `Walking`. The quick-add buttons are therefore rendered with walking first and the other types after it in that same alphabetical order, so the established action keeps the place the owner knows.
+
+Alternative considered: the database order. Rejected by the owner — the secondary button would stand in front of the page's main one.
+
+### 7. Pin the route-mode rule in its own capability
+
+The walking-only rule belongs to `outdoor-quick-route-workout`, the capability that owns the route mode, not to the quick-add capability. The change therefore carries a second delta that modifies the route-mode requirement and adds a scenario for another activity type, and both deltas are synced together at archive time.
+
 ## Risks / Trade-offs
 
 - [The `running` activity type is inactive in some environment] → The admin check task confirms it is active; activation stays an operational step, not a seed or migration change.
-- [Changing the walking button to outline alters an existing surface] → Accepted by the owner as the cost of telling the two actions apart; the walking dialog itself is unchanged.
+- [The walking button keeps its primary variant and changes only its icon] → The `Plus` icon becomes `Footprints`; the button's weight and its place in the row stay as they are, and the walking dialog itself is unchanged.
+- [The route mode disappears for the running dialog] → Accepted by the owner: the route workout is a walking workout, and the server would refuse the save anyway.
 - [Russian daypart adjectives must agree with the feminine noun `пробежка`] → The dictionary stores the complete adjective forms explicitly; the code never derives grammar.
 - [A future activity type needs both a wording entry and a visual entry] → The fallback `Plus` icon and outline style keep the button usable until a visual entry is added.
 
 ## Migration Plan
 
-None. Revert the dictionary entries and the visual map to remove the running button and restore the previous walking style.
+None. Revert the dictionary entries, the visual map, the button order, and the route-mode block to remove the running button and restore the previous walking style.

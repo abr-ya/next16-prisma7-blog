@@ -214,6 +214,17 @@
           "evening": "Вечерняя",
           "night": "Ночная"
         }
+      },
+      "running": {
+        "addLabel": "Добавить пробежку",
+        "noun": "пробежка",
+        "rememberGearLabel": "Запоминать это снаряжение для пробежек",
+        "dayparts": {
+          "morning": "Утренняя",
+          "day": "Дневная",
+          "evening": "Вечерняя",
+          "night": "Ночная"
+        }
       }
     },
     "routeMode": {
