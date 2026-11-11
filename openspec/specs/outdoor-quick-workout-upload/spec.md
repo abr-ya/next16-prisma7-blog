@@ -86,6 +86,26 @@ The system SHALL offer a quick workout upload on the owner's workouts page, SHAL
 - **WHEN** a signed-in owner opens the track workspace or the administrative track workspace
 - **THEN** the system renders no quick upload button there
 
+#### Scenario: Running has its own quick-add button
+
+- **WHEN** the interface language has a wording entry for the running activity type and that activity type is active
+- **THEN** the owner's workouts page renders a quick-add button for running next to the walking button
+- **AND** clicking it opens the same quick upload dialog bound to running
+- **AND** the suggested title, the slug base, and the preselected gear use the running activity type
+
+#### Scenario: Running is visually distinct from walking
+
+- **WHEN** the owner's workouts page renders both the walking and the running quick-add buttons
+- **THEN** the walking button is a primary button with a footprints icon
+- **AND** the running button is an outline button with a lightning icon
+- **AND** neither button relies on its label alone to be told apart
+
+#### Scenario: The walking quick-add button comes first
+
+- **WHEN** the owner's workouts page renders more than one quick-add button
+- **THEN** the walking button comes first
+- **AND** the other quick-add buttons follow it in alphabetical order by activity type name
+
 ### Requirement: The quick upload dialog collects a file, a title, and an optional gear item
 
 The system SHALL collect the GPX file, the title, and an optional gear item in the quick upload dialog, and SHALL offer no other input.

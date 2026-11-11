@@ -8,7 +8,7 @@ Defines the quick path that turns an existing route into a published walking wor
 
 ### Requirement: The quick walk dialog offers a route mode
 
-The quick walk dialog SHALL offer a secondary **Create with route** action that switches the dialog to a route form in place. The action SHALL be disabled while a GPX file is uploaded or uploading. The route form SHALL offer a **Back to GPX upload** action and SHALL NOT open a second dialog.
+The quick walk dialog SHALL offer a secondary **Create with route** action that switches the dialog to a route form in place. The action SHALL be disabled while a GPX file is uploaded or uploading. The route form SHALL offer a **Back to GPX upload** action and SHALL NOT open a second dialog. The route mode SHALL be offered for the walking activity type only, because the workout it creates is a walking workout.
 
 #### Scenario: Owner opens the route mode
 
@@ -33,6 +33,13 @@ The quick walk dialog SHALL offer a secondary **Create with route** action that 
 - **WHEN** the owner opens the route mode
 - **THEN** no second modal is opened
 - **AND** the dialog keeps its activity type and gear context
+
+#### Scenario: Another activity type opens no route mode
+
+- **WHEN** the owner opens the quick upload dialog for an activity type other than walking
+- **THEN** the dialog offers no **Create with route** action
+- **AND** the dialog offers no source hint about a route
+- **AND** the dialog offers only the file mode
 
 ### Requirement: The route mode collects an existing parsed route, a start, a duration, and gear
 
