@@ -182,6 +182,11 @@ export const QuickWorkoutUploadDialog = ({
     ? t(`${wordingPrefix}.noun`)
     : capitalizeQuickWorkoutNoun(activityType.key);
 
+  // feature-140: the route mode belongs to walking — the workout it creates
+  // is a walking workout, and the server refuses the route save for any
+  // other activity type. Another type gets the file mode alone.
+  const isWalking = activityType.key === "walking";
+
   // feature-124: the control names the activity type in the interface
   // language. The wording dictionary owns the grammar of that name — the
   // Russian form of a preposition needs a case the generic wording cannot
@@ -539,20 +544,23 @@ export const QuickWorkoutUploadDialog = ({
                 <DialogFooter>
                   {/* feature-146: the route mode is offered next to Save. It is
                       disabled while a file is uploaded or uploading — the two
-                      are alternatives. */}
-                  <Button
-                    type="button"
-                    variant="outline"
-                    disabled={isSaving || isUploading || Boolean(fileAssetId)}
-                    onClick={() => setMode("route")}
-                  >
-                    {t("quickWorkout.routeMode.action")}
-                  </Button>
+                      are alternatives.
+                      feature-140: it is offered for walking only. */}
+                  {isWalking ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={isSaving || isUploading || Boolean(fileAssetId)}
+                      onClick={() => setMode("route")}
+                    >
+                      {t("quickWorkout.routeMode.action")}
+                    </Button>
+                  ) : null}
                   <Button type="submit" disabled={isSaving}>
                     {isSaving ? t("quickWorkout.saving") : t("quickWorkout.save")}
                   </Button>
                 </DialogFooter>
-                {isUploading || fileAssetId ? (
+                {isWalking && (isUploading || fileAssetId) ? (
                   <p className="text-muted-foreground text-sm">{t("quickWorkout.routeMode.sourceHint")}</p>
                 ) : null}
               </form>
