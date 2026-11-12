@@ -270,6 +270,8 @@ export type PublicTrack = {
   createdAt: Date;
   /** feature-138: the viewer owns this track and may clean up its GPX points. */
   canCleanPoints: boolean;
+  /** feature-147: the viewer owns this track and may rename its GPX file. */
+  canRenameFile: boolean;
   file: {
     id: string;
     name: string;
@@ -714,6 +716,16 @@ const toPublicTrack = (
     fileAsset.purpose === "TRACK_GPX" &&
     fileAsset.status === ACTIVE_FILE_STATUS,
   );
+  // feature-147: renaming follows the same rule as the cleanup — the file
+  // must belong to the track itself. A route-based track borrows the route's
+  // file, which the route library and every other workout on that route use.
+  const canRenameFile = Boolean(
+    viewerId &&
+    track.userId === viewerId &&
+    !track.routeId &&
+    fileAsset.purpose === "TRACK_GPX" &&
+    fileAsset.status === ACTIVE_FILE_STATUS,
+  );
   const parsedState = getTrackGpxMetadataState(metadata, {
     fileAssetId: fileAsset.id,
     fileKey: fileAsset.fileKey,
@@ -735,6 +747,7 @@ const toPublicTrack = (
     updatedAt: track.updatedAt,
     createdAt: track.createdAt,
     canCleanPoints,
+    canRenameFile,
     file: {
       id: fileAsset.id,
       name: fileAsset.name,
