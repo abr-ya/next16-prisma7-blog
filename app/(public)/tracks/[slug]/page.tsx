@@ -1,4 +1,4 @@
-import { CalendarDays, Download, FileText, Lock, Map, Route, Upload } from "lucide-react";
+import { CalendarDays, Clock, Download, FileText, Lock, Map, Route, Upload } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -19,7 +19,7 @@ import {
   formatTrackElevationGainLoss,
   formatTrackElevationRange,
   formatTrackPointCount,
-  formatTrackRecordingDateTime,
+  formatTrackRecordingLine,
   formatTrackTimeSource,
   formatTrackTimezoneEvidence,
 } from "@/lib/track-gpx-metadata";
@@ -68,6 +68,20 @@ const TrackPage = async ({ params }: TrackPageProps) => {
 
   if (!track) notFound();
 
+  // feature-139: the header owns the recording time. GPX tracks read the
+  // parsed summary times; MANUAL tracks read the stored start and duration
+  // and never derive a finish.
+  const recordingLine = formatTrackRecordingLine({
+    source: track.timeSource === "MANUAL" ? "MANUAL" : "GPX",
+    start:
+      track.timeSource === "MANUAL"
+        ? (track.recordingStartAt?.toISOString() ?? null)
+        : (track.parsed?.summary.time?.start ?? null),
+    finish: track.timeSource === "MANUAL" ? null : (track.parsed?.summary.time?.end ?? null),
+    durationSeconds: track.timeSource === "MANUAL" ? track.recordingDurationSeconds : null,
+    recordingTimezone: track.recordingTimezone,
+  });
+
   return (
     <PageLayout title={track.title} className="pt-6">
       <article className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 pb-10">
@@ -83,6 +97,11 @@ const TrackPage = async ({ params }: TrackPageProps) => {
             <CalendarDays className="size-3.5" />
             Updated {formatDate(track.updatedAt)}
           </Badge>
+          <div className="flex min-w-0 items-center gap-1.5 text-sm text-muted-foreground sm:ml-auto">
+            <Clock className="size-3.5 shrink-0" />
+            <span className="shrink-0 font-medium">Recording</span>
+            <span className="min-w-0">{recordingLine}</span>
+          </div>
         </div>
 
         {track.description ? (
@@ -140,18 +159,6 @@ const TrackPage = async ({ params }: TrackPageProps) => {
               {track.parsed.summary.time ? (
                 <>
                   <div>
-                    <div className="text-muted-foreground">Recording start</div>
-                    <div className="font-medium">
-                      {formatTrackRecordingDateTime(track.parsed.summary.time.start, track.recordingTimezone)}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-muted-foreground">Recording finish</div>
-                    <div className="font-medium">
-                      {formatTrackRecordingDateTime(track.parsed.summary.time.end, track.recordingTimezone)}
-                    </div>
-                  </div>
-                  <div>
                     <div className="text-muted-foreground">Duration</div>
                     <div className="font-medium">{formatTrackDuration(track.parsed.summary.time.durationSeconds)}</div>
                   </div>
@@ -166,29 +173,6 @@ const TrackPage = async ({ params }: TrackPageProps) => {
                     </div>
                   </div>
                 </>
-              ) : null}
-            </div>
-          </section>
-        ) : null}
-
-        {track.timeSource === "MANUAL" &&
-        (track.recordingStartAt !== null || track.recordingDurationSeconds !== null) ? (
-          <section className="grid gap-3 rounded-md border p-4">
-            <h2 className="text-base font-semibold">Recording details</h2>
-            <div className="grid gap-3 text-sm sm:grid-cols-2">
-              {track.recordingStartAt !== null ? (
-                <div>
-                  <div className="text-muted-foreground">Recording start</div>
-                  <div className="font-medium">
-                    {formatTrackRecordingDateTime(track.recordingStartAt.toISOString(), track.recordingTimezone)}
-                  </div>
-                </div>
-              ) : null}
-              {track.recordingDurationSeconds !== null ? (
-                <div>
-                  <div className="text-muted-foreground">Recording duration</div>
-                  <div className="font-medium">{formatTrackDuration(track.recordingDurationSeconds)}</div>
-                </div>
               ) : null}
             </div>
           </section>
