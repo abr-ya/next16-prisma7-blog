@@ -222,7 +222,8 @@ The system SHALL show parsed GPX summary information on public track pages for p
 #### Scenario: Visitor sees parsed summary
 
 - **WHEN** a visitor opens `/tracks/[slug]` for a published track with successful parsed metadata
-- **THEN** the page displays visibility-safe summary values such as distance, elevation range when available, time range when available, and point counts
+- **THEN** the lower GPX summary displays visibility-safe values such as distance, elevation range when available, recording duration when available, timezone evidence, and point counts
+- **AND** the recording start and finish are displayed in the page header rather than repeated in the lower summary
 - **AND** it may render an interactive map when the parsed metadata includes current map-ready geometry
 
 #### Scenario: Visitor sees unparsed fallback
@@ -415,7 +416,7 @@ The system SHALL prevent accidental dismissal of the admin track create/edit mod
 
 ### Requirement: Track summaries display recording start and finish times
 
-The system SHALL display parsed GPX recording start and finish date-times on admin and public track summary surfaces when stored parsed time metadata is available.
+The system SHALL display parsed GPX recording start and finish date-times on admin and public track summary surfaces when stored parsed time metadata is available. On the public track detail page the values SHALL render as a compact line in the page header, to the right of the existing badges, in the track's recording timezone.
 
 #### Scenario: Admin track list shows recording times
 
@@ -432,7 +433,9 @@ The system SHALL display parsed GPX recording start and finish date-times on adm
 #### Scenario: Public track detail shows recording times
 
 - **WHEN** a visitor views `/tracks/[slug]` for a published track with successful parsed GPX time metadata
-- **THEN** the detail page SHALL show recording start and finish date-times near the existing parsed summary values
+- **THEN** the page header SHALL show the recording start and finish as a compact line to the right of the existing badges
+- **AND** the values SHALL use the track's recording timezone
+- **AND** the lower GPX summary SHALL NOT repeat the recording start or finish
 
 #### Scenario: Hike linked track cards show recording times
 
@@ -1105,35 +1108,48 @@ The system SHALL render a localized `timeSource` badge on the public track detai
 
 - **WHEN** a visitor opens `/tracks/[slug]` for a published track whose `Track.timeSource` is `GPX`
 - **THEN** the page renders a `timeSource` badge labeled with the localized `GPX` label
-- **AND** the existing `parsed.summary.time` block (start, finish, duration, recording timezone, timezone evidence) continues to render as the source of truth for GPX-sourced tracks
+- **AND** the page header shows the parsed recording start and finish as the source of truth for that track
+- **AND** the lower GPX summary keeps duration, recording timezone, and timezone evidence and does not repeat the start or finish
 
 #### Scenario: Public track detail renders MANUAL timeSource badge with both optional lines
 
 - **WHEN** a visitor opens `/tracks/[slug]` for a published track whose `Track.timeSource` is `MANUAL`, `Track.recordingStartAt` is non-null, and `Track.recordingDurationSeconds` is non-null
 - **THEN** the page renders a `timeSource` badge labeled with the localized `MANUAL` label
-- **AND** the page renders a `Recording start` line whose value is `formatTrackRecordingDateTime(recordingStartAt, recordingTimezone)`
-- **AND** the page renders a `Recording duration` line whose value is `formatTrackDuration(recordingDurationSeconds)`
+- **AND** the page header renders a recording line whose start value is `formatTrackRecordingDateTime(recordingStartAt, recordingTimezone)` and whose duration value is `formatTrackDuration(recordingDurationSeconds)`
+- **AND** the page does not render a separate `Recording details` block
+
+#### Scenario: Manual duration uses the shared human-readable format
+
+- **WHEN** a visitor opens `/tracks/[slug]` for a `MANUAL` track with a recording duration
+- **THEN** the header renders the duration in the same human-readable form used by the GPX summary and the full track tables
+- **AND** the page does not apply its own rounding or unit rules
 
 #### Scenario: Public track detail renders MANUAL timeSource badge with start only
 
 - **WHEN** a visitor opens `/tracks/[slug]` for a published track whose `Track.timeSource` is `MANUAL`, `Track.recordingStartAt` is non-null, and `Track.recordingDurationSeconds` is null
 - **THEN** the page renders the `timeSource` badge
-- **AND** the page renders the `Recording start` line
-- **AND** the page does not render the `Recording duration` line
+- **AND** the header shows the recording start and an explicit unknown for the duration
+- **AND** the page does not derive a finish
 
 #### Scenario: Public track detail renders MANUAL timeSource badge with duration only
 
 - **WHEN** a visitor opens `/tracks/[slug]` for a published track whose `Track.timeSource` is `MANUAL`, `Track.recordingStartAt` is null, and `Track.recordingDurationSeconds` is non-null
 - **THEN** the page renders the `timeSource` badge
-- **AND** the page does not render the `Recording start` line
-- **AND** the page renders the `Recording duration` line
+- **AND** the header shows an explicit unknown for the start and shows the recording duration
+- **AND** the page does not derive a finish
 
 #### Scenario: Public track detail renders NONE timeSource badge with no extra lines
 
 - **WHEN** a visitor opens `/tracks/[slug]` for a published track whose `Track.timeSource` is `NONE`
 - **THEN** the page renders a `timeSource` badge labeled with the localized `NONE` label
-- **AND** the page does not render the `Recording start` line
-- **AND** the page does not render the `Recording duration` line
+- **AND** the header states that no recording time is recorded
+- **AND** no recording start or duration value is shown
+
+#### Scenario: Public track detail without parsed times states the recording time is unknown
+
+- **WHEN** a visitor opens `/tracks/[slug]` for a published track whose parsed summary has no usable recording time
+- **THEN** the header states that the recording time is unknown or not recorded
+- **AND** the page does not fail because the recording time is missing
 
 #### Scenario: Public track list card renders the same badge and conditional lines
 
@@ -1160,7 +1176,7 @@ The system SHALL render a localized `timeSource` badge on the public track detai
 
 - **WHEN** any of the four surfaces renders a track whose `Track.timeSource` is `GPX`
 - **THEN** the surface does not render the `Recording start` line or the `Recording duration` line for that track
-- **AND** the existing `parsed.summary.time` block (where present) remains the single source of truth for that track's GPX-derived recording times
+- **AND** the existing parsed time remains the single source of truth for that track's GPX-derived recording times
 
 ### Requirement: Track read projections expose timeSource and optional MANUAL metadata
 
