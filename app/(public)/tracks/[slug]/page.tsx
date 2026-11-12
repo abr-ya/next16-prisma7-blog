@@ -6,6 +6,7 @@ import { notFound } from "next/navigation";
 import { getPublicTrackBySlug } from "@/app/_data/tracks";
 import { Badge, Button } from "@/components/index";
 import { PageLayout } from "@/components/layout/page-layout";
+import { TrackFileRenameButton } from "@/components/track-pages/track-file-rename-button";
 import { TrackMap } from "@/components/track-pages/track-map";
 import { TrackPointCleanupButton } from "@/components/track-pages/track-point-cleanup-dialog";
 import { authSession } from "@/lib/auth-utils";
@@ -227,6 +228,7 @@ const TrackPage = async ({ params }: TrackPageProps) => {
           <div className="flex flex-wrap items-center gap-2">
             <FileText className="size-4 text-muted-foreground" />
             <span className="font-medium">{track.file.name}</span>
+            {track.canRenameFile ? <TrackFileRenameButton trackId={track.id} fileName={track.file.name} /> : null}
             <Badge variant="outline">{formatFileSize(track.file.sizeBytes)}</Badge>
           </div>
           <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">

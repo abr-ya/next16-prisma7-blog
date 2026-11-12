@@ -32,14 +32,14 @@ None.
 
 ### Modified Capabilities
 
-- `outdoor-tracks`: a new requirement covers the owner-only rename control on the public track page, the route-file protection, the fixed `.gpx` suffix, and the public visibility of the new name.
+- `outdoor-tracks`: new requirements cover the owner-only rename control on the public track page, the rename writing the stored name only, the route-file protection, and the refusal of an unusable name.
 - `file-sharing-structure`: a new requirement covers the stored display name as a field of its own, kept separate from the provider identity, and as the name the application serves the file under.
 
 ## Impact
 
-- `app/_data/files.ts` — a new owner-scoped rename action.
+- `app/_actions/files.ts` — a new owner-scoped rename action. It lives in the `"use server"` module rather than in `app/_data/files.ts`, because that module exports a synchronous helper and a `"use server"` file may only export async functions.
 - `components/track-pages/track-file-rename-button.tsx` — a new client component with the control and its modal.
 - `app/(public)/tracks/[slug]/page.tsx` — renders the control for the owner.
 - `app/i18n/locales/en/trips.json` and `app/i18n/locales/ru/trips.json` — the new copy in the trips namespace.
-- `openspec/specs/outdoor-tracks/spec.md` and `openspec/specs/file-sharing-structure/spec.md` — one new requirement each.
+- `openspec/specs/outdoor-tracks/spec.md` and `openspec/specs/file-sharing-structure/spec.md` — new requirements: four in the track capability, one in the file capability.
 - No database, API, dependency, or provider changes.
