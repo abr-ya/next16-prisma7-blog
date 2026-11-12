@@ -37,7 +37,7 @@ None.
 
 ## Impact
 
-- `app/_data/files.ts` — a new owner-scoped rename action.
+- `app/_actions/files.ts` — a new owner-scoped rename action. It lives in the `"use server"` module rather than in `app/_data/files.ts`, because that module exports a synchronous helper and a `"use server"` file may only export async functions.
 - `components/track-pages/track-file-rename-button.tsx` — a new client component with the control and its modal.
 - `app/(public)/tracks/[slug]/page.tsx` — renders the control for the owner.
 - `app/i18n/locales/en/trips.json` and `app/i18n/locales/ru/trips.json` — the new copy in the trips namespace.
