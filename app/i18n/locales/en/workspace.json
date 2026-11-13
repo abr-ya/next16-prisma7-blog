@@ -33,6 +33,9 @@
     "empty": "You have no saved places yet. Add the spots you start your routes from.",
     "cancel": "Cancel",
     "save": "Save",
-    "create": "Save place"
+    "create": "Save place",
+    "pickerLabel": "Start from a saved place",
+    "pickerEmpty": "You have no saved places yet.",
+    "pickerEmptyLink": "Add one on My places"
   }
 }
