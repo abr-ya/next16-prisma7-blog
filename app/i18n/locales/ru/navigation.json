@@ -16,6 +16,7 @@
   "myRoutes": "Мои маршруты",
   "myWorkouts": "Мои тренировки",
   "myGear": "Моё снаряжение",
+  "myPlaces": "Мои места",
   "userAvatarAlt": "Аватар: {{name}}",
   "userAvatarAltFallback": "Аватар пользователя",
   "signout": "Выйти",

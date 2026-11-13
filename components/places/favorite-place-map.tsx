@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 
+import { Spinner } from "@/components/ui/spinner";
 import type { TrackEditorMapPoint } from "@/components/track-pages/track-editor-map";
 
 /**
@@ -14,8 +15,8 @@ import type { TrackEditorMapPoint } from "@/components/track-pages/track-editor-
 const TrackEditorMap = dynamic(() => import("@/components/track-pages/track-editor-map"), {
   ssr: false,
   loading: () => (
-    <div className="flex h-125 min-h-125 items-center justify-center rounded-md border bg-muted text-sm text-muted-foreground sm:h-150 sm:min-h-150">
-      Loading map...
+    <div className="flex h-125 min-h-125 items-center justify-center rounded-md border bg-muted sm:h-150 sm:min-h-150">
+      <Spinner className="size-6" />
     </div>
   ),
 });
