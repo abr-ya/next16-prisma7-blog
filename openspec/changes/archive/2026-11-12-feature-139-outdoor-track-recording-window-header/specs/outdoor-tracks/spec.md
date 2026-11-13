@@ -55,7 +55,7 @@ The system SHALL display parsed GPX recording start and finish date-times on adm
 
 ### Requirement: Track surfaces render timeSource badge
 
-The system SHALL render a localized `timeSource` badge on the public track detail page, public track list card, `/admin/tracks` row, and published-trip linked-track card whenever a track has a non-null `Track.timeSource`. The badge SHALL render the localized label for `GPX`, `MANUAL`, or `NONE` from the `TrackTimeSource` enum and SHALL appear on the same surface as the existing recording-time summaries. On the public track detail page, MANUAL start and duration SHALL render in the header without a derived finish.
+The system SHALL render a localized `timeSource` badge on the public track detail page, public track list card, `/admin/tracks` row, and published-trip linked-track card whenever a track has a non-null `Track.timeSource`. The badge SHALL render the localized label for `GPX`, `MANUAL`, or `NONE` from the `TrackTimeSource` enum and SHALL appear on the same surface as the existing recording-time summaries.
 
 #### Scenario: Public track detail renders GPX timeSource badge
 

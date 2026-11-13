@@ -347,6 +347,13 @@ export const formatTrackElevationGainLoss = (elevation?: TrackGpxElevationSummar
   return `+${integerFormat.format(elevation.ascentMeters)} / -${integerFormat.format(elevation.descentMeters)} m`;
 };
 
+/**
+ * The single source of truth for track duration formatting. The public track
+ * detail header, the GPX summary, the public lists, the admin tables, the
+ * trip cards, and the workouts table all render durations through this
+ * helper, so one change formats every surface alike. Do not add local
+ * rounding or unit rules at a call site.
+ */
 export const formatTrackDuration = (seconds?: number | null) => {
   if (!isFiniteNumber(seconds)) return null;
 
@@ -387,6 +394,46 @@ export const formatTrackRecordingTimeRange = (time?: TrackGpxTimeSummary | null,
   if (!start || !end) return null;
 
   return `${start} - ${end}`;
+};
+
+export type TrackRecordingLineInput = {
+  /** `MANUAL` tracks show their stored values; every other source shows parsed GPX times. */
+  source: "GPX" | "MANUAL";
+  start?: string | null;
+  finish?: string | null;
+  durationSeconds?: number | null;
+  recordingTimezone?: string | null;
+};
+
+/**
+ * feature-139: the public track detail page shows the recording time as one
+ * compact header line. GPX tracks show the parsed start and finish; MANUAL
+ * tracks show the stored start and duration and never a derived finish.
+ * A missing side stays visible as an explicit unknown instead of collapsing
+ * into an empty gap.
+ */
+export const formatTrackRecordingLine = ({
+  source,
+  start,
+  finish,
+  durationSeconds,
+  recordingTimezone,
+}: TrackRecordingLineInput) => {
+  if (source === "MANUAL") {
+    const formattedStart = formatTrackRecordingDateTime(start, recordingTimezone);
+    const formattedDuration = formatTrackDuration(durationSeconds);
+
+    if (!formattedStart && !formattedDuration) return "Recording time not recorded";
+
+    return `${formattedStart ?? "start unknown"} · ${formattedDuration ?? "duration unknown"}`;
+  }
+
+  const formattedStart = formatTrackRecordingDateTime(start, recordingTimezone);
+  const formattedFinish = formatTrackRecordingDateTime(finish, recordingTimezone);
+
+  if (!formattedStart && !formattedFinish) return "Recording time not recorded";
+
+  return `${formattedStart ?? "start unknown"} – ${formattedFinish ?? "finish unknown"}`;
 };
 
 export const formatTrackTimezoneEvidence = (evidence?: TrackGpxTimezoneEvidence | null) => {
