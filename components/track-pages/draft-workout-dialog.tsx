@@ -420,6 +420,7 @@ export const DraftWorkoutDialog = ({
       </Dialog>
 
       <RouteFormDialog
+        key={createRouteOpen ? "open-route-form" : "closed-route-form"}
         route={null}
         open={createRouteOpen}
         onOpenChange={setCreateRouteOpen}

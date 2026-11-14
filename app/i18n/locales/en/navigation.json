@@ -16,6 +16,7 @@
   "myRoutes": "My routes",
   "myWorkouts": "My workouts",
   "myGear": "My gear",
+  "myPlaces": "My places",
   "userAvatarAlt": "{{name}}'s avatar",
   "userAvatarAltFallback": "User avatar",
   "signout": "Sign out",

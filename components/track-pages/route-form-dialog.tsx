@@ -1,13 +1,18 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { MapPin } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useT } from "next-i18next/client";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 
+import { getOwnerFavoritePlaces, type FavoritePlaceListItem } from "@/app/_data/favorite-places";
 import { createRouteFromPoints, updateRoute, type RouteListItem } from "@/app/_data/routes";
+import { workspaceNamespace } from "@/app/i18n/settings";
 import {
   Button,
   Dialog,
@@ -56,8 +61,17 @@ type RouteFormDialogProps = {
 
 export const RouteFormDialog = ({ route, open, onOpenChange, onCreated }: RouteFormDialogProps) => {
   const router = useRouter();
+  const { t } = useT(workspaceNamespace);
   const isEdit = Boolean(route);
   const [points, setPoints] = useState<ManualTrackPoint[]>([]);
+  // feature-148: the picker prepends a saved place to the placed points, which
+  // the editor cannot do from the outside — it owns its list. Bumping this key
+  // remounts the editor with the new `initialPoints`, the same pattern
+  // `route-geometry-dialog.tsx` uses for a route it has just loaded.
+  const [editorKey, setEditorKey] = useState(0);
+  // feature-148: the owner's saved places are read when the dialog opens, and
+  // only in create mode — a route that already exists keeps its geometry.
+  const [savedPlaces, setSavedPlaces] = useState<FavoritePlaceListItem[]>([]);
   // The panel remounts this dialog per open (through `key`), so the initial
   // values are read once and never need a reset effect.
   const form = useForm<RouteFormValues>({
@@ -76,6 +90,34 @@ export const RouteFormDialog = ({ route, open, onOpenChange, onCreated }: RouteF
     // path starts genuinely invalid.
     if (isEdit) void form.trigger();
   }, [isEdit, form]);
+
+  useEffect(() => {
+    if (!open || isEdit) return;
+
+    let cancelled = false;
+
+    getOwnerFavoritePlaces()
+      .then((places) => {
+        if (!cancelled) setSavedPlaces(places);
+      })
+      .catch(() => {
+        // An unauthenticated call cannot reach this dialog (the page beneath
+        // requires a session), but a failed read must not break route
+        // creation: the picker simply stays empty.
+        if (!cancelled) setSavedPlaces([]);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [open, isEdit]);
+
+  // feature-148: the picked place becomes the route's first geometry point;
+  // the points already placed keep their order after it.
+  const handlePickPlace = (place: FavoritePlaceListItem) => {
+    setPoints((current) => [{ lat: place.latitude, lng: place.longitude }, ...current]);
+    setEditorKey((key) => key + 1);
+  };
 
   const handleOpenChange = (nextOpen: boolean) => {
     onOpenChange(nextOpen);
@@ -154,6 +196,42 @@ export const RouteFormDialog = ({ route, open, onOpenChange, onCreated }: RouteF
     </>
   );
 
+  // feature-148: the picker sits in the fields slot right above the map, so a
+  // saved place reads as the starting point for the points about to be placed.
+  const renderSavedPlacePicker = () => {
+    if (!savedPlaces.length) {
+      return (
+        <div className="rounded-md border border-dashed p-3 text-sm text-muted-foreground">
+          {t("places.pickerEmpty")}{" "}
+          <Link href="/my/places" className="font-medium underline underline-offset-4">
+            {t("places.pickerEmptyLink")}
+          </Link>
+        </div>
+      );
+    }
+
+    return (
+      <div className="flex flex-col gap-2">
+        <span className="text-sm font-medium">{t("places.pickerLabel")}</span>
+        <div className="flex flex-wrap gap-2">
+          {savedPlaces.map((place) => (
+            <Button
+              key={place.id}
+              type="button"
+              variant="outline"
+              size="sm"
+              className="cursor-pointer"
+              onClick={() => handlePickPlace(place)}
+            >
+              <MapPin className="size-4" />
+              {place.name}
+            </Button>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
   const submitLabel = isEdit ? "Save route" : "Create route";
 
   return (
@@ -177,9 +255,15 @@ export const RouteFormDialog = ({ route, open, onOpenChange, onCreated }: RouteF
               renderTextFields()
             ) : (
               <TrackEditor
-                initialPoints={[]}
+                key={editorKey}
+                initialPoints={points}
                 onChangePoints={setPoints}
-                renderFormFields={renderTextFields}
+                renderFormFields={() => (
+                  <>
+                    {renderTextFields()}
+                    {renderSavedPlacePicker()}
+                  </>
+                )}
                 mapAriaLabel="Route placement map"
               />
             )}

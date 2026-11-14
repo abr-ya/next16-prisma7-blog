@@ -45,6 +45,8 @@ model User {
   gears                          Gear[]
   // feature-124: the per-activity-type gear preferences of this owner.
   gearPreferences                GearPreference[]
+  // feature-148: the private places this owner starts routes from.
+  favoritePlaces                 FavoritePlace[]
   photos                         Photo[]
   photoLikes                     PhotoLike[]
   trustChangesReceived           TrustChangeLog[]  @relation("TrustChangeLogTarget")
@@ -363,6 +365,23 @@ model Route {
   tracks      Track[]
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @default(now()) @updatedAt
+
+  @@index([userId])
+}
+
+// feature-148: a private place the owner starts routes from. The name and the
+// coordinate belong to the owner; the manual route form only copies the
+// coordinate into the route's first geometry point, so a route row keeps no
+// reference back to this table and the place stays a reusable start.
+model FavoritePlace {
+  id        String   @id @default(uuid())
+  name      String
+  latitude  Float
+  longitude Float
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
 
   @@index([userId])
 }
