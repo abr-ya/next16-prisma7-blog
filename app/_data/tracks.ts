@@ -255,6 +255,16 @@ type PublicTrackRecord = Prisma.TrackGetPayload<{
   };
 }>;
 
+export type PublicTrackFile = {
+  id: string;
+  name: string;
+  sizeBytes: number;
+  uploadedAt: Date;
+  updatedAt: Date;
+  downloadUrl: string | null;
+  downloadAvailable: boolean;
+};
+
 export type PublicTrack = {
   id: string;
   title: string;
@@ -272,15 +282,13 @@ export type PublicTrack = {
   canCleanPoints: boolean;
   /** feature-147: the viewer owns this track and may rename its GPX file. */
   canRenameFile: boolean;
-  file: {
-    id: string;
-    name: string;
-    sizeBytes: number;
-    uploadedAt: Date;
-    updatedAt: Date;
-    downloadUrl: string | null;
-    downloadAvailable: boolean;
-  };
+  /** feature-142: the viewer owns this track and may attach or change its route. */
+  canManageRoute: boolean;
+  /** feature-142: the track's primary geometry is a route. */
+  hasPrimaryRoute: boolean;
+  file: PublicTrackFile;
+  /** feature-142: track-owned files kept as secondary geometry. */
+  secondaryFiles: PublicTrackFile[];
   parsed: {
     summary: TrackGpxSummary;
     mapGeometry: TrackGpxCoordinate[] | null;
@@ -451,6 +459,13 @@ export const ensureEligibleTrackFileAsset = async ({
           id: true,
         },
       },
+      // feature-142: a file that already backs a track's secondary geometry
+      // must not be attached again as another track's primary file.
+      trackGeometry: {
+        select: {
+          id: true,
+        },
+      },
     },
   });
 
@@ -459,6 +474,10 @@ export const ensureEligibleTrackFileAsset = async ({
   }
 
   if (fileAsset.track && fileAsset.track.id !== trackId) {
+    throw new Error("Selected GPX file is already linked to another track");
+  }
+
+  if (fileAsset.trackGeometry) {
     throw new Error("Selected GPX file is already linked to another track");
   }
 
@@ -624,6 +643,22 @@ export type TrackListItemWithGear = Prisma.TrackGetPayload<{
   select: typeof trackListSelectWithGear;
 }>;
 
+/**
+ * feature-142: the file fields every public track file surface needs, shared
+ * by the primary geometry and the secondary rows.
+ */
+const publicTrackFileAssetSelect = {
+  id: true,
+  name: true,
+  fileKey: true,
+  sizeBytes: true,
+  status: true,
+  visibility: true,
+  purpose: true,
+  uploadedAt: true,
+  updatedAt: true,
+} satisfies Prisma.FileAssetSelect;
+
 const publicTrackSelect = {
   id: true,
   title: true,
@@ -664,40 +699,61 @@ const publicTrackSelect = {
     },
   },
   fileAsset: {
-    select: {
-      id: true,
-      name: true,
-      fileKey: true,
-      sizeBytes: true,
-      status: true,
-      visibility: true,
-      purpose: true,
-      uploadedAt: true,
-      updatedAt: true,
-    },
+    select: publicTrackFileAssetSelect,
   },
   route: {
     select: {
       metadata: true,
       fileAsset: {
-        select: {
-          id: true,
-          name: true,
-          fileKey: true,
-          sizeBytes: true,
-          status: true,
-          visibility: true,
-          purpose: true,
-          uploadedAt: true,
-          updatedAt: true,
-        },
+        select: publicTrackFileAssetSelect,
       },
     },
   },
 } satisfies Prisma.TrackSelect;
 
+/**
+ * feature-142: the detail page also reads the track's secondary files. The
+ * list query keeps the smaller `publicTrackSelect`, so listings never carry
+ * them.
+ */
+const publicTrackDetailSelect = {
+  ...publicTrackSelect,
+  geometries: {
+    select: {
+      id: true,
+      fileAsset: {
+        select: publicTrackFileAssetSelect,
+      },
+    },
+  },
+} satisfies Prisma.TrackSelect;
+
+type PublicTrackDetailRecord = PublicTrackRecord & {
+  geometries: Array<{
+    id: string;
+    fileAsset: Prisma.FileAssetGetPayload<{ select: typeof publicTrackFileAssetSelect }>;
+  }>;
+};
+
+const toPublicTrackFile = (
+  fileAsset: Prisma.FileAssetGetPayload<{ select: typeof publicTrackFileAssetSelect }>,
+): PublicTrackFile => {
+  const downloadAvailable =
+    fileAsset.status === ACTIVE_FILE_STATUS && PUBLIC_DOWNLOAD_VISIBILITIES.has(fileAsset.visibility);
+
+  return {
+    id: fileAsset.id,
+    name: fileAsset.name,
+    sizeBytes: fileAsset.sizeBytes,
+    uploadedAt: fileAsset.uploadedAt,
+    updatedAt: fileAsset.updatedAt,
+    downloadUrl: downloadAvailable ? `/files/${fileAsset.id}/download` : null,
+    downloadAvailable,
+  };
+};
+
 const toPublicTrack = (
-  track: PublicTrackRecord,
+  track: PublicTrackRecord | PublicTrackDetailRecord,
   { includeMapGeometry, viewerId }: { includeMapGeometry: boolean; viewerId?: string | null },
 ): PublicTrack | null => {
   const geometry = resolveTrackGeometry(track);
@@ -705,8 +761,6 @@ const toPublicTrack = (
   if (!geometry) return null;
 
   const { fileAsset, metadata } = geometry;
-  const downloadAvailable =
-    fileAsset.status === ACTIVE_FILE_STATUS && PUBLIC_DOWNLOAD_VISIBILITIES.has(fileAsset.visibility);
   // feature-138: cleanup is offered only for the owner's own file; a
   // route-based track borrows geometry it cannot rewrite here.
   const canCleanPoints = Boolean(
@@ -730,6 +784,7 @@ const toPublicTrack = (
     fileAssetId: fileAsset.id,
     fileKey: fileAsset.fileKey,
   });
+  const secondaryRows = "geometries" in track ? track.geometries : [];
 
   return {
     id: track.id,
@@ -748,15 +803,12 @@ const toPublicTrack = (
     createdAt: track.createdAt,
     canCleanPoints,
     canRenameFile,
-    file: {
-      id: fileAsset.id,
-      name: fileAsset.name,
-      sizeBytes: fileAsset.sizeBytes,
-      uploadedAt: fileAsset.uploadedAt,
-      updatedAt: fileAsset.updatedAt,
-      downloadUrl: downloadAvailable ? `/files/${fileAsset.id}/download` : null,
-      downloadAvailable,
-    },
+    // feature-142: a published track always has one primary source, so the
+    // owner may attach a route (file-based) or replace it (route-based).
+    canManageRoute: Boolean(viewerId && viewerId === track.userId),
+    hasPrimaryRoute: Boolean(track.routeId),
+    file: toPublicTrackFile(fileAsset),
+    secondaryFiles: secondaryRows.map((row) => toPublicTrackFile(row.fileAsset)),
     parsed:
       parsedState.status === "SUCCESS"
         ? {
@@ -942,8 +994,8 @@ export const getPublicTrackBySlug = async (slug: string, viewerId?: string | nul
   const { default: prisma } = await import("@/lib/prisma");
   const track = (await prisma.track.findFirst({
     where: { slug, status: "PUBLISHED", geometryState: "READY" },
-    select: publicTrackSelect,
-  })) as PublicTrackRecord | null;
+    select: publicTrackDetailSelect,
+  })) as PublicTrackDetailRecord | null;
 
   return track ? toPublicTrack(track, { includeMapGeometry: true, viewerId }) : null;
 };
@@ -1391,7 +1443,14 @@ export const deleteTrack = async (id: string) => {
   const { default: prisma } = await import("@/lib/prisma");
   const existingTrack = await prisma.track.findFirst({
     where: { id, userId },
-    select: { id: true, fileAssetId: true, routeId: true },
+    select: {
+      id: true,
+      fileAssetId: true,
+      routeId: true,
+      // feature-142: secondary files are track-owned too, so deleting the
+      // track must retire them as well.
+      geometries: { select: { fileAssetId: true } },
+    },
   });
 
   if (!existingTrack) {
@@ -1409,6 +1468,18 @@ export const deleteTrack = async (id: string) => {
     if (existingTrack.fileAssetId && !existingTrack.routeId) {
       await tx.fileAsset.updateMany({
         where: { id: existingTrack.fileAssetId, status: ACTIVE_FILE_STATUS },
+        data: { status: "PENDING_DELETE", deletedAt: new Date() },
+      });
+    }
+
+    // feature-142: the track-owned secondary files follow the same rule. The
+    // route's own file is not in this list and stays active.
+    const secondaryFileAssetIds = existingTrack.geometries.map(
+      (geometry: { fileAssetId: string }) => geometry.fileAssetId,
+    );
+    if (secondaryFileAssetIds.length > 0) {
+      await tx.fileAsset.updateMany({
+        where: { id: { in: secondaryFileAssetIds }, status: ACTIVE_FILE_STATUS },
         data: { status: "PENDING_DELETE", deletedAt: new Date() },
       });
     }
@@ -2083,8 +2154,15 @@ export const createDraftWorkout = async (input: CreateDraftWorkoutInput): Promis
 };
 
 /**
- * feature-141: complete a pending draft with a route. A route always becomes
- * the primary geometry; this slice has no secondary geometry to demote.
+ * feature-141 / feature-142: give a track a primary route.
+ *
+ * - A `PENDING` draft is completed by the route (feature-141 behavior).
+ * - A `READY` file-owned track demotes its own file and parsed metadata into
+ *   one secondary `TrackGeometry` row and takes the route as primary.
+ * - A `READY` route-primary track replaces its route; secondary files stay.
+ *
+ * Recording values and `timeSource` are never rewritten here: the geometry
+ * change does not change when or how long the workout lasted.
  */
 export const attachRouteToTrack = async (trackId: string, routeId: string): Promise<AttachRouteToTrackResult> => {
   try {
@@ -2100,15 +2178,37 @@ export const attachRouteToTrack = async (trackId: string, routeId: string): Prom
 
     const track = await prisma.track.findFirst({
       where: { id: normalizedTrackId, userId },
-      select: { id: true, geometryState: true },
+      select: {
+        id: true,
+        status: true,
+        geometryState: true,
+        fileAssetId: true,
+        routeId: true,
+        metadata: true,
+        fileAsset: {
+          select: {
+            id: true,
+            purpose: true,
+            status: true,
+          },
+        },
+      },
     });
 
     if (!track) {
       return { ok: false, code: "VALIDATION", message: "Track not found" };
     }
 
-    if (track.geometryState !== "PENDING") {
-      return { ok: false, code: "VALIDATION", message: "Only a pending draft can attach a route" };
+    // feature-142: the public track page is the only entry point for a
+    // READY track, so a direct request for a draft is refused even when the
+    // caller owns it. The PENDING branch below keeps the draft-completion
+    // behavior from feature-141.
+    if (track.geometryState === "READY" && track.status !== "PUBLISHED") {
+      return {
+        ok: false,
+        code: "VALIDATION",
+        message: "Publish the track before attaching or changing its route",
+      };
     }
 
     const route = await prisma.route.findFirst({
@@ -2120,21 +2220,68 @@ export const attachRouteToTrack = async (trackId: string, routeId: string): Prom
       return { ok: false, code: "VALIDATION", message: "Selected route is not available" };
     }
 
-    await prisma.track.update({
-      where: { id: track.id },
-      data: {
-        routeId: route.id,
-        fileAssetId: null,
-        metadata: null,
-        geometryState: "READY",
-        // The recording values were entered by the owner, so the completed
-        // track is a manual-recording track even though its geometry is a route.
-        timeSource: "MANUAL",
-      },
-    });
+    if (track.geometryState === "PENDING") {
+      await prisma.track.update({
+        where: { id: track.id },
+        data: {
+          routeId: route.id,
+          fileAssetId: null,
+          metadata: null,
+          geometryState: "READY",
+          // The recording values were entered by the owner, so the completed
+          // track is a manual-recording track even though its geometry is a route.
+          timeSource: "MANUAL",
+        },
+      });
+    } else if (track.geometryState === "READY" && track.fileAssetId && !track.routeId) {
+      if (
+        !track.fileAsset ||
+        track.fileAsset.purpose !== "TRACK_GPX" ||
+        track.fileAsset.status !== ACTIVE_FILE_STATUS
+      ) {
+        return {
+          ok: false,
+          code: "VALIDATION",
+          message: "This track's GPX file is not available as secondary geometry",
+        };
+      }
+
+      await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+        // Create first so the file stays referenced at every point in the
+        // transaction and the `Restrict` foreign keys stay satisfied.
+        await tx.trackGeometry.create({
+          data: {
+            trackId: track.id,
+            fileAssetId: track.fileAssetId as string,
+            metadata: track.metadata === null ? Prisma.DbNull : (track.metadata as Prisma.InputJsonValue),
+          },
+        });
+
+        await tx.track.update({
+          where: { id: track.id },
+          data: {
+            routeId: route.id,
+            fileAssetId: null,
+            metadata: Prisma.DbNull,
+          },
+        });
+      });
+    } else if (track.geometryState === "READY" && track.routeId && !track.fileAssetId) {
+      await prisma.track.update({
+        where: { id: track.id },
+        data: { routeId: route.id },
+      });
+    } else {
+      return {
+        ok: false,
+        code: "VALIDATION",
+        message: "This track cannot take a route in its current state",
+      };
+    }
 
     revalidateTrackPaths();
     revalidatePath("/my/workouts");
+    revalidatePath("/my/tracks");
     revalidatePath("/my/routes");
 
     return { ok: true };

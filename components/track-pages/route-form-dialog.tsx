@@ -29,6 +29,7 @@ import {
   Spinner,
 } from "@/components/index";
 import { TrackEditor, type ManualTrackPoint } from "@/components/track-pages/track-editor";
+import type { TrackGpxCoordinate } from "@/lib/track-gpx-metadata";
 
 // feature-128: one dialog for both metadata writes. In create mode it also
 // carries the point editor — a route has no meaning without geometry — while
@@ -57,9 +58,22 @@ type RouteFormDialogProps = {
    * draft workout) needs the new route id to attach it immediately.
    */
   onCreated?: (routeId: string) => void;
+  /**
+   * feature-142: draw the current track under the points while the owner
+   * creates a route for it. The reference is never saved.
+   */
+  backgroundPoints?: TrackGpxCoordinate[];
+  backgroundLabel?: string;
 };
 
-export const RouteFormDialog = ({ route, open, onOpenChange, onCreated }: RouteFormDialogProps) => {
+export const RouteFormDialog = ({
+  route,
+  open,
+  onOpenChange,
+  onCreated,
+  backgroundPoints,
+  backgroundLabel,
+}: RouteFormDialogProps) => {
   const router = useRouter();
   const { t } = useT(workspaceNamespace);
   const isEdit = Boolean(route);
@@ -258,6 +272,8 @@ export const RouteFormDialog = ({ route, open, onOpenChange, onCreated }: RouteF
                 key={editorKey}
                 initialPoints={points}
                 onChangePoints={setPoints}
+                backgroundPoints={backgroundPoints}
+                backgroundLabel={backgroundLabel}
                 renderFormFields={() => (
                   <>
                     {renderTextFields()}

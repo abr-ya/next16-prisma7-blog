@@ -418,6 +418,11 @@ model Track {
   userId                   String
   user                     User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   hikes                    HikesToTracks[]
+  // feature-142: a route-primary track keeps the GPX file it was recorded
+  // with as secondary geometry. The primary source stays `fileAssetId` or
+  // `routeId`, so `resolveTrackGeometry` and the exactly-one-source check do
+  // not change.
+  geometries               TrackGeometry[]
   createdAt                DateTime           @default(now())
   updatedAt                DateTime           @default(now()) @updatedAt
 
@@ -427,6 +432,22 @@ model Track {
   @@index([activityTypeId])
   @@index([timeSource])
   @@index([gearId])
+}
+
+// feature-142: a track-owned GPX file that is not the primary geometry. The
+// row carries the parse result that belonged to the file, so demoting a file
+// when a route becomes primary loses nothing and needs no re-parse.
+model TrackGeometry {
+  id          String    @id @default(uuid())
+  trackId     String
+  track       Track     @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  fileAssetId String    @unique
+  fileAsset   FileAsset @relation(fields: [fileAssetId], references: [id], onDelete: Restrict)
+  metadata    Json?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @default(now()) @updatedAt
+
+  @@index([trackId])
 }
 
 model TrackActivityType {
@@ -616,6 +637,8 @@ model FileAsset {
   track       Track?
   route       Route?
   photoImages PhotoImage[]
+  // feature-142: the secondary-geometry row that references this file.
+  trackGeometry TrackGeometry?
   uploadedAt  DateTime            @default(now())
   updatedAt   DateTime            @default(now()) @updatedAt
   deletedAt   DateTime?

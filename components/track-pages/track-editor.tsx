@@ -70,6 +70,12 @@ export type TrackEditorProps = {
    * `aria-label` on the Leaflet container.
    */
   mapAriaLabel?: string;
+  /**
+   * feature-142: non-interactive geometry drawn under the placed points, for
+   * example the current track when a route is being created for it.
+   */
+  backgroundPoints?: TrackGpxCoordinate[];
+  backgroundLabel?: string;
 };
 
 /**
@@ -105,6 +111,8 @@ export const TrackEditor = ({
   renderFormFields,
   renderExtraActions,
   mapAriaLabel,
+  backgroundPoints,
+  backgroundLabel,
 }: TrackEditorProps) => {
   const { t } = useT(tripsNamespace);
   const [points, setPoints] = useState<ManualTrackPoint[]>(initialPoints);
@@ -207,6 +215,8 @@ export const TrackEditor = ({
           onSelectPoint={handleSelectPoint}
           selectedIndex={selectedIndex}
           ariaLabel={mapAriaLabel ?? t("trackEditorMapAriaLabel")}
+          backgroundPoints={backgroundPoints}
+          backgroundLabel={backgroundLabel}
         />
         <p className="text-xs text-muted-foreground">{t("trackEditorMapHelp")}</p>
         <div className="grid gap-2">
