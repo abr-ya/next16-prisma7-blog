@@ -30,11 +30,12 @@
 
 ## 5. Public display and lifecycle
 
-- [ ] 5.1 Render the secondary-file section on `app/(public)/tracks/[slug]/page.tsx` under the primary file block, with name, size, upload/update times, and a download link only for active public/unlisted assets, otherwise the existing unavailable wording; verify with a public and a private secondary file.
+- [ ] 5.1 Render the secondary-file section on `app/(public)/tracks/[slug]/page.tsx` under the primary file block, with name, size, upload/update times, and a download link for active public/unlisted assets or the viewer's own files, otherwise the existing unavailable wording; verify with the owner, a public secondary file, and a private non-owned file.
 - [ ] 5.2 Verify an anonymous visitor and a non-owner see the same secondary-file rows and no provider URL, no route control, and that a track without secondary files renders no empty section.
 - [ ] 5.3 Verify the route-primary page offers no rename control and no point-cleanup action, and that direct rename/cleanup requests for that track are rejected without changing files.
 - [ ] 5.4 Delete a route-primary workout in the browser and verify the secondary file asset becomes `PENDING_DELETE` while the shared route and its file stay active for another linked workout.
 - [ ] 5.5 Verify a draft workout has no public page and no attach control; publish a ready file-based draft, attach a route, and confirm the route can be changed after publication.
+- [x] 5.6 Add the public-header recording fallback: when the primary route has no timed summary, show the preserved `recordingStartAt` and derive the finish from `recordingDurationSeconds`; verify the start and finish render on a route-primary workout and `npm run tsc` passes.
 
 ## 6. Integration checks
 

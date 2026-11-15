@@ -15,13 +15,13 @@ import { authSession } from "@/lib/auth-utils";
 import { formatFileSize } from "@/lib/file-upload-limits";
 import { formatHikeDateRange, formatHikeType } from "@/lib/hikes";
 import { buildPageMetadata, getTextMetadataDescription } from "@/lib/site-metadata";
+import { getPublicTrackRecordingLine } from "@/lib/track-effective-values";
 import {
   formatTrackDistance,
   formatTrackDuration,
   formatTrackElevationGainLoss,
   formatTrackElevationRange,
   formatTrackPointCount,
-  formatTrackRecordingLine,
   formatTrackTimeSource,
   formatTrackTimezoneEvidence,
 } from "@/lib/track-gpx-metadata";
@@ -74,19 +74,10 @@ const TrackPage = async ({ params }: TrackPageProps) => {
   // control; every other viewer gets an empty array.
   const ownerRoutes = track.canManageRoute ? await getOwnerRoutes() : [];
 
-  // feature-139: the header owns the recording time. GPX tracks read the
-  // parsed summary times; MANUAL tracks read the stored start and duration
-  // and never derive a finish.
-  const recordingLine = formatTrackRecordingLine({
-    source: track.timeSource === "MANUAL" ? "MANUAL" : "GPX",
-    start:
-      track.timeSource === "MANUAL"
-        ? (track.recordingStartAt?.toISOString() ?? null)
-        : (track.parsed?.summary.time?.start ?? null),
-    finish: track.timeSource === "MANUAL" ? null : (track.parsed?.summary.time?.end ?? null),
-    durationSeconds: track.timeSource === "MANUAL" ? track.recordingDurationSeconds : null,
-    recordingTimezone: track.recordingTimezone,
-  });
+  // feature-139: the header owns the recording time. feature-142: when the
+  // primary geometry is a route, its synthetic GPX has no timed summary, so
+  // the preserved recording start and duration supply the finish.
+  const recordingLine = getPublicTrackRecordingLine(track);
 
   return (
     <PageLayout title={track.title} className="pt-6">

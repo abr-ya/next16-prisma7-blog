@@ -109,9 +109,11 @@ secondaryFiles: Array<{
 }>;
 ```
 
-The public page renders a separate section under the primary file block with one row per secondary file: name, size, upload/update times, and **Download GPX** when `status === ACTIVE` and visibility is `PUBLIC` or `UNLISTED`; otherwise the existing "download is unavailable" wording. The app-owned `/files/[fileId]/download` route stays the only download path, so the server remains the authority and no provider URL is exposed. With the route primary, the existing file block shows the route's private synthetic GPX and its existing unavailable state; the new section names the original recording.
+The public page renders a separate section under the primary file block with one row per secondary file: name, size, upload/update times, and **Download GPX** when the asset is active and either its visibility is `PUBLIC` or `UNLISTED` or the viewer owns it; otherwise the existing "download is unavailable" wording. The owner-aware branch matches the server, which authorizes the owner for a private file; an anonymous visitor or another user stays behind the visibility gate. The app-owned `/files/[fileId]/download` route stays the only download path, so the server remains the authority and no provider URL is exposed. With the route primary, the existing file block shows the route's private synthetic GPX and the same owner-aware state; the new section names the original recording.
 
 Public listings do not select `geometries`, so list payloads and the shared table stay unchanged. The owner table's file cell keeps showing the primary file.
+
+feature-139's header reads the primary geometry's parsed summary. A route-primary track's synthetic GPX has no `<time>` values, so the page falls back to the preserved `recordingStartAt` and `recordingDurationSeconds` and derives the finish; the workout tables already use the same chain. The helper lives in `lib/track-effective-values.ts` so the page and tables cannot drift.
 
 ### 6. Cleanup policy: retire on track delete, no per-file actions
 

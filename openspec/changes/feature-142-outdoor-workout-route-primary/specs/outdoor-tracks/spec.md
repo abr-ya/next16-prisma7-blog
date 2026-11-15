@@ -33,6 +33,12 @@ The owner SHALL be able to make an owned route the primary geometry of a publish
 - **THEN** its recording start, duration, timezone, and time source stay as they were
 - **AND** a demoted file keeps its parsed metadata
 
+#### Scenario: Recording window stays visible
+
+- **WHEN** a published file-based workout with a parsed recording start and duration attaches a route
+- **THEN** the public header still shows the recording start and finish
+- **AND** the finish derives from the preserved start and duration when the primary route has no timed summary
+
 #### Scenario: Presentation fields are preserved
 
 - **WHEN** a workout attaches or changes its route
@@ -267,3 +273,31 @@ The system SHALL complete a `PENDING` draft when the owner attaches geometry, mo
 - **WHEN** an owner or administrator tries to set a `PENDING` workout to `PUBLISHED`
 - **THEN** the system refuses the change
 - **AND** the workout stays `DRAFT` and `PENDING`
+
+### Requirement: Public track GPX downloads respect file visibility
+
+The system SHALL expose GPX download links on public track pages only when the linked GPX file asset is active and either public-download eligible or owned by the current viewer. Every link SHALL go through an app-owned file route and SHALL NOT expose the provider URL.
+
+#### Scenario: Published track has public GPX file
+
+- **WHEN** a published track references an active GPX file asset with `PUBLIC` or `UNLISTED` visibility
+- **THEN** the public track detail page shows a GPX download link through an app-owned file route
+- **AND** it does not link directly to the provider URL
+
+#### Scenario: Owner views a private GPX file
+
+- **WHEN** the track owner opens a published track whose active GPX file asset has `PRIVATE` visibility
+- **THEN** the page shows a GPX download link through the app-owned file route
+- **AND** the server still authorizes the request as the file owner
+
+#### Scenario: Published track has private GPX file
+
+- **WHEN** an anonymous visitor or a non-owner user opens a published track whose active GPX file asset has `PRIVATE` visibility
+- **THEN** the page shows that the GPX download is unavailable
+- **AND** it does not expose a download link or provider URL
+
+#### Scenario: Published track has inactive GPX file
+
+- **WHEN** a published track references a GPX file asset that is not active
+- **THEN** the public track detail page shows that the GPX download is unavailable
+- **AND** it does not expose a download link or provider URL

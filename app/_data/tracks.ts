@@ -213,6 +213,7 @@ type PublicTrackRecord = Prisma.TrackGetPayload<{
         status: true;
         visibility: true;
         purpose: true;
+        ownerUserId: true;
         uploadedAt: true;
         updatedAt: true;
       };
@@ -229,6 +230,7 @@ type PublicTrackRecord = Prisma.TrackGetPayload<{
             status: true;
             visibility: true;
             purpose: true;
+            ownerUserId: true;
             uploadedAt: true;
             updatedAt: true;
           };
@@ -655,6 +657,7 @@ const publicTrackFileAssetSelect = {
   status: true,
   visibility: true,
   purpose: true,
+  ownerUserId: true,
   uploadedAt: true,
   updatedAt: true,
 } satisfies Prisma.FileAssetSelect;
@@ -737,9 +740,15 @@ type PublicTrackDetailRecord = PublicTrackRecord & {
 
 const toPublicTrackFile = (
   fileAsset: Prisma.FileAssetGetPayload<{ select: typeof publicTrackFileAssetSelect }>,
+  viewerId?: string | null,
 ): PublicTrackFile => {
+  // feature-142: the owner may download their own file even when it is
+  // private; the app-owned download route authorizes the owner. Every other
+  // viewer keeps the existing visibility rule.
   const downloadAvailable =
-    fileAsset.status === ACTIVE_FILE_STATUS && PUBLIC_DOWNLOAD_VISIBILITIES.has(fileAsset.visibility);
+    fileAsset.status === ACTIVE_FILE_STATUS &&
+    (PUBLIC_DOWNLOAD_VISIBILITIES.has(fileAsset.visibility) ||
+      (viewerId != null && fileAsset.ownerUserId === viewerId));
 
   return {
     id: fileAsset.id,
@@ -807,8 +816,8 @@ const toPublicTrack = (
     // owner may attach a route (file-based) or replace it (route-based).
     canManageRoute: Boolean(viewerId && viewerId === track.userId),
     hasPrimaryRoute: Boolean(track.routeId),
-    file: toPublicTrackFile(fileAsset),
-    secondaryFiles: secondaryRows.map((row) => toPublicTrackFile(row.fileAsset)),
+    file: toPublicTrackFile(fileAsset, viewerId),
+    secondaryFiles: secondaryRows.map((row) => toPublicTrackFile(row.fileAsset, viewerId)),
     parsed:
       parsedState.status === "SUCCESS"
         ? {
