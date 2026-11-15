@@ -122,7 +122,7 @@ When the owner creates a new route while attaching it to a file-based workout, t
 
 ### Requirement: Public track page lists secondary files under the primary file's download rules
 
-The public detail page of a published workout SHALL list each track-owned secondary file by name, size, and upload/update time. It SHALL expose a download link through an app-owned file route only when the file asset is active and has public or unlisted visibility. It SHALL NOT expose a provider URL. A track with no secondary files SHALL render no secondary-file section, and public listings SHALL NOT carry secondary files.
+The public detail page of a published workout SHALL list each track-owned secondary file by name, size, and upload/update time. It SHALL expose a download link through an app-owned file route only when the file asset is active and either has public or unlisted visibility or is owned by the current viewer. It SHALL NOT expose a provider URL. A track with no secondary files SHALL render no secondary-file section, and public listings SHALL NOT carry secondary files.
 
 #### Scenario: Secondary file is publicly downloadable
 
@@ -130,9 +130,15 @@ The public detail page of a published workout SHALL list each track-owned second
 - **THEN** its detail page shows the file with a download link through the app-owned file route
 - **AND** it does not link directly to the provider URL
 
+#### Scenario: Owner views a private secondary file
+
+- **WHEN** the owner opens a published workout whose active secondary file asset has `PRIVATE` visibility
+- **THEN** the page shows the file with a download link through the app-owned file route
+- **AND** the server authorizes the request as the file owner
+
 #### Scenario: Secondary file is not downloadable
 
-- **WHEN** a secondary file asset is private or inactive
+- **WHEN** an anonymous visitor or a non-owner user opens a published workout whose secondary file asset is private or inactive
 - **THEN** the detail page reports that its download is unavailable
 - **AND** it exposes no download link or provider URL
 
