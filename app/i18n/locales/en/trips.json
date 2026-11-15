@@ -283,6 +283,25 @@
     "completeError": "Could not complete the draft",
     "ownerOnlyEdit": "Open this draft from My workouts"
   },
+  "attachRoute": {
+    "attachButton": "Attach route",
+    "changeButton": "Change route",
+    "title": "Attach a route",
+    "changeTitle": "Change the route",
+    "description": "Choose an existing route or place a new one. The route becomes the public map, distance, and point count; the current GPX stays available as the original recording.",
+    "selectLabel": "Route",
+    "selectPlaceholder": "Choose a route",
+    "empty": "You have no routes yet.",
+    "emptyLink": "Open My routes",
+    "createNew": "Create a new route",
+    "referenceLabel": "Current track",
+    "confirmAttachTitle": "Use this route for the public map?",
+    "confirmChangeTitle": "Replace the current route?",
+    "confirmDescription": "The map, distance, and point count will come from the route. The current file stays available as the original recording.",
+    "confirmChangeDescription": "The map, distance, and point count will come from the new route. Any original recording stays available.",
+    "attachedToast": "Route attached",
+    "changedToast": "Route changed"
+  },
   "discardGuard": {
     "titleWithFile": "Discard track and uploaded GPX?",
     "titleWithPoints": "Discard placed points?",

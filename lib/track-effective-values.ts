@@ -1,6 +1,6 @@
-import type { TrackListItem } from "@/app/_data/tracks";
+import type { PublicTrack, TrackListItem } from "@/app/_data/tracks";
 import { resolveTrackGeometry } from "@/lib/track-geometry";
-import { getTrackGpxMetadataState } from "@/lib/track-gpx-metadata";
+import { formatTrackRecordingLine, getTrackGpxMetadataState } from "@/lib/track-gpx-metadata";
 
 /**
  * feature-135: the effective start, distance and duration the workout table
@@ -60,4 +60,32 @@ export const getEffectiveTrackFinish = (track: TrackListItem): string | undefine
   if (!Number.isFinite(startTime)) return undefined;
 
   return new Date(startTime + duration * 1000).toISOString();
+};
+
+/**
+ * feature-142: the public header's recording line. The primary geometry's
+ * parsed summary wins; a route-primary track has no timed summary of its own,
+ * so the preserved start and duration of the original recording fill the gap.
+ * This keeps the same fallback chain the workout tables already use.
+ */
+export const getPublicTrackRecordingLine = (track: PublicTrack) => {
+  const parsedTime = track.parsed?.summary.time ?? null;
+  const storedStart = track.recordingStartAt?.toISOString() ?? null;
+  const storedDuration = track.recordingDurationSeconds;
+  const isManual = track.timeSource === "MANUAL";
+  const start = isManual ? storedStart : (parsedTime?.start ?? storedStart);
+  const startTime = start ? Date.parse(start) : Number.NaN;
+  const derivedFinish =
+    Number.isFinite(startTime) && typeof storedDuration === "number" && storedDuration > 0
+      ? new Date(startTime + storedDuration * 1000).toISOString()
+      : null;
+  const finish = isManual ? null : (parsedTime?.end ?? derivedFinish);
+
+  return formatTrackRecordingLine({
+    source: isManual ? "MANUAL" : "GPX",
+    start,
+    finish,
+    durationSeconds: isManual ? storedDuration : null,
+    recordingTimezone: track.recordingTimezone,
+  });
 };

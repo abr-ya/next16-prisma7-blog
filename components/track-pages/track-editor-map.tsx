@@ -95,6 +95,8 @@ export const TrackEditorMap = ({
   onSelectPoint,
   selectedIndex,
   ariaLabel,
+  backgroundPoints = [],
+  backgroundLabel,
 }: {
   points: TrackEditorMapPoint[];
   onAddPoint: (point: TrackEditorMapPoint) => void;
@@ -102,12 +104,22 @@ export const TrackEditorMap = ({
   onSelectPoint: (index: number) => void;
   selectedIndex: number | null;
   ariaLabel: string;
+  /** feature-142: non-interactive geometry drawn under the placed points. */
+  backgroundPoints?: TrackEditorMapPoint[];
+  backgroundLabel?: string;
 }) => {
   const { t } = useT(tripsNamespace);
   const positions = points.map(toLatLng);
+  const backgroundPositions = backgroundPoints.map(toLatLng);
   const hasExtent = points.length >= 2;
-  const bounds = hasExtent ? toBoundsFromPoints(points) : undefined;
-  const firstPoint = points[0];
+  // feature-142: when the owner starts a new route from an existing track,
+  // open on that track so the reference is visible before the first point.
+  const bounds = hasExtent
+    ? toBoundsFromPoints(points)
+    : backgroundPositions.length >= 2
+      ? toBoundsFromPoints(backgroundPoints)
+      : undefined;
+  const firstPoint = points[0] ?? backgroundPoints[0];
 
   return (
     <div className="relative h-125 min-h-125 overflow-hidden rounded-md border bg-muted sm:h-150 sm:min-h-150">
@@ -125,7 +137,19 @@ export const TrackEditorMap = ({
         />
         <FitTrackMapBounds tracks={[]} />
         <LocateButton />
+        {backgroundLabel && backgroundPositions.length >= 2 ? (
+          <div className="pointer-events-none absolute top-2 left-2 z-1000 rounded-md border bg-background/90 px-2 py-1 text-xs text-muted-foreground shadow-sm">
+            {backgroundLabel}
+          </div>
+        ) : null}
         <ClickToAdd onAddPoint={onAddPoint} />
+        {backgroundPositions.length >= 2 ? (
+          <Polyline
+            pathOptions={{ color: "#94a3b8", weight: 2, dashArray: "4 6" }}
+            positions={backgroundPositions}
+            interactive={false}
+          />
+        ) : null}
         {positions.length >= 2 ? (
           <Polyline pathOptions={{ color: TRACK_LINE_COLORS[0], weight: 4, dashArray: "6 6" }} positions={positions} />
         ) : null}
