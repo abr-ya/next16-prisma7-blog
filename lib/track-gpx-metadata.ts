@@ -223,6 +223,9 @@ export type TrackMapViewModel = {
   bounds: TrackGpxBounds;
   geometry: TrackGpxCoordinate[];
   dayKeys?: string[];
+  // feature-150: a dual-map line that carries its role. Undefined keeps the
+  // existing rotating palette and single-line behavior for every other map.
+  style?: "primary" | "secondary";
 };
 
 export const toTrackMapViewModel = (
