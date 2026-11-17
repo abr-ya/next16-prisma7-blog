@@ -10,6 +10,20 @@ export const QUICK_WORKOUT_DAYPARTS = ["night", "morning", "day", "evening"] as 
 
 export type QuickWorkoutDaypart = (typeof QUICK_WORKOUT_DAYPARTS)[number];
 
+/**
+ * The activity types whose quick upload offers the route mode — the ones that
+ * create a workout from a route the owner already has instead of a GPX file.
+ *
+ * feature-151: the dialog and the server both read this one list, so the
+ * button and the server refusal cannot drift. A new type ships its own
+ * `quickWorkout.activities.<key>.routeMode.*` wording entries with its place
+ * in this list; the generic route-mode copy is only the fallback.
+ */
+export const QUICK_ROUTE_WORKOUT_ACTIVITY_KEYS = ["walking", "running"] as const;
+
+export const supportsQuickRouteWorkout = (activityTypeKey: string) =>
+  (QUICK_ROUTE_WORKOUT_ACTIVITY_KEYS as readonly string[]).includes(activityTypeKey);
+
 export type QuickWorkoutLocalTime = {
   year: number;
   /** 1–12. */

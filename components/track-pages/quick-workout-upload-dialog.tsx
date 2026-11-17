@@ -36,7 +36,12 @@ import { Label } from "@/components/ui/label";
 import { TrackGearSelect, type TrackGearOption } from "@/components/track-pages/track-gear-select";
 import { TrackGpxUploadSection } from "@/components/track-pages/track-gpx-upload-section";
 import { gearFitsActivityType } from "@/lib/gear";
-import { buildQuickWorkoutSlugBase, capitalizeQuickWorkoutNoun, getQuickWorkoutDaypart } from "@/lib/quick-workout";
+import {
+  buildQuickWorkoutSlugBase,
+  capitalizeQuickWorkoutNoun,
+  getQuickWorkoutDaypart,
+  supportsQuickRouteWorkout,
+} from "@/lib/quick-workout";
 import { formatManualTrackStartAt } from "@/lib/track-duration-input";
 import { formatTrackDistance, formatTrackDuration, formatTrackRecordingDateTime } from "@/lib/track-gpx-metadata";
 import { parseTrackGpxPreview, type TrackGpxPreview } from "@/lib/track-gpx-parser";
@@ -182,10 +187,22 @@ export const QuickWorkoutUploadDialog = ({
     ? t(`${wordingPrefix}.noun`)
     : capitalizeQuickWorkoutNoun(activityType.key);
 
-  // feature-140: the route mode belongs to walking — the workout it creates
-  // is a walking workout, and the server refuses the route save for any
-  // other activity type. Another type gets the file mode alone.
-  const isWalking = activityType.key === "walking";
+  // feature-151: the route mode serves the route-capable activity types —
+  // walking and running. The server reads the same list, so the action is
+  // never offered for a type it would refuse. Another type gets the file
+  // mode alone.
+  const supportsRouteMode = supportsQuickRouteWorkout(activityType.key);
+
+  // feature-151: the route-mode copy that names the activity type comes from
+  // the same per-activity block the quick-add labels use, so a run never
+  // reads as a walk. A route-capable type without its own entries falls back
+  // to the generic copy.
+  const routeModeTitle = i18n.exists(`${wordingPrefix}.routeMode.title`, { ns: tripsNamespace })
+    ? t(`${wordingPrefix}.routeMode.title`)
+    : t("quickWorkout.routeMode.title");
+  const routeModeGearEmpty = i18n.exists(`${wordingPrefix}.routeMode.gearEmpty`, { ns: tripsNamespace })
+    ? t(`${wordingPrefix}.routeMode.gearEmpty`)
+    : t("quickWorkout.routeMode.gearEmpty");
 
   // feature-124: the control names the activity type in the interface
   // language. The wording dictionary owns the grammar of that name — the
@@ -449,9 +466,7 @@ export const QuickWorkoutUploadDialog = ({
       <Dialog open={open} onOpenChange={discardGuard.handleOpenChange}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>
-              {mode === "gpx" ? t(`${wordingPrefix}.addLabel`) : t("quickWorkout.routeMode.title")}
-            </DialogTitle>
+            <DialogTitle>{mode === "gpx" ? t(`${wordingPrefix}.addLabel`) : routeModeTitle}</DialogTitle>
           </DialogHeader>
           {mode === "gpx" ? (
             <Form {...form}>
@@ -545,8 +560,9 @@ export const QuickWorkoutUploadDialog = ({
                   {/* feature-146: the route mode is offered next to Save. It is
                       disabled while a file is uploaded or uploading — the two
                       are alternatives.
-                      feature-140: it is offered for walking only. */}
-                  {isWalking ? (
+                      feature-151: it is offered for the route-capable activity
+                      types, which the server reads from the same list. */}
+                  {supportsRouteMode ? (
                     <Button
                       type="button"
                       variant="outline"
@@ -560,7 +576,7 @@ export const QuickWorkoutUploadDialog = ({
                     {isSaving ? t("quickWorkout.saving") : t("quickWorkout.save")}
                   </Button>
                 </DialogFooter>
-                {isWalking && (isUploading || fileAssetId) ? (
+                {supportsRouteMode && (isUploading || fileAssetId) ? (
                   <p className="text-muted-foreground text-sm">{t("quickWorkout.routeMode.sourceHint")}</p>
                 ) : null}
               </form>
@@ -656,7 +672,7 @@ export const QuickWorkoutUploadDialog = ({
                         )}
                       />
                     ) : ownerGear.length > 0 ? (
-                      <p className="text-muted-foreground text-sm">{t("quickWorkout.routeMode.gearEmpty")}</p>
+                      <p className="text-muted-foreground text-sm">{routeModeGearEmpty}</p>
                     ) : null}
                   </>
                 )}
