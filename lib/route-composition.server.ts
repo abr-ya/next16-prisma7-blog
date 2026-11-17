@@ -5,7 +5,9 @@ import type { RouteSegmentRole } from "@/generated/prisma/enums";
 import { validateGpxString } from "@/lib/gpx-validation";
 import prisma from "@/lib/prisma";
 import {
+  AUTHORABLE_ROUTE_SEGMENT_ROLE,
   buildRouteCompositionPoints,
+  validateRouteCompositionMeaning,
   validateRouteCompositionSegments,
   type RouteCompositionPoint,
   type RouteCompositionSegmentInput,
@@ -25,9 +27,16 @@ import { uploadSyntheticTrackGpx } from "@/lib/uploadthing/server-gpx";
 // core to propagate a child edit. Nothing here is reachable from a browser,
 // so an internal `userId` parameter cannot be spoofed the way a server
 // action's argument could.
+//
+// feature-153: the create path shares the preparation and the materialization
+// with the replace path, so a recipe cannot be stored one way and built
+// another. The preparation knows nothing about a parent; the checks that do —
+// the parent cannot be its own segment, the shared confirmation — stay with
+// the caller.
 
 const ACTIVE_FILE_STATUS = "ACTIVE";
 const TRACK_GPX_MIME_TYPE = "application/gpx+xml";
+const MAX_COMPOSITION_TITLE_LENGTH = 120;
 
 export type SaveRouteCompositionResult =
   | { ok: true; routeId: string; pointCount: number }
@@ -42,16 +51,24 @@ export type RebuildRouteCompositionResult =
   | { ok: true; pointCount: number }
   | { ok: false; code: "NOT_FOUND" | "VALIDATION" | "INTERNAL"; message: string };
 
+export type CreateRouteCompositionResult =
+  | { ok: true; routeId: string; pointCount: number }
+  | { ok: false; code: "VALIDATION" | "INTERNAL"; message: string };
+
 export type RouteCompositionPropagationResult = {
   rebuilt: number;
   failed: number;
 };
 
-type StoredSegment = {
+/** A segment as it is written to the database. */
+type CompositionSegmentRow = {
   childRouteId: string;
   role: RouteSegmentRole;
   sortOrder: number;
   lapCount: number;
+};
+
+type StoredSegment = CompositionSegmentRow & {
   childRoute: { fileAsset: { url: string } };
 };
 
@@ -76,21 +93,118 @@ const planPoints = async (segments: StoredSegment[]) => {
 };
 
 /**
- * Build the parent's synthetic GPX from the planned points, upload it, and
- * repoint the parent inside one transaction. The composition rows are written
- * in the same transaction when a full recipe is supplied; a rebuild only
- * clears the stale marker.
+ * The shared preparation of a recipe: validate its shape, load the children
+ * with the owner scope, refuse a foreign or nested child, read the children's
+ * full points and plan the concatenated geometry.
+ *
+ * The step knows nothing about a parent, so the create path can run it before
+ * the parent route exists. The parent-dependent checks stay with the caller:
+ * the parent cannot be its own segment, and a parent used by several tracks
+ * needs the shared confirmation.
  */
-const materializeRoute = async ({
-  parent,
-  points,
+const prepareComposition = async ({
+  userId,
   segments,
 }: {
-  parent: { id: string; title: string; fileAssetId: string; userId: string };
+  userId: string;
+  segments: RouteCompositionSegmentInput[];
+}): Promise<
+  | { ok: true; prepared: { segments: CompositionSegmentRow[]; points: RouteCompositionPoint[] } }
+  | { ok: false; message: string }
+> => {
+  const shapeIssue = validateRouteCompositionSegments(segments);
+
+  if (shapeIssue) {
+    return { ok: false, message: shapeIssue.message };
+  }
+
+  const meaningIssue = validateRouteCompositionMeaning(segments);
+
+  if (meaningIssue) {
+    return { ok: false, message: meaningIssue.message };
+  }
+
+  const ordered = normalizeSegments(segments);
+  const childIds = [...new Set(ordered.map((segment) => segment.childRouteId))];
+
+  const children = (await prisma.route.findMany({
+    where: { id: { in: childIds }, userId },
+    select: {
+      id: true,
+      composition: { select: { id: true } },
+      fileAsset: { select: { url: true } },
+    },
+  })) as Array<{
+    id: string;
+    composition: { id: string } | null;
+    fileAsset: { url: string };
+  }>;
+
+  if (children.length !== childIds.length) {
+    return { ok: false, message: "One of the selected routes is not available" };
+  }
+
+  if (children.some((child) => child.composition)) {
+    return { ok: false, message: "A route that is already a composition cannot be a segment" };
+  }
+
+  const childrenById = new Map(children.map((child) => [child.id, child]));
+
+  const storedSegments: StoredSegment[] = ordered.map((segment) => {
+    const child = childrenById.get(segment.childRouteId);
+
+    if (!child) {
+      // The length check above already refused a missing child; this is the
+      // backstop that keeps a broken lookup from reading an empty file url.
+      throw new Error("A selected route is not available");
+    }
+
+    return {
+      childRouteId: segment.childRouteId,
+      role: AUTHORABLE_ROUTE_SEGMENT_ROLE,
+      sortOrder: segment.sortOrder,
+      lapCount: segment.lapCount,
+      childRoute: { fileAsset: { url: child.fileAsset.url } },
+    };
+  });
+
+  const plan = await planPoints(storedSegments);
+
+  if (!plan.ok) {
+    return { ok: false, message: plan.issue.message };
+  }
+
+  return {
+    ok: true,
+    prepared: {
+      segments: storedSegments.map((segment) => ({
+        childRouteId: segment.childRouteId,
+        role: segment.role,
+        sortOrder: segment.sortOrder,
+        lapCount: segment.lapCount,
+      })),
+      points: plan.points,
+    },
+  };
+};
+
+/**
+ * Build the parent's synthetic GPX from the planned points and upload it.
+ *
+ * The upload happens before the transaction, the way `createRouteFromPoints`
+ * and `updateRoute` do it: a failed transaction leaves the uploaded object
+ * behind, which the file cleanup job picks up later.
+ */
+const buildAndUploadCompositionFile = async ({
+  title,
+  userId,
+  points,
+}: {
+  title: string;
+  userId: string;
   points: RouteCompositionPoint[];
-  segments?: Array<RouteCompositionSegmentInput & { role: RouteSegmentRole }>;
 }) => {
-  const gpxBytes = buildSyntheticGpxBytes(parent.title, points);
+  const gpxBytes = buildSyntheticGpxBytes(title, points);
   const gpxValidation = validateGpxString(gpxBytes);
 
   if (!gpxValidation.ok) {
@@ -99,11 +213,45 @@ const materializeRoute = async ({
 
   const uploadResult = await uploadSyntheticTrackGpx({
     bytes: gpxBytes,
-    ownerUserId: parent.userId,
-    filename: `${createSlug(parent.title) || "route"}.gpx`,
+    ownerUserId: userId,
+    filename: `${createSlug(title) || "route"}.gpx`,
   });
 
-  await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+  return { gpxBytes, uploadResult };
+};
+
+type MaterializeCompositionInput =
+  | {
+      mode: "create";
+      userId: string;
+      title: string;
+      description?: string | null;
+      points: RouteCompositionPoint[];
+      segments: CompositionSegmentRow[];
+    }
+  | {
+      mode: "existing";
+      parent: { id: string; title: string; fileAssetId: string; userId: string };
+      points: RouteCompositionPoint[];
+      /** Omitted by a rebuild: the stored segments stay as they are. */
+      segments?: CompositionSegmentRow[];
+    };
+
+/**
+ * Materialize a composition's geometry.
+ *
+ * The create branch writes the parent route, its composition and its segments;
+ * the existing branch repoints a parent that is already there and retires the
+ * file it used. Both share the upload, the file row, the parsed metadata and
+ * the revalidation, so a created parent and a replaced one cannot differ in
+ * how they are built.
+ */
+const materializeComposition = async (input: MaterializeCompositionInput): Promise<string> => {
+  const title = input.mode === "create" ? input.title : input.parent.title;
+  const userId = input.mode === "create" ? input.userId : input.parent.userId;
+  const { gpxBytes, uploadResult } = await buildAndUploadCompositionFile({ title, userId, points: input.points });
+
+  const routeId = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     const fileAsset = await tx.fileAsset.create({
       data: {
         provider: "UPLOADTHING",
@@ -116,7 +264,7 @@ const materializeRoute = async ({
         purpose: "TRACK_GPX",
         visibility: "PRIVATE",
         status: ACTIVE_FILE_STATUS,
-        ownerUserId: parent.userId,
+        ownerUserId: userId,
       },
       select: { id: true },
     });
@@ -129,6 +277,38 @@ const materializeRoute = async ({
       fileKey: uploadResult.key,
     });
 
+    if (input.mode === "create") {
+      const created = await tx.route.create({
+        data: {
+          title: input.title,
+          description: input.description?.trim() || null,
+          fileAssetId: fileAsset.id,
+          userId: input.userId,
+          metadata: metadata as Prisma.InputJsonValue,
+        },
+        select: { id: true },
+      });
+
+      const composition = await tx.routeComposition.create({
+        data: { routeId: created.id },
+        select: { id: true },
+      });
+
+      await tx.routeSegment.createMany({
+        data: input.segments.map((segment) => ({
+          compositionId: composition.id,
+          childRouteId: segment.childRouteId,
+          role: segment.role,
+          sortOrder: segment.sortOrder,
+          lapCount: segment.lapCount,
+        })),
+      });
+
+      return created.id;
+    }
+
+    const parent = input.parent;
+
     const composition = await tx.routeComposition.upsert({
       where: { routeId: parent.id },
       create: { routeId: parent.id },
@@ -136,10 +316,10 @@ const materializeRoute = async ({
       select: { id: true },
     });
 
-    if (segments) {
+    if (input.segments) {
       await tx.routeSegment.deleteMany({ where: { compositionId: composition.id } });
       await tx.routeSegment.createMany({
-        data: segments.map((segment) => ({
+        data: input.segments.map((segment) => ({
           compositionId: composition.id,
           childRouteId: segment.childRouteId,
           role: segment.role,
@@ -164,18 +344,33 @@ const materializeRoute = async ({
       where: { id: parent.fileAssetId, status: ACTIVE_FILE_STATUS },
       data: { status: "PENDING_DELETE", deletedAt: new Date() },
     });
+
+    return parent.id;
   });
 
   revalidateRoutePaths();
   revalidateTrackPaths();
 
-  return points.length;
+  return routeId;
+};
+
+const validateCompositionTitle = (title: string) => {
+  const trimmed = title?.trim() ?? "";
+
+  if (!trimmed) {
+    return "Route title is required";
+  }
+
+  if (trimmed.length > MAX_COMPOSITION_TITLE_LENGTH) {
+    return `Title must be ${MAX_COMPOSITION_TITLE_LENGTH} characters or fewer`;
+  }
+
+  return null;
 };
 
 /**
- * Store a recipe on a route and materialize its geometry. No UI calls this
- * yet; `outdoor-route-builder` does. The owner-gated action wrapper lives in
- * `app/_data/route-compositions.ts`.
+ * Store a recipe on a route and materialize its geometry. The builder calls
+ * it to edit a stored composition.
  */
 export const saveRouteCompositionForOwner = async ({
   routeId,
@@ -203,75 +398,40 @@ export const saveRouteCompositionForOwner = async ({
     return { ok: false, code: "NOT_FOUND", message: "Route not found" };
   }
 
-  const shapeIssue = validateRouteCompositionSegments(segments);
-
-  if (shapeIssue) {
-    return { ok: false, code: "VALIDATION", message: shapeIssue.message };
-  }
-
-  const linkedTrackCount = parent._count.tracks;
-
-  if (linkedTrackCount > 1 && !confirmShared) {
-    return {
-      ok: false,
-      code: "SHARED_CONFIRMATION",
-      message: `This route is used by ${linkedTrackCount} tracks. Confirm that the new shape should replace it everywhere.`,
-      linkedTrackCount,
-    };
-  }
-
-  const ordered = normalizeSegments(segments);
-  const childIds = [...new Set(ordered.map((segment) => segment.childRouteId))];
+  const childIds = [...new Set(segments.map((segment) => segment.childRouteId))];
 
   if (childIds.includes(parent.id)) {
     return { ok: false, code: "VALIDATION", message: "A route cannot use itself as a segment" };
   }
 
-  const children = (await prisma.route.findMany({
-    where: { id: { in: childIds }, userId },
-    select: {
-      id: true,
-      composition: { select: { id: true } },
-      fileAsset: { select: { url: true } },
-    },
-  })) as Array<{
-    id: string;
-    composition: { id: string } | null;
-    fileAsset: { url: string };
-  }>;
-
-  if (children.length !== childIds.length) {
-    return { ok: false, code: "VALIDATION", message: "One of the selected routes is not available" };
-  }
-
-  if (children.some((child) => child.composition)) {
-    return { ok: false, code: "VALIDATION", message: "A route that is already a composition cannot be a segment" };
-  }
-
-  const childrenById = new Map(children.map((child) => [child.id, child]));
-
-  const storedSegments: StoredSegment[] = ordered.map((segment) => {
-    const child = childrenById.get(segment.childRouteId);
-
-    return {
-      childRouteId: segment.childRouteId,
-      role: "MAIN",
-      sortOrder: segment.sortOrder,
-      lapCount: segment.lapCount,
-      childRoute: { fileAsset: { url: child?.fileAsset.url ?? "" } },
-    };
-  });
-
+  // The recipe is validated before the shared confirmation: the owner never
+  // confirms a recipe the server is about to refuse.
   try {
-    const plan = await planPoints(storedSegments);
+    const prepared = await prepareComposition({ userId, segments });
 
-    if (!plan.ok) {
-      return { ok: false, code: "VALIDATION", message: plan.issue.message };
+    if (!prepared.ok) {
+      return { ok: false, code: "VALIDATION", message: prepared.message };
     }
 
-    const pointCount = await materializeRoute({ parent, points: plan.points, segments: storedSegments });
+    const linkedTrackCount = parent._count.tracks;
 
-    return { ok: true, routeId: parent.id, pointCount };
+    if (linkedTrackCount > 1 && !confirmShared) {
+      return {
+        ok: false,
+        code: "SHARED_CONFIRMATION",
+        message: `This route is used by ${linkedTrackCount} tracks. Confirm that the new shape should replace it everywhere.`,
+        linkedTrackCount,
+      };
+    }
+
+    await materializeComposition({
+      mode: "existing",
+      parent,
+      points: prepared.prepared.points,
+      segments: prepared.prepared.segments,
+    });
+
+    return { ok: true, routeId: parent.id, pointCount: prepared.prepared.points.length };
   } catch (error) {
     return {
       ok: false,
@@ -282,8 +442,55 @@ export const saveRouteCompositionForOwner = async ({
 };
 
 /**
- * Rebuild a composition from its stored recipe. Used by the future
- * **Rebuild route** action and by child-edit propagation.
+ * Create a parent route from a recipe: the generated geometry, the route, its
+ * composition and its segments in one flow.
+ */
+export const createRouteCompositionForOwner = async ({
+  userId,
+  title,
+  description,
+  segments,
+}: {
+  userId: string;
+  title: string;
+  description?: string | null;
+  segments: RouteCompositionSegmentInput[];
+}): Promise<CreateRouteCompositionResult> => {
+  const titleIssue = validateCompositionTitle(title);
+
+  if (titleIssue) {
+    return { ok: false, code: "VALIDATION", message: titleIssue };
+  }
+
+  try {
+    const prepared = await prepareComposition({ userId, segments });
+
+    if (!prepared.ok) {
+      return { ok: false, code: "VALIDATION", message: prepared.message };
+    }
+
+    const routeId = await materializeComposition({
+      mode: "create",
+      userId,
+      title: title.trim(),
+      description,
+      points: prepared.prepared.points,
+      segments: prepared.prepared.segments,
+    });
+
+    return { ok: true, routeId, pointCount: prepared.prepared.points.length };
+  } catch (error) {
+    return {
+      ok: false,
+      code: "INTERNAL",
+      message: error instanceof Error ? error.message : "Could not create the route composition",
+    };
+  }
+};
+
+/**
+ * Rebuild a composition from its stored recipe. Used by the **Rebuild route**
+ * action and by child-edit propagation.
  */
 export const rebuildRouteCompositionForOwner = async ({
   routeId,
@@ -331,9 +538,9 @@ export const rebuildRouteCompositionForOwner = async ({
       return { ok: false, code: "VALIDATION", message: plan.issue.message };
     }
 
-    const pointCount = await materializeRoute({ parent, points: plan.points });
+    await materializeComposition({ mode: "existing", parent, points: plan.points });
 
-    return { ok: true, pointCount };
+    return { ok: true, pointCount: plan.points.length };
   } catch (error) {
     return {
       ok: false,

@@ -2,6 +2,7 @@
 
 import { InsufficientTrustError, requireTrustGatedAction } from "@/lib/auth-trust-gates.server";
 import {
+  createRouteCompositionForOwner,
   rebuildRouteCompositionForOwner,
   saveRouteCompositionForOwner,
   type RebuildRouteCompositionResult,
@@ -14,6 +15,70 @@ import {
 // rebuild core. The library UI that calls them ships in
 // `outdoor-route-builder`; this slice only makes the recipe storable and
 // rebuildable, and keeps the core unreachable from the browser.
+
+export type CompositeRouteSegmentInput = {
+  childRouteId: string;
+  role?: string;
+  sortOrder: number;
+  lapCount: number;
+};
+
+export type CreateCompositeRouteInput = {
+  title: string;
+  description?: string | null;
+  segments: CompositeRouteSegmentInput[];
+};
+
+export type CreateCompositeRouteResult =
+  | { ok: true; routeId: string; pointCount: number }
+  | { ok: false; code: "TRUST" | "VALIDATION" | "INTERNAL"; message: string };
+
+/**
+ * feature-153: create a composite route from a recipe.
+ *
+ * The action resolves the actor and hands the recipe to the server-only core,
+ * which validates it, generates the geometry and stores the parent route with
+ * its composition. Uploading a generated GPX follows the same trust gate as
+ * creating a plain route.
+ */
+export const createCompositeRoute = async (input: CreateCompositeRouteInput): Promise<CreateCompositeRouteResult> => {
+  try {
+    const actor = await requireTrustGatedAction("track-upload");
+    const title = input.title?.trim() ?? "";
+
+    if (!title) {
+      return { ok: false, code: "VALIDATION", message: "Route title is required" };
+    }
+
+    if (!Array.isArray(input.segments)) {
+      return { ok: false, code: "VALIDATION", message: "A route composition needs at least one segment" };
+    }
+
+    const segments = input.segments.map((segment) => ({
+      childRouteId: segment.childRouteId?.trim() ?? "",
+      role: segment.role?.trim() || "MAIN",
+      sortOrder: segment.sortOrder,
+      lapCount: segment.lapCount,
+    }));
+
+    return await createRouteCompositionForOwner({
+      userId: actor.id,
+      title,
+      description: input.description,
+      segments,
+    });
+  } catch (error) {
+    if (error instanceof InsufficientTrustError) {
+      return { ok: false, code: "TRUST", message: error.message };
+    }
+
+    return {
+      ok: false,
+      code: "INTERNAL",
+      message: error instanceof Error ? error.message : "Could not create the route composition",
+    };
+  }
+};
 
 export type ReplaceRouteCompositionInput = {
   routeId: string;

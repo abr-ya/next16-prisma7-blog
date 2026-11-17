@@ -359,12 +359,25 @@ export const updateRoute = async (input: UpdateRouteInput): Promise<UpdateRouteR
         id: true,
         title: true,
         fileAssetId: true,
+        composition: { select: { id: true } },
         _count: { select: { tracks: true } },
       },
     });
 
     if (!existing) {
       return { ok: false, code: "NOT_FOUND", message: "Route not found" };
+    }
+
+    // feature-153: a composite route's shape comes from its recipe. Placing
+    // points would leave the recipe and the stored geometry disagreeing, so
+    // the rewrite is refused and the builder is the way to change the shape.
+    if (hasPoints && existing.composition) {
+      return {
+        ok: false,
+        code: "VALIDATION",
+        message:
+          "This route's shape comes from a composition. Edit the recipe in the route builder instead of placing points.",
+      };
     }
 
     const linkedTrackCount = existing._count.tracks;

@@ -2,10 +2,15 @@
 //
 // A composition is a recipe — ordered child routes, a role and a lap count —
 // and the parent's geometry is materialized from the children's full points.
-// This module owns the geometry plan only: it takes the validated recipe and
-// the child points, and returns the single point list that becomes the
-// parent's synthetic GPX. Ownership, nesting and storage belong to the data
-// layer, so the plan stays testable without Prisma or upload calls.
+// This module owns the recipe rules and the geometry plan: it validates the
+// shape of a recipe and turns a validated recipe plus the child points into
+// the single point list that becomes the parent's synthetic GPX. Ownership,
+// nesting and storage belong to the data layer, so the plan stays testable
+// without Prisma or upload calls.
+//
+// feature-153: the meaningful-recipe rule is a product rule, so the data layer
+// applies it and the geometry plan does not. A single segment with a single
+// lap still plans; it is the recipe that is refused.
 
 /** A gap larger than this between consecutive segments is refused. */
 export const ROUTE_COMPOSITION_CONTINUITY_TOLERANCE_METERS = 25;
@@ -34,7 +39,15 @@ export type RouteCompositionSegment = RouteCompositionSegmentInput & {
 };
 
 export type RouteCompositionPlanIssue = {
-  code: "NO_SEGMENTS" | "ORDER" | "DUPLICATE_ORDER" | "NON_MAIN_ROLE" | "LAP_COUNT" | "NOT_ENOUGH_POINTS" | "GAP";
+  code:
+    | "NO_SEGMENTS"
+    | "ORDER"
+    | "DUPLICATE_ORDER"
+    | "NON_MAIN_ROLE"
+    | "LAP_COUNT"
+    | "NOT_ENOUGH_POINTS"
+    | "NOT_MEANINGFUL"
+    | "GAP";
   message: string;
 };
 
@@ -92,6 +105,27 @@ export const validateRouteCompositionSegments = (
   }
 
   return null;
+};
+
+/**
+ * A recipe has to mean something: two segments, or one segment repeated more
+ * than once. A single segment with a single lap would only copy that route
+ * under a new name, so it is refused.
+ *
+ * This is a product rule rather than a geometry rule, so the data layer
+ * applies it — the geometry plan still materializes a single-segment recipe.
+ */
+export const validateRouteCompositionMeaning = (
+  segments: RouteCompositionSegmentInput[],
+): RouteCompositionPlanIssue | null => {
+  if (segments.length === 0) return null;
+  if (segments.length > 1) return null;
+  if (segments[0].lapCount > 1) return null;
+
+  return {
+    code: "NOT_MEANINGFUL",
+    message: "A route composition needs at least two segments, or one segment repeated more than once",
+  };
 };
 
 /**

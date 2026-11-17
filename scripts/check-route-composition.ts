@@ -7,6 +7,7 @@
  */
 import {
   buildRouteCompositionPoints,
+  validateRouteCompositionMeaning,
   type RouteCompositionSegment,
 } from "../lib/route-composition";
 
@@ -115,10 +116,7 @@ const segment = (
     { lat: 0.002, lng: 0 },
     { lat: 0.002, lng: 0.001 },
   ];
-  const plan = buildRouteCompositionPoints([
-    segment("a", loop, { sortOrder: 0 }),
-    segment("b", far, { sortOrder: 1 }),
-  ]);
+  const plan = buildRouteCompositionPoints([segment("a", loop, { sortOrder: 0 }), segment("b", far, { sortOrder: 1 })]);
 
   expect(
     "a gap beyond the tolerance is refused",
@@ -166,6 +164,32 @@ const segment = (
     !empty.ok && empty.issue.code === "NO_SEGMENTS",
     empty.ok ? "plan unexpectedly succeeded" : empty.issue.message,
   );
+}
+
+// Case 7: the meaningful-recipe rule. It judges a shape-valid recipe only:
+// the empty recipe is the shape check's business, not this one's.
+{
+  const singleLap = validateRouteCompositionMeaning([segment("a", loop)]);
+  expect(
+    "a one-segment single-lap recipe is refused",
+    singleLap?.code === "NOT_MEANINGFUL",
+    singleLap?.message ?? "unexpectedly allowed",
+  );
+
+  const repeatedLoop = validateRouteCompositionMeaning([segment("a", loop, { lapCount: 3 })]);
+  expect("a one-segment repeated loop is meaningful", repeatedLoop === null, repeatedLoop?.message ?? "");
+
+  const twoSegments = validateRouteCompositionMeaning([
+    segment("a", loop, { sortOrder: 0 }),
+    segment("b", loop, { sortOrder: 1 }),
+  ]);
+  expect("a two-segment recipe is meaningful", twoSegments === null, twoSegments?.message ?? "");
+
+  const sameRouteTwice = validateRouteCompositionMeaning([
+    segment("a", loop, { sortOrder: 0 }),
+    segment("a", loop, { sortOrder: 1 }),
+  ]);
+  expect("the same route used twice is meaningful", sameRouteTwice === null, sameRouteTwice?.message ?? "");
 }
 
 if (failures > 0) {
