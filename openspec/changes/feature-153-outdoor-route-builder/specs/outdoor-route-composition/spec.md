@@ -4,7 +4,7 @@
 
 ### Requirement: The owner composes a route from existing routes
 
-The route library SHALL offer a **New composite route** action that opens a builder dialog. The dialog SHALL collect the parent title, an optional description, and an ordered list of segments, each naming an existing plain route and a positive lap count. Saving SHALL create an ordinary parent route whose materialized geometry comes from that recipe. Only routes without a composition SHALL be offered as segments, and the parent SHALL never be offered as its own segment.
+The route library SHALL offer a **New composite route** action that opens a builder dialog. The dialog SHALL collect the parent title, an optional description, and an ordered list of segments, each naming an existing route and a positive lap count. A recipe SHALL be meaningful: at least two segments, or one segment with a lap count above one; a single segment with one lap SHALL be refused. Saving SHALL create an ordinary parent route whose geometry comes from that recipe.
 
 #### Scenario: Owner builds a route from two existing routes
 
@@ -19,11 +19,18 @@ The route library SHALL offer a **New composite route** action that opens a buil
 - **THEN** the generated parent line contains that loop three times
 - **AND** the library shows the segment count and the total lap count
 
-#### Scenario: A composite route is not offered as its own segment
+#### Scenario: One route is enough for a repeated loop
 
-- **WHEN** the owner opens the builder for an existing composite route
-- **THEN** that route is not listed among the selectable children
-- **AND** no route that already has a composition is listed
+- **WHEN** the owner has one route and adds it as a single segment with three laps
+- **THEN** Save is enabled
+- **AND** the parent route is created from that repeated loop
+
+#### Scenario: A one-segment single-lap recipe is refused
+
+- **WHEN** the recipe holds one segment with a lap count of one
+- **THEN** Save stays disabled
+- **AND** the server refuses the recipe with a validation message
+- **AND** no route is created
 
 #### Scenario: An incomplete recipe cannot be saved
 
@@ -37,9 +44,26 @@ The route library SHALL offer a **New composite route** action that opens a buil
 - **THEN** the dialog stays open with the entered recipe
 - **AND** the toast names the measured gap
 
+### Requirement: Only an eligible route can be a segment
+
+Only routes without a composition SHALL be offered as segments, the parent SHALL never be offered as its own segment, and a route marked as an ingredient SHALL stay selectable. The same route MAY be used by more than one segment; only the segment order has to be unique.
+
+#### Scenario: A composite route is not offered as its own segment
+
+- **WHEN** the owner opens the builder for an existing composite route
+- **THEN** that route is not listed among the selectable children
+- **AND** no route that already has a composition is listed
+- **AND** a route marked as an ingredient is still listed
+
+#### Scenario: The same route may be used twice
+
+- **WHEN** the owner adds the same route as two segments
+- **THEN** both segments are stored in that order
+- **AND** the generated line follows the stored order
+
 ### Requirement: The owner edits a stored recipe
 
-The library SHALL let the owner reopen a composite route in the builder, change the order, remove or add segments, and change lap counts. Saving SHALL keep the same parent route and rebuild its geometry. A parent used by more than one track SHALL require the shared-route confirmation before the rebuild.
+The library SHALL let the owner reopen a composite route in the builder, change the order, remove or add segments, and change lap counts. Saving SHALL keep the same parent route and rebuild its geometry. A parent used by more than one track SHALL require the shared-route confirmation before the rebuild, and that confirmation SHALL be asked only after the recipe itself has been validated.
 
 #### Scenario: Reordering segments changes the shape
 
@@ -54,6 +78,13 @@ The library SHALL let the owner reopen a composite route in the builder, change 
 - **THEN** the dialog requires the shared confirmation before saving
 - **AND** a cancelled confirmation leaves the recipe and the geometry unchanged
 
+#### Scenario: An invalid recipe is refused before the shared confirmation
+
+- **WHEN** the parent route is shared and the recipe does not meet
+- **THEN** the refusal names the gap
+- **AND** no confirmation is asked
+- **AND** the geometry stays unchanged
+
 #### Scenario: Editing a child rebuilds the parent
 
 - **WHEN** the owner changes the geometry of a route used as a segment
@@ -62,7 +93,7 @@ The library SHALL let the owner reopen a composite route in the builder, change 
 
 ### Requirement: The library shows composition state and rebuilds a stale parent
 
-The route library SHALL show a composition badge with the segment count and the total lap count, SHALL mark a composition whose last rebuild failed as stale, and SHALL offer a rebuild action for a stale composition. A successful rebuild SHALL clear the stale marker.
+The route library SHALL show a composition badge with the segment count and the total lap count, SHALL mark a composition whose last rebuild failed as stale, and SHALL offer a rebuild action for a stale composition. A successful rebuild SHALL clear the stale marker, and a refused rebuild SHALL leave the stale marker in place.
 
 #### Scenario: A composite route carries a composition badge
 
@@ -81,6 +112,12 @@ The route library SHALL show a composition badge with the segment count and the 
 - **WHEN** the owner triggers the rebuild action and it succeeds
 - **THEN** the stale marker disappears
 - **AND** the parent serves its regenerated geometry
+
+#### Scenario: A refused rebuild keeps the marker
+
+- **WHEN** the owner triggers the rebuild action and the server refuses it
+- **THEN** the stale marker stays
+- **AND** the reason is reported to the owner
 
 ### Requirement: A composite route's geometry comes from its recipe
 
@@ -103,3 +140,19 @@ The library SHALL NOT offer geometry editing by placed points for a composite ro
 - **WHEN** the owner edits the title or the description of a composite route
 - **THEN** the change is stored
 - **AND** the composition is untouched
+
+### Requirement: A created composite route is a complete route
+
+Creating a composite route SHALL refuse a parent title that is empty or longer than the route form allows, and the created parent SHALL carry the parsed metadata of its generated line.
+
+#### Scenario: An empty title is refused
+
+- **WHEN** a create request arrives without a title
+- **THEN** the system refuses it with a validation message
+- **AND** no route is created
+
+#### Scenario: A created parent is a normal route
+
+- **WHEN** the owner saves a composite route
+- **THEN** the parent route stores its title, description, generated file, and parsed metadata
+- **AND** it appears in the route library with its composition badge
