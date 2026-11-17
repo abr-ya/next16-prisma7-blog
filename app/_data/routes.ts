@@ -1,7 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
-
 import { Prisma } from "@/generated/prisma/client";
 import { InsufficientTrustError, requireTrustGatedAction } from "@/lib/auth-trust-gates.server";
 import { authSession } from "@/lib/auth-utils";
@@ -9,6 +7,8 @@ import { validateGpxString } from "@/lib/gpx-validation";
 import { createSlug } from "@/lib/slug-generator";
 import { buildTrackGpxMetadata, fetchTrackGpxContent } from "@/lib/track-gpx-file";
 import { toTrackMapViewModel, type TrackMapViewModel } from "@/lib/track-gpx-metadata";
+import { revalidateRoutePaths } from "@/lib/route-revalidation";
+import { rebuildRouteCompositionsUsing } from "@/lib/route-composition.server";
 import { revalidateTrackPaths } from "@/lib/track-revalidation";
 import { buildSyntheticGpxBytes } from "@/lib/track-synthetic-gpx";
 import { uploadSyntheticTrackGpx } from "@/lib/uploadthing/server-gpx";
@@ -55,7 +55,7 @@ export type UpdateRouteInput = {
 };
 
 export type UpdateRouteResult =
-  | { ok: true; routeId: string; linkedTrackCount: number }
+  | { ok: true; routeId: string; linkedTrackCount: number; staleCompositionCount?: number }
   | {
       ok: false;
       code: "TRUST" | "VALIDATION" | "NOT_FOUND" | "SHARED_CONFIRMATION" | "INTERNAL";
@@ -65,7 +65,13 @@ export type UpdateRouteResult =
 
 export type DeleteRouteResult =
   | { ok: true; routeId: string }
-  | { ok: false; code: "NOT_FOUND" | "IN_USE" | "INTERNAL"; message: string; linkedTrackCount?: number };
+  | {
+      ok: false;
+      code: "NOT_FOUND" | "IN_USE" | "INTERNAL";
+      message: string;
+      linkedTrackCount?: number;
+      linkedCompositionCount?: number;
+    };
 
 const getRequiredUserId = async () => {
   const session = await authSession();
@@ -73,17 +79,6 @@ const getRequiredUserId = async () => {
   if (!session) throw new Error("Unauthorized: User Id not found");
 
   return session.user.id;
-};
-
-/**
- * feature-128: the surfaces that list the owner's routes. `/my/tracks` and
- * `/my/workouts` carry the track dialog's route picker, so a route rename,
- * geometry change, or deletion has to refresh them too.
- */
-const revalidateRoutePaths = () => {
-  revalidatePath("/my/routes");
-  revalidatePath("/my/tracks");
-  revalidatePath("/my/workouts");
 };
 
 const validatePoints = (points: RoutePoint[]) => {
@@ -461,7 +456,18 @@ export const updateRoute = async (input: UpdateRouteInput): Promise<UpdateRouteR
     revalidateRoutePaths();
     revalidateTrackPaths();
 
-    return { ok: true, routeId: existing.id, linkedTrackCount };
+    // feature-152: a child edit changes every parent composition that uses
+    // this route. The child is already committed, so a failed parent rebuild
+    // keeps its last good geometry and is reported as stale instead of
+    // rolling the child back.
+    const propagation = await rebuildRouteCompositionsUsing({ childRouteId: existing.id, userId });
+
+    return {
+      ok: true,
+      routeId: existing.id,
+      linkedTrackCount,
+      ...(propagation.failed > 0 ? { staleCompositionCount: propagation.failed } : {}),
+    };
   } catch (error) {
     if (error instanceof InsufficientTrustError) {
       return { ok: false, code: "TRUST", message: error.message };
@@ -497,7 +503,7 @@ export const deleteRoute = async (routeId: string): Promise<DeleteRouteResult> =
       select: {
         id: true,
         fileAssetId: true,
-        _count: { select: { tracks: true } },
+        _count: { select: { tracks: true, segmentUsages: true } },
       },
     });
 
@@ -506,6 +512,7 @@ export const deleteRoute = async (routeId: string): Promise<DeleteRouteResult> =
     }
 
     const linkedTrackCount = existing._count.tracks;
+    const linkedCompositionCount = existing._count.segmentUsages;
 
     if (linkedTrackCount > 0) {
       return {
@@ -513,6 +520,17 @@ export const deleteRoute = async (routeId: string): Promise<DeleteRouteResult> =
         code: "IN_USE",
         message: `This route is used by ${linkedTrackCount} track${linkedTrackCount === 1 ? "" : "s"} and cannot be deleted.`,
         linkedTrackCount,
+      };
+    }
+
+    // feature-152: a route used as a segment of a composite route is an
+    // ingredient — deleting it would break the recipe the parent rebuilds from.
+    if (linkedCompositionCount > 0) {
+      return {
+        ok: false,
+        code: "IN_USE",
+        message: `This route is used by ${linkedCompositionCount} route composition${linkedCompositionCount === 1 ? "" : "s"} and cannot be deleted.`,
+        linkedCompositionCount,
       };
     }
 
