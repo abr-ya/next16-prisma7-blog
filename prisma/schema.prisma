@@ -350,6 +350,15 @@ model HikeNote {
   @@index([hikeId, dayKey])
 }
 
+// feature-152: a composite route is materialized from an ordered recipe of
+// child routes. The parent stays an ordinary `Route` with its own generated
+// GPX, so tracks and every public read path keep reading one route.
+enum RouteSegmentRole {
+  START
+  MAIN
+  END
+}
+
 // feature-127: a route owns the reusable geometry of one shape — the GPX
 // file and its parsed metadata — and stores no recording data. A track
 // either owns its own file or reads file and metadata from one route.
@@ -365,8 +374,44 @@ model Route {
   tracks      Track[]
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @default(now()) @updatedAt
+  // feature-152: an ingredient route is hidden from standalone use — it is a
+  // piece of a composition, not something a workout attaches.
+  isPart        Boolean          @default(false)
+  composition   RouteComposition?
+  segmentUsages RouteSegment[]   @relation("RouteSegmentChild")
 
   @@index([userId])
+}
+
+// feature-152: the stored recipe of a materialized composite route. A plain
+// route has no row here. `staleAt` records a child edit whose rebuild failed;
+// readers keep the last good geometry until a rebuild succeeds.
+model RouteComposition {
+  id        String         @id @default(uuid())
+  routeId   String         @unique
+  route     Route          @relation(fields: [routeId], references: [id], onDelete: Cascade)
+  segments  RouteSegment[]
+  staleAt   DateTime?
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @default(now()) @updatedAt
+}
+
+// feature-152: one ordered piece of a composition. Only routes may be used as
+// segments in this slice; `lapCount` repeats a MAIN loop.
+model RouteSegment {
+  id            String           @id @default(uuid())
+  compositionId String
+  composition   RouteComposition @relation(fields: [compositionId], references: [id], onDelete: Cascade)
+  childRouteId  String
+  childRoute    Route            @relation("RouteSegmentChild", fields: [childRouteId], references: [id], onDelete: Restrict)
+  role          RouteSegmentRole
+  sortOrder     Int
+  lapCount      Int              @default(1)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @default(now()) @updatedAt
+
+  @@unique([compositionId, sortOrder])
+  @@index([childRouteId])
 }
 
 // feature-148: a private place the owner starts routes from. The name and the

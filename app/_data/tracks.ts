@@ -1586,11 +1586,21 @@ export const createTrackFromRoute = async (input: CreateTrackFromRouteInput): Pr
 
     const route = await prisma.route.findFirst({
       where: { id: routeId, userId },
-      select: { id: true },
+      select: { id: true, isPart: true },
     });
 
     if (!route) {
       return { ok: false, code: "VALIDATION", message: "Selected route is not available" };
+    }
+
+    // feature-152: an ingredient route belongs to a composition, not to a
+    // workout; the builder hides it, and the server refuses it here.
+    if (route.isPart) {
+      return {
+        ok: false,
+        code: "VALIDATION",
+        message: "This route is part of a composite route and cannot be attached directly",
+      };
     }
 
     const normalizedActivityTypeId = input.activityTypeId?.trim() || null;
@@ -1961,11 +1971,21 @@ export const createQuickRouteWorkout = async (
 
     const route = await prisma.route.findFirst({
       where: { id: routeId, userId },
-      select: { id: true, metadata: true },
+      select: { id: true, metadata: true, isPart: true },
     });
 
     if (!route) {
       return { ok: false, code: "VALIDATION", message: "Selected route is not available" };
+    }
+
+    // feature-152: an ingredient route belongs to a composition, not to a
+    // workout.
+    if (route.isPart) {
+      return {
+        ok: false,
+        code: "VALIDATION",
+        message: "This route is part of a composite route and cannot be attached directly",
+      };
     }
 
     // A route without parsed metadata carries no points, so it cannot become
@@ -2258,11 +2278,21 @@ export const attachRouteToTrack = async (trackId: string, routeId: string): Prom
 
     const route = await prisma.route.findFirst({
       where: { id: normalizedRouteId, userId },
-      select: { id: true },
+      select: { id: true, isPart: true },
     });
 
     if (!route) {
       return { ok: false, code: "VALIDATION", message: "Selected route is not available" };
+    }
+
+    // feature-152: an ingredient route belongs to a composition, not to a
+    // workout.
+    if (route.isPart) {
+      return {
+        ok: false,
+        code: "VALIDATION",
+        message: "This route is part of a composite route and cannot be attached directly",
+      };
     }
 
     if (track.geometryState === "PENDING") {
