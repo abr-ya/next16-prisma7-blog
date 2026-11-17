@@ -6,27 +6,22 @@ import {
   rebuildRouteCompositionForOwner,
   saveRouteCompositionForOwner,
   type RebuildRouteCompositionResult,
+  type RouteCompositionSegmentRequest,
   type SaveRouteCompositionResult,
 } from "@/lib/route-composition.server";
 
 // feature-152: the owner-facing entry points of a composite route.
+// feature-153: the create path joins them, so the library builder can store a
+// brand-new parent from its recipe.
 //
 // These actions resolve the actor and hand the work to the server-only
-// rebuild core. The library UI that calls them ships in
-// `outdoor-route-builder`; this slice only makes the recipe storable and
-// rebuildable, and keeps the core unreachable from the browser.
-
-export type CompositeRouteSegmentInput = {
-  childRouteId: string;
-  role?: string;
-  sortOrder: number;
-  lapCount: number;
-};
+// composition core. The core stays unreachable from the browser, so an
+// internal `userId` cannot be spoofed the way an action argument could.
 
 export type CreateCompositeRouteInput = {
   title: string;
   description?: string | null;
-  segments: CompositeRouteSegmentInput[];
+  segments: RouteCompositionSegmentRequest[];
 };
 
 export type CreateCompositeRouteResult =
@@ -54,18 +49,11 @@ export const createCompositeRoute = async (input: CreateCompositeRouteInput): Pr
       return { ok: false, code: "VALIDATION", message: "A route composition needs at least one segment" };
     }
 
-    const segments = input.segments.map((segment) => ({
-      childRouteId: segment.childRouteId?.trim() ?? "",
-      role: segment.role?.trim() || "MAIN",
-      sortOrder: segment.sortOrder,
-      lapCount: segment.lapCount,
-    }));
-
     return await createRouteCompositionForOwner({
       userId: actor.id,
       title,
       description: input.description,
-      segments,
+      segments: input.segments,
     });
   } catch (error) {
     if (error instanceof InsufficientTrustError) {
@@ -82,12 +70,7 @@ export const createCompositeRoute = async (input: CreateCompositeRouteInput): Pr
 
 export type ReplaceRouteCompositionInput = {
   routeId: string;
-  segments: Array<{
-    childRouteId: string;
-    role?: string;
-    sortOrder: number;
-    lapCount: number;
-  }>;
+  segments: RouteCompositionSegmentRequest[];
   /** Required when the parent route is already used by more than one track. */
   confirmShared?: boolean;
 };
@@ -109,17 +92,10 @@ export const replaceRouteComposition = async (
       return { ok: false, code: "VALIDATION", message: "A route composition needs at least one segment" };
     }
 
-    const segments = input.segments.map((segment) => ({
-      childRouteId: segment.childRouteId?.trim() ?? "",
-      role: segment.role?.trim() || "MAIN",
-      sortOrder: segment.sortOrder,
-      lapCount: segment.lapCount,
-    }));
-
     return await saveRouteCompositionForOwner({
       routeId,
       userId: actor.id,
-      segments,
+      segments: input.segments,
       confirmShared: input.confirmShared,
     });
   } catch (error) {

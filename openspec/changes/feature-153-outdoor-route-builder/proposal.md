@@ -11,6 +11,7 @@ This slice adds the builder UI on `/my/routes`: compose a route from ordered exi
 - Add a **New composite route** action to `/my/routes` that opens a builder dialog.
 - The builder dialog collects the parent title and description, an ordered list of existing plain routes, and a lap count per segment. Segments can be added, removed, and moved up or down. Only one `MAIN` role is offered in this slice, matching the server.
 - A recipe is saved only when it is meaningful: at least two segments, or one segment repeated more than once. One segment with one lap would only duplicate that route, so the server refuses it as well.
+- A route title is bounded by one shared limit of 150 characters. The route form refuses a longer title before the request leaves the browser, and the server refuses it on every creation and rename, so a title can never outgrow the limit the form shows.
 - Add `createCompositeRoute` to the data layer: build the parent from the recipe in one flow — validate the title and the recipe, generate and parse the GPX from the chosen children, create the parent route with its generated file, and store the composition.
 - Reuse the shipped `replaceRouteComposition` for edits and `rebuildRouteComposition` for the **Rebuild** action.
 - Show composition state in the library: a segments badge (`N segments · M laps`), and a **Stale** badge with **Rebuild** when a child edit failed to propagate.
@@ -36,11 +37,13 @@ None.
 ### Modified Capabilities
 
 - `outdoor-route-composition`: adds the owner-facing builder — creating a composite from the library, editing the ordered recipe and laps, the segments and stale badges, and the rebuild action.
+- `outdoor-routes`: bounds the route title and makes the server enforce the same limit the form applies.
 
 ## Impact
 
 - `app/_data/route-compositions.ts` and `lib/route-composition.server.ts` — the create path plus a shared validation/preparation step and a shared materialization reused by create and replace.
-- `app/_data/routes.ts` — `getOwnerRoutes` composition fields and an owner-gated ordered-segment read.
+- `app/_data/routes.ts` — `getOwnerRoutes` composition fields, an owner-gated ordered-segment read, and the server-side route title check.
+- `lib/route-title.ts` and `components/track-pages/route-form-dialog.tsx` — one shared route title limit for the form and the server.
 - `components/track-pages/routes-panel.tsx`, `routes-columns.tsx`, a new `route-composition-dialog.tsx` — the builder and the library state.
 - `app/(public)/my/routes/page.tsx` — pass every owner route to the panel; the eligible children are derived from the composition fields.
 - `openspec/backlog.md` — promote this slice and record the parts follow-up.

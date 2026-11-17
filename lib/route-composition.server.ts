@@ -7,12 +7,12 @@ import prisma from "@/lib/prisma";
 import {
   AUTHORABLE_ROUTE_SEGMENT_ROLE,
   buildRouteCompositionPoints,
-  validateRouteCompositionMeaning,
-  validateRouteCompositionSegments,
+  validateRouteCompositionRecipe,
   type RouteCompositionPoint,
   type RouteCompositionSegmentInput,
 } from "@/lib/route-composition";
 import { revalidateRoutePaths } from "@/lib/route-revalidation";
+import { validateRouteTitle } from "@/lib/route-title";
 import { createSlug } from "@/lib/slug-generator";
 import { buildTrackGpxMetadata, fetchTrackGpxContent } from "@/lib/track-gpx-file";
 import { parseGpxEditablePoints } from "@/lib/track-gpx-parser";
@@ -36,7 +36,6 @@ import { uploadSyntheticTrackGpx } from "@/lib/uploadthing/server-gpx";
 
 const ACTIVE_FILE_STATUS = "ACTIVE";
 const TRACK_GPX_MIME_TYPE = "application/gpx+xml";
-const MAX_COMPOSITION_TITLE_LENGTH = 120;
 
 export type SaveRouteCompositionResult =
   | { ok: true; routeId: string; pointCount: number }
@@ -60,6 +59,18 @@ export type RouteCompositionPropagationResult = {
   failed: number;
 };
 
+/**
+ * The raw segment a caller may hand over. The ids and the role may be
+ * missing: the core normalizes them, so no caller can smuggle a padded id
+ * past a check that compares it with a route id.
+ */
+export type RouteCompositionSegmentRequest = {
+  childRouteId?: string | null;
+  role?: string | null;
+  sortOrder: number;
+  lapCount: number;
+};
+
 /** A segment as it is written to the database. */
 type CompositionSegmentRow = {
   childRouteId: string;
@@ -69,8 +80,25 @@ type CompositionSegmentRow = {
 };
 
 type StoredSegment = CompositionSegmentRow & {
+  title: string;
   childRoute: { fileAsset: { url: string } };
 };
+
+/** A child route whose GPX file could not be read from storage. */
+class UnreadableChildRouteError extends Error {
+  constructor(readonly routeTitle: string) {
+    super(`"${routeTitle}" could not be read from storage`);
+    this.name = "UnreadableChildRouteError";
+  }
+}
+
+const normalizeSegmentInputs = (segments: RouteCompositionSegmentRequest[]): RouteCompositionSegmentInput[] =>
+  segments.map((segment) => ({
+    childRouteId: segment.childRouteId?.trim() ?? "",
+    role: segment.role?.trim() || AUTHORABLE_ROUTE_SEGMENT_ROLE,
+    sortOrder: segment.sortOrder,
+    lapCount: segment.lapCount,
+  }));
 
 const normalizeSegments = (segments: RouteCompositionSegmentInput[]) =>
   [...segments].sort((first, second) => first.sortOrder - second.sortOrder);
@@ -85,7 +113,14 @@ const planPoints = async (segments: StoredSegment[]) => {
   const withPoints: Array<StoredSegment & { points: RouteCompositionPoint[] }> = [];
 
   for (const segment of segments) {
-    const points = await readChildPoints(segment.childRoute.fileAsset.url);
+    let points: RouteCompositionPoint[];
+
+    try {
+      points = await readChildPoints(segment.childRoute.fileAsset.url);
+    } catch {
+      throw new UnreadableChildRouteError(segment.title);
+    }
+
     withPoints.push({ ...segment, points });
   }
 
@@ -93,14 +128,14 @@ const planPoints = async (segments: StoredSegment[]) => {
 };
 
 /**
- * The shared preparation of a recipe: validate its shape, load the children
- * with the owner scope, refuse a foreign or nested child, read the children's
- * full points and plan the concatenated geometry.
+ * The heavy preparation of a recipe: load the children with the owner scope,
+ * refuse a foreign or nested child, read the children's full points and plan
+ * the concatenated geometry.
  *
  * The step knows nothing about a parent, so the create path can run it before
- * the parent route exists. The parent-dependent checks stay with the caller:
- * the parent cannot be its own segment, and a parent used by several tracks
- * needs the shared confirmation.
+ * the parent route exists. It runs after the cheap recipe checks and after
+ * the shared confirmation, so the children are read once per save and not
+ * once per refusal.
  */
 const prepareComposition = async ({
   userId,
@@ -112,18 +147,6 @@ const prepareComposition = async ({
   | { ok: true; prepared: { segments: CompositionSegmentRow[]; points: RouteCompositionPoint[] } }
   | { ok: false; message: string }
 > => {
-  const shapeIssue = validateRouteCompositionSegments(segments);
-
-  if (shapeIssue) {
-    return { ok: false, message: shapeIssue.message };
-  }
-
-  const meaningIssue = validateRouteCompositionMeaning(segments);
-
-  if (meaningIssue) {
-    return { ok: false, message: meaningIssue.message };
-  }
-
   const ordered = normalizeSegments(segments);
   const childIds = [...new Set(ordered.map((segment) => segment.childRouteId))];
 
@@ -131,11 +154,13 @@ const prepareComposition = async ({
     where: { id: { in: childIds }, userId },
     select: {
       id: true,
+      title: true,
       composition: { select: { id: true } },
       fileAsset: { select: { url: true } },
     },
   })) as Array<{
     id: string;
+    title: string;
     composition: { id: string } | null;
     fileAsset: { url: string };
   }>;
@@ -161,6 +186,7 @@ const prepareComposition = async ({
 
     return {
       childRouteId: segment.childRouteId,
+      title: child.title,
       role: AUTHORABLE_ROUTE_SEGMENT_ROLE,
       sortOrder: segment.sortOrder,
       lapCount: segment.lapCount,
@@ -168,7 +194,19 @@ const prepareComposition = async ({
     };
   });
 
-  const plan = await planPoints(storedSegments);
+  let plan: Awaited<ReturnType<typeof planPoints>>;
+
+  try {
+    plan = await planPoints(storedSegments);
+  } catch (error) {
+    // A child whose file cannot be read makes this recipe unusable, which the
+    // owner can act on — it is a refusal of the recipe, not a server fault.
+    if (error instanceof UnreadableChildRouteError) {
+      return { ok: false, message: error.message };
+    }
+
+    throw error;
+  }
 
   if (!plan.ok) {
     return { ok: false, message: plan.issue.message };
@@ -354,23 +392,14 @@ const materializeComposition = async (input: MaterializeCompositionInput): Promi
   return routeId;
 };
 
-const validateCompositionTitle = (title: string) => {
-  const trimmed = title?.trim() ?? "";
-
-  if (!trimmed) {
-    return "Route title is required";
-  }
-
-  if (trimmed.length > MAX_COMPOSITION_TITLE_LENGTH) {
-    return `Title must be ${MAX_COMPOSITION_TITLE_LENGTH} characters or fewer`;
-  }
-
-  return null;
-};
-
 /**
  * Store a recipe on a route and materialize its geometry. The builder calls
  * it to edit a stored composition.
+ *
+ * The order of the checks is the product decision of `feature-153`: the cheap
+ * recipe checks run first, then the shared confirmation, then the children are
+ * read and planned. The owner confirms a well-formed recipe, and the children
+ * are read once per save instead of once per refusal.
  */
 export const saveRouteCompositionForOwner = async ({
   routeId,
@@ -380,7 +409,7 @@ export const saveRouteCompositionForOwner = async ({
 }: {
   routeId: string;
   userId: string;
-  segments: RouteCompositionSegmentInput[];
+  segments: RouteCompositionSegmentRequest[];
   confirmShared?: boolean;
 }): Promise<SaveRouteCompositionResult> => {
   const parent = await prisma.route.findFirst({
@@ -398,30 +427,37 @@ export const saveRouteCompositionForOwner = async ({
     return { ok: false, code: "NOT_FOUND", message: "Route not found" };
   }
 
-  const childIds = [...new Set(segments.map((segment) => segment.childRouteId))];
+  const recipe = normalizeSegmentInputs(segments);
 
-  if (childIds.includes(parent.id)) {
+  if (recipe.some((segment) => segment.childRouteId === parent.id)) {
     return { ok: false, code: "VALIDATION", message: "A route cannot use itself as a segment" };
   }
 
-  // The recipe is validated before the shared confirmation: the owner never
-  // confirms a recipe the server is about to refuse.
+  // The cheap recipe checks — the shape and whether the recipe means
+  // anything — need no database work, so a malformed recipe is refused before
+  // the owner is asked to confirm anything.
+  const recipeIssue = validateRouteCompositionRecipe(recipe);
+
+  if (recipeIssue) {
+    return { ok: false, code: "VALIDATION", message: recipeIssue.message };
+  }
+
+  const linkedTrackCount = parent._count.tracks;
+
+  if (linkedTrackCount > 1 && !confirmShared) {
+    return {
+      ok: false,
+      code: "SHARED_CONFIRMATION",
+      message: `This route is used by ${linkedTrackCount} tracks. Confirm that the new shape should replace it everywhere.`,
+      linkedTrackCount,
+    };
+  }
+
   try {
-    const prepared = await prepareComposition({ userId, segments });
+    const prepared = await prepareComposition({ userId, segments: recipe });
 
     if (!prepared.ok) {
       return { ok: false, code: "VALIDATION", message: prepared.message };
-    }
-
-    const linkedTrackCount = parent._count.tracks;
-
-    if (linkedTrackCount > 1 && !confirmShared) {
-      return {
-        ok: false,
-        code: "SHARED_CONFIRMATION",
-        message: `This route is used by ${linkedTrackCount} tracks. Confirm that the new shape should replace it everywhere.`,
-        linkedTrackCount,
-      };
     }
 
     await materializeComposition({
@@ -454,16 +490,23 @@ export const createRouteCompositionForOwner = async ({
   userId: string;
   title: string;
   description?: string | null;
-  segments: RouteCompositionSegmentInput[];
+  segments: RouteCompositionSegmentRequest[];
 }): Promise<CreateRouteCompositionResult> => {
-  const titleIssue = validateCompositionTitle(title);
+  const titleIssue = validateRouteTitle(title);
 
   if (titleIssue) {
     return { ok: false, code: "VALIDATION", message: titleIssue };
   }
 
+  const recipe = normalizeSegmentInputs(segments);
+  const recipeIssue = validateRouteCompositionRecipe(recipe);
+
+  if (recipeIssue) {
+    return { ok: false, code: "VALIDATION", message: recipeIssue.message };
+  }
+
   try {
-    const prepared = await prepareComposition({ userId, segments });
+    const prepared = await prepareComposition({ userId, segments: recipe });
 
     if (!prepared.ok) {
       return { ok: false, code: "VALIDATION", message: prepared.message };
@@ -515,7 +558,7 @@ export const rebuildRouteCompositionForOwner = async ({
               role: true,
               sortOrder: true,
               lapCount: true,
-              childRoute: { select: { fileAsset: { select: { url: true } } } },
+              childRoute: { select: { title: true, fileAsset: { select: { url: true } } } },
             },
           },
         },
@@ -542,6 +585,12 @@ export const rebuildRouteCompositionForOwner = async ({
 
     return { ok: true, pointCount: plan.points.length };
   } catch (error) {
+    // A child whose file cannot be read makes the recipe unusable, which the
+    // owner can act on — it is a refusal of the recipe, not a server fault.
+    if (error instanceof UnreadableChildRouteError) {
+      return { ok: false, code: "VALIDATION", message: error.message };
+    }
+
     return {
       ok: false,
       code: "INTERNAL",

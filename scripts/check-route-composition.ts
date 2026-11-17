@@ -8,6 +8,7 @@
 import {
   buildRouteCompositionPoints,
   validateRouteCompositionMeaning,
+  validateRouteCompositionRecipe,
   type RouteCompositionSegment,
 } from "../lib/route-composition";
 
@@ -77,18 +78,27 @@ const segment = (
   );
 }
 
-// Case 3: an open (non-closed) line repeated twice keeps every point.
+// Case 3: a repeated segment must be a closed loop; an open line with one lap
+// is still a valid segment.
 {
   const open = [
     { lat: 0, lng: 0 },
     { lat: 0.001, lng: 0.001 },
   ];
-  const plan = buildRouteCompositionPoints([segment("a", open, { lapCount: 2 })]);
+  const repeated = buildRouteCompositionPoints([segment("a", open, { lapCount: 2 })]);
 
   expect(
-    "an open line repeats all points",
-    plan.ok && plan.points.length === 4,
-    plan.ok ? `${plan.points.length} points` : plan.issue.message,
+    "an open line cannot be repeated",
+    !repeated.ok && repeated.issue.code === "OPEN_LAP",
+    repeated.ok ? "plan unexpectedly succeeded" : repeated.issue.message,
+  );
+
+  const singleLap = buildRouteCompositionPoints([segment("a", open)]);
+
+  expect(
+    "an open line with one lap keeps its points",
+    singleLap.ok && singleLap.points.length === 2,
+    singleLap.ok ? `${singleLap.points.length} points` : singleLap.issue.message,
   );
 }
 
@@ -190,6 +200,36 @@ const segment = (
     segment("a", loop, { sortOrder: 1 }),
   ]);
   expect("the same route used twice is meaningful", sameRouteTwice === null, sameRouteTwice?.message ?? "");
+}
+
+// Case 8: the cheap recipe checks run both the shape and the meaning rule.
+{
+  const malformed = validateRouteCompositionRecipe([segment("a", loop, { lapCount: 0 })]);
+  expect(
+    "a malformed recipe is refused by the shape rule",
+    malformed?.code === "LAP_COUNT",
+    malformed?.message ?? "unexpectedly allowed",
+  );
+
+  const degenerate = validateRouteCompositionRecipe([segment("a", loop)]);
+  expect(
+    "a degenerate recipe is refused by the meaning rule",
+    degenerate?.code === "NOT_MEANINGFUL",
+    degenerate?.message ?? "unexpectedly allowed",
+  );
+
+  const empty = validateRouteCompositionRecipe([]);
+  expect(
+    "an empty recipe is refused by the shape rule",
+    empty?.code === "NO_SEGMENTS",
+    empty?.message ?? "unexpectedly allowed",
+  );
+
+  const valid = validateRouteCompositionRecipe([
+    segment("a", loop, { sortOrder: 0 }),
+    segment("b", loop, { sortOrder: 1 }),
+  ]);
+  expect("a well-formed recipe passes the cheap checks", valid === null, valid?.message ?? "");
 }
 
 if (failures > 0) {

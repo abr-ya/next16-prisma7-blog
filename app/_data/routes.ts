@@ -9,6 +9,7 @@ import { buildTrackGpxMetadata, fetchTrackGpxContent } from "@/lib/track-gpx-fil
 import { toTrackMapViewModel, type TrackMapViewModel } from "@/lib/track-gpx-metadata";
 import { revalidateRoutePaths } from "@/lib/route-revalidation";
 import { rebuildRouteCompositionsUsing } from "@/lib/route-composition.server";
+import { validateRouteTitle } from "@/lib/route-title";
 import { revalidateTrackPaths } from "@/lib/track-revalidation";
 import { buildSyntheticGpxBytes } from "@/lib/track-synthetic-gpx";
 import { uploadSyntheticTrackGpx } from "@/lib/uploadthing/server-gpx";
@@ -116,8 +117,13 @@ export const createRouteFromPoints = async (input: CreateRouteInput): Promise<Cr
     const { default: prisma } = await import("@/lib/prisma");
 
     const title = input.title?.trim() ?? "";
-    if (!title) {
-      return { ok: false, code: "VALIDATION", message: "Route title is required" };
+
+    // feature-153: the route form allows a title up to the shared limit, and
+    // the server enforces the same limit for every route title.
+    const titleIssue = validateRouteTitle(title);
+
+    if (titleIssue) {
+      return { ok: false, code: "VALIDATION", message: titleIssue };
     }
 
     const pointsError = validatePoints(input.points);
@@ -337,8 +343,13 @@ export const updateRoute = async (input: UpdateRouteInput): Promise<UpdateRouteR
     return { ok: false, code: "VALIDATION", message: "Route id is required" };
   }
 
-  if (nextTitle !== undefined && !nextTitle) {
-    return { ok: false, code: "VALIDATION", message: "Route title is required" };
+  // feature-153: a rename obeys the same title limit as a creation.
+  if (nextTitle !== undefined) {
+    const titleIssue = validateRouteTitle(nextTitle);
+
+    if (titleIssue) {
+      return { ok: false, code: "VALIDATION", message: titleIssue };
+    }
   }
 
   if (!hasPoints && nextTitle === undefined && input.description === undefined) {

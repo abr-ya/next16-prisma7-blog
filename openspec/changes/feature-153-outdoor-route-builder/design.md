@@ -12,7 +12,7 @@ The route library today (`components/track-pages/routes-panel.tsx`, `routes-colu
 
 The new `RouteCompositionDialog` collects:
 
-- parent title and description (the same limits as `RouteFormDialog`: title up to 120 characters, description up to 2000);
+- parent title and description (the same limits as `RouteFormDialog`: title up to 150 characters, description up to 2000);
 - an ordered list of segments, each showing the child route's title and a lap count;
 - **Add segment** appends a row with the first eligible child and `lapCount = 1`;
 - move up / move down / remove per row — no drag-and-drop, no new dependency;
@@ -29,36 +29,47 @@ The eligible children are the owner's routes that carry no composition and are n
 
 `createCompositeRoute({ title, description, segments })` in `app/_data/route-compositions.ts` resolves the actor with `requireTrustGatedAction("track-upload")` — the same gate as any geometry upload — and hands the work to the new server core `createRouteCompositionForOwner({ userId, title, description, segments })`. The core stays actor-free, exactly like `saveRouteCompositionForOwner`: it takes the owner id and is unreachable from the browser, so the id cannot be spoofed the way a server action's argument could.
 
-1. Validate the title the way `createRouteFromPoints` does: non-empty, at most 120 characters.
+1. Validate the title with the shared route title rule: non-empty, at most 150 characters.
 2. Run the shared preparation step (see below).
 3. Build and validate the synthetic GPX, then upload it under the parent title's slug.
 4. In one transaction: create the parent `Route` (title, description, `fileAssetId`, parsed metadata, owner), create its `RouteComposition`, and insert the ordered `RouteSegment` rows.
-5. Revalidate route and track paths and return the new route id and slug.
+5. Revalidate route and track paths and return the new route id and the point count.
 
 The parent is an ordinary route from that moment on: the existing pickers, the quick route dialog, the workout form, the trip attach flow, the preview dialog, and the public pages read it unchanged.
 
 ## Shared Preparation
 
-`saveRouteCompositionForOwner` grows a preparation step that both create and replace use, so the two paths cannot drift:
+The recipe checks come in two steps, and both create and replace use them, so the two paths cannot drift.
 
-- validate the recipe shape (non-empty, unique order, `MAIN` only, positive lap count) and require a meaningful recipe;
+**The cheap checks** are pure and touch no database:
+
+- validate the recipe shape (non-empty, unique order, `MAIN` only, positive lap count) and require a meaningful recipe.
+
+**The heavy preparation** reads the children and plans the geometry:
+
 - load the children with the owner scope and refuse a foreign, nested, or missing child;
 - fetch each child's full points and plan the concatenated geometry;
 - refuse a gap beyond the continuity tolerance.
 
-The step knows nothing about a parent, so the create path can call it before the parent exists. The parent-dependent checks stay with the caller:
+The core normalizes the incoming segments — trimmed ids, the role defaulted — so no caller can slip a padded id past a check that compares it with a route id.
+
+The heavy step knows nothing about a parent, so the create path can call it before the parent exists. The parent-dependent checks stay with the caller:
 
 - the parent cannot be its own segment — replace only, since the create path has no parent yet;
-- the shared confirmation — a parent used by more than one track is confirmed after the recipe is validated, not before. `feature-152` asked for the confirmation first; asking last means the owner never confirms a recipe the server is about to refuse. The refusal order is part of the spec delta.
+- the shared confirmation — a parent used by more than one track is confirmed after the cheap checks and before the heavy preparation. `feature-152` asked for the confirmation before any recipe check; `feature-153` asks it after the cheap ones, so a malformed recipe is still refused without a confirmation, while the children are read once per save instead of once per refusal. A recipe whose segments do not meet is therefore refused after the confirmation. The refusal order is part of the spec delta.
 
 ## Shared Materialization
 
-`materializeRoute` builds the GPX, uploads it, and repoints the parent. The create path has no parent to repoint, so the shared part is split once:
+`materializeComposition` writes the composition's geometry in one transaction. The create path has no parent to repoint, so the shared part is split once:
 
-- `buildAndUploadCompositionFile({ title, userId, points })` builds and validates the bytes, uploads them, and parses the metadata — the same order `materializeRoute` uses today;
-- the transaction then either creates the parent route (create) or repoints it and retires the previous file (replace and rebuild).
+- `buildAndUploadCompositionFile({ title, userId, points })` builds and validates the bytes, uploads them, and parses the metadata — the same order the `feature-152` materialization used;
+- the transaction then either creates the parent route with its composition and segments (create) or repoints the parent and retires the previous file (replace and rebuild).
 
 One build-and-upload path, one transaction shape, two branches. The upload still happens before the transaction, as it does in `createRouteFromPoints` and `updateRoute`: a failed transaction leaves the uploaded object behind, which the file cleanup job will pick up later.
+
+## Route Title
+
+A route title has one limit for the whole product: 150 characters. `lib/route-title.ts` holds the constant, the message and the server-side check, and both the route form's zod schema and every server-side title write read it. The database column is unbounded text, so the limit lives in the product. The server refuses an empty or too long title on creation and on rename, so a title can never outgrow the limit the form shows.
 
 ## Library State
 
@@ -80,9 +91,9 @@ The edit dialog loads its recipe through `getRouteCompositionSegments(routeId)`,
 ## Reuse and Boundaries
 
 - `replaceRouteComposition` and `rebuildRouteComposition` are unchanged from `feature-152`; the builder is a caller.
-- `lib/route-composition.ts` stays the pure geometry plan. The meaningful-recipe rule is a product rule and lives in the data layer, so the plan's own check script keeps its current cases.
+- `lib/route-composition.ts` stays a pure module: the recipe rules — the shape and the meaningful-recipe rule — are exported from it as pure functions, but the meaningful-recipe rule is a product rule, so the data layer applies it and the geometry plan does not. The plan still materializes a single-segment recipe. The check script keeps its geometry cases and covers the recipe rules next to them.
 - No schema change and no migration: the fields the builder needs already exist.
-- `createRouteFromPoints` is untouched; placing points still creates a plain route.
+- `createRouteFromPoints` still creates a plain route; it only gained the shared title check.
 - Parts (`isPart`) stay `false` everywhere; the parts slice owns promotion, hiding, and the parts filter.
 
 ## Risks
@@ -90,10 +101,11 @@ The edit dialog loads its recipe through `getRouteCompositionSegments(routeId)`,
 - **A composite parent edited as points.** Prevented on the client by hiding the action and on the server by refusing a points rewrite.
 - **Confusing empty state.** A new owner with no routes at all cannot compose anything; the dialog explains that a composition needs existing routes and links to the point-based **New route** flow. One route is already enough for a repeated loop.
 - **A degenerate composition.** One segment with one lap only copies that route; the dialog keeps **Save** disabled and the server refuses the recipe.
+- **A repeated open segment.** Repeating a line whose ends do not meet would draw a straight connector between laps and count it as distance; the geometry plan refuses a lap count above one unless the segment is a closed loop, and a single pass of the same line stays valid.
 - **Long child lists.** The selector lists the owner's routes; a very large library would need search, which is out of scope until the owner asks for it.
 - **Stale geometry served after a failed rebuild.** The library now shows the badge and the action, which closes the loop opened by `feature-152`.
 - **Mixed localization.** New copy is English like the rest of the route library; the localization pass is a separate candidate.
 
 ## Verification
 
-`npm run tsc`, `npm run lint`, targeted ESLint for the touched files, `npx tsx scripts/check-route-composition.ts`, `npx openspec validate --changes --strict`, and the owner's local `npm run build`. Browser checks: create a composite from two routes and a three-lap loop, preview the generated shape, attach it to a workout and see the map and distance, edit the order and laps, edit a child and watch the parent rebuild, force a stale badge and rebuild it, confirm **Edit geometry** is absent for a composite, confirm a one-segment single-lap recipe cannot be saved, confirm nested/self/gap refusals surface as toasts without closing the dialog, and confirm a shared parent asks for the confirmation only after the recipe itself is valid.
+`npm run tsc`, `npm run lint`, targeted ESLint for the touched files, `npx tsx scripts/check-route-composition.ts`, `npx openspec validate --changes --strict`, and the owner's local `npm run build`. Browser checks: create a composite from two routes and a three-lap loop, preview the generated shape, attach it to a workout and see the map and distance, edit the order and laps, edit a child and watch the parent rebuild, force a stale badge and rebuild it, confirm **Edit geometry** is absent for a composite, confirm a one-segment single-lap recipe cannot be saved, confirm nested/self/gap refusals surface as toasts without closing the dialog, confirm a shared parent asks for the confirmation after the cheap recipe checks and reports a recipe that does not meet only after that confirmation, and confirm a route title longer than 150 characters is refused by the form and by the server.

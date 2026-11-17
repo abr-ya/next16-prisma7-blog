@@ -2,12 +2,15 @@
 
 ## 1. Server create path
 
-- [x] 1.1 Extract the shared preparation step in `lib/route-composition.server.ts` so create and replace reuse it: recipe shape, the meaningful-recipe rule, owner-scoped children, the nested and foreign refusals that do not need a parent, the full child points, the continuity plan, and the gap refusal. Keep the parent-dependent checks with the caller — the parent cannot be its own segment (replace only), and the shared confirmation moves after the recipe validation.
+- [x] 1.1 Extract the shared preparation step in `lib/route-composition.server.ts` so create and replace reuse it: the cheap recipe checks (shape and the meaningful-recipe rule), then the heavy preparation — owner-scoped children, the nested and foreign refusals that do not need a parent, the full child points, the continuity plan, and the gap refusal. Keep the parent-dependent checks with the caller — the parent cannot be its own segment (replace only), and the shared confirmation is asked after the cheap checks and before the heavy preparation.
 - [x] 1.2 Extract the shared materialization: `buildAndUploadCompositionFile({ title, userId, points })` builds, validates, uploads, and parses the synthetic GPX; the transaction then either creates the parent route or repoints it and retires the previous file.
-- [x] 1.3 Add `createRouteCompositionForOwner({ userId, title, description, segments })`: validate the title like `createRouteFromPoints`, run the shared preparation, then create the parent `Route`, its `RouteComposition`, and the ordered `RouteSegment` rows in one transaction; revalidate route and track paths.
+- [x] 1.3 Add `createRouteCompositionForOwner({ userId, title, description, segments })`: validate the title with the shared route title rule, run the shared preparation, then create the parent `Route`, its `RouteComposition`, and the ordered `RouteSegment` rows in one transaction; revalidate route and track paths.
 - [x] 1.4 Expose `createCompositeRoute` in `app/_data/route-compositions.ts` behind `requireTrustGatedAction("track-upload")` with the existing result vocabulary.
 - [x] 1.5 Refuse a points rewrite of a composited route in `updateRoute` with a validation message that points at the recipe.
 - [x] 1.6 Refuse a degenerate recipe — one segment with a lap count of one — in the shared preparation step, naming the reason.
+- [x] 1.7 Bound every route title with one shared limit of 150 characters: `lib/route-title.ts` holds the constant, the message and the server check, and the route form, `createRouteFromPoints`, `updateRoute` and the composite create path all use it.
+- [x] 1.8 Keep the spec deltas in sync with the server rules: the composition delta carries the new refusal order, and a new `outdoor-routes` delta carries the bounded route title.
+- [x] 1.9 Refuse a repeated open segment in the geometry plan (`OPEN_LAP`): a lap count above one requires a closed loop, while a single pass of an open line stays valid; cover both in `scripts/check-route-composition.ts` and the composition delta.
 
 ## 2. Read model
 

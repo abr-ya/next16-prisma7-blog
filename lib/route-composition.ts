@@ -8,9 +8,10 @@
 // nesting and storage belong to the data layer, so the plan stays testable
 // without Prisma or upload calls.
 //
-// feature-153: the meaningful-recipe rule is a product rule, so the data layer
-// applies it and the geometry plan does not. A single segment with a single
-// lap still plans; it is the recipe that is refused.
+// feature-153: the recipe rules live here as pure functions — the shape of a
+// recipe and whether it means anything — and the data layer applies them. The
+// geometry plan does not judge whether a recipe is worth storing: a single
+// segment with a single lap still plans, it is the recipe that is refused.
 
 /** A gap larger than this between consecutive segments is refused. */
 export const ROUTE_COMPOSITION_CONTINUITY_TOLERANCE_METERS = 25;
@@ -38,22 +39,26 @@ export type RouteCompositionSegment = RouteCompositionSegmentInput & {
   points: RouteCompositionPoint[];
 };
 
-export type RouteCompositionPlanIssue = {
-  code:
-    | "NO_SEGMENTS"
-    | "ORDER"
-    | "DUPLICATE_ORDER"
-    | "NON_MAIN_ROLE"
-    | "LAP_COUNT"
-    | "NOT_ENOUGH_POINTS"
-    | "NOT_MEANINGFUL"
-    | "GAP";
+/**
+ * The codes a recipe is refused with before any geometry is planned: the
+ * shape of the recipe and whether it means anything.
+ */
+export type RouteRecipeIssue = {
+  code: "NO_SEGMENTS" | "ORDER" | "DUPLICATE_ORDER" | "NON_MAIN_ROLE" | "LAP_COUNT" | "NOT_MEANINGFUL";
   message: string;
 };
 
+/** The codes a geometry plan is refused with. */
+export type RouteCompositionPlanIssue = {
+  code: "NOT_ENOUGH_POINTS" | "OPEN_LAP" | "GAP";
+  message: string;
+};
+
+export type RouteCompositionIssue = RouteRecipeIssue | RouteCompositionPlanIssue;
+
 export type RouteCompositionPlan =
   | { ok: true; points: RouteCompositionPoint[]; droppedClosingPoints: number }
-  | { ok: false; issue: RouteCompositionPlanIssue };
+  | { ok: false; issue: RouteCompositionIssue };
 
 const toRadians = (value: number) => (value * Math.PI) / 180;
 
@@ -73,9 +78,7 @@ const formatMeters = (value: number) => `${Math.round(value)} m`;
  * Validate the shape of a recipe before any geometry or storage work. A
  * recipe is ordered, non-empty, MAIN-only and carries a positive lap count.
  */
-export const validateRouteCompositionSegments = (
-  segments: RouteCompositionSegmentInput[],
-): RouteCompositionPlanIssue | null => {
+export const validateRouteCompositionSegments = (segments: RouteCompositionSegmentInput[]): RouteRecipeIssue | null => {
   if (segments.length === 0) {
     return { code: "NO_SEGMENTS", message: "A route composition needs at least one segment" };
   }
@@ -115,9 +118,7 @@ export const validateRouteCompositionSegments = (
  * This is a product rule rather than a geometry rule, so the data layer
  * applies it — the geometry plan still materializes a single-segment recipe.
  */
-export const validateRouteCompositionMeaning = (
-  segments: RouteCompositionSegmentInput[],
-): RouteCompositionPlanIssue | null => {
+export const validateRouteCompositionMeaning = (segments: RouteCompositionSegmentInput[]): RouteRecipeIssue | null => {
   if (segments.length === 0) return null;
   if (segments.length > 1) return null;
   if (segments[0].lapCount > 1) return null;
@@ -129,13 +130,29 @@ export const validateRouteCompositionMeaning = (
 };
 
 /**
+ * The cheap recipe checks: the shape of the recipe and whether it means
+ * anything. Both are pure, so a caller can refuse a malformed recipe before
+ * it reads the children or spends any work on the geometry.
+ */
+export const validateRouteCompositionRecipe = (segments: RouteCompositionSegmentInput[]): RouteRecipeIssue | null => {
+  const shapeIssue = validateRouteCompositionSegments(segments);
+
+  if (shapeIssue) return shapeIssue;
+
+  return validateRouteCompositionMeaning(segments);
+};
+
+/**
  * Build the parent's point list from its ordered segments.
  *
  * Each segment contributes its full-precision points, repeated `lapCount`
- * times. A closed loop loses its duplicate closing point before the repeat.
- * Consecutive segments must meet inside the continuity tolerance, because the
- * parent is materialized as one polyline — a larger gap would draw a straight
- * connector and inflate the parsed distance.
+ * times. A repeated segment must be a closed loop within the loop-closure
+ * tolerance; repeating an open line would draw a straight connector between
+ * laps and count it as distance. A closed loop loses its duplicate closing
+ * point before the repeat. Consecutive segments must meet inside the
+ * continuity tolerance, because the parent is materialized as one polyline —
+ * a larger gap would draw a straight connector and inflate the parsed
+ * distance.
  */
 export const buildRouteCompositionPoints = (segments: RouteCompositionSegment[]): RouteCompositionPlan => {
   const shapeIssue = validateRouteCompositionSegments(segments);
@@ -158,8 +175,21 @@ export const buildRouteCompositionPoints = (segments: RouteCompositionSegment[])
 
     const first = segment.points[0];
     const last = segment.points[segment.points.length - 1];
-    const isClosedLoop =
-      segment.lapCount > 1 && distanceMeters(first, last) <= ROUTE_COMPOSITION_LOOP_CLOSURE_TOLERANCE_METERS;
+    const closesLoop = distanceMeters(first, last) <= ROUTE_COMPOSITION_LOOP_CLOSURE_TOLERANCE_METERS;
+    const isClosedLoop = segment.lapCount > 1 && closesLoop;
+
+    // A repeated segment has to be a loop. Repeating an open line would draw a
+    // straight connector from its end back to its start on every lap, and the
+    // parsed distance would count that connector as distance walked.
+    if (segment.lapCount > 1 && !closesLoop) {
+      return {
+        ok: false,
+        issue: {
+          code: "OPEN_LAP",
+          message: "A repeated segment must be a closed loop",
+        },
+      };
+    }
 
     if (points.length > 0) {
       const gap = distanceMeters(points[points.length - 1], first);
