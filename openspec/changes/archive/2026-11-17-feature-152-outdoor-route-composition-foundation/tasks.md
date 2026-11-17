@@ -34,4 +34,4 @@
 - [x] 5.3 Run `npx openspec validate --strict`.
 - [x] 5.4 Ask the owner to run `npm run build` locally and report the result.
 - [x] 5.5 File the deferred data-level and browser checks as a manual QA candidate in `openspec/backlog.md`.
-- [ ] 5.6 Record the shipped slice in `openspec/feature-history.md` at archive time.
+- [x] 5.6 Record the shipped slice in `openspec/feature-history.md` at archive time.
