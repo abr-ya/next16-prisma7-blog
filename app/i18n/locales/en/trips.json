@@ -209,6 +209,10 @@
         "addLabel": "Add a walk",
         "noun": "walk",
         "rememberGearLabel": "Remember this gear for walks",
+        "routeMode": {
+          "title": "Walk an existing route",
+          "gearEmpty": "No shoes for walking"
+        },
         "dayparts": {
           "morning": "Morning",
           "day": "Daytime",
@@ -220,6 +224,10 @@
         "addLabel": "Add a run",
         "noun": "run",
         "rememberGearLabel": "Remember this gear for runs",
+        "routeMode": {
+          "title": "Run an existing route",
+          "gearEmpty": "No shoes for running"
+        },
         "dayparts": {
           "morning": "Morning",
           "day": "Daytime",

@@ -16,6 +16,7 @@ import { authSession } from "@/lib/auth-utils";
 import { InsufficientTrustError, requireTrustGatedAction } from "@/lib/auth-trust-gates.server";
 import { createWithinVerifiedResourceQuota } from "@/lib/auth-trust-quotas.server";
 import { gearFitsActivityType } from "@/lib/gear";
+import { supportsQuickRouteWorkout } from "@/lib/quick-workout";
 import { createSlug } from "@/lib/slug-generator";
 import { buildTrackGpxMetadata, fetchTrackGpxContent } from "@/lib/track-gpx-file";
 import { resolveTrackGeometry } from "@/lib/track-geometry";
@@ -1946,9 +1947,10 @@ export const createQuickRouteWorkout = async (
       return { ok: false, code: "VALIDATION", message: "Activity type is unavailable" };
     }
 
-    // feature-146: the first slice is walking-only. The client offers the
-    // action only for that type, but the server remains the authority.
-    if (activityType.key !== "walking") {
+    // feature-151: the route mode serves the route-capable activity types —
+    // walking and running. The client offers the action only for those, but
+    // the server remains the authority.
+    if (!supportsQuickRouteWorkout(activityType.key)) {
       return { ok: false, code: "VALIDATION", message: "Activity type is unavailable" };
     }
 
