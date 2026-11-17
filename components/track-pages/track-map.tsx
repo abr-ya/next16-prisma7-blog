@@ -31,6 +31,7 @@ export const CombinedTrackMap = ({
   focusCoordinate,
   previewCoordinate,
   containerClassName,
+  showLegend = false,
   onSelectPhoto,
 }: {
   tracks: TrackMapViewModel[];
@@ -45,6 +46,9 @@ export const CombinedTrackMap = ({
   focusCoordinate?: { lat: number; lng: number } | null;
   previewCoordinate?: { lat: number; lng: number } | null;
   containerClassName?: string;
+  // feature-150: opt-in colour legend; the trip map and every other existing
+  // caller keep the default `false`.
+  showLegend?: boolean;
   onSelectPhoto?: (photoId: string) => void;
 }) => (
   <TrackMapLeaflet
@@ -56,6 +60,7 @@ export const CombinedTrackMap = ({
     focusCoordinate={focusCoordinate}
     previewCoordinate={previewCoordinate}
     containerClassName={containerClassName}
+    showLegend={showLegend}
     onSelectPhoto={onSelectPhoto}
   />
 );

@@ -8,7 +8,7 @@ import { getPublicTrackBySlug } from "@/app/_data/tracks";
 import { Badge, Button } from "@/components/index";
 import { PageLayout } from "@/components/layout/page-layout";
 import { TrackFileRenameButton } from "@/components/track-pages/track-file-rename-button";
-import { TrackMap } from "@/components/track-pages/track-map";
+import { CombinedTrackMap } from "@/components/track-pages/track-map";
 import { TrackPointCleanupButton } from "@/components/track-pages/track-point-cleanup-dialog";
 import { TrackRouteControl } from "@/components/track-pages/track-route-control";
 import { authSession } from "@/lib/auth-utils";
@@ -24,6 +24,7 @@ import {
   formatTrackPointCount,
   formatTrackTimeSource,
   formatTrackTimezoneEvidence,
+  type TrackMapViewModel,
 } from "@/lib/track-gpx-metadata";
 import { formatTrackRecordingTimezone } from "@/lib/track-recording-timezone";
 
@@ -79,6 +80,14 @@ const TrackPage = async ({ params }: TrackPageProps) => {
   // the preserved recording start and duration supply the finish.
   const recordingLine = getPublicTrackRecordingLine(track);
 
+  // feature-150: draw the primary route and every parsed secondary recording
+  // on one map. A secondary file without stored map geometry contributes no
+  // line, and an empty list keeps the existing fallback.
+  const mapTracks: TrackMapViewModel[] = [
+    track.map,
+    ...track.secondaryFiles.flatMap((file) => (file.map ? [file.map] : [])),
+  ].filter((map): map is TrackMapViewModel => map !== null);
+
   return (
     <PageLayout title={track.title} className="pt-6">
       <article className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 pb-10">
@@ -120,8 +129,13 @@ const TrackPage = async ({ params }: TrackPageProps) => {
 
         <section className="grid gap-3">
           <h2 className="text-base font-semibold">Route map</h2>
-          {track.map ? (
-            <TrackMap key={track.file.id} track={track.map} />
+          {mapTracks.length > 0 ? (
+            <CombinedTrackMap
+              key={track.file.id}
+              tracks={mapTracks}
+              ariaLabel={`${track.title} route map`}
+              showLegend
+            />
           ) : (
             <div className="flex h-48 min-h-48 items-center justify-center rounded-md border bg-muted p-4 text-center text-sm text-muted-foreground">
               Map preview is unavailable until this track has parsed route geometry.

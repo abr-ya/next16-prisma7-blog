@@ -267,6 +267,14 @@ export type PublicTrackFile = {
   downloadAvailable: boolean;
 };
 
+/**
+ * feature-150: a track-owned secondary file also carries the simplified map
+ * line built from its stored parse. The raw metadata stays server-side.
+ */
+export type PublicTrackSecondaryFile = PublicTrackFile & {
+  map: TrackMapViewModel | null;
+};
+
 export type PublicTrack = {
   id: string;
   title: string;
@@ -290,7 +298,7 @@ export type PublicTrack = {
   hasPrimaryRoute: boolean;
   file: PublicTrackFile;
   /** feature-142: track-owned files kept as secondary geometry. */
-  secondaryFiles: PublicTrackFile[];
+  secondaryFiles: PublicTrackSecondaryFile[];
   parsed: {
     summary: TrackGpxSummary;
     mapGeometry: TrackGpxCoordinate[] | null;
@@ -724,6 +732,7 @@ const publicTrackDetailSelect = {
   geometries: {
     select: {
       id: true,
+      metadata: true,
       fileAsset: {
         select: publicTrackFileAssetSelect,
       },
@@ -734,6 +743,7 @@ const publicTrackDetailSelect = {
 type PublicTrackDetailRecord = PublicTrackRecord & {
   geometries: Array<{
     id: string;
+    metadata: Prisma.JsonValue | null;
     fileAsset: Prisma.FileAssetGetPayload<{ select: typeof publicTrackFileAssetSelect }>;
   }>;
 };
@@ -759,6 +769,25 @@ const toPublicTrackFile = (
     downloadUrl: downloadAvailable ? `/files/${fileAsset.id}/download` : null,
     downloadAvailable,
   };
+};
+
+/**
+ * feature-150: the stored parse of a track-owned secondary file, projected as
+ * the dashed "original recording" line. The title is fixed because the map
+ * legend names the line by its role, not by the uploaded file name.
+ */
+const SECONDARY_TRACK_MAP_TITLE = "Original recording";
+
+const toSecondaryTrackMapViewModel = (
+  metadata: Prisma.JsonValue | null,
+  fileAsset: Prisma.FileAssetGetPayload<{ select: typeof publicTrackFileAssetSelect }>,
+): TrackMapViewModel | null => {
+  const map = toTrackMapViewModel(SECONDARY_TRACK_MAP_TITLE, metadata, {
+    fileAssetId: fileAsset.id,
+    fileKey: fileAsset.fileKey,
+  });
+
+  return map ? { ...map, style: "secondary" } : null;
 };
 
 const toPublicTrack = (
@@ -817,7 +846,12 @@ const toPublicTrack = (
     canManageRoute: Boolean(viewerId && viewerId === track.userId),
     hasPrimaryRoute: Boolean(track.routeId),
     file: toPublicTrackFile(fileAsset, viewerId),
-    secondaryFiles: secondaryRows.map((row) => toPublicTrackFile(row.fileAsset, viewerId)),
+    secondaryFiles: secondaryRows.map((row) => ({
+      ...toPublicTrackFile(row.fileAsset, viewerId),
+      // feature-150: the secondary file's stored parse becomes a dashed
+      // "original recording" line beside the primary route map.
+      map: includeMapGeometry ? toSecondaryTrackMapViewModel(row.metadata, row.fileAsset) : null,
+    })),
     parsed:
       parsedState.status === "SUCCESS"
         ? {
