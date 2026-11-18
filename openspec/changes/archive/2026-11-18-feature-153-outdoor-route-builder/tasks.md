@@ -19,19 +19,19 @@
 
 ## 3. Builder UI
 
-- [ ] 3.1 Add `components/track-pages/route-composition-dialog.tsx`: title, description, ordered segment rows with child select and lap count, add/move/remove, a segment/lap summary, and a Save that stays disabled until the title is filled, every lap count is a positive whole number, and the recipe is meaningful (two segments, or one segment repeated more than once).
-- [ ] 3.2 Offer every route without a composition and not the edited parent in the child selector — including routes marked `isPart`; show an empty state that points at **New route** only when the owner has no routes at all.
-- [ ] 3.3 Wire create and edit modes to `createCompositeRoute` and `replaceRouteComposition`, surface `VALIDATION` and `TRUST` as toasts, ask for the shared confirmation through the shared `ConfirmDialog` when the answer is `SHARED_CONFIRMATION`, and keep the dialog open on a refusal.
-- [ ] 3.4 Add the **New composite route** toolbar action and an edit-composition action to `components/track-pages/routes-panel.tsx`.
-- [ ] 3.5 Add the **Composition** column with the segments/laps badge and the **Stale** badge plus **Rebuild** action to `components/track-pages/routes-columns.tsx`.
-- [ ] 3.6 Hide **Edit geometry** for a composite route and keep title/description editing available.
-- [ ] 3.7 Pass every owner route from `app/(public)/my/routes/page.tsx` to the panel; derive the eligible children from the `isComposite` flag.
+- [x] 3.1 Add `components/track-pages/route-composition-dialog.tsx`: title, description, ordered segment rows with child select and lap count, add/move/remove, a segment/lap summary, and a Save that stays disabled until the title is filled, every lap count is a positive whole number, and the recipe is meaningful (two segments, or one segment repeated more than once).
+- [x] 3.2 Offer every route without a composition and not the edited parent in the child selector — including routes marked `isPart`; show an empty state that points at **New route** only when the owner has no routes at all.
+- [x] 3.3 Wire create and edit modes to `createCompositeRoute` and `replaceRouteComposition`, surface `VALIDATION` and `TRUST` as toasts, ask for the shared confirmation through the shared `ConfirmDialog` when the answer is `SHARED_CONFIRMATION`, and keep the dialog open on a refusal.
+- [x] 3.4 Add the **New composite route** toolbar action and an edit-composition action to `components/track-pages/routes-panel.tsx`.
+- [x] 3.5 Add the **Composition** column with the segments/laps badge and the **Stale** badge plus **Rebuild** action to `components/track-pages/routes-columns.tsx`.
+- [x] 3.6 Hide **Edit geometry** for a composite route and keep title/description editing available.
+- [x] 3.7 Pass every owner route from `app/(public)/my/routes/page.tsx` to the panel; derive the eligible children from the `isComposite` flag.
 
 ## 4. Verification
 
-- [ ] 4.1 Run `npm run tsc`.
-- [ ] 4.2 Run `npm run lint` and targeted `npx eslint` for the touched `app/_data`, `lib`, and `components/track-pages` files.
-- [ ] 4.3 Run `npx tsx scripts/check-route-composition.ts` — the pure plan keeps its current cases.
-- [ ] 4.4 Run `npx openspec validate --changes --strict`.
-- [ ] 4.5 Ask the owner to run `npm run build` locally and report the result.
-- [ ] 4.6 File the deferred browser checks as a manual QA candidate in `openspec/backlog.md`.
+- [x] 4.1 Run `npm run tsc`.
+- [x] 4.2 Run `npm run lint` and targeted `npx eslint` for the touched `app/_data`, `lib`, and `components/track-pages` files.
+- [x] 4.3 Run `npx tsx scripts/check-route-composition.ts` — the pure plan keeps its current cases.
+- [x] 4.4 Run `npx openspec validate --changes --strict`.
+- [x] 4.5 Ask the owner to run `npm run build` locally and report the result.
+- [x] 4.6 File the deferred browser checks as a manual QA candidate in `openspec/backlog.md`.
