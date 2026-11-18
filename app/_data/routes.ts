@@ -1,6 +1,7 @@
 "use server";
 
 import { Prisma } from "@/generated/prisma/client";
+import type { RouteSegmentRole } from "@/generated/prisma/enums";
 import { InsufficientTrustError, requireTrustGatedAction } from "@/lib/auth-trust-gates.server";
 import { authSession } from "@/lib/auth-utils";
 import { validateGpxString } from "@/lib/gpx-validation";
@@ -37,6 +38,14 @@ export type RouteListItem = {
   updatedAt: Date;
   trackCount: number;
   hasMetadata: boolean;
+  /** feature-153: the route is the materialized parent of a composition. */
+  isComposite: boolean;
+  /** The number of ordered segments; zero for a plain route. */
+  segmentCount: number;
+  /** The sum of the segment lap counts; zero for a plain route. */
+  segmentLapTotal: number;
+  /** Set when a child edit could not rebuild this parent. */
+  staleAt: Date | null;
 };
 
 export type RouteDetail = RouteListItem & {
@@ -221,6 +230,15 @@ export const getOwnerRoutes = async (): Promise<RouteListItem[]> => {
       updatedAt: true,
       metadata: true,
       _count: { select: { tracks: true } },
+      // feature-153: the library shows whether a route is a composite, how
+      // many segments it has, how many laps it repeats, and whether its last
+      // rebuild failed. The segments are read here so the table needs one query.
+      composition: {
+        select: {
+          staleAt: true,
+          segments: { select: { lapCount: true } },
+        },
+      },
     },
   })) as Array<{
     id: string;
@@ -230,6 +248,7 @@ export const getOwnerRoutes = async (): Promise<RouteListItem[]> => {
     updatedAt: Date;
     metadata: Prisma.JsonValue | null;
     _count: { tracks: number };
+    composition: { staleAt: Date | null; segments: Array<{ lapCount: number }> } | null;
   }>;
 
   return routes.map((route) => ({
@@ -240,6 +259,10 @@ export const getOwnerRoutes = async (): Promise<RouteListItem[]> => {
     updatedAt: route.updatedAt,
     trackCount: route._count.tracks,
     hasMetadata: route.metadata !== null,
+    isComposite: Boolean(route.composition),
+    segmentCount: route.composition?.segments.length ?? 0,
+    segmentLapTotal: route.composition?.segments.reduce((total, segment) => total + segment.lapCount, 0) ?? 0,
+    staleAt: route.composition?.staleAt ?? null,
   }));
 };
 
@@ -257,6 +280,14 @@ export const getRouteById = async (routeId: string): Promise<RouteDetail | null>
       updatedAt: true,
       metadata: true,
       _count: { select: { tracks: true } },
+      // feature-153: the row shape is shared with the library, so the detail
+      // read fills the composition fields too.
+      composition: {
+        select: {
+          staleAt: true,
+          segments: { select: { lapCount: true } },
+        },
+      },
     },
   })) as {
     id: string;
@@ -266,6 +297,7 @@ export const getRouteById = async (routeId: string): Promise<RouteDetail | null>
     updatedAt: Date;
     metadata: Prisma.JsonValue | null;
     _count: { tracks: number };
+    composition: { staleAt: Date | null; segments: Array<{ lapCount: number }> } | null;
   } | null;
 
   if (!route) return null;
@@ -278,7 +310,95 @@ export const getRouteById = async (routeId: string): Promise<RouteDetail | null>
     updatedAt: route.updatedAt,
     trackCount: route._count.tracks,
     hasMetadata: route.metadata !== null,
+    isComposite: Boolean(route.composition),
+    segmentCount: route.composition?.segments.length ?? 0,
+    segmentLapTotal: route.composition?.segments.reduce((total, segment) => total + segment.lapCount, 0) ?? 0,
+    staleAt: route.composition?.staleAt ?? null,
     points: readRoutePoints(route.metadata),
+  };
+};
+
+export type RouteCompositionSegmentView = {
+  childRouteId: string;
+  childTitle: string;
+  role: RouteSegmentRole;
+  sortOrder: number;
+  lapCount: number;
+};
+
+export type RouteCompositionDetail = {
+  routeId: string;
+  title: string;
+  description: string | null;
+  staleAt: Date | null;
+  segments: RouteCompositionSegmentView[];
+};
+
+/**
+ * feature-153: the stored recipe of one composite route, for the builder's
+ * edit mode. Foreign routes and plain routes answer `null` — the caller only
+ * needs to know that there is nothing to edit.
+ */
+export const getRouteCompositionSegments = async (routeId: string): Promise<RouteCompositionDetail | null> => {
+  const normalizedId = routeId?.trim() ?? "";
+
+  if (!normalizedId) return null;
+
+  const userId = await getRequiredUserId();
+  const { default: prisma } = await import("@/lib/prisma");
+
+  const route = (await prisma.route.findFirst({
+    where: { id: normalizedId, userId },
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      composition: {
+        select: {
+          staleAt: true,
+          segments: {
+            orderBy: { sortOrder: "asc" },
+            select: {
+              childRouteId: true,
+              role: true,
+              sortOrder: true,
+              lapCount: true,
+              childRoute: { select: { title: true } },
+            },
+          },
+        },
+      },
+    },
+  })) as {
+    id: string;
+    title: string;
+    description: string | null;
+    composition: {
+      staleAt: Date | null;
+      segments: Array<{
+        childRouteId: string;
+        role: RouteSegmentRole;
+        sortOrder: number;
+        lapCount: number;
+        childRoute: { title: string };
+      }>;
+    } | null;
+  } | null;
+
+  if (!route?.composition) return null;
+
+  return {
+    routeId: route.id,
+    title: route.title,
+    description: route.description,
+    staleAt: route.composition.staleAt,
+    segments: route.composition.segments.map((segment) => ({
+      childRouteId: segment.childRouteId,
+      childTitle: segment.childRoute.title,
+      role: segment.role,
+      sortOrder: segment.sortOrder,
+      lapCount: segment.lapCount,
+    })),
   };
 };
 

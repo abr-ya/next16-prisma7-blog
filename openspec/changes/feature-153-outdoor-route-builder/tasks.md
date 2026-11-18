@@ -14,8 +14,8 @@
 
 ## 2. Read model
 
-- [ ] 2.1 Extend `getOwnerRoutes` in `app/_data/routes.ts` with `isComposite`, `segmentCount`, `segmentLapTotal`, and `staleAt`.
-- [ ] 2.2 Add an owner-gated `getRouteCompositionSegments(routeId)` next to `getRouteById`, returning the parent title/description, `staleAt`, and the ordered segments with each child's id and title; refuse a foreign route and a route without a composition.
+- [x] 2.1 Extend `getOwnerRoutes` in `app/_data/routes.ts` with `isComposite`, `segmentCount`, `segmentLapTotal`, and `staleAt`.
+- [x] 2.2 Add an owner-gated `getRouteCompositionSegments(routeId)` next to `getRouteById`, returning the parent title/description, `staleAt`, and the ordered segments with each child's id and title; refuse a foreign route and a route without a composition.
 
 ## 3. Builder UI
 
