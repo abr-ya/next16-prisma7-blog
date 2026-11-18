@@ -16,6 +16,7 @@ import { authSession } from "@/lib/auth-utils";
 import { InsufficientTrustError, requireTrustGatedAction } from "@/lib/auth-trust-gates.server";
 import { createWithinVerifiedResourceQuota } from "@/lib/auth-trust-quotas.server";
 import { gearFitsActivityType } from "@/lib/gear";
+import { resolveLapVariantRoute } from "@/lib/route-composition.server";
 import { supportsQuickRouteWorkout } from "@/lib/quick-workout";
 import { createSlug } from "@/lib/slug-generator";
 import { buildTrackGpxMetadata, fetchTrackGpxContent } from "@/lib/track-gpx-file";
@@ -72,6 +73,8 @@ export type CreateManualTrackResult =
  */
 export type CreateTrackFromRouteInput = {
   routeId: string;
+  /** feature-154: `1` uses the route as is; above one creates or reuses a lap variant. */
+  lapCount?: number;
   title: string;
   slug?: string | null;
   description?: string | null;
@@ -169,6 +172,8 @@ export type CreateQuickWorkoutResult = CreateManualTrackResult;
 export type CreateQuickRouteWorkoutInput = {
   /** The route the workout's geometry comes from. */
   routeId: string;
+  /** feature-154: `1` uses the route as is; above one creates or reuses a lap variant. */
+  lapCount?: number;
   /** The activity type the button was bound to. */
   activityTypeId: string;
   title: string;
@@ -236,6 +241,11 @@ type PublicTrackRecord = Prisma.TrackGetPayload<{
             updatedAt: true;
           };
         };
+        composition: {
+          select: {
+            segments: { select: { role: true; lapCount: true } };
+          };
+        };
       };
     };
     metadata: true;
@@ -297,6 +307,10 @@ export type PublicTrack = {
   canManageRoute: boolean;
   /** feature-142: the track's primary geometry is a route. */
   hasPrimaryRoute: boolean;
+  /** feature-154: the number of segments in the route's composition. */
+  routeSegmentCount: number | null;
+  /** feature-154: laps across the composition's MAIN segments. */
+  routeLapCount: number | null;
   file: PublicTrackFile;
   /** feature-142: track-owned files kept as secondary geometry. */
   secondaryFiles: PublicTrackSecondaryFile[];
@@ -576,6 +590,12 @@ const trackListSelect = {
     select: {
       metadata: true,
       fileAsset: true,
+      // feature-154: the workouts table shows the route's laps.
+      composition: {
+        select: {
+          segments: { select: { role: true, lapCount: true } },
+        },
+      },
     },
   },
   user: {
@@ -719,6 +739,12 @@ const publicTrackSelect = {
       fileAsset: {
         select: publicTrackFileAssetSelect,
       },
+      // feature-154: the public read reports the route's laps and segments.
+      composition: {
+        select: {
+          segments: { select: { role: true, lapCount: true } },
+        },
+      },
     },
   },
 } satisfies Prisma.TrackSelect;
@@ -824,6 +850,15 @@ const toPublicTrack = (
     fileKey: fileAsset.fileKey,
   });
   const secondaryRows = "geometries" in track ? track.geometries : [];
+  // feature-154: a lap count lives on the route's recipe; a lead-in or a
+  // lead-out adds a segment but no lap, so only MAIN laps are summed.
+  const compositionSegments = track.route?.composition?.segments ?? null;
+  const routeSegmentCount = compositionSegments ? compositionSegments.length : null;
+  const routeLapCount = compositionSegments
+    ? compositionSegments
+        .filter((segment) => segment.role === "MAIN")
+        .reduce((total, segment) => total + segment.lapCount, 0)
+    : null;
 
   return {
     id: track.id,
@@ -846,6 +881,8 @@ const toPublicTrack = (
     // owner may attach a route (file-based) or replace it (route-based).
     canManageRoute: Boolean(viewerId && viewerId === track.userId),
     hasPrimaryRoute: Boolean(track.routeId),
+    routeSegmentCount,
+    routeLapCount,
     file: toPublicTrackFile(fileAsset, viewerId),
     secondaryFiles: secondaryRows.map((row) => ({
       ...toPublicTrackFile(row.fileAsset, viewerId),
@@ -1678,6 +1715,19 @@ export const createTrackFromRoute = async (input: CreateTrackFromRouteInput): Pr
       throw new ManualTrackValidationError(message);
     }
 
+    // feature-154: a lap count above one turns the chosen loop into a
+    // reusable lap variant; the track points at the variant, not the loop.
+    // Resolved after the cheap refusals so a refused save leaves no orphan.
+    const lapVariant = await resolveLapVariantRoute({
+      userId,
+      routeId: route.id,
+      lapCount: input.lapCount,
+    });
+
+    if (!lapVariant.ok) {
+      return { ok: false, code: "VALIDATION", message: lapVariant.message };
+    }
+
     const track = await createWithinVerifiedResourceQuota(user, "track", (tx) =>
       tx.track.create({
         data: {
@@ -1685,7 +1735,7 @@ export const createTrackFromRoute = async (input: CreateTrackFromRouteInput): Pr
           slug: normalizedSlug,
           description: normalizedDescription,
           status: normalizedStatus,
-          routeId: route.id,
+          routeId: lapVariant.routeId,
           userId,
           activityTypeId: normalizedActivityTypeId,
           gearId: normalizedGearId,
@@ -2054,6 +2104,19 @@ export const createQuickRouteWorkout = async (
 
     const slug = await ensureUniqueTrackSlug(input.slug?.trim() || normalizedTitle);
 
+    // feature-154: a lap count above one turns the chosen loop into a reusable
+    // lap variant. Resolved after the cheap refusals so a refused save leaves
+    // no orphan.
+    const lapVariant = await resolveLapVariantRoute({
+      userId,
+      routeId: route.id,
+      lapCount: input.lapCount,
+    });
+
+    if (!lapVariant.ok) {
+      return { ok: false, code: "VALIDATION", message: lapVariant.message };
+    }
+
     const track = await createWithinVerifiedResourceQuota(user, "track", (tx) =>
       tx.track.create({
         data: {
@@ -2067,7 +2130,7 @@ export const createQuickRouteWorkout = async (
           kind: "TRAINING",
           // The route owns the geometry, so the row carries no file of its
           // own and no metadata: the track reads the route's.
-          routeId: route.id,
+          routeId: lapVariant.routeId,
           userId,
           activityTypeId: normalizedActivityTypeId,
           gearId: normalizedGearId,
@@ -2229,7 +2292,11 @@ export const createDraftWorkout = async (input: CreateDraftWorkoutInput): Promis
  * Recording values and `timeSource` are never rewritten here: the geometry
  * change does not change when or how long the workout lasted.
  */
-export const attachRouteToTrack = async (trackId: string, routeId: string): Promise<AttachRouteToTrackResult> => {
+export const attachRouteToTrack = async (
+  trackId: string,
+  routeId: string,
+  lapCount?: number,
+): Promise<AttachRouteToTrackResult> => {
   try {
     const userId = await getRequiredUserId();
     const { default: prisma } = await import("@/lib/prisma");
@@ -2295,11 +2362,23 @@ export const attachRouteToTrack = async (trackId: string, routeId: string): Prom
       };
     }
 
+    // feature-154: completing a draft with more than one lap stores the lap
+    // variant rather than the loop itself.
+    const lapVariant = await resolveLapVariantRoute({
+      userId,
+      routeId: route.id,
+      lapCount,
+    });
+
+    if (!lapVariant.ok) {
+      return { ok: false, code: "VALIDATION", message: lapVariant.message };
+    }
+
     if (track.geometryState === "PENDING") {
       await prisma.track.update({
         where: { id: track.id },
         data: {
-          routeId: route.id,
+          routeId: lapVariant.routeId,
           fileAssetId: null,
           metadata: null,
           geometryState: "READY",
@@ -2335,7 +2414,7 @@ export const attachRouteToTrack = async (trackId: string, routeId: string): Prom
         await tx.track.update({
           where: { id: track.id },
           data: {
-            routeId: route.id,
+            routeId: lapVariant.routeId,
             fileAssetId: null,
             metadata: Prisma.DbNull,
           },
@@ -2344,7 +2423,7 @@ export const attachRouteToTrack = async (trackId: string, routeId: string): Prom
     } else if (track.geometryState === "READY" && track.routeId && !track.fileAssetId) {
       await prisma.track.update({
         where: { id: track.id },
-        data: { routeId: route.id },
+        data: { routeId: lapVariant.routeId },
       });
     } else {
       return {

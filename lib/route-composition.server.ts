@@ -2,6 +2,7 @@ import "server-only";
 
 import type { Prisma } from "@/generated/prisma/client";
 import type { RouteSegmentRole } from "@/generated/prisma/enums";
+import { requireTrustGatedAction } from "@/lib/auth-trust-gates.server";
 import { validateGpxString } from "@/lib/gpx-validation";
 import prisma from "@/lib/prisma";
 import {
@@ -12,6 +13,7 @@ import {
   type RouteCompositionSegmentInput,
 } from "@/lib/route-composition";
 import { revalidateRoutePaths } from "@/lib/route-revalidation";
+import { ROUTE_TITLE_MAX_LENGTH } from "@/lib/route-title";
 import { validateRouteTitle } from "@/lib/route-title";
 import { createSlug } from "@/lib/slug-generator";
 import { buildTrackGpxMetadata, fetchTrackGpxContent } from "@/lib/track-gpx-file";
@@ -635,4 +637,97 @@ export const rebuildRouteCompositionsUsing = async ({
   }
 
   return { rebuilt, failed };
+};
+
+export type ResolveLapVariantResult = { ok: true; routeId: string; created: boolean } | { ok: false; message: string };
+
+/**
+ * feature-154: turn "this loop, that many laps" into a route the workout can
+ * point at.
+ *
+ * One lap means the chosen route itself, so no route row is created. More than
+ * one lap means a lap variant: a composite route with one `MAIN` segment. An
+ * identical variant already owned by the caller is reused, so the same loop at
+ * the same lap count never produces a second copy.
+ */
+export const resolveLapVariantRoute = async ({
+  userId,
+  routeId,
+  lapCount,
+}: {
+  userId: string;
+  routeId: string;
+  lapCount?: number | null;
+}): Promise<ResolveLapVariantResult> => {
+  const laps = lapCount ?? 1;
+
+  if (!Number.isInteger(laps) || laps < 1) {
+    return { ok: false, message: "Lap count must be a whole number of at least one" };
+  }
+
+  if (laps === 1) {
+    return { ok: true, routeId, created: false };
+  }
+
+  const child = (await prisma.route.findFirst({
+    where: { id: routeId, userId },
+    select: { id: true, title: true },
+  })) as { id: string; title: string } | null;
+
+  if (!child) {
+    return { ok: false, message: "Selected route is not available" };
+  }
+
+  const candidates = (await prisma.route.findMany({
+    where: {
+      userId,
+      isPart: false,
+      composition: {
+        is: {
+          segments: { some: { childRouteId: routeId, role: "MAIN", lapCount: laps } },
+        },
+      },
+    },
+    select: {
+      id: true,
+      composition: {
+        select: {
+          segments: { select: { childRouteId: true, role: true, lapCount: true } },
+        },
+      },
+    },
+  })) as Array<{
+    id: string;
+    composition: {
+      segments: Array<{ childRouteId: string; role: RouteSegmentRole; lapCount: number }>;
+    } | null;
+  }>;
+
+  const existing = candidates.find((candidate) => candidate.composition?.segments.length === 1);
+
+  if (existing) {
+    return { ok: true, routeId: existing.id, created: false };
+  }
+
+  // A variant uploads a generated GPX, so it follows the same gate as any
+  // other geometry write.
+  await requireTrustGatedAction("track-upload");
+
+  const suffix = ` × ${laps}`;
+  const maxBaseLength = Math.max(1, ROUTE_TITLE_MAX_LENGTH - suffix.length);
+  const baseTitle = child.title.length > maxBaseLength ? child.title.slice(0, maxBaseLength).trim() : child.title;
+  const title = `${baseTitle}${suffix}`;
+
+  const created = await createRouteCompositionForOwner({
+    userId,
+    title,
+    description: null,
+    segments: [{ childRouteId: routeId, role: AUTHORABLE_ROUTE_SEGMENT_ROLE, sortOrder: 0, lapCount: laps }],
+  });
+
+  if (!created.ok) {
+    return { ok: false, message: created.message };
+  }
+
+  return { ok: true, routeId: created.routeId, created: true };
 };
