@@ -1,7 +1,7 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import { Map, MapPin, Pencil, Trash2 } from "lucide-react";
+import { Layers, Map, MapPin, Pencil, RotateCw, Trash2 } from "lucide-react";
 
 import type { RouteListItem } from "@/app/_data/routes";
 import { Badge, Button, SortableHeader } from "@/components/index";
@@ -15,8 +15,14 @@ type CreateRouteColumnsInput = {
   onPreview: (route: RouteListItem) => void;
   onEdit: (route: RouteListItem) => void;
   onEditGeometry: (route: RouteListItem) => void;
+  /** feature-153: open the recipe builder of a composite route. */
+  onEditComposition: (route: RouteListItem) => void;
+  /** feature-153: rebuild a composition whose last propagation failed. */
+  onRebuild: (route: RouteListItem) => void;
   onSetDeleteTarget: (route: RouteListItem) => void;
 };
+
+const formatCount = (count: number, noun: string) => `${count} ${noun}${count === 1 ? "" : "s"}`;
 
 const formatDate = (value: Date | string) =>
   new Intl.DateTimeFormat("en", {
@@ -29,6 +35,8 @@ const createRouteColumns = ({
   onPreview,
   onEdit,
   onEditGeometry,
+  onEditComposition,
+  onRebuild,
   onSetDeleteTarget,
 }: CreateRouteColumnsInput): ColumnDef<RouteListItem>[] => [
   {
@@ -58,6 +66,27 @@ const createRouteColumns = ({
     cell: ({ row }) => <span className="text-sm">{formatDate(row.original.createdAt)}</span>,
   },
   {
+    // feature-153: a composite route is a recipe, so the row says how many
+    // segments and laps it holds; a stale row says its last rebuild failed.
+    id: "composition",
+    accessorFn: (route) => route.segmentCount,
+    header: ({ column }) => <SortableHeader column={column} label="Composition" className="w-48 justify-start" />,
+    cell: ({ row }) => {
+      if (!row.original.isComposite) {
+        return <span className="text-muted-foreground text-sm">—</span>;
+      }
+
+      return (
+        <div className="flex flex-wrap items-center gap-1">
+          <Badge variant="secondary">
+            {formatCount(row.original.segmentCount, "segment")} · {formatCount(row.original.segmentLapTotal, "lap")}
+          </Badge>
+          {row.original.staleAt ? <Badge variant="destructive">Stale</Badge> : null}
+        </div>
+      );
+    },
+  },
+  {
     id: "actions",
     cell: ({ row }) => {
       const route = row.original;
@@ -85,16 +114,42 @@ const createRouteColumns = ({
           >
             <Pencil className="size-4" />
           </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            title="Edit route geometry"
-            aria-label={`Edit geometry of ${route.title}`}
-            onClick={() => onEditGeometry(route)}
-          >
-            <MapPin className="size-4" />
-          </Button>
+          {route.isComposite ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              title="Edit composition"
+              aria-label={`Edit composition of ${route.title}`}
+              onClick={() => onEditComposition(route)}
+            >
+              <Layers className="size-4" />
+            </Button>
+          ) : null}
+          {route.isComposite && route.staleAt ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              title="Rebuild route"
+              aria-label={`Rebuild ${route.title}`}
+              onClick={() => onRebuild(route)}
+            >
+              <RotateCw className="size-4" />
+            </Button>
+          ) : null}
+          {route.isComposite ? null : (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              title="Edit route geometry"
+              aria-label={`Edit geometry of ${route.title}`}
+              onClick={() => onEditGeometry(route)}
+            >
+              <MapPin className="size-4" />
+            </Button>
+          )}
           <Button
             type="button"
             variant="ghost"

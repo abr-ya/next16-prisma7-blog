@@ -1,0 +1,202 @@
+# Spec Delta
+
+## ADDED Requirements
+
+### Requirement: The owner composes a route from existing routes
+
+The route library SHALL offer a **New composite route** action that opens a builder dialog. The dialog SHALL collect the parent title, an optional description, and an ordered list of segments, each naming an existing route and a positive lap count. A recipe SHALL be meaningful: at least two segments, or one segment with a lap count above one; a single segment with one lap SHALL be refused. Saving SHALL create an ordinary parent route whose geometry comes from that recipe.
+
+#### Scenario: Owner builds a route from two existing routes
+
+- **WHEN** the owner opens **New composite route**, enters a title, adds two routes in order, and saves
+- **THEN** the system creates a parent route with the generated geometry
+- **AND** the parent appears in the route library and in every route picker
+- **AND** it can be attached to a workout like any other route
+
+#### Scenario: A loop is repeated by its lap count
+
+- **WHEN** the owner sets one segment to three laps and saves
+- **THEN** the generated parent line contains that loop three times
+- **AND** the library shows the segment count and the total lap count
+
+#### Scenario: One route is enough for a repeated loop
+
+- **WHEN** the owner has one route and adds it as a single segment with three laps
+- **THEN** Save is enabled
+- **AND** the parent route is created from that repeated loop
+
+#### Scenario: A one-segment single-lap recipe is refused
+
+- **WHEN** the recipe holds one segment with a lap count of one
+- **THEN** Save stays disabled
+- **AND** the server refuses the recipe with a validation message
+- **AND** no route is created
+
+#### Scenario: An incomplete recipe cannot be saved
+
+- **WHEN** the title is empty, no segment is added, or a lap count is not a positive whole number
+- **THEN** Save stays disabled
+- **AND** no route is created
+
+#### Scenario: A gap between segments is reported
+
+- **WHEN** the chosen routes do not meet and the server refuses the recipe
+- **THEN** the dialog stays open with the entered recipe
+- **AND** the toast names the measured gap
+
+### Requirement: Only an eligible route can be a segment
+
+Only routes without a composition SHALL be offered as segments, the parent SHALL never be offered as its own segment, and a route marked as an ingredient SHALL stay selectable. The same route MAY be used by more than one segment; only the segment order has to be unique.
+
+#### Scenario: A composite route is not offered as its own segment
+
+- **WHEN** the owner opens the builder for an existing composite route
+- **THEN** that route is not listed among the selectable children
+- **AND** no route that already has a composition is listed
+- **AND** a route marked as an ingredient is still listed
+
+#### Scenario: The same route may be used twice
+
+- **WHEN** the owner adds the same route as two segments
+- **THEN** both segments are stored in that order
+- **AND** the generated line follows the stored order
+
+### Requirement: The owner edits a stored recipe
+
+The library SHALL let the owner reopen a composite route in the builder, change the order, remove or add segments, and change lap counts. Saving SHALL keep the same parent route and rebuild its geometry. A parent used by more than one track SHALL require the shared-route confirmation before the rebuild. The confirmation SHALL be asked after the recipe's own shape and meaning are checked, and before the children are read.
+
+#### Scenario: Reordering segments changes the shape
+
+- **WHEN** the owner moves the second segment above the first and saves
+- **THEN** the parent's generated line follows the new order
+- **AND** every track that uses the parent keeps the same route id
+- **AND** their maps and distances reflect the new shape
+
+#### Scenario: A shared composite asks for confirmation
+
+- **WHEN** the parent route is used by more than one track
+- **THEN** the dialog requires the shared confirmation before saving
+- **AND** a cancelled confirmation leaves the recipe and the geometry unchanged
+
+#### Scenario: A malformed recipe is refused before the shared confirmation
+
+- **WHEN** the parent route is shared and the recipe is malformed — an empty segment list, a lap count that is not a positive whole number, or a single segment with one lap
+- **THEN** the refusal names the reason
+- **AND** no confirmation is asked
+- **AND** the geometry stays unchanged
+
+#### Scenario: A recipe whose segments do not meet is refused after the shared confirmation
+
+- **WHEN** the parent route is shared and the chosen segments do not meet
+- **THEN** the owner is asked for the shared confirmation first
+- **AND** the refusal after it names the measured gap
+- **AND** the geometry stays unchanged
+
+#### Scenario: Editing a child rebuilds the parent
+
+- **WHEN** the owner changes the geometry of a route used as a segment
+- **THEN** every parent composition using it is rebuilt
+- **AND** the library shows the parent with its regenerated shape
+
+### Requirement: The library shows composition state and rebuilds a stale parent
+
+The route library SHALL show a composition badge with the segment count and the total lap count, SHALL mark a composition whose last rebuild failed as stale, and SHALL offer a rebuild action for a stale composition. A successful rebuild SHALL clear the stale marker, and a refused rebuild SHALL leave the stale marker in place.
+
+#### Scenario: A composite route carries a composition badge
+
+- **WHEN** the owner opens `/my/routes`
+- **THEN** a composite row shows the number of segments and the total number of laps
+- **AND** a plain route shows no composition badge
+
+#### Scenario: A failed propagation is visible
+
+- **WHEN** a child edit could not rebuild its parent
+- **THEN** the parent row shows a stale marker
+- **AND** the row offers a rebuild action
+
+#### Scenario: Rebuild clears the marker
+
+- **WHEN** the owner triggers the rebuild action and it succeeds
+- **THEN** the stale marker disappears
+- **AND** the parent serves its regenerated geometry
+
+#### Scenario: A refused rebuild keeps the marker
+
+- **WHEN** the owner triggers the rebuild action and the server refuses it
+- **THEN** the stale marker stays
+- **AND** the reason is reported to the owner
+
+### Requirement: A composite route's geometry comes from its recipe
+
+The library SHALL NOT offer geometry editing by placed points for a composite route, and the server SHALL refuse a points rewrite of a route that has a composition. The owner SHALL still be able to edit the parent's title and description.
+
+#### Scenario: Geometry editing is not offered
+
+- **WHEN** the owner opens the actions of a composite route in the library
+- **THEN** no geometry-edit action is offered
+- **AND** the recipe builder is the way to change the shape
+
+#### Scenario: A direct points rewrite is refused
+
+- **WHEN** a points rewrite reaches the server for a route that has a composition
+- **THEN** the system refuses it with a validation message that points at the recipe
+- **AND** the composition and its generated geometry stay unchanged
+
+#### Scenario: Title and description stay editable
+
+- **WHEN** the owner edits the title or the description of a composite route
+- **THEN** the change is stored
+- **AND** the composition is untouched
+
+### Requirement: A created composite route is a complete route
+
+Creating a composite route SHALL refuse a parent title that is empty or longer than the route form allows, and the created parent SHALL carry the parsed metadata of its generated line.
+
+#### Scenario: An empty title is refused
+
+- **WHEN** a create request arrives without a title
+- **THEN** the system refuses it with a validation message
+- **AND** no route is created
+
+#### Scenario: A created parent is a normal route
+
+- **WHEN** the owner saves a composite route
+- **THEN** the parent route stores its title, description, generated file, and parsed metadata
+- **AND** it appears in the route library with its composition badge
+
+## MODIFIED Requirements
+
+### Requirement: The parent geometry is materialized from full child points
+
+The system SHALL rebuild the parent route's geometry as one synthetic GPX built from the children's full precision points in order, repeating a loop segment as many times as its lap count, and SHALL parse the generated bytes into the parent's metadata. A segment with a lap count above one SHALL be a closed loop within the loop-closure tolerance; an open segment repeated SHALL be refused rather than joined with a straight connector. The rebuild SHALL retire the previous generated file and SHALL leave the track model and every public read path unchanged.
+
+#### Scenario: A two-lap run is materialized
+
+- **WHEN** a composition holds one `MAIN` segment with a lap count of three
+- **THEN** the parent's generated line contains the loop three times
+- **AND** the parent's parsed distance, bounds, and point count come from the generated line
+- **AND** the previous generated file is retired
+
+#### Scenario: A repeated loop adds no duplicate closing point
+
+- **WHEN** a loop's first and last point coincide within the loop-closure tolerance
+- **THEN** the repeated line drops the duplicate closing point between laps
+- **AND** the parent keeps its start point and gains no zero-length section at the seam
+
+#### Scenario: An open segment cannot be repeated
+
+- **WHEN** a segment whose first and last point are farther apart than the loop-closure tolerance is offered with a lap count above one
+- **THEN** the system refuses the composition with a validation message that says a repeated segment must be a closed loop
+- **AND** no geometry is generated and the parent stays unchanged
+
+#### Scenario: An open segment is still a valid single pass
+
+- **WHEN** an open segment is offered with a lap count of one
+- **THEN** the segment contributes its points once
+- **AND** the recipe is not refused for being open
+
+#### Scenario: Readers see an ordinary route
+
+- **WHEN** a workout uses the parent route
+- **THEN** its map, distance, and download come from the parent's generated file
+- **AND** no track column or public payload changes

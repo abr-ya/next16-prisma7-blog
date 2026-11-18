@@ -29,6 +29,7 @@ import {
   Spinner,
 } from "@/components/index";
 import { TrackEditor, type ManualTrackPoint } from "@/components/track-pages/track-editor";
+import { ROUTE_TITLE_MAX_LENGTH, ROUTE_TITLE_MAX_LENGTH_MESSAGE } from "@/lib/route-title";
 import type { TrackGpxCoordinate } from "@/lib/track-gpx-metadata";
 
 // feature-128: one dialog for both metadata writes. In create mode it also
@@ -42,7 +43,7 @@ const formSchema = z.object({
     .string()
     .trim()
     .min(1, { message: "Title is required" })
-    .max(120, { message: "Title must be 120 characters or fewer" }),
+    .max(ROUTE_TITLE_MAX_LENGTH, { message: ROUTE_TITLE_MAX_LENGTH_MESSAGE }),
   description: z.string().max(2000, { message: "Description must be 2000 characters or fewer" }).optional(),
 });
 
