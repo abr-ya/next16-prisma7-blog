@@ -153,6 +153,9 @@ const formSchema = z.object({
   recordingDurationMinutes: z.string().optional(),
   recordingDurationSeconds: z.string().optional(),
   includeSeconds: z.boolean().optional(),
+  // feature-154: `1` uses the chosen route as is; above one asks the server
+  // for a reusable lap variant of that loop.
+  lapCount: z.string().optional(),
 });
 
 type TrackFormValues = z.infer<typeof formSchema>;
@@ -179,6 +182,7 @@ const TRACK_FORM_DEFAULTS: TrackFormValues = {
   recordingDurationMinutes: "0",
   recordingDurationSeconds: "0",
   includeSeconds: false,
+  lapCount: "1",
 };
 
 const formatDate = (value: Date | string) =>
@@ -274,8 +278,14 @@ const TrackFormDialog = ({
   const isRouteBasedTrack = Boolean(track && !track.fileAssetId && track.route);
   const fileAssetId = useWatch({ control: form.control, name: "fileAssetId" });
   const fileAssetName = useWatch({ control: form.control, name: "fileAssetName" });
+  const lapCountValue = useWatch({ control: form.control, name: "lapCount" });
   const [activeTab, setActiveTab] = useState<TrackCreationMode>("gpx");
   const [selectedRouteId, setSelectedRouteId] = useState<string>(NEW_ROUTE_VALUE);
+  // The field only applies to a picked route; placing points for a brand-new
+  // route never uses it.
+  const isLapCountValid =
+    selectedRouteId === NEW_ROUTE_VALUE ||
+    (Number.isInteger(Number(lapCountValue ?? "1")) && Number(lapCountValue ?? "1") >= 1);
   const [placedPoints, setPlacedPoints] = useState<ManualTrackPoint[]>([]);
   const [isMarkingAsManual, setIsMarkingAsManual] = useState(false);
   const [markAsManualError, setMarkAsManualError] = useState<string | null>(null);
@@ -576,6 +586,13 @@ const TrackFormDialog = ({
           throw error;
         }
 
+        const lapCount = Number(values.lapCount ?? "1");
+
+        if (!Number.isInteger(lapCount) || lapCount < 1) {
+          toast.error("Lap count must be a whole number of at least one");
+          return;
+        }
+
         let routeId = selectedRouteId;
         if (isNewRoute) {
           // feature-127: a new route gets the track's title and description as
@@ -605,6 +622,7 @@ const TrackFormDialog = ({
 
         const result = await createTrackFromRoute({
           routeId,
+          lapCount: isNewRoute ? 1 : lapCount,
           title: values.title,
           slug: values.slug,
           description: values.description ?? null,
@@ -980,7 +998,11 @@ const TrackFormDialog = ({
     ? isRouteBasedTrack || Boolean(fileAssetId)
     : activeTab === "gpx"
       ? Boolean(fileAssetId)
-      : (selectedRouteId !== NEW_ROUTE_VALUE || placedPoints.length >= 2) && hasStart && hasDuration && hasTimezone;
+      : (selectedRouteId !== NEW_ROUTE_VALUE || placedPoints.length >= 2) &&
+        isLapCountValid &&
+        hasStart &&
+        hasDuration &&
+        hasTimezone;
 
   return (
     <>
@@ -1120,6 +1142,32 @@ const TrackFormDialog = ({
                       {routes.length === 0 ? t("trackFormRouteEmpty") : t("trackFormRouteHelp")}
                     </p>
                   </div>
+                  {selectedRouteId !== NEW_ROUTE_VALUE ? (
+                    <FormField
+                      control={form.control}
+                      name="lapCount"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Laps</FormLabel>
+                          <FormControl>
+                            <Input
+                              {...field}
+                              type="number"
+                              min="1"
+                              step="1"
+                              inputMode="numeric"
+                              className="w-28"
+                              disabled={isEditing}
+                            />
+                          </FormControl>
+                          <p className="text-xs text-muted-foreground">
+                            One uses the route as is; more repeats the loop and creates a reusable variant.
+                          </p>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  ) : null}
                   {selectedRouteId === NEW_ROUTE_VALUE ? (
                     <TrackEditor
                       initialPoints={placedPoints}

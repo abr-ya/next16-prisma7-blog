@@ -79,6 +79,14 @@ const quickRouteWorkoutSchema = z.object({
     .min(1, { message: "Duration is required" })
     .refine((value) => Number(value) > 0, { message: "Duration must be greater than zero" }),
   gearId: z.string().optional(),
+  // feature-154: `1` uses the route as is; above one creates or reuses a lap
+  // variant of the chosen loop.
+  lapCount: z
+    .string()
+    .min(1, { message: "Laps are required" })
+    .refine((value) => Number.isInteger(Number(value)) && Number(value) >= 1, {
+      message: "Laps must be a whole number of at least one",
+    }),
 });
 
 type QuickRouteWorkoutFormValues = z.infer<typeof quickRouteWorkoutSchema>;
@@ -175,6 +183,7 @@ export const QuickWorkoutUploadDialog = ({
       recordingStartAt: formatManualTrackStartAt({ value: new Date(), timezone: deviceTimeZone }),
       durationMinutes: "60",
       gearId: preselectedGearId,
+      lapCount: "1",
     },
     mode: "onBlur",
   });
@@ -220,6 +229,7 @@ export const QuickWorkoutUploadDialog = ({
       recordingStartAt: formatManualTrackStartAt({ value: new Date(), timezone: deviceTimeZone }),
       durationMinutes: "60",
       gearId: preselectedGearId,
+      lapCount: "1",
     });
     suggestedTitleRef.current = null;
     setMode("gpx");
@@ -397,6 +407,7 @@ export const QuickWorkoutUploadDialog = ({
     try {
       const result = await createQuickRouteWorkout({
         routeId: values.routeId,
+        lapCount: Number(values.lapCount),
         activityTypeId: activityType.id,
         title,
         slug,
@@ -458,7 +469,11 @@ export const QuickWorkoutUploadDialog = ({
   // feature-146: the route mode saves only a complete form — a route, a start
   // and a duration. Without a parsed route there is nothing to save.
   const routeSaveEnabled = Boolean(
-    routeValues.routeId && routeValues.recordingStartAt && Number(routeValues.durationMinutes) > 0,
+    routeValues.routeId &&
+    routeValues.recordingStartAt &&
+    Number(routeValues.durationMinutes) > 0 &&
+    Number.isInteger(Number(routeValues.lapCount)) &&
+    Number(routeValues.lapCount) >= 1,
   );
 
   return (
@@ -612,6 +627,31 @@ export const QuickWorkoutUploadDialog = ({
                               ))}
                             </SelectContent>
                           </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={routeForm.control}
+                      name="lapCount"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Laps</FormLabel>
+                          <FormControl>
+                            <Input
+                              {...field}
+                              type="number"
+                              min="1"
+                              step="1"
+                              inputMode="numeric"
+                              className="w-28"
+                              disabled={isSaving}
+                            />
+                          </FormControl>
+                          <p className="text-xs text-muted-foreground">
+                            One uses the route as is; more repeats the loop and creates a reusable variant.
+                          </p>
                           <FormMessage />
                         </FormItem>
                       )}

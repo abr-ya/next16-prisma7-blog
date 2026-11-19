@@ -136,6 +136,40 @@ const createTrackWorkoutColumns = ({
     sortUndefined: "last",
   },
   {
+    id: "laps",
+    meta: { sortLabel: "Laps" },
+    // feature-154: laps come from the route's recipe, not from the track;
+    // only MAIN segments add a lap, so a lead-in or a lead-out does not.
+    accessorFn: (row) => {
+      const segments = row.route?.composition?.segments ?? null;
+
+      if (!segments) return undefined;
+
+      return segments
+        .filter((segment) => segment.role === "MAIN")
+        .reduce((total, segment) => total + segment.lapCount, 0);
+    },
+    header: ({ column }) => <SortableHeader column={column} label="Laps" />,
+    cell: ({ row }) => {
+      const segments = row.original.route?.composition?.segments ?? null;
+
+      if (!segments) return <span className="text-sm text-muted-foreground">—</span>;
+
+      const laps = segments
+        .filter((segment) => segment.role === "MAIN")
+        .reduce((total, segment) => total + segment.lapCount, 0);
+
+      return (
+        <span className="text-sm">
+          {laps} {laps === 1 ? "lap" : "laps"}
+          {segments.length > 1 ? ` · ${segments.length} segments` : ""}
+        </span>
+      );
+    },
+    sortingFn: "basic",
+    sortUndefined: "last",
+  },
+  {
     id: "duration",
     meta: { sortLabel: "Duration" },
     accessorFn: (row) => getEffectiveTrackDurationSeconds(row),

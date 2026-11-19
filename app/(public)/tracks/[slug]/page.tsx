@@ -96,6 +96,14 @@ const TrackPage = async ({ params }: TrackPageProps) => {
             <Route className="size-3.5" />
             GPX track
           </Badge>
+          {track.routeLapCount !== null && track.routeLapCount > 0 ? (
+            <Badge variant="secondary">
+              {track.routeLapCount} {track.routeLapCount === 1 ? "lap" : "laps"}
+              {track.routeSegmentCount !== null && track.routeSegmentCount > 1
+                ? ` · ${track.routeSegmentCount} segments`
+                : ""}
+            </Badge>
+          ) : null}
           {track.timeSource ? (
             <Badge variant="secondary">Source: {formatTrackTimeSource(track.timeSource)}</Badge>
           ) : null}

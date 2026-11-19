@@ -92,6 +92,9 @@ export const DraftWorkoutDialog = ({
   const [isSaving, setIsSaving] = useState(false);
   const [isCompleting, setIsCompleting] = useState(false);
   const [selectedRouteId, setSelectedRouteId] = useState("");
+  // feature-154: `1` attaches the chosen route as is; above one completes the
+  // draft on a reusable lap variant of that loop.
+  const [lapCount, setLapCount] = useState("1");
   const [createRouteOpen, setCreateRouteOpen] = useState(false);
 
   const browserTimeZone = useMemo(() => Intl.DateTimeFormat().resolvedOptions().timeZone ?? null, []);
@@ -147,10 +150,18 @@ export const DraftWorkoutDialog = ({
     async (routeId: string) => {
       if (!draft || !routeId) return;
 
+      const laps = Number(lapCount);
+
+      if (!Number.isInteger(laps) || laps < 1) {
+        toast.error("Lap count must be a whole number of at least one");
+
+        return;
+      }
+
       setIsCompleting(true);
 
       try {
-        const result = await attachRouteToTrack(draft.id, routeId);
+        const result = await attachRouteToTrack(draft.id, routeId, laps);
 
         if (!result.ok) {
           toast.error(result.message);
@@ -164,7 +175,7 @@ export const DraftWorkoutDialog = ({
         setIsCompleting(false);
       }
     },
-    [draft, finish, t],
+    [draft, finish, lapCount, t],
   );
 
   const handleUploadComplete = useCallback(
@@ -390,6 +401,23 @@ export const DraftWorkoutDialog = ({
                           ))}
                         </SelectContent>
                       </Select>
+                      <div className="grid gap-1">
+                        <Label htmlFor="draft-lap-count">Laps</Label>
+                        <Input
+                          id="draft-lap-count"
+                          type="number"
+                          min="1"
+                          step="1"
+                          inputMode="numeric"
+                          className="w-28"
+                          value={lapCount}
+                          disabled={isBusy}
+                          onChange={(event) => setLapCount(event.target.value)}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          One uses the route as is; more repeats the loop and creates a reusable variant.
+                        </p>
+                      </div>
                       <Button
                         type="button"
                         variant="outline"
