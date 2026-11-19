@@ -6,8 +6,8 @@ import { requireTrustGatedAction } from "@/lib/auth-trust-gates.server";
 import { validateGpxString } from "@/lib/gpx-validation";
 import prisma from "@/lib/prisma";
 import {
-  AUTHORABLE_ROUTE_SEGMENT_ROLE,
   buildRouteCompositionPoints,
+  DEFAULT_ROUTE_SEGMENT_ROLE,
   validateRouteCompositionRecipe,
   type RouteCompositionPoint,
   type RouteCompositionSegmentInput,
@@ -97,7 +97,7 @@ class UnreadableChildRouteError extends Error {
 const normalizeSegmentInputs = (segments: RouteCompositionSegmentRequest[]): RouteCompositionSegmentInput[] =>
   segments.map((segment) => ({
     childRouteId: segment.childRouteId?.trim() ?? "",
-    role: segment.role?.trim() || AUTHORABLE_ROUTE_SEGMENT_ROLE,
+    role: segment.role?.trim() || DEFAULT_ROUTE_SEGMENT_ROLE,
     sortOrder: segment.sortOrder,
     lapCount: segment.lapCount,
   }));
@@ -189,7 +189,9 @@ const prepareComposition = async ({
     return {
       childRouteId: segment.childRouteId,
       title: child.title,
-      role: AUTHORABLE_ROUTE_SEGMENT_ROLE,
+      // feature-155: the role was validated by the recipe check, so it is
+      // stored as offered instead of being forced to MAIN.
+      role: segment.role as RouteSegmentRole,
       sortOrder: segment.sortOrder,
       lapCount: segment.lapCount,
       childRoute: { fileAsset: { url: child.fileAsset.url } },
@@ -722,7 +724,7 @@ export const resolveLapVariantRoute = async ({
     userId,
     title,
     description: null,
-    segments: [{ childRouteId: routeId, role: AUTHORABLE_ROUTE_SEGMENT_ROLE, sortOrder: 0, lapCount: laps }],
+    segments: [{ childRouteId: routeId, role: DEFAULT_ROUTE_SEGMENT_ROLE, sortOrder: 0, lapCount: laps }],
   });
 
   if (!created.ok) {

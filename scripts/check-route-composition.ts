@@ -154,11 +154,82 @@ const segment = (
     zeroLaps.ok ? "plan unexpectedly succeeded" : zeroLaps.issue.message,
   );
 
-  const startRole = buildRouteCompositionPoints([segment("a", loop, { role: "START" })]);
+  const leadIn = [
+    { lat: 0, lng: 0.001 },
+    { lat: 0, lng: 0 },
+  ];
+  const leadOut = [
+    { lat: 0, lng: 0 },
+    { lat: 0, lng: 0.001 },
+  ];
+
+  const withConnectors = buildRouteCompositionPoints([
+    segment("in", leadIn, { role: "START", sortOrder: 0 }),
+    segment("loop", loop, { sortOrder: 1, lapCount: 2 }),
+    segment("out", leadOut, { role: "END", sortOrder: 2 }),
+  ]);
   expect(
-    "a start role is refused in this slice",
-    !startRole.ok && startRole.issue.code === "NON_MAIN_ROLE",
-    startRole.ok ? "plan unexpectedly succeeded" : startRole.issue.message,
+    "a lead-in, two laps, and a lead-out materialize in order",
+    withConnectors.ok && withConnectors.points.length === 2 + (2 * loop.length - 1) + 2,
+    withConnectors.ok ? `${withConnectors.points.length} points` : withConnectors.issue.message,
+  );
+
+  const startNotFirst = buildRouteCompositionPoints([
+    segment("loop", loop, { sortOrder: 0 }),
+    segment("in", leadIn, { role: "START", sortOrder: 1 }),
+  ]);
+  expect(
+    "a start that is not first is refused",
+    !startNotFirst.ok && startNotFirst.issue.code === "ROLE_ORDER",
+    startNotFirst.ok ? "plan unexpectedly succeeded" : startNotFirst.issue.message,
+  );
+
+  const secondStart = buildRouteCompositionPoints([
+    segment("in", leadIn, { role: "START", sortOrder: 0 }),
+    segment("in2", leadIn, { role: "START", sortOrder: 1 }),
+    segment("loop", loop, { sortOrder: 2 }),
+  ]);
+  expect(
+    "a second start is refused",
+    !secondStart.ok && secondStart.issue.code === "ROLE_DUPLICATE",
+    secondStart.ok ? "plan unexpectedly succeeded" : secondStart.issue.message,
+  );
+
+  const endInTheMiddle = buildRouteCompositionPoints([
+    segment("out", leadOut, { role: "END", sortOrder: 0 }),
+    segment("loop", loop, { sortOrder: 1 }),
+  ]);
+  expect(
+    "an end that is not last is refused",
+    !endInTheMiddle.ok && endInTheMiddle.issue.code === "ROLE_ORDER",
+    endInTheMiddle.ok ? "plan unexpectedly succeeded" : endInTheMiddle.issue.message,
+  );
+
+  const connectorLaps = buildRouteCompositionPoints([
+    segment("in", leadIn, { role: "START", sortOrder: 0, lapCount: 2 }),
+    segment("loop", loop, { sortOrder: 1 }),
+  ]);
+  expect(
+    "a start with more than one lap is refused",
+    !connectorLaps.ok && connectorLaps.issue.code === "CONNECTOR_LAPS",
+    connectorLaps.ok ? "plan unexpectedly succeeded" : connectorLaps.issue.message,
+  );
+
+  const noMain = buildRouteCompositionPoints([
+    segment("in", leadIn, { role: "START", sortOrder: 0 }),
+    segment("out", leadOut, { role: "END", sortOrder: 1 }),
+  ]);
+  expect(
+    "a recipe without a main segment is refused",
+    !noMain.ok && noMain.issue.code === "ROLE_MISSING_MAIN",
+    noMain.ok ? "plan unexpectedly succeeded" : noMain.issue.message,
+  );
+
+  const unknownRole = buildRouteCompositionPoints([segment("a", loop, { role: "FOO" })]);
+  expect(
+    "an unknown role is refused",
+    !unknownRole.ok && unknownRole.issue.code === "ROLE",
+    unknownRole.ok ? "plan unexpectedly succeeded" : unknownRole.issue.message,
   );
 
   const singlePoint = buildRouteCompositionPoints([segment("a", [{ lat: 0, lng: 0 }])]);
