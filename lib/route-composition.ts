@@ -23,8 +23,13 @@ export const ROUTE_COMPOSITION_CONTINUITY_TOLERANCE_METERS = 25;
  */
 export const ROUTE_COMPOSITION_LOOP_CLOSURE_TOLERANCE_METERS = 25;
 
-/** The only role this slice can author; start/end segments ship separately. */
-export const AUTHORABLE_ROUTE_SEGMENT_ROLE = "MAIN" as const;
+/** The roles a recipe can carry. Only MAIN may repeat. */
+export const ROUTE_SEGMENT_ROLES = ["START", "MAIN", "END"] as const;
+
+export type RouteSegmentRoleKey = (typeof ROUTE_SEGMENT_ROLES)[number];
+
+/** A segment without an explicit role is a main segment. */
+export const DEFAULT_ROUTE_SEGMENT_ROLE = "MAIN" as const;
 
 export type RouteCompositionPoint = { lat: number; lng: number };
 
@@ -44,7 +49,17 @@ export type RouteCompositionSegment = RouteCompositionSegmentInput & {
  * shape of the recipe and whether it means anything.
  */
 export type RouteRecipeIssue = {
-  code: "NO_SEGMENTS" | "ORDER" | "DUPLICATE_ORDER" | "NON_MAIN_ROLE" | "LAP_COUNT" | "NOT_MEANINGFUL";
+  code:
+    | "NO_SEGMENTS"
+    | "ORDER"
+    | "DUPLICATE_ORDER"
+    | "ROLE"
+    | "ROLE_ORDER"
+    | "ROLE_DUPLICATE"
+    | "ROLE_MISSING_MAIN"
+    | "CONNECTOR_LAPS"
+    | "LAP_COUNT"
+    | "NOT_MEANINGFUL";
   message: string;
 };
 
@@ -75,8 +90,10 @@ const distanceMeters = (from: RouteCompositionPoint, to: RouteCompositionPoint) 
 const formatMeters = (value: number) => `${Math.round(value)} m`;
 
 /**
- * Validate the shape of a recipe before any geometry or storage work. A
- * recipe is ordered, non-empty, MAIN-only and carries a positive lap count.
+ * Validate the shape of a recipe before any geometry or storage work: a
+ * non-empty ordered list, known roles, a start only first, an end only last,
+ * at least one main segment, and a positive lap count that only a main
+ * segment may raise above one.
  */
 export const validateRouteCompositionSegments = (segments: RouteCompositionSegmentInput[]): RouteRecipeIssue | null => {
   if (segments.length === 0) {
@@ -95,16 +112,45 @@ export const validateRouteCompositionSegments = (segments: RouteCompositionSegme
     }
     seenOrders.add(segment.sortOrder);
 
-    if (segment.role !== AUTHORABLE_ROUTE_SEGMENT_ROLE) {
-      return {
-        code: "NON_MAIN_ROLE",
-        message: "Only the main segment role is supported yet",
-      };
+    if (!(ROUTE_SEGMENT_ROLES as readonly string[]).includes(segment.role)) {
+      return { code: "ROLE", message: "A segment role must be start, main, or end" };
     }
 
     if (!Number.isInteger(segment.lapCount) || segment.lapCount < 1) {
       return { code: "LAP_COUNT", message: "A segment lap count must be a positive whole number" };
     }
+
+    if (segment.role !== DEFAULT_ROUTE_SEGMENT_ROLE && segment.lapCount !== 1) {
+      return {
+        code: "CONNECTOR_LAPS",
+        message: "Only a main segment can repeat; a start or an end is a single pass",
+      };
+    }
+  }
+
+  const ordered = [...segments].sort((first, second) => first.sortOrder - second.sortOrder);
+  const starts = ordered.filter((segment) => segment.role === "START");
+  const ends = ordered.filter((segment) => segment.role === "END");
+  const mains = ordered.filter((segment) => segment.role === DEFAULT_ROUTE_SEGMENT_ROLE);
+
+  if (starts.length > 1) {
+    return { code: "ROLE_DUPLICATE", message: "A route composition can have only one start segment" };
+  }
+
+  if (ends.length > 1) {
+    return { code: "ROLE_DUPLICATE", message: "A route composition can have only one end segment" };
+  }
+
+  if (starts.length === 1 && ordered[0].role !== "START") {
+    return { code: "ROLE_ORDER", message: "The start segment must be the first segment" };
+  }
+
+  if (ends.length === 1 && ordered[ordered.length - 1].role !== "END") {
+    return { code: "ROLE_ORDER", message: "The end segment must be the last segment" };
+  }
+
+  if (mains.length === 0) {
+    return { code: "ROLE_MISSING_MAIN", message: "A route composition needs at least one main segment" };
   }
 
   return null;

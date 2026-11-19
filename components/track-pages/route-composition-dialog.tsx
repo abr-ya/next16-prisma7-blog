@@ -35,9 +35,12 @@ import { ROUTE_TITLE_MAX_LENGTH } from "@/lib/route-title";
 // The copy is English like the rest of the route library; localization is a
 // separate candidate.
 
+type SegmentRole = "START" | "MAIN" | "END";
+
 type SegmentRow = {
   key: string;
   childRouteId: string;
+  role: SegmentRole;
   /** Kept as the input's own string so a cleared field is not read as zero. */
   lapCount: string;
 };
@@ -109,6 +112,7 @@ export const RouteCompositionDialog = ({
           detail.segments.map((segment) => ({
             key: nextKey(),
             childRouteId: segment.childRouteId,
+            role: segment.role as SegmentRole,
             lapCount: String(segment.lapCount),
           })),
         );
@@ -132,13 +136,23 @@ export const RouteCompositionDialog = ({
   const totalLaps = segments.reduce((total, segment) => total + (Number(segment.lapCount) || 0), 0);
 
   const updateSegment = (key: string, patch: Partial<SegmentRow>) => {
-    setSegments((current) => current.map((segment) => (segment.key === key ? { ...segment, ...patch } : segment)));
+    setSegments((current) =>
+      current.map((segment) => {
+        if (segment.key !== key) return segment;
+
+        const next = { ...segment, ...patch };
+        // A start or an end is a single pass; the server refuses anything else.
+        if (next.role !== "MAIN") next.lapCount = "1";
+
+        return next;
+      }),
+    );
   };
 
   const addSegment = () => {
     const fallback = eligibleRoutes[0]?.id ?? "";
 
-    setSegments((current) => [...current, { key: nextKey(), childRouteId: fallback, lapCount: "1" }]);
+    setSegments((current) => [...current, { key: nextKey(), childRouteId: fallback, role: "MAIN", lapCount: "1" }]);
   };
 
   const removeSegment = (key: string) => {
@@ -165,6 +179,8 @@ export const RouteCompositionDialog = ({
     (segment) => segment.childRouteId && Number.isInteger(Number(segment.lapCount)) && Number(segment.lapCount) >= 1,
   );
   const isMeaningful = segments.length > 1 || (segments.length === 1 && Number(segments[0].lapCount) > 1);
+  const hasMainSegment = segments.some((segment) => segment.role === "MAIN");
+  const connectorLapsAreOne = segments.every((segment) => segment.role === "MAIN" || Number(segment.lapCount) === 1);
   const canSave =
     !isLoading &&
     !isSaving &&
@@ -172,12 +188,14 @@ export const RouteCompositionDialog = ({
     Boolean(trimmedTitle) &&
     Boolean(description.trim().length <= 2000) &&
     everySegmentComplete &&
+    hasMainSegment &&
+    connectorLapsAreOne &&
     isMeaningful;
 
   const submit = async (confirmShared: boolean) => {
     const payload = segments.map((segment, index) => ({
       childRouteId: segment.childRouteId,
-      role: "MAIN",
+      role: segment.role,
       sortOrder: index,
       lapCount: Number(segment.lapCount),
     }));
@@ -364,6 +382,21 @@ export const RouteCompositionDialog = ({
                           </SelectContent>
                         </Select>
 
+                        <Select
+                          value={segment.role}
+                          disabled={isSaving}
+                          onValueChange={(value) => updateSegment(segment.key, { role: value as SegmentRole })}
+                        >
+                          <SelectTrigger className="w-28">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="START">Start</SelectItem>
+                            <SelectItem value="MAIN">Main</SelectItem>
+                            <SelectItem value="END">End</SelectItem>
+                          </SelectContent>
+                        </Select>
+
                         <div className="flex items-center gap-1">
                           <label htmlFor={`lap-count-${segment.key}`} className="text-muted-foreground text-sm">
                             Laps
@@ -376,7 +409,7 @@ export const RouteCompositionDialog = ({
                             inputMode="numeric"
                             className="w-20"
                             value={segment.lapCount}
-                            disabled={isSaving}
+                            disabled={isSaving || segment.role !== "MAIN"}
                             onChange={(event) => updateSegment(segment.key, { lapCount: event.target.value })}
                           />
                         </div>
