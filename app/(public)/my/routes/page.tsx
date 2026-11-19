@@ -22,7 +22,7 @@ export const metadata: Metadata = buildPageMetadata({
 const MyRoutesPage = async () => {
   const { t } = await getT(workspaceNamespace);
   await requireAuth();
-  const routes = await getOwnerRoutes();
+  const routes = await getOwnerRoutes({ includeParts: true });
 
   return (
     <PageLayout title={t("pages.myRoutes")} contentWidth="wide" className="pt-6">

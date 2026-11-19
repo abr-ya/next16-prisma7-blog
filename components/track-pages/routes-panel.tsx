@@ -1,12 +1,12 @@
 "use client";
 
-import { Layers, Plus } from "lucide-react";
+import { Layers, Package, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { rebuildRouteComposition } from "@/app/_data/route-compositions";
-import { deleteRoute, type RouteListItem } from "@/app/_data/routes";
+import { deleteRoute, setRoutePart, type RouteListItem } from "@/app/_data/routes";
 import { Button, ConfirmDialog, DataTable } from "@/components/index";
 import { RouteCompositionDialog } from "@/components/track-pages/route-composition-dialog";
 import { createRouteColumns } from "@/components/track-pages/routes-columns";
@@ -33,6 +33,14 @@ export const RoutesPanel = ({ routes }: RoutesPanelProps) => {
   // composite"; a stored row means "edit its recipe".
   const [compositionOpen, setCompositionOpen] = useState(false);
   const [compositionRoute, setCompositionRoute] = useState<RouteListItem | null>(null);
+  // feature-156: ingredient routes are hidden by default; the filter reveals
+  // them and reports how many are hidden.
+  const [showParts, setShowParts] = useState(false);
+  const hiddenPartCount = useMemo(() => routes.filter((route) => route.isPart).length, [routes]);
+  const visibleRoutes = useMemo(
+    () => (showParts ? routes : routes.filter((route) => !route.isPart)),
+    [routes, showParts],
+  );
 
   const deleteConfirm = useDeleteRowConfirm<RouteListItem>({
     // The button is disabled while a route has linked tracks, so a refusal
@@ -76,6 +84,26 @@ export const RoutesPanel = ({ routes }: RoutesPanelProps) => {
             router.refresh();
           });
         },
+        onTogglePart: (route) => {
+          void setRoutePart(route.id, !route.isPart).then((result) => {
+            if (!result.ok) {
+              toast.error(result.message);
+
+              return;
+            }
+
+            if (result.isPart) {
+              // Keep the row visible after it is marked, so it does not vanish
+              // under the owner's cursor.
+              setShowParts(true);
+              toast.success("Route marked as a part. Parts are hidden from pickers.");
+            } else {
+              toast.success("Route is standalone again.");
+            }
+
+            router.refresh();
+          });
+        },
         onSetDeleteTarget: deleteConfirm.setTarget,
       }),
     [deleteConfirm.setTarget, router],
@@ -89,6 +117,16 @@ export const RoutesPanel = ({ routes }: RoutesPanelProps) => {
   return (
     <div className="flex flex-col gap-4 p-4">
       <div className="flex flex-wrap justify-end gap-2">
+        {hiddenPartCount > 0 || showParts ? (
+          <Button
+            type="button"
+            variant={showParts ? "secondary" : "outline"}
+            onClick={() => setShowParts((current) => !current)}
+          >
+            <Package />
+            {showParts ? "Hide parts" : `Show parts (${hiddenPartCount})`}
+          </Button>
+        ) : null}
         <Button
           type="button"
           variant="outline"
@@ -110,8 +148,12 @@ export const RoutesPanel = ({ routes }: RoutesPanelProps) => {
         <div className="rounded-md border p-8 text-center text-sm text-muted-foreground">
           You have no routes yet. A route is a reusable shape: create one here, then pick it when you add a track.
         </div>
+      ) : visibleRoutes.length === 0 ? (
+        <div className="rounded-md border p-8 text-center text-sm text-muted-foreground">
+          Every route you have is marked as a part. Use <span className="font-medium">Show parts</span> to see them.
+        </div>
       ) : (
-        <DataTable data={routes} columns={columns} pagination={{ pageSize: 10 }} />
+        <DataTable data={visibleRoutes} columns={columns} pagination={{ pageSize: 10 }} />
       )}
 
       <RouteFormDialog
