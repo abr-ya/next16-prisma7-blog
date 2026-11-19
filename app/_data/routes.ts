@@ -46,6 +46,8 @@ export type RouteListItem = {
   segmentLapTotal: number;
   /** Set when a child edit could not rebuild this parent. */
   staleAt: Date | null;
+  /** feature-156: an ingredient route, hidden from standalone pickers. */
+  isPart: boolean;
 };
 
 export type RouteDetail = RouteListItem & {
@@ -215,12 +217,17 @@ export const createRouteFromPoints = async (input: CreateRouteInput): Promise<Cr
   }
 };
 
-export const getOwnerRoutes = async (): Promise<RouteListItem[]> => {
+export const getOwnerRoutes = async ({
+  includeParts = false,
+}: {
+  /** feature-156: the library asks for every route; pickers keep the default. */
+  includeParts?: boolean;
+} = {}): Promise<RouteListItem[]> => {
   const userId = await getRequiredUserId();
   const { default: prisma } = await import("@/lib/prisma");
 
   const routes = (await prisma.route.findMany({
-    where: { userId },
+    where: { userId, ...(includeParts ? {} : { isPart: false }) },
     orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
     select: {
       id: true,
@@ -229,6 +236,7 @@ export const getOwnerRoutes = async (): Promise<RouteListItem[]> => {
       createdAt: true,
       updatedAt: true,
       metadata: true,
+      isPart: true,
       _count: { select: { tracks: true } },
       // feature-153: the library shows whether a route is a composite, how
       // many segments it has, how many laps it repeats, and whether its last
@@ -247,6 +255,7 @@ export const getOwnerRoutes = async (): Promise<RouteListItem[]> => {
     createdAt: Date;
     updatedAt: Date;
     metadata: Prisma.JsonValue | null;
+    isPart: boolean;
     _count: { tracks: number };
     composition: { staleAt: Date | null; segments: Array<{ lapCount: number }> } | null;
   }>;
@@ -263,6 +272,7 @@ export const getOwnerRoutes = async (): Promise<RouteListItem[]> => {
     segmentCount: route.composition?.segments.length ?? 0,
     segmentLapTotal: route.composition?.segments.reduce((total, segment) => total + segment.lapCount, 0) ?? 0,
     staleAt: route.composition?.staleAt ?? null,
+    isPart: route.isPart,
   }));
 };
 
@@ -279,6 +289,7 @@ export const getRouteById = async (routeId: string): Promise<RouteDetail | null>
       createdAt: true,
       updatedAt: true,
       metadata: true,
+      isPart: true,
       _count: { select: { tracks: true } },
       // feature-153: the row shape is shared with the library, so the detail
       // read fills the composition fields too.
@@ -296,6 +307,7 @@ export const getRouteById = async (routeId: string): Promise<RouteDetail | null>
     createdAt: Date;
     updatedAt: Date;
     metadata: Prisma.JsonValue | null;
+    isPart: boolean;
     _count: { tracks: number };
     composition: { staleAt: Date | null; segments: Array<{ lapCount: number }> } | null;
   } | null;
@@ -314,6 +326,7 @@ export const getRouteById = async (routeId: string): Promise<RouteDetail | null>
     segmentCount: route.composition?.segments.length ?? 0,
     segmentLapTotal: route.composition?.segments.reduce((total, segment) => total + segment.lapCount, 0) ?? 0,
     staleAt: route.composition?.staleAt ?? null,
+    isPart: route.isPart,
     points: readRoutePoints(route.metadata),
   };
 };
@@ -694,6 +707,87 @@ export const deleteRoute = async (routeId: string): Promise<DeleteRouteResult> =
       ok: false,
       code: "INTERNAL",
       message: "Could not delete the route. Nothing was removed — please try again.",
+    };
+  }
+};
+
+export type SetRoutePartResult =
+  | { ok: true; isPart: boolean }
+  | {
+      ok: false;
+      code: "NOT_FOUND" | "VALIDATION" | "INTERNAL";
+      message: string;
+      linkedTrackCount?: number;
+    };
+
+/**
+ * feature-156: mark or unmark an ingredient route.
+ *
+ * A part is hidden from standalone pickers and the default library view, so it
+ * can only be set on a route that nothing depends on: an attached route would
+ * become an attached part, and a composite parent is a route the owner
+ * attaches, not a piece of one. Clearing the flag is always safe.
+ */
+export const setRoutePart = async (routeId: string, isPart: boolean): Promise<SetRoutePartResult> => {
+  const normalizedId = routeId?.trim() ?? "";
+
+  if (!normalizedId) {
+    return { ok: false, code: "NOT_FOUND", message: "Route not found" };
+  }
+
+  try {
+    const userId = await getRequiredUserId();
+    const { default: prisma } = await import("@/lib/prisma");
+
+    const existing = (await prisma.route.findFirst({
+      where: { id: normalizedId, userId },
+      select: {
+        id: true,
+        isPart: true,
+        _count: { select: { tracks: true } },
+        composition: { select: { id: true } },
+      },
+    })) as {
+      id: string;
+      isPart: boolean;
+      _count: { tracks: number };
+      composition: { id: string } | null;
+    } | null;
+
+    if (!existing) {
+      return { ok: false, code: "NOT_FOUND", message: "Route not found" };
+    }
+
+    if (isPart) {
+      const linkedTrackCount = existing._count.tracks;
+
+      if (linkedTrackCount > 0) {
+        return {
+          ok: false,
+          code: "VALIDATION",
+          message: `This route is used by ${linkedTrackCount} track${linkedTrackCount === 1 ? "" : "s"} and cannot become a part.`,
+          linkedTrackCount,
+        };
+      }
+
+      if (existing.composition) {
+        return {
+          ok: false,
+          code: "VALIDATION",
+          message: "A composite route is not an ingredient — clear its composition first.",
+        };
+      }
+    }
+
+    await prisma.route.update({ where: { id: existing.id }, data: { isPart } });
+    revalidateRoutePaths();
+
+    return { ok: true, isPart };
+  } catch {
+    return {
+      ok: false,
+      code: "INTERNAL",
+      message: "Could not change the route. Nothing was updated — please try again.",
     };
   }
 };

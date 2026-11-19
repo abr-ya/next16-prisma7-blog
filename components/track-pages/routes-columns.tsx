@@ -1,7 +1,7 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import { Layers, Map, MapPin, Pencil, RotateCw, Trash2 } from "lucide-react";
+import { Layers, Map, MapPin, Package, Pencil, RotateCw, Trash2 } from "lucide-react";
 
 import type { RouteListItem } from "@/app/_data/routes";
 import { Badge, Button, SortableHeader } from "@/components/index";
@@ -19,6 +19,8 @@ type CreateRouteColumnsInput = {
   onEditComposition: (route: RouteListItem) => void;
   /** feature-153: rebuild a composition whose last propagation failed. */
   onRebuild: (route: RouteListItem) => void;
+  /** feature-156: mark a route as an ingredient, or make it standalone again. */
+  onTogglePart: (route: RouteListItem) => void;
   onSetDeleteTarget: (route: RouteListItem) => void;
 };
 
@@ -37,12 +39,18 @@ const createRouteColumns = ({
   onEditGeometry,
   onEditComposition,
   onRebuild,
+  onTogglePart,
   onSetDeleteTarget,
 }: CreateRouteColumnsInput): ColumnDef<RouteListItem>[] => [
   {
     accessorKey: "title",
     header: ({ column }) => <SortableHeader column={column} label="Title" />,
-    cell: ({ row }) => <div className="font-medium">{row.original.title}</div>,
+    cell: ({ row }) => (
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="font-medium">{row.original.title}</span>
+        {row.original.isPart ? <Badge variant="outline">Part</Badge> : null}
+      </div>
+    ),
   },
   {
     accessorKey: "description",
@@ -113,6 +121,25 @@ const createRouteColumns = ({
             onClick={() => onEdit(route)}
           >
             <Pencil className="size-4" />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            title={
+              route.isPart
+                ? "Make standalone"
+                : route.trackCount > 0
+                  ? `Used by ${route.trackCount} track${route.trackCount === 1 ? "" : "s"}`
+                  : route.isComposite
+                    ? "A composite route cannot be a part"
+                    : "Mark as part"
+            }
+            aria-label={route.isPart ? `Make ${route.title} standalone` : `Mark ${route.title} as a part`}
+            disabled={!route.isPart && (route.trackCount > 0 || route.isComposite)}
+            onClick={() => onTogglePart(route)}
+          >
+            <Package className="size-4" />
           </Button>
           {route.isComposite ? (
             <Button
