@@ -7,6 +7,7 @@ import { getOwnerRoutes } from "@/app/_data/routes";
 import { getPublicTrackBySlug } from "@/app/_data/tracks";
 import { Badge, Button } from "@/components/index";
 import { PageLayout } from "@/components/layout/page-layout";
+import { TrackExtraFilesSection } from "@/components/track-pages/track-extra-files-section";
 import { TrackFileRenameButton } from "@/components/track-pages/track-file-rename-button";
 import { TrackMovingTimeRecalcButton } from "@/components/track-pages/track-moving-time-recalc-button";
 import { CombinedTrackMap } from "@/components/track-pages/track-map";
@@ -288,44 +289,7 @@ const TrackPage = async ({ params }: TrackPageProps) => {
           {track.canCleanPoints ? <TrackPointCleanupButton trackId={track.id} trackTitle={track.title} /> : null}
         </section>
 
-        {track.secondaryFiles.length > 0 ? (
-          <section className="grid gap-3 rounded-md border p-4">
-            <div className="grid gap-1">
-              <h2 className="text-base font-semibold">Original recording</h2>
-              <p className="text-sm text-muted-foreground">Track-owned files kept alongside the route geometry.</p>
-            </div>
-            {track.secondaryFiles.map((file) => (
-              <div key={file.id} className="grid gap-3 rounded-md border p-3">
-                <div className="flex flex-wrap items-center gap-2">
-                  <FileText className="size-4 text-muted-foreground" />
-                  <span className="font-medium">{file.name}</span>
-                  <Badge variant="outline">{formatFileSize(file.sizeBytes)}</Badge>
-                </div>
-                <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
-                  <span className="inline-flex items-center gap-1">
-                    <Upload className="size-3.5" />
-                    Uploaded {formatDate(file.uploadedAt)}
-                  </span>
-                  <span>File updated {formatDate(file.updatedAt)}</span>
-                </div>
-                <div>
-                  {file.downloadUrl ? (
-                    <Button asChild size="sm" variant="outline">
-                      <Link href={file.downloadUrl}>
-                        <Download />
-                        Download GPX
-                      </Link>
-                    </Button>
-                  ) : (
-                    <div className="rounded-md bg-muted p-3 text-sm text-muted-foreground">
-                      GPX download is unavailable for this file.
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
-          </section>
-        ) : null}
+        <TrackExtraFilesSection trackId={track.id} files={track.secondaryFiles} canManage={track.canManageExtraFiles} />
       </article>
     </PageLayout>
   );
