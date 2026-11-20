@@ -234,17 +234,84 @@ const computeElevation = (points: ParsedGpxPoint[]): TrackGpxElevationSummary | 
   };
 };
 
+/** feature-144: a stop is at least this long... */
+export const MOVING_STOP_MIN_SECONDS = 60;
+
+/** ...and moves no farther than this between its ends (about 1 km/h). */
+export const MOVING_STOP_MAX_DISPLACEMENT_METERS = 25;
+
+type MovingTimePoint = {
+  timestamp: number;
+  lat: number;
+  lng: number;
+};
+
+/**
+ * feature-144: elapsed time minus the intervals that were a stop.
+ *
+ * A stop is a window of at least `MOVING_STOP_MIN_SECONDS` whose net
+ * displacement is at most `MOVING_STOP_MAX_DISPLACEMENT_METERS`. Windows are
+ * found with a two-pointer scan and overlapping windows are merged before they
+ * are summed. The approximation is deliberate: a stop shorter than the window,
+ * or the partial minutes at a stop's edges, stay in the moving time.
+ */
+export const computeMovingDurationSeconds = (points: MovingTimePoint[]): number | null => {
+  if (points.length < 2) return null;
+
+  const elapsedSeconds = Math.round((points[points.length - 1].timestamp - points[0].timestamp) / 1000);
+
+  if (elapsedSeconds <= 0) return 0;
+
+  const minWindowMs = MOVING_STOP_MIN_SECONDS * 1000;
+  const stopped: Array<[number, number]> = [];
+  let endIndex = 0;
+
+  for (let startIndex = 0; startIndex < points.length; startIndex += 1) {
+    if (endIndex < startIndex) endIndex = startIndex;
+
+    while (endIndex < points.length && points[endIndex].timestamp - points[startIndex].timestamp < minWindowMs) {
+      endIndex += 1;
+    }
+
+    if (endIndex >= points.length) break;
+
+    if (distanceBetweenPoints(points[startIndex], points[endIndex]) > MOVING_STOP_MAX_DISPLACEMENT_METERS) {
+      continue;
+    }
+
+    const windowStart = points[startIndex].timestamp;
+    const windowEnd = points[endIndex].timestamp;
+    const last = stopped[stopped.length - 1];
+
+    if (last && windowStart <= last[1]) {
+      last[1] = Math.max(last[1], windowEnd);
+    } else {
+      stopped.push([windowStart, windowEnd]);
+    }
+  }
+
+  const stoppedSeconds = stopped.reduce((total, [start, end]) => total + (end - start) / 1000, 0);
+
+  return Math.max(0, Math.min(elapsedSeconds, Math.round(elapsedSeconds - stoppedSeconds)));
+};
+
 const computeTime = (points: ParsedGpxPoint[]): TrackGpxTimeSummary | null => {
   const times = points
     .map((point) => ({
       timestamp: point.time ? new Date(point.time).getTime() : Number.NaN,
+      lat: point.lat,
+      lng: point.lng,
       timezoneEvidence: point.timeTimezoneEvidence,
     }))
     .filter(
       (
         value,
-      ): value is { timestamp: number; timezoneEvidence: Exclude<TrackGpxTimezoneEvidence, "MIXED" | "UNKNOWN"> } =>
-        Number.isFinite(value.timestamp) && Boolean(value.timezoneEvidence),
+      ): value is {
+        timestamp: number;
+        lat: number;
+        lng: number;
+        timezoneEvidence: Exclude<TrackGpxTimezoneEvidence, "MIXED" | "UNKNOWN">;
+      } => Number.isFinite(value.timestamp) && Boolean(value.timezoneEvidence),
     )
     .sort((a, b) => a.timestamp - b.timestamp);
 
@@ -259,6 +326,7 @@ const computeTime = (points: ParsedGpxPoint[]): TrackGpxTimeSummary | null => {
     end: new Date(end).toISOString(),
     durationSeconds: Math.max(0, Math.round((end - start) / 1000)),
     timezoneEvidence: evidenceValues.size === 1 ? times[0].timezoneEvidence : "MIXED",
+    movingDurationSeconds: computeMovingDurationSeconds(times),
   };
 };
 

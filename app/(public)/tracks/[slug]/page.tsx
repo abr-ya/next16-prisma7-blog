@@ -8,6 +8,7 @@ import { getPublicTrackBySlug } from "@/app/_data/tracks";
 import { Badge, Button } from "@/components/index";
 import { PageLayout } from "@/components/layout/page-layout";
 import { TrackFileRenameButton } from "@/components/track-pages/track-file-rename-button";
+import { TrackMovingTimeRecalcButton } from "@/components/track-pages/track-moving-time-recalc-button";
 import { CombinedTrackMap } from "@/components/track-pages/track-map";
 import { TrackPointCleanupButton } from "@/components/track-pages/track-point-cleanup-dialog";
 import { TrackRouteControl } from "@/components/track-pages/track-route-control";
@@ -117,6 +118,25 @@ const TrackPage = async ({ params }: TrackPageProps) => {
             <span className="min-w-0">{recordingLine}</span>
           </div>
         </div>
+
+        {/* feature-144: a timed GPX workout reports both its elapsed and its
+            moving time; a manual or route-based workout keeps the line above. */}
+        {track.timeSource === "GPX" && track.parsed?.summary.time ? (
+          <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+            <span>
+              <span className="font-medium">Total</span>{" "}
+              {formatTrackDuration(track.parsed.summary.time.durationSeconds) ?? "—"}
+            </span>
+            <span aria-hidden="true">·</span>
+            <span>
+              <span className="font-medium">Moving</span>{" "}
+              {formatTrackDuration(track.parsed.summary.time.movingDurationSeconds) ?? "unavailable"}
+            </span>
+            {track.canRenameFile && track.parsed.summary.time.movingDurationSeconds == null ? (
+              <TrackMovingTimeRecalcButton trackId={track.id} />
+            ) : null}
+          </div>
+        ) : null}
 
         {track.description ? (
           <div className="whitespace-pre-wrap text-base leading-7 text-foreground">{track.description}</div>

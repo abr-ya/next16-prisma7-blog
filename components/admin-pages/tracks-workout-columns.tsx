@@ -9,6 +9,7 @@ import { Badge, Button, SortableHeader } from "@/components/index";
 import {
   getEffectiveTrackDistanceMeters,
   getEffectiveTrackDurationSeconds,
+  getEffectiveTrackMovingDurationSeconds,
   getEffectiveTrackStart,
 } from "@/lib/track-effective-values";
 import { formatTrackDistance, formatTrackDuration, formatTrackRecordingDateTime } from "@/lib/track-gpx-metadata";
@@ -183,6 +184,24 @@ const createTrackWorkoutColumns = ({
       if (!duration) return <span className="text-sm text-muted-foreground">—</span>;
 
       return <span className="text-sm">{duration}</span>;
+    },
+    sortingFn: "basic",
+    sortUndefined: "last",
+  },
+  {
+    id: "moving",
+    meta: { sortLabel: "Moving" },
+    accessorFn: (row) => getEffectiveTrackMovingDurationSeconds(row),
+    header: ({ column }) => <SortableHeader column={column} label="Moving" />,
+    cell: ({ row }) => {
+      // feature-144: only a timed GPX parse has a moving value; a manual
+      // workout or an older parse shows a dash.
+      const seconds = getEffectiveTrackMovingDurationSeconds(row.original);
+      const moving = formatTrackDuration(seconds);
+
+      if (!moving) return <span className="text-sm text-muted-foreground">—</span>;
+
+      return <span className="text-sm">{moving}</span>;
     },
     sortingFn: "basic",
     sortUndefined: "last",

@@ -33,6 +33,16 @@ export const getEffectiveTrackDistanceMeters = (track: TrackListItem): number | 
   return state?.status === "SUCCESS" ? state.summary.distanceMeters : undefined;
 };
 
+/**
+ * feature-144: the moving duration stored by a timed parse; absent for a
+ * manual workout or a parse that predates the field.
+ */
+export const getEffectiveTrackMovingDurationSeconds = (track: TrackListItem): number | undefined => {
+  const state = getTrackParseState(track);
+
+  return state?.status === "SUCCESS" ? (state.summary.time?.movingDurationSeconds ?? undefined) : undefined;
+};
+
 export const getEffectiveTrackDurationSeconds = (track: TrackListItem): number | undefined => {
   if (typeof track.recordingDurationSeconds === "number") return track.recordingDurationSeconds;
 
