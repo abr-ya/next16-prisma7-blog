@@ -35,6 +35,12 @@ export type TrackGpxTimeSummary = {
   end: string;
   durationSeconds: number;
   timezoneEvidence: TrackGpxTimezoneEvidence;
+  /**
+   * feature-144: elapsed time minus stopped intervals. Optional so a parse
+   * from before the field, or one that cannot derive it, stays readable
+   * without a metadata-version bump.
+   */
+  movingDurationSeconds?: number | null;
 };
 
 export type TrackGpxPointSummary = {
@@ -155,8 +161,14 @@ export const readTrackGpxMetadata = (value: Prisma.JsonValue | null | undefined)
             ...value.summary,
             time: value.summary.time
               ? {
-                  ...value.summary.time,
+                  start: value.summary.time.start,
+                  end: value.summary.time.end,
+                  durationSeconds: value.summary.time.durationSeconds,
                   timezoneEvidence: readTimezoneEvidence(value.summary.time.timezoneEvidence),
+                  ...(typeof value.summary.time.movingDurationSeconds === "number" &&
+                  Number.isFinite(value.summary.time.movingDurationSeconds)
+                    ? { movingDurationSeconds: value.summary.time.movingDurationSeconds }
+                    : {}),
                 }
               : null,
           }
