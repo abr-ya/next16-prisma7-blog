@@ -283,6 +283,8 @@ export type PublicTrackFile = {
  * line built from its stored parse. The raw metadata stays server-side.
  */
 export type PublicTrackSecondaryFile = PublicTrackFile & {
+  /** feature-143: the geometry row id the owner removes. */
+  geometryId: string;
   map: TrackMapViewModel | null;
 };
 
@@ -307,6 +309,8 @@ export type PublicTrack = {
   canManageRoute: boolean;
   /** feature-142: the track's primary geometry is a route. */
   hasPrimaryRoute: boolean;
+  /** feature-143: the viewer owns this ready track and may manage its extra files. */
+  canManageExtraFiles: boolean;
   /** feature-154: the number of segments in the route's composition. */
   routeSegmentCount: number | null;
   /** feature-154: laps across the composition's MAIN segments. */
@@ -880,12 +884,16 @@ const toPublicTrack = (
     // feature-142: a published track always has one primary source, so the
     // owner may attach a route (file-based) or replace it (route-based).
     canManageRoute: Boolean(viewerId && viewerId === track.userId),
+    // feature-143: any public detail read is a READY track, so ownership is
+    // the only extra condition for managing its secondary files.
+    canManageExtraFiles: Boolean(viewerId && viewerId === track.userId),
     hasPrimaryRoute: Boolean(track.routeId),
     routeSegmentCount,
     routeLapCount,
     file: toPublicTrackFile(fileAsset, viewerId),
     secondaryFiles: secondaryRows.map((row) => ({
       ...toPublicTrackFile(row.fileAsset, viewerId),
+      geometryId: row.id,
       // feature-150: the secondary file's stored parse becomes a dashed
       // "original recording" line beside the primary route map.
       map: includeMapGeometry ? toSecondaryTrackMapViewModel(row.metadata, row.fileAsset) : null,
@@ -2622,6 +2630,178 @@ export const completeDraftWithFile = async (
       ok: false,
       code: "INTERNAL",
       message: error instanceof Error ? error.message : "Could not complete the draft",
+    };
+  }
+};
+
+/** feature-143: how many secondary files one workout may keep. */
+const MAX_TRACK_EXTRA_FILES = 5;
+
+export type TrackExtraFileResult =
+  | { ok: true }
+  | { ok: false; code: "TRUST" | "NOT_FOUND" | "VALIDATION" | "INTERNAL"; message: string };
+
+/**
+ * feature-143: attach a secondary GPX file to a ready workout.
+ *
+ * The file is parsed here, so the existing public map line and file list pick
+ * it up without a read-path change. Only the owner may add, only a ready
+ * workout accepts extras, and a file that already backs a primary track or a
+ * geometry is refused.
+ */
+export const addTrackExtraFile = async (trackId: string, fileAssetId: string): Promise<TrackExtraFileResult> => {
+  try {
+    const user = await requireTrustGatedAction("track-upload");
+    const userId = user.id;
+    const { default: prisma } = await import("@/lib/prisma");
+
+    const normalizedTrackId = trackId?.trim();
+    const normalizedFileId = fileAssetId?.trim();
+
+    if (!normalizedTrackId || !normalizedFileId) {
+      return { ok: false, code: "VALIDATION", message: "Track and file are required" };
+    }
+
+    const track = (await prisma.track.findFirst({
+      where: { id: normalizedTrackId, userId },
+      select: {
+        id: true,
+        slug: true,
+        geometryState: true,
+        _count: { select: { geometries: true } },
+      },
+    })) as {
+      id: string;
+      slug: string;
+      geometryState: string;
+      _count: { geometries: number };
+    } | null;
+
+    if (!track) {
+      return { ok: false, code: "NOT_FOUND", message: "Track not found" };
+    }
+
+    if (track.geometryState !== "READY") {
+      return { ok: false, code: "VALIDATION", message: "Complete the draft before adding extra files" };
+    }
+
+    if (track._count.geometries >= MAX_TRACK_EXTRA_FILES) {
+      return {
+        ok: false,
+        code: "VALIDATION",
+        message: `A workout can keep at most ${MAX_TRACK_EXTRA_FILES} extra files`,
+      };
+    }
+
+    const file = (await prisma.fileAsset.findFirst({
+      where: {
+        id: normalizedFileId,
+        ownerUserId: userId,
+        purpose: "TRACK_GPX",
+        status: ACTIVE_FILE_STATUS,
+      },
+      select: {
+        id: true,
+        fileKey: true,
+        url: true,
+        track: { select: { id: true } },
+        trackGeometry: { select: { id: true } },
+      },
+    })) as {
+      id: string;
+      fileKey: string;
+      url: string;
+      track: { id: string } | null;
+      trackGeometry: { id: string } | null;
+    } | null;
+
+    if (!file) {
+      return { ok: false, code: "VALIDATION", message: "Selected GPX file is not eligible" };
+    }
+
+    if (file.track) {
+      return { ok: false, code: "VALIDATION", message: "This file is already a track's primary file" };
+    }
+
+    if (file.trackGeometry) {
+      return { ok: false, code: "VALIDATION", message: "This file is already attached to a track" };
+    }
+
+    const content = await fetchTrackGpxContent(file.url).catch(() => "");
+    const metadata = buildTrackGpxMetadata({
+      content,
+      fileAssetId: file.id,
+      fileKey: file.fileKey,
+    });
+
+    await prisma.trackGeometry.create({
+      data: {
+        trackId: track.id,
+        fileAssetId: file.id,
+        metadata: metadata as Prisma.InputJsonValue,
+      },
+    });
+
+    revalidateTrackDetailPaths(track.slug);
+
+    return { ok: true };
+  } catch (error) {
+    if (error instanceof InsufficientTrustError) {
+      return { ok: false, code: "TRUST", message: error.message };
+    }
+
+    return {
+      ok: false,
+      code: "INTERNAL",
+      message: error instanceof Error ? error.message : "Could not add the extra file",
+    };
+  }
+};
+
+/**
+ * feature-143: detach a secondary file and retire it. The primary file and a
+ * route's own file are outside this action's query, so they cannot be removed
+ * here.
+ */
+export const removeTrackExtraFile = async (geometryId: string): Promise<TrackExtraFileResult> => {
+  try {
+    const userId = await getRequiredUserId();
+    const { default: prisma } = await import("@/lib/prisma");
+    const normalizedId = geometryId?.trim();
+
+    if (!normalizedId) {
+      return { ok: false, code: "NOT_FOUND", message: "Extra file not found" };
+    }
+
+    const geometry = (await prisma.trackGeometry.findFirst({
+      where: { id: normalizedId, track: { userId } },
+      select: { id: true, fileAssetId: true, track: { select: { slug: true } } },
+    })) as {
+      id: string;
+      fileAssetId: string;
+      track: { slug: string };
+    } | null;
+
+    if (!geometry) {
+      return { ok: false, code: "NOT_FOUND", message: "Extra file not found" };
+    }
+
+    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      await tx.trackGeometry.delete({ where: { id: geometry.id } });
+      await tx.fileAsset.updateMany({
+        where: { id: geometry.fileAssetId, status: ACTIVE_FILE_STATUS },
+        data: { status: "PENDING_DELETE", deletedAt: new Date() },
+      });
+    });
+
+    revalidateTrackDetailPaths(geometry.track.slug);
+
+    return { ok: true };
+  } catch (error) {
+    return {
+      ok: false,
+      code: "INTERNAL",
+      message: error instanceof Error ? error.message : "Could not remove the extra file",
     };
   }
 };
