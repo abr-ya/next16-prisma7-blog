@@ -1181,8 +1181,8 @@ The system SHALL render a localized `timeSource` badge on the public track detai
 
 - **WHEN** a visitor opens `/tracks` and a listed published track has any `Track.timeSource`
 - **THEN** the card for that track renders the `timeSource` badge
-- **AND** the card renders the `Recording start` line only when `timeSource` is `MANUAL` and `recordingStartAt` is non-null
-- **AND** the card renders the `Recording duration` line only when `timeSource` is `MANUAL` and `recordingDurationSeconds` is non-null
+- **AND** the card renders the `Start` line only when `timeSource` is `MANUAL` and `recordingStartAt` is non-null
+- **AND** the card renders the `Duration` line only when `timeSource` is `MANUAL` and `recordingDurationSeconds` is non-null
 
 #### Scenario: Admin track list row renders the same badge and conditional lines
 
@@ -1195,8 +1195,8 @@ The system SHALL render a localized `timeSource` badge on the public track detai
 
 - **WHEN** a visitor opens `/trips/[slug]` and a linked track has any `Track.timeSource`
 - **THEN** the linked-track card for that track renders the `timeSource` badge alongside the existing recording-time summaries
-- **AND** the card renders the `Recording start` line only when `timeSource` is `MANUAL` and `recordingStartAt` is non-null
-- **AND** the card renders the `Recording duration` line only when `timeSource` is `MANUAL` and `recordingDurationSeconds` is non-null
+- **AND** the card renders the `Start` line only when `timeSource` is `MANUAL` and `recordingStartAt` is non-null
+- **AND** the card renders the `Duration` line only when `timeSource` is `MANUAL` and `recordingDurationSeconds` is non-null
 
 #### Scenario: Track surfaces do not duplicate GPX times through the MANUAL lines
 
@@ -2771,3 +2771,99 @@ The owner SHALL be able to attach a secondary GPX file to their own `READY` work
 - **WHEN** a viewer who does not own the workout opens the page
 - **THEN** the stored secondary files are listed under the existing download rules
 - **AND** no add or remove control is shown
+
+### Requirement: Durations include seconds when present
+
+The shared duration formatter SHALL render hours, minutes, and seconds from the stored whole seconds, SHALL include seconds whenever the remainder is non-zero, SHALL omit zero units, and SHALL keep `0 min` for a zero duration. Every surface SHALL use that formatter without its own rounding.
+
+#### Scenario: A duration with a seconds remainder shows seconds
+
+- **WHEN** a duration of `5310` seconds is rendered on any surface
+- **THEN** it reads `1 h 28 min 30 s`
+- **AND** the surface applies no additional rounding
+
+#### Scenario: A sub-minute duration shows seconds
+
+- **WHEN** a duration of `45` seconds is rendered
+- **THEN** it reads `45 s`
+
+#### Scenario: A whole minute stays compact
+
+- **WHEN** a duration of `60` seconds is rendered
+- **THEN** it reads `1 min`
+- **AND** no zero seconds are appended
+
+#### Scenario: An hour with only seconds omits the zero minutes
+
+- **WHEN** a duration of `3630` seconds is rendered
+- **THEN** it reads `1 h 30 s`
+
+#### Scenario: A missing duration stays absent
+
+- **WHEN** a duration is null or not finite
+- **THEN** the formatter returns no value
+- **AND** the surface keeps its existing placeholder
+
+### Requirement: Time labels and kind badges follow the data
+
+The public track header SHALL label its time line by the track's source: `Logged` for a manual workout, `Recorded` for a GPX parse, and `Time` for an unclassified row. The label SHALL be omitted when no time is recorded. The kind badge SHALL read `Route track` when the primary geometry is a route and `GPX track` otherwise, on both the detail page and the public list card.
+
+#### Scenario: A manual workout reads as logged
+
+- **WHEN** a viewer opens a manual or route-based workout with a time line
+- **THEN** the header labels it `Logged`
+
+#### Scenario: A GPX workout reads as recorded
+
+- **WHEN** a viewer opens a GPX workout with a time line
+- **THEN** the header labels it `Recorded`
+
+#### Scenario: An unclassified row reads as time
+
+- **WHEN** a viewer opens a workout whose `timeSource` is null and which has a time line
+- **THEN** the header labels it `Time`
+
+#### Scenario: An unknown time line hides the label
+
+- **WHEN** a workout has no recorded time
+- **THEN** the header shows `Time not recorded`
+- **AND** no label is prepended
+
+#### Scenario: A route-primary workout carries a route badge
+
+- **WHEN** a viewer opens a workout whose primary geometry is a route
+- **THEN** the header badge reads `Route track`
+- **AND** the same workout reads `Route track` on the `/tracks` list card
+
+#### Scenario: A file-based workout keeps the GPX badge
+
+- **WHEN** a viewer opens a workout whose primary geometry is its own GPX file
+- **THEN** the header badge reads `GPX track`
+
+### Requirement: Public track pages share a content width
+
+The public `/tracks` list and `/tracks/[slug]` detail SHALL use one shared content width from the site width scale, and the detail SHALL NOT be pinned to the narrow reading width. Readable prose on the detail page — the description and the private note — SHALL stay inside the narrow reading width, while the map, file list, badges, and summaries SHALL use the shared width. Narrow viewports SHALL keep a single column without horizontal overflow.
+
+#### Scenario: The detail page is wider than the reading width
+
+- **WHEN** a viewer opens `/tracks/[slug]`
+- **THEN** the page container uses the shared content width
+- **AND** the map and file sections use that width
+
+#### Scenario: Long prose stays readable
+
+- **WHEN** a track has a long description or a private note
+- **THEN** that text stays inside the narrow reading width
+- **AND** it does not stretch across the whole content container
+
+#### Scenario: The list and the detail agree
+
+- **WHEN** a viewer compares `/tracks` and `/tracks/[slug]`
+- **THEN** both use the same content width token
+- **AND** the list grid reflows without horizontal overflow
+
+#### Scenario: A narrow viewport keeps one column
+
+- **WHEN** a viewer opens either page on a narrow viewport
+- **THEN** the content stays in one column
+- **AND** no horizontal scroll appears

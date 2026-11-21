@@ -17,7 +17,7 @@ import { authSession } from "@/lib/auth-utils";
 import { formatFileSize } from "@/lib/file-upload-limits";
 import { formatHikeDateRange, formatHikeType } from "@/lib/hikes";
 import { buildPageMetadata, getTextMetadataDescription } from "@/lib/site-metadata";
-import { getPublicTrackRecordingLine } from "@/lib/track-effective-values";
+import { getPublicTrackRecordingLabel, getPublicTrackRecordingLine } from "@/lib/track-effective-values";
 import {
   formatTrackDistance,
   formatTrackDuration,
@@ -26,6 +26,7 @@ import {
   formatTrackPointCount,
   formatTrackTimeSource,
   formatTrackTimezoneEvidence,
+  TRACK_RECORDING_UNKNOWN_TEXT,
   type TrackMapViewModel,
 } from "@/lib/track-gpx-metadata";
 import { formatTrackRecordingTimezone } from "@/lib/track-recording-timezone";
@@ -81,6 +82,8 @@ const TrackPage = async ({ params }: TrackPageProps) => {
   // primary geometry is a route, its synthetic GPX has no timed summary, so
   // the preserved recording start and duration supply the finish.
   const recordingLine = getPublicTrackRecordingLine(track);
+  const recordingLabel = getPublicTrackRecordingLabel(track);
+  const hasRecordingTime = recordingLine !== TRACK_RECORDING_UNKNOWN_TEXT;
 
   // feature-150: draw the primary route and every parsed secondary recording
   // on one map. A secondary file without stored map geometry contributes no
@@ -91,12 +94,12 @@ const TrackPage = async ({ params }: TrackPageProps) => {
   ].filter((map): map is TrackMapViewModel => map !== null);
 
   return (
-    <PageLayout title={track.title} className="pt-6">
-      <article className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 pb-10">
+    <PageLayout title={track.title} className="pt-6" contentWidth="content">
+      <article className="flex w-full flex-col gap-6 pb-10">
         <div className="flex flex-wrap gap-2">
           <Badge variant="secondary">
             <Route className="size-3.5" />
-            GPX track
+            {track.hasPrimaryRoute ? "Route track" : "GPX track"}
           </Badge>
           {track.routeLapCount !== null && track.routeLapCount > 0 ? (
             <Badge variant="secondary">
@@ -115,7 +118,7 @@ const TrackPage = async ({ params }: TrackPageProps) => {
           </Badge>
           <div className="flex min-w-0 items-center gap-1.5 text-sm text-muted-foreground sm:ml-auto">
             <Clock className="size-3.5 shrink-0" />
-            <span className="shrink-0 font-medium">Recording</span>
+            {hasRecordingTime ? <span className="shrink-0 font-medium">{recordingLabel}</span> : null}
             <span className="min-w-0">{recordingLine}</span>
           </div>
         </div>
@@ -140,13 +143,13 @@ const TrackPage = async ({ params }: TrackPageProps) => {
         ) : null}
 
         {track.description ? (
-          <div className="whitespace-pre-wrap text-base leading-7 text-foreground">{track.description}</div>
+          <div className="max-w-3xl whitespace-pre-wrap text-base leading-7 text-foreground">{track.description}</div>
         ) : (
-          <p className="text-sm text-muted-foreground">No description yet.</p>
+          <p className="max-w-3xl text-sm text-muted-foreground">No description yet.</p>
         )}
 
         {track.privateNote ? (
-          <section className="grid gap-2 rounded-md border border-dashed bg-muted/40 p-4">
+          <section className="grid max-w-3xl gap-2 rounded-md border border-dashed bg-muted/40 p-4">
             <div className="flex items-center gap-2 text-sm font-semibold">
               <Lock className="size-4" />
               Your private note
