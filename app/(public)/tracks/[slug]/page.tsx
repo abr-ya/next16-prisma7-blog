@@ -94,8 +94,8 @@ const TrackPage = async ({ params }: TrackPageProps) => {
   ].filter((map): map is TrackMapViewModel => map !== null);
 
   return (
-    <PageLayout title={track.title} className="pt-6">
-      <article className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 pb-10">
+    <PageLayout title={track.title} className="pt-6" contentWidth="content">
+      <article className="flex w-full flex-col gap-6 pb-10">
         <div className="flex flex-wrap gap-2">
           <Badge variant="secondary">
             <Route className="size-3.5" />
@@ -143,13 +143,13 @@ const TrackPage = async ({ params }: TrackPageProps) => {
         ) : null}
 
         {track.description ? (
-          <div className="whitespace-pre-wrap text-base leading-7 text-foreground">{track.description}</div>
+          <div className="max-w-3xl whitespace-pre-wrap text-base leading-7 text-foreground">{track.description}</div>
         ) : (
-          <p className="text-sm text-muted-foreground">No description yet.</p>
+          <p className="max-w-3xl text-sm text-muted-foreground">No description yet.</p>
         )}
 
         {track.privateNote ? (
-          <section className="grid gap-2 rounded-md border border-dashed bg-muted/40 p-4">
+          <section className="grid max-w-3xl gap-2 rounded-md border border-dashed bg-muted/40 p-4">
             <div className="flex items-center gap-2 text-sm font-semibold">
               <Lock className="size-4" />
               Your private note
