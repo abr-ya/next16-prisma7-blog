@@ -46,7 +46,7 @@ const TracksPage = async () => {
                   <div className="flex flex-wrap gap-2">
                     <Badge variant="secondary">
                       <Route className="size-3.5" />
-                      GPX track
+                      {track.hasPrimaryRoute ? "Route track" : "GPX track"}
                     </Badge>
                     {track.routeLapCount !== null && track.routeLapCount > 0 ? (
                       <Badge variant="secondary">

@@ -372,13 +372,22 @@ export const formatTrackElevationGainLoss = (elevation?: TrackGpxElevationSummar
 export const formatTrackDuration = (seconds?: number | null) => {
   if (!isFiniteNumber(seconds)) return null;
 
-  const roundedSeconds = Math.max(0, Math.round(seconds));
-  const hours = Math.floor(roundedSeconds / 3600);
-  const minutes = Math.floor((roundedSeconds % 3600) / 60);
+  const totalSeconds = Math.max(0, Math.round(seconds));
 
-  if (hours > 0) return `${hours} h ${minutes} min`;
+  if (totalSeconds === 0) return "0 min";
 
-  return `${minutes} min`;
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const remainingSeconds = totalSeconds % 60;
+  const parts: string[] = [];
+
+  if (hours > 0) parts.push(`${hours} h`);
+  if (minutes > 0) parts.push(`${minutes} min`);
+  // feature-157: seconds are shown only when the duration actually has them;
+  // a whole-minute duration stays as compact as before.
+  if (remainingSeconds > 0) parts.push(`${remainingSeconds} s`);
+
+  return parts.join(" ");
 };
 
 export const formatTrackRecordingDateTime = (
@@ -420,6 +429,9 @@ export type TrackRecordingLineInput = {
   recordingTimezone?: string | null;
 };
 
+/** feature-157: the sentence shown when a track has no recorded time. */
+export const TRACK_RECORDING_UNKNOWN_TEXT = "Time not recorded";
+
 /**
  * feature-139: the public track detail page shows the recording time as one
  * compact header line. GPX tracks show the parsed start and finish; MANUAL
@@ -438,7 +450,7 @@ export const formatTrackRecordingLine = ({
     const formattedStart = formatTrackRecordingDateTime(start, recordingTimezone);
     const formattedDuration = formatTrackDuration(durationSeconds);
 
-    if (!formattedStart && !formattedDuration) return "Recording time not recorded";
+    if (!formattedStart && !formattedDuration) return TRACK_RECORDING_UNKNOWN_TEXT;
 
     return `${formattedStart ?? "start unknown"} · ${formattedDuration ?? "duration unknown"}`;
   }
@@ -446,7 +458,7 @@ export const formatTrackRecordingLine = ({
   const formattedStart = formatTrackRecordingDateTime(start, recordingTimezone);
   const formattedFinish = formatTrackRecordingDateTime(finish, recordingTimezone);
 
-  if (!formattedStart && !formattedFinish) return "Recording time not recorded";
+  if (!formattedStart && !formattedFinish) return TRACK_RECORDING_UNKNOWN_TEXT;
 
   return `${formattedStart ?? "start unknown"} – ${formattedFinish ?? "finish unknown"}`;
 };

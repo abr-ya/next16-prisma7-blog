@@ -78,6 +78,24 @@ export const getEffectiveTrackFinish = (track: TrackListItem): string | undefine
  * so the preserved start and duration of the original recording fill the gap.
  * This keeps the same fallback chain the workout tables already use.
  */
+export type PublicTrackRecordingLabel = "Logged" | "Recorded" | "Time";
+
+/**
+ * feature-157: the header label names where the time line came from. A
+ * manual or route-based workout shows what the owner entered, a GPX parse is
+ * recorded, and an unclassified row stays neutral.
+ */
+export const getPublicTrackRecordingLabel = ({
+  timeSource,
+}: {
+  timeSource: PublicTrack["timeSource"];
+}): PublicTrackRecordingLabel => {
+  if (timeSource === "MANUAL") return "Logged";
+  if (timeSource === "GPX") return "Recorded";
+
+  return "Time";
+};
+
 export const getPublicTrackRecordingLine = (track: PublicTrack) => {
   const parsedTime = track.parsed?.summary.time ?? null;
   const storedStart = track.recordingStartAt?.toISOString() ?? null;
