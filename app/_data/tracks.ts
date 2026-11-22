@@ -311,6 +311,8 @@ export type PublicTrack = {
   hasPrimaryRoute: boolean;
   /** feature-143: the viewer owns this ready track and may manage its extra files. */
   canManageExtraFiles: boolean;
+  /** feature-145: the viewer owns this track and may edit its private note. */
+  canEditPrivateNote: boolean;
   /** feature-154: the number of segments in the route's composition. */
   routeSegmentCount: number | null;
   /** feature-154: laps across the composition's MAIN segments. */
@@ -887,6 +889,7 @@ const toPublicTrack = (
     // feature-143: any public detail read is a READY track, so ownership is
     // the only extra condition for managing its secondary files.
     canManageExtraFiles: Boolean(viewerId && viewerId === track.userId),
+    canEditPrivateNote: Boolean(viewerId && viewerId === track.userId),
     hasPrimaryRoute: Boolean(track.routeId),
     routeSegmentCount,
     routeLapCount,
@@ -2802,6 +2805,60 @@ export const removeTrackExtraFile = async (geometryId: string): Promise<TrackExt
       ok: false,
       code: "INTERNAL",
       message: error instanceof Error ? error.message : "Could not remove the extra file",
+    };
+  }
+};
+
+export type UpdateTrackPrivateNoteResult =
+  | { ok: true }
+  | { ok: false; code: "NOT_FOUND" | "VALIDATION" | "INTERNAL"; message: string };
+
+/**
+ * feature-145: edit the owner-only note from the published track page. Only
+ * this column is written; the note stays owner-only in every projection.
+ */
+export const updateTrackPrivateNote = async (
+  trackId: string,
+  privateNote: string | null,
+): Promise<UpdateTrackPrivateNoteResult> => {
+  try {
+    const userId = await getRequiredUserId();
+    const { default: prisma } = await import("@/lib/prisma");
+    const normalizedId = trackId?.trim();
+
+    if (!normalizedId) {
+      return { ok: false, code: "NOT_FOUND", message: "Track not found" };
+    }
+
+    const existing = (await prisma.track.findFirst({
+      where: { id: normalizedId, userId },
+      select: { id: true, slug: true },
+    })) as { id: string; slug: string } | null;
+
+    if (!existing) {
+      return { ok: false, code: "NOT_FOUND", message: "Track not found" };
+    }
+
+    let note: string | null;
+    try {
+      note = normalizePrivateNote(privateNote);
+    } catch (error) {
+      return {
+        ok: false,
+        code: "VALIDATION",
+        message: error instanceof Error ? error.message : "Private note is invalid",
+      };
+    }
+
+    await prisma.track.update({ where: { id: existing.id }, data: { privateNote: note } });
+    revalidateTrackDetailPaths(existing.slug);
+
+    return { ok: true };
+  } catch (error) {
+    return {
+      ok: false,
+      code: "INTERNAL",
+      message: error instanceof Error ? error.message : "Could not save the private note",
     };
   }
 };

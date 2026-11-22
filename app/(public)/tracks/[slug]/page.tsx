@@ -1,4 +1,4 @@
-import { CalendarDays, Clock, Download, FileText, Lock, Map, Route, Upload } from "lucide-react";
+import { CalendarDays, Clock, Download, FileText, Map, Route, Upload } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -12,6 +12,7 @@ import { TrackFileRenameButton } from "@/components/track-pages/track-file-renam
 import { TrackMovingTimeRecalcButton } from "@/components/track-pages/track-moving-time-recalc-button";
 import { CombinedTrackMap } from "@/components/track-pages/track-map";
 import { TrackPointCleanupButton } from "@/components/track-pages/track-point-cleanup-dialog";
+import { TrackPrivateNoteSection } from "@/components/track-pages/track-private-note-section";
 import { TrackRouteControl } from "@/components/track-pages/track-route-control";
 import { authSession } from "@/lib/auth-utils";
 import { formatFileSize } from "@/lib/file-upload-limits";
@@ -148,15 +149,8 @@ const TrackPage = async ({ params }: TrackPageProps) => {
           <p className="max-w-3xl text-sm text-muted-foreground">No description yet.</p>
         )}
 
-        {track.privateNote ? (
-          <section className="grid max-w-3xl gap-2 rounded-md border border-dashed bg-muted/40 p-4">
-            <div className="flex items-center gap-2 text-sm font-semibold">
-              <Lock className="size-4" />
-              Your private note
-            </div>
-            <p className="whitespace-pre-wrap text-sm text-muted-foreground">{track.privateNote}</p>
-            <p className="text-xs text-muted-foreground">Only you can see this note.</p>
-          </section>
+        {track.canEditPrivateNote ? (
+          <TrackPrivateNoteSection trackId={track.id} privateNote={track.privateNote} />
         ) : null}
 
         <section className="grid gap-3">
