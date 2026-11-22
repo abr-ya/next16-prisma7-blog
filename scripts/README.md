@@ -64,3 +64,24 @@ EXIF tag was absent, exactly as the production parser would see it.
 - As a substitute for the actual public page; the production
   pipeline goes through Prisma + `getPhotoExifMetadataState` and may
   differ from a raw `exifr` parse in edge cases.
+
+## `check-track-parse-capabilities.ts`
+
+Exercises the pure parse-freshness rules: a parse without the capability
+marker is outdated, a complete marker is fresh, a missing capability is
+outdated, an unknown future capability is tolerated, failed/stale/missing
+states are outdated, a file without timestamps is fresh once parsed, and only
+an owned GPX track with its own file and no route may be updated.
+
+### Usage
+
+```bash
+npx tsx scripts/check-track-parse-capabilities.ts
+```
+
+### When to use it
+
+- After changing `TRACK_GPX_PARSER_CAPABILITIES`, a metadata creator, the
+  read normalization, or the `canUpdateTrackParse` rule.
+- When the **Update track data** button appears on a track that looks current,
+  or stays hidden on a track that should offer it.

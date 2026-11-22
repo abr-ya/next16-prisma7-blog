@@ -9,7 +9,7 @@ import { Badge, Button } from "@/components/index";
 import { PageLayout } from "@/components/layout/page-layout";
 import { TrackExtraFilesSection } from "@/components/track-pages/track-extra-files-section";
 import { TrackFileRenameButton } from "@/components/track-pages/track-file-rename-button";
-import { TrackMovingTimeRecalcButton } from "@/components/track-pages/track-moving-time-recalc-button";
+import { TrackParseUpdateButton } from "@/components/track-pages/track-parse-update-button";
 import { CombinedTrackMap } from "@/components/track-pages/track-map";
 import { TrackPointCleanupButton } from "@/components/track-pages/track-point-cleanup-dialog";
 import { TrackPrivateNoteSection } from "@/components/track-pages/track-private-note-section";
@@ -85,6 +85,12 @@ const TrackPage = async ({ params }: TrackPageProps) => {
   const recordingLine = getPublicTrackRecordingLine(track);
   const recordingLabel = getPublicTrackRecordingLabel(track);
   const hasRecordingTime = recordingLine !== TRACK_RECORDING_UNKNOWN_TEXT;
+  const parseStatusText =
+    track.parseStatus === "FAILED"
+      ? "Parsing failed"
+      : track.parseStatus === "MISSING"
+        ? "No parse yet"
+        : "Track data is outdated";
 
   // feature-150: draw the primary route and every parsed secondary recording
   // on one map. A secondary file without stored map geometry contributes no
@@ -137,9 +143,12 @@ const TrackPage = async ({ params }: TrackPageProps) => {
               <span className="font-medium">Moving</span>{" "}
               {formatTrackDuration(track.parsed.summary.time.movingDurationSeconds) ?? "unavailable"}
             </span>
-            {track.canRenameFile && track.parsed.summary.time.movingDurationSeconds == null ? (
-              <TrackMovingTimeRecalcButton trackId={track.id} />
-            ) : null}
+            {track.canUpdateParse && track.isParseOutdated ? <TrackParseUpdateButton trackId={track.id} /> : null}
+          </div>
+        ) : track.canUpdateParse && track.isParseOutdated ? (
+          <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+            <span className="font-medium">{parseStatusText}</span>
+            <TrackParseUpdateButton trackId={track.id} />
           </div>
         ) : null}
 
