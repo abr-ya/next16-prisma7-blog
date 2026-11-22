@@ -2,7 +2,7 @@
 
 import { RotateCw } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { updateTrackParse } from "@/app/_data/tracks";
@@ -15,17 +15,11 @@ import { Button, Spinner } from "@/components/index";
 export const TrackParseUpdateButton = ({ trackId }: { trackId: string }) => {
   const router = useRouter();
   const [isSaving, setIsSaving] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
-  // feature-158 follow-up: the refresh is a transition, so the spinner and the
-  // success toast wait for the new server payload instead of racing it.
+  // feature-158 follow-up: keep the spinner until the refreshed payload
+  // renders. The success toast is raised immediately because the data is
+  // already saved, and because the refreshed page removes this button — a
+  // deferred toast would never fire after the unmount.
   const [isRefreshing, startTransition] = useTransition();
-
-  useEffect(() => {
-    if (!isRefreshing && showSuccess) {
-      toast.success("Track data updated");
-      setShowSuccess(false);
-    }
-  }, [isRefreshing, showSuccess]);
 
   const handleClick = async () => {
     setIsSaving(true);
@@ -39,7 +33,7 @@ export const TrackParseUpdateButton = ({ trackId }: { trackId: string }) => {
         return;
       }
 
-      setShowSuccess(true);
+      toast.success("Track data updated");
       startTransition(() => router.refresh());
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not update the track data");
