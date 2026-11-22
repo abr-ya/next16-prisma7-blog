@@ -321,6 +321,8 @@ export type PublicTrack = {
   canUpdateParse: boolean;
   /** feature-158: the stored parse is missing, failed, stale, or older. */
   isParseOutdated: boolean;
+  /** feature-159: the owner may promote a secondary file on a route-less workout. */
+  canChangePrimaryFile: boolean;
   /** feature-154: the number of segments in the route's composition. */
   routeSegmentCount: number | null;
   /** feature-154: laps across the composition's MAIN segments. */
@@ -831,6 +833,30 @@ const toSecondaryTrackMapViewModel = (
   return map ? { ...map, style: "secondary" } : null;
 };
 
+/**
+ * feature-159: the promotion rule, shared by the payload and the action. A
+ * route-primary workout keeps its route, so only a route-less ready GPX track
+ * with at least one secondary file may swap its primary.
+ */
+const canChangeTrackPrimaryFile = ({
+  timeSource,
+  routeId,
+  geometryState,
+  hasOwnActiveTrackGpxFile,
+  secondaryCount,
+}: {
+  timeSource: string | null;
+  routeId: string | null;
+  geometryState: string;
+  hasOwnActiveTrackGpxFile: boolean;
+  secondaryCount: number;
+}) =>
+  timeSource === "GPX" &&
+  routeId === null &&
+  geometryState === "READY" &&
+  hasOwnActiveTrackGpxFile &&
+  secondaryCount > 0;
+
 const toPublicTrack = (
   track: PublicTrackRecord | PublicTrackDetailRecord,
   { includeMapGeometry, viewerId }: { includeMapGeometry: boolean; viewerId?: string | null },
@@ -915,6 +941,17 @@ const toPublicTrack = (
     parseStatus: parsedState.status,
     canUpdateParse,
     isParseOutdated: canUpdateParse && isTrackParseOutdated(parsedState),
+    canChangePrimaryFile: Boolean(
+      viewerId &&
+      viewerId === track.userId &&
+      canChangeTrackPrimaryFile({
+        timeSource: track.timeSource,
+        routeId: track.routeId,
+        geometryState: "READY",
+        hasOwnActiveTrackGpxFile: hasOwnActiveFile,
+        secondaryCount: secondaryRows.length,
+      }),
+    ),
     hasPrimaryRoute: Boolean(track.routeId),
     routeSegmentCount,
     routeLapCount,
@@ -2961,6 +2998,148 @@ export const updateTrackParse = async (trackId: string): Promise<UpdateTrackPars
       ok: false,
       code: "INTERNAL",
       message: error instanceof Error ? error.message : "Could not update the track data",
+    };
+  }
+};
+
+export type MakeTrackPrimaryFileResult =
+  | { ok: true }
+  | { ok: false; code: "NOT_FOUND" | "VALIDATION" | "INTERNAL"; message: string };
+
+/**
+ * feature-159: swap a secondary file into the primary slot on a route-less
+ * ready workout. The swap keeps the file-XOR-route invariant, the old primary
+ * becomes a secondary file with its own metadata, and the parser refresh runs
+ * after the transaction so a failed reparse cannot undo the owner's choice.
+ */
+export const makeTrackPrimaryFile = async (geometryId: string): Promise<MakeTrackPrimaryFileResult> => {
+  try {
+    const userId = await getRequiredUserId();
+    const { default: prisma } = await import("@/lib/prisma");
+    const normalizedId = geometryId?.trim();
+
+    if (!normalizedId) {
+      return { ok: false, code: "NOT_FOUND", message: "Extra file not found" };
+    }
+
+    const geometry = (await prisma.trackGeometry.findFirst({
+      where: { id: normalizedId, track: { userId } },
+      select: {
+        id: true,
+        fileAssetId: true,
+        metadata: true,
+        fileAsset: { select: { purpose: true, status: true } },
+        track: {
+          select: {
+            id: true,
+            slug: true,
+            timeSource: true,
+            routeId: true,
+            geometryState: true,
+            fileAssetId: true,
+            metadata: true,
+            fileAsset: { select: { purpose: true, status: true } },
+            _count: { select: { geometries: true } },
+          },
+        },
+      },
+    })) as {
+      id: string;
+      fileAssetId: string;
+      metadata: Prisma.JsonValue | null;
+      fileAsset: { purpose: string; status: string };
+      track: {
+        id: string;
+        slug: string;
+        timeSource: string | null;
+        routeId: string | null;
+        geometryState: string;
+        fileAssetId: string | null;
+        metadata: Prisma.JsonValue | null;
+        fileAsset: { purpose: string; status: string } | null;
+        _count: { geometries: number };
+      };
+    } | null;
+
+    if (!geometry) {
+      return { ok: false, code: "NOT_FOUND", message: "Extra file not found" };
+    }
+
+    const track = geometry.track;
+    const canChange = canChangeTrackPrimaryFile({
+      timeSource: track.timeSource,
+      routeId: track.routeId,
+      geometryState: track.geometryState,
+      hasOwnActiveTrackGpxFile: Boolean(
+        track.fileAsset && track.fileAsset.purpose === "TRACK_GPX" && track.fileAsset.status === ACTIVE_FILE_STATUS,
+      ),
+      secondaryCount: track._count.geometries,
+    });
+
+    if (!canChange || !track.fileAssetId) {
+      return {
+        ok: false,
+        code: "VALIDATION",
+        message: "This workout cannot change its primary file",
+      };
+    }
+
+    if (geometry.fileAsset.purpose !== "TRACK_GPX" || geometry.fileAsset.status !== ACTIVE_FILE_STATUS) {
+      return { ok: false, code: "VALIDATION", message: "The selected file is not available" };
+    }
+
+    const previousPrimaryFileId = track.fileAssetId;
+    const previousPrimaryMetadata = track.metadata;
+
+    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      await tx.trackGeometry.delete({ where: { id: geometry.id } });
+
+      await tx.trackGeometry.create({
+        data: {
+          trackId: track.id,
+          fileAssetId: previousPrimaryFileId,
+          metadata:
+            previousPrimaryMetadata === null ? Prisma.DbNull : (previousPrimaryMetadata as Prisma.InputJsonValue),
+        },
+      });
+
+      await tx.track.update({
+        where: { id: track.id },
+        data: {
+          fileAssetId: geometry.fileAssetId,
+          metadata: geometry.metadata === null ? Prisma.DbNull : (geometry.metadata as Prisma.InputJsonValue),
+        },
+      });
+    });
+
+    revalidateTrackDetailPaths(track.slug);
+
+    let parseFailure: string | null = null;
+
+    try {
+      const parsed = await parseTrackGpx(track.id);
+
+      if (!parsed || parsed.gpxParse.status === "FAILED") {
+        parseFailure = parsed?.gpxParse.errorMessage ?? "GPX parsing failed";
+      }
+    } catch (error) {
+      parseFailure = error instanceof Error ? error.message : "GPX parsing failed";
+    }
+
+    if (parseFailure) {
+      return {
+        ok: false,
+        code: "VALIDATION",
+        message: `The primary file changed, but it could not be parsed: ${parseFailure}`,
+      };
+    }
+
+    return { ok: true };
+  } catch (error) {
+    return {
+      ok: false,
+      code: "INTERNAL",
+      message: error instanceof Error ? error.message : "Could not change the primary file",
     };
   }
 };

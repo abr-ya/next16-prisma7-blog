@@ -295,7 +295,12 @@ const TrackPage = async ({ params }: TrackPageProps) => {
           {track.canCleanPoints ? <TrackPointCleanupButton trackId={track.id} trackTitle={track.title} /> : null}
         </section>
 
-        <TrackExtraFilesSection trackId={track.id} files={track.secondaryFiles} canManage={track.canManageExtraFiles} />
+        <TrackExtraFilesSection
+          trackId={track.id}
+          files={track.secondaryFiles}
+          canManage={track.canManageExtraFiles}
+          canChangePrimaryFile={track.canChangePrimaryFile}
+        />
       </article>
     </PageLayout>
   );
