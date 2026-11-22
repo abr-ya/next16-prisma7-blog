@@ -51,10 +51,11 @@ The helpers are pure where possible and live in `lib/track-gpx-metadata.ts`; the
 4. Call the existing `parseTrackGpx(track.id)` and inspect the returned metadata: a `FAILED` `gpxParse.status` returns `{ ok: false, code, message }` even though the call itself did not throw, because `parseTrackGpx` persists a failed envelope instead of throwing on an unreadable file. A missing metadata result is also a failure.
 5. `parseTrackGpx` keeps `timeSource`, lets a confirmed timezone win, and rewrites the mirrored recording columns from the file; the action does not add any of that logic.
 
-`PublicTrack` gains two detail flags, computed in `toPublicTrack` from the resolved parse state:
+`PublicTrack` gains three detail fields, computed in `toPublicTrack` from the resolved parse state:
 
+- `parseStatus` — `MISSING`, `SUCCESS`, `FAILED`, or `STALE`, for the status-row wording;
 - `canUpdateParse` — the owner of a `GPX`-sourced, file-based track;
-- `isParseOutdated` — `canUpdateParse` and (missing parse, failed parse, or missing capabilities).
+- `isParseOutdated` — `canUpdateParse` and (missing parse, failed parse, stale parse, or missing capabilities).
 
 The raw capability list stays server-side; only the booleans reach the client.
 
@@ -77,7 +78,7 @@ Because moving time is one of the capabilities, an old parse whose moving value 
 - **Failed and stale parses.** Both write/keep the capability list and are offered for retry; success clears the outdated state. `markTrackGpxMetadataStale` spreads the normalized `gpxParse`, so the capability list survives the stale marker.
 - **A fresh parse with no moving value.** A file with a single timed point yields a timed summary but no moving duration; the capability is present, so no action is shown. This is intentional and prevents an endless retry.
 - **Unknown future names.** The reader keeps them, the helper ignores them, and the writer remains forward-compatible.
-- **Payload surface.** Only two booleans are added, detail-only; the list payload stays lean because it passes no viewer id.
+- **Payload surface.** A status string and two booleans are added, detail-only; the list payload stays lean because it passes no viewer id.
 - **Route file confusion.** The payload helper must receive `routeId` and the row's own file, not the resolved geometry file, or a route-primary workout shows a button that the parser refuses.
 
 ## Verification
