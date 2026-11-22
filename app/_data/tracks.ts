@@ -36,7 +36,9 @@ import {
   toRecordingTimezoneFromUtcOffset,
 } from "@/lib/track-recording-timezone";
 import {
+  canUpdateTrackParse,
   getTrackGpxMetadataState,
+  isTrackParseOutdated,
   markTrackGpxMetadataStale,
   toTrackMapViewModel,
   type TrackGpxCoordinate,
@@ -313,6 +315,12 @@ export type PublicTrack = {
   canManageExtraFiles: boolean;
   /** feature-145: the viewer owns this track and may edit its private note. */
   canEditPrivateNote: boolean;
+  /** feature-158: the stored parse state, for the update status row. */
+  parseStatus: "MISSING" | "SUCCESS" | "FAILED" | "STALE";
+  /** feature-158: the viewer may reparse this GPX file. */
+  canUpdateParse: boolean;
+  /** feature-158: the stored parse is missing, failed, stale, or older. */
+  isParseOutdated: boolean;
   /** feature-154: the number of segments in the route's composition. */
   routeSegmentCount: number | null;
   /** feature-154: laps across the composition's MAIN segments. */
@@ -865,6 +873,20 @@ const toPublicTrack = (
         .filter((segment) => segment.role === "MAIN")
         .reduce((total, segment) => total + segment.lapCount, 0)
     : null;
+  // feature-158: the row's own file decides updatability — a route-primary
+  // track resolves to the route file, which is also an active TRACK_GPX.
+  const hasOwnActiveFile = Boolean(
+    !track.routeId && fileAsset && fileAsset.purpose === "TRACK_GPX" && fileAsset.status === ACTIVE_FILE_STATUS,
+  );
+  const canUpdateParse = Boolean(
+    viewerId &&
+    viewerId === track.userId &&
+    canUpdateTrackParse({
+      timeSource: track.timeSource,
+      routeId: track.routeId,
+      hasOwnActiveTrackGpxFile: hasOwnActiveFile,
+    }),
+  );
 
   return {
     id: track.id,
@@ -890,6 +912,9 @@ const toPublicTrack = (
     // the only extra condition for managing its secondary files.
     canManageExtraFiles: Boolean(viewerId && viewerId === track.userId),
     canEditPrivateNote: Boolean(viewerId && viewerId === track.userId),
+    parseStatus: parsedState.status,
+    canUpdateParse,
+    isParseOutdated: canUpdateParse && isTrackParseOutdated(parsedState),
     hasPrimaryRoute: Boolean(track.routeId),
     routeSegmentCount,
     routeLapCount,
@@ -2859,6 +2884,83 @@ export const updateTrackPrivateNote = async (
       ok: false,
       code: "INTERNAL",
       message: error instanceof Error ? error.message : "Could not save the private note",
+    };
+  }
+};
+
+export type UpdateTrackParseResult =
+  | { ok: true }
+  | { ok: false; code: "NOT_FOUND" | "VALIDATION" | "INTERNAL"; message: string };
+
+/**
+ * feature-158: the general owner update for a GPX parse.
+ *
+ * The same `canUpdateTrackParse` rule gates the button and this action, so a
+ * visible control cannot be refused by the server. `parseTrackGpx` persists a
+ * failed envelope instead of throwing on an unreadable file, so the result is
+ * inspected rather than assumed.
+ */
+export const updateTrackParse = async (trackId: string): Promise<UpdateTrackParseResult> => {
+  try {
+    const userId = await getRequiredUserId();
+    const { default: prisma } = await import("@/lib/prisma");
+    const normalizedId = trackId?.trim();
+
+    if (!normalizedId) {
+      return { ok: false, code: "NOT_FOUND", message: "Track not found" };
+    }
+
+    const track = (await prisma.track.findFirst({
+      where: { id: normalizedId, userId },
+      select: {
+        id: true,
+        timeSource: true,
+        routeId: true,
+        fileAsset: { select: { purpose: true, status: true } },
+      },
+    })) as {
+      id: string;
+      timeSource: string | null;
+      routeId: string | null;
+      fileAsset: { purpose: string; status: string } | null;
+    } | null;
+
+    if (!track) {
+      return { ok: false, code: "NOT_FOUND", message: "Track not found" };
+    }
+
+    const canUpdate = canUpdateTrackParse({
+      timeSource: track.timeSource as Parameters<typeof canUpdateTrackParse>[0]["timeSource"],
+      routeId: track.routeId,
+      hasOwnActiveTrackGpxFile: Boolean(
+        track.fileAsset && track.fileAsset.purpose === "TRACK_GPX" && track.fileAsset.status === ACTIVE_FILE_STATUS,
+      ),
+    });
+
+    if (!canUpdate) {
+      return {
+        ok: false,
+        code: "VALIDATION",
+        message: "Only a GPX workout with its own file can be updated",
+      };
+    }
+
+    const metadata = await parseTrackGpx(track.id);
+
+    if (!metadata || metadata.gpxParse.status === "FAILED") {
+      return {
+        ok: false,
+        code: "VALIDATION",
+        message: metadata?.gpxParse.errorMessage ?? "GPX parsing failed",
+      };
+    }
+
+    return { ok: true };
+  } catch (error) {
+    return {
+      ok: false,
+      code: "INTERNAL",
+      message: error instanceof Error ? error.message : "Could not update the track data",
     };
   }
 };

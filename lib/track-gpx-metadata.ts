@@ -4,6 +4,15 @@ import { getTrackRecordingTimezone } from "@/lib/track-recording-timezone";
 
 export const TRACK_GPX_METADATA_VERSION = "track-gpx-metadata/v1";
 
+/**
+ * feature-158: what the current parser can derive, regardless of what a
+ * particular file contains. The list travels in `gpxParse.parserCapabilities`
+ * so a reader can tell "the parser was older" from "the file had no data".
+ */
+export const TRACK_GPX_PARSER_CAPABILITIES = ["summary", "mapGeometry", "timeline", "time", "movingTime"] as const;
+
+export type TrackGpxParseCapability = (typeof TRACK_GPX_PARSER_CAPABILITIES)[number];
+
 export type TrackGpxParseStatus = "SUCCESS" | "FAILED" | "STALE";
 export type TrackGpxTimezoneEvidence = "UTC_OR_OFFSET" | "MISSING" | "MIXED" | "UNKNOWN";
 
@@ -64,6 +73,12 @@ export type TrackGpxMetadata = {
     sourceFileAssetId: string;
     sourceFileKey: string;
     errorMessage?: string;
+    /**
+     * feature-158: what the parser could produce when this row was written.
+     * Optional so rows from before the field stay readable; unknown future
+     * names are tolerated.
+     */
+    parserCapabilities?: string[];
   };
   summary: TrackGpxSummary | null;
   mapGeometry: TrackGpxCoordinate[] | null;
@@ -190,6 +205,10 @@ export const readTrackGpxMetadata = (value: Prisma.JsonValue | null | undefined)
       sourceFileAssetId: gpxParse.sourceFileAssetId,
       sourceFileKey: gpxParse.sourceFileKey,
       ...(errorMessage ? { errorMessage } : {}),
+      ...(Array.isArray(gpxParse.parserCapabilities) &&
+      gpxParse.parserCapabilities.every((capability) => typeof capability === "string")
+        ? { parserCapabilities: [...gpxParse.parserCapabilities] }
+        : {}),
     },
     summary,
     mapGeometry,
@@ -228,6 +247,44 @@ export const getTrackGpxMetadataState = (
   }
 
   return { status: "STALE", metadata, errorMessage: "Parsed GPX metadata is incomplete" };
+};
+
+/**
+ * feature-158: capabilities the current parser has that a stored parse does
+ * not declare. Without a marker every capability is missing, which is what
+ * makes a pre-marker row outdated.
+ */
+export const getMissingTrackParseCapabilities = (
+  stored?: string[] | null,
+  required: readonly string[] = TRACK_GPX_PARSER_CAPABILITIES,
+): string[] => required.filter((capability) => !(stored ?? []).includes(capability));
+
+export type CanUpdateTrackParseInput = {
+  timeSource: TrackTimeSource | null;
+  routeId: string | null;
+  /** The track's own active TRACK_GPX file, not the resolved route file. */
+  hasOwnActiveTrackGpxFile: boolean;
+};
+
+/**
+ * feature-158: whether this track may be reparsed at all. A route-primary
+ * row resolves to the route's file, which is also an active TRACK_GPX file,
+ * so the caller must pass the row's own file and `routeId`.
+ */
+export const canUpdateTrackParse = ({ timeSource, routeId, hasOwnActiveTrackGpxFile }: CanUpdateTrackParseInput) =>
+  timeSource === "GPX" && routeId === null && hasOwnActiveTrackGpxFile;
+
+/**
+ * feature-158: a missing, failed, or stale parse is outdated because the row
+ * cannot recover without a reparse. A successful parse is outdated when the
+ * stored capability list is absent or misses a current capability; a
+ * capability that produced no value because the file had no data is not
+ * outdated.
+ */
+export const isTrackParseOutdated = (state: TrackGpxMetadataState): boolean => {
+  if (state.status !== "SUCCESS") return true;
+
+  return getMissingTrackParseCapabilities(state.metadata.gpxParse.parserCapabilities).length > 0;
 };
 
 export type TrackMapViewModel = {
@@ -279,6 +336,7 @@ export const createSuccessfulTrackGpxMetadata = ({
     parsedAt: parsedAt.toISOString(),
     sourceFileAssetId,
     sourceFileKey,
+    parserCapabilities: [...TRACK_GPX_PARSER_CAPABILITIES],
   },
   summary,
   mapGeometry,
@@ -303,6 +361,7 @@ export const createFailedTrackGpxMetadata = ({
     sourceFileAssetId,
     sourceFileKey,
     errorMessage,
+    parserCapabilities: [...TRACK_GPX_PARSER_CAPABILITIES],
   },
   summary: null,
   mapGeometry: null,
