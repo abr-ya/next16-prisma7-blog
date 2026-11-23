@@ -1,13 +1,18 @@
 "use client";
 
-import { Download, FileText, Plus, Trash2, Upload } from "lucide-react";
+import { Download, FileText, Plus, Star, Trash2, Upload } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 
 import { markDiscardedTrackGpxFileAssetsPendingDelete } from "@/app/_actions/files";
-import { addTrackExtraFile, removeTrackExtraFile, type PublicTrackSecondaryFile } from "@/app/_data/tracks";
+import {
+  addTrackExtraFile,
+  makeTrackPrimaryFile,
+  removeTrackExtraFile,
+  type PublicTrackSecondaryFile,
+} from "@/app/_data/tracks";
 import { Badge, Button, ConfirmDialog, Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/index";
 import { TrackGpxUploadSection } from "@/components/track-pages/track-gpx-upload-section";
 import { formatFileSize } from "@/lib/file-upload-limits";
@@ -27,10 +32,12 @@ export const TrackExtraFilesSection = ({
   trackId,
   files,
   canManage,
+  canChangePrimaryFile,
 }: {
   trackId: string;
   files: PublicTrackSecondaryFile[];
   canManage: boolean;
+  canChangePrimaryFile: boolean;
 }) => {
   const router = useRouter();
   const [addOpen, setAddOpen] = useState(false);
@@ -38,6 +45,9 @@ export const TrackExtraFilesSection = ({
   const [uploadedFileId, setUploadedFileId] = useState<string | null>(null);
   const [removeTarget, setRemoveTarget] = useState<PublicTrackSecondaryFile | null>(null);
   const [isRemoving, setIsRemoving] = useState(false);
+  // feature-159: promoting a secondary file to the primary geometry.
+  const [promoteTarget, setPromoteTarget] = useState<PublicTrackSecondaryFile | null>(null);
+  const [isPromoting, setIsPromoting] = useState(false);
 
   if (files.length === 0 && !canManage) return null;
 
@@ -73,6 +83,30 @@ export const TrackExtraFilesSection = ({
       router.refresh();
     } finally {
       setIsAdding(false);
+    }
+  };
+
+  const handlePromote = async () => {
+    if (!promoteTarget) return;
+
+    setIsPromoting(true);
+
+    try {
+      const result = await makeTrackPrimaryFile(promoteTarget.geometryId);
+
+      if (!result.ok) {
+        toast.error(result.message);
+        setPromoteTarget(null);
+        router.refresh();
+
+        return;
+      }
+
+      toast.success("Primary file changed");
+      setPromoteTarget(null);
+      router.refresh();
+    } finally {
+      setIsPromoting(false);
     }
   };
 
@@ -126,19 +160,32 @@ export const TrackExtraFilesSection = ({
                 <FileText className="size-4 text-muted-foreground" />
                 <span className="font-medium">{file.name}</span>
                 <Badge variant="outline">{formatFileSize(file.sizeBytes)}</Badge>
-                {canManage ? (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="ml-auto"
-                    title="Remove extra file"
-                    aria-label={`Remove ${file.name}`}
-                    onClick={() => setRemoveTarget(file)}
-                  >
-                    <Trash2 className="size-4" />
-                  </Button>
-                ) : null}
+                <div className="ml-auto flex items-center gap-1">
+                  {canChangePrimaryFile ? (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      title="Make primary"
+                      aria-label={`Make ${file.name} the primary file`}
+                      onClick={() => setPromoteTarget(file)}
+                    >
+                      <Star className="size-4" />
+                    </Button>
+                  ) : null}
+                  {canManage ? (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      title="Remove extra file"
+                      aria-label={`Remove ${file.name}`}
+                      onClick={() => setRemoveTarget(file)}
+                    >
+                      <Trash2 className="size-4" />
+                    </Button>
+                  ) : null}
+                </div>
               </div>
               <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
                 <span className="inline-flex items-center gap-1">
@@ -184,6 +231,22 @@ export const TrackExtraFilesSection = ({
           </div>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={Boolean(promoteTarget)}
+        onOpenChange={(open) => {
+          if (!open) setPromoteTarget(null);
+        }}
+        title="Make this file primary?"
+        description={
+          promoteTarget
+            ? `"${promoteTarget.name}" will become the source of the map, distance, time, and photo inference. The current primary becomes an extra file.`
+            : undefined
+        }
+        confirmLabel="Make primary"
+        isPending={isPromoting}
+        onConfirm={handlePromote}
+      />
 
       <ConfirmDialog
         open={Boolean(removeTarget)}
