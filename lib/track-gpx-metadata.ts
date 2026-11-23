@@ -314,6 +314,16 @@ export const isTrackParseOutdated = (state: TrackGpxMetadataState): boolean => {
   return getMissingTrackParseCapabilities(state.metadata.gpxParse.parserCapabilities).length > 0;
 };
 
+/** feature-160: how much of a source name the badge shows before an ellipsis. */
+export const TRACK_SOURCE_LABEL_MAX_LENGTH = 15;
+
+/**
+ * feature-160: keep the badge compact without changing the stored raw value;
+ * the full label stays available as the badge title.
+ */
+export const formatTrackSourceLabel = (value: string, maxLength = TRACK_SOURCE_LABEL_MAX_LENGTH) =>
+  value.length > maxLength ? `${value.slice(0, maxLength).trimEnd()}…` : value;
+
 /**
  * feature-160: the badge on the track page. A manual workout keeps its
  * existing `Source: Manual` badge, so it returns null here; a GPX file shows

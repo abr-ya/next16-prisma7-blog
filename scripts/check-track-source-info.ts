@@ -7,6 +7,7 @@
  *   npx tsx scripts/check-track-source-info.ts
  */
 import {
+  formatTrackSourceLabel,
   getTrackLegendLabel,
   getTrackSourceBadgeLabel,
   TRACK_GPX_PARSER_CAPABILITIES,
@@ -111,6 +112,15 @@ expect(
   getTrackLegendLabel({ sourceInfo: null, timeSource: "GPX", isRoute: false }),
   null,
 );
+
+expect("a short source stays intact", formatTrackSourceLabel("OsmAnd"), "OsmAnd");
+expect("a 15-character source stays intact", formatTrackSourceLabel("Garmin Connect!"), "Garmin Connect!");
+expect(
+  "a longer source is truncated with an ellipsis",
+  formatTrackSourceLabel("Garmin Connect Mobile"),
+  "Garmin Connect…",
+);
+expect("the raw source is not modified", "Garmin Connect Mobile".length, 21);
 
 if (failures > 0) {
   console.error(`\n${failures} check(s) failed`);
