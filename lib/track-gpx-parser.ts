@@ -440,6 +440,57 @@ const buildTimeline = (points: ParsedGpxPoint[]): TrackGpxTimedPoint[] | null =>
   return [...selected].sort((a, b) => a - b).map((index) => timedPoints[index]);
 };
 
+const SOURCE_VALUE_MAX_LENGTH = 120;
+
+const decodeXmlEntities = (value: string) =>
+  value
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&amp;/g, "&");
+
+const normalizeSourceValue = (value: string | null | undefined) => {
+  if (value === null || value === undefined) return null;
+
+  const decoded = decodeXmlEntities(value)
+    .replace(/<[^>]*>/g, "")
+    .trim();
+
+  return decoded ? decoded.slice(0, SOURCE_VALUE_MAX_LENGTH) : null;
+};
+
+/**
+ * feature-160: `<gpx creator>` names the recording or export app. It is not a
+ * physical device, and the UI labels it as an app.
+ */
+export const readGpxCreator = (content: string): string | null => {
+  const match = content.match(/<gpx\b[^>]*\bcreator\s*=\s*(?:"([^"]*)"|'([^']*)')/i);
+
+  return normalizeSourceValue(match ? (match[1] ?? match[2]) : null);
+};
+
+/**
+ * feature-160: a device name exists only in explicit vendor extension
+ * elements. The helper accepts `deviceName` and `device` with any namespace
+ * prefix and never guesses a device from an unknown creator.
+ */
+export const readGpxDeviceName = (content: string): string | null => {
+  const patterns = [
+    /<(?:[\w.-]+:)?deviceName\b[^>]*>([\s\S]*?)<\s*\/\s*(?:[\w.-]+:)?deviceName\s*>/i,
+    /<(?:[\w.-]+:)?device\b[^>]*>([\s\S]*?)<\s*\/\s*(?:[\w.-]+:)?device\s*>/i,
+  ];
+
+  for (const pattern of patterns) {
+    const match = content.match(pattern);
+    const value = normalizeSourceValue(match ? match[1] : null);
+
+    if (value) return value;
+  }
+
+  return null;
+};
+
 const sanitizeErrorMessage = (error: unknown) => {
   const message = error instanceof Error ? error.message : "GPX parsing failed";
 
@@ -459,6 +510,12 @@ export const parseTrackGpxMetadata = ({
   sourceFileAssetId,
   sourceFileKey,
 }: ParseTrackGpxInput): TrackGpxMetadata => {
+  // feature-160: source details are independent of whether the points parse.
+  const sourceInfo = {
+    recordingApp: readGpxCreator(content),
+    deviceName: readGpxDeviceName(content),
+  };
+
   try {
     if (!/<\s*(?:[\w-]+:)?gpx(?:\s|>)/i.test(content)) {
       throw new Error("GPX file is not valid XML");
@@ -489,12 +546,14 @@ export const parseTrackGpxMetadata = ({
       summary,
       mapGeometry,
       timeline,
+      sourceInfo,
     });
   } catch (error) {
     return createFailedTrackGpxMetadata({
       sourceFileAssetId,
       sourceFileKey,
       errorMessage: sanitizeErrorMessage(error),
+      sourceInfo,
     });
   }
 };

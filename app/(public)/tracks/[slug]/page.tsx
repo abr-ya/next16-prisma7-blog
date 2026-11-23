@@ -27,6 +27,7 @@ import {
   formatTrackPointCount,
   formatTrackTimeSource,
   formatTrackTimezoneEvidence,
+  getTrackSourceBadgeLabel,
   TRACK_RECORDING_UNKNOWN_TEXT,
   type TrackMapViewModel,
 } from "@/lib/track-gpx-metadata";
@@ -91,6 +92,10 @@ const TrackPage = async ({ params }: TrackPageProps) => {
       : track.parseStatus === "MISSING"
         ? "No parse yet"
         : "Track data is outdated";
+  const sourceBadgeLabel = getTrackSourceBadgeLabel({
+    sourceInfo: track.sourceInfo,
+    timeSource: track.timeSource,
+  });
 
   // feature-150: draw the primary route and every parsed secondary recording
   // on one map. A secondary file without stored map geometry contributes no
@@ -108,6 +113,7 @@ const TrackPage = async ({ params }: TrackPageProps) => {
             <Route className="size-3.5" />
             {track.hasPrimaryRoute ? "Route track" : "GPX track"}
           </Badge>
+          {sourceBadgeLabel ? <Badge variant="outline">{sourceBadgeLabel}</Badge> : null}
           {track.routeLapCount !== null && track.routeLapCount > 0 ? (
             <Badge variant="secondary">
               {track.routeLapCount} {track.routeLapCount === 1 ? "lap" : "laps"}
