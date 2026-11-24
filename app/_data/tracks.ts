@@ -38,10 +38,13 @@ import {
 import {
   canUpdateTrackParse,
   getTrackGpxMetadataState,
+  getTrackLegendLabel,
   isTrackParseOutdated,
   markTrackGpxMetadataStale,
+  readTrackGpxMetadata,
   toTrackMapViewModel,
   type TrackGpxCoordinate,
+  type TrackGpxSourceInfo,
   type TrackGpxSummary,
   type TrackMapViewModel,
 } from "@/lib/track-gpx-metadata";
@@ -323,6 +326,8 @@ export type PublicTrack = {
   isParseOutdated: boolean;
   /** feature-159: the owner may promote a secondary file on a route-less workout. */
   canChangePrimaryFile: boolean;
+  /** feature-160: the parsed recording app and device, when known. */
+  sourceInfo: TrackGpxSourceInfo | null;
   /** feature-154: the number of segments in the route's composition. */
   routeSegmentCount: number | null;
   /** feature-154: laps across the composition's MAIN segments. */
@@ -825,10 +830,18 @@ const toSecondaryTrackMapViewModel = (
   metadata: Prisma.JsonValue | null,
   fileAsset: Prisma.FileAssetGetPayload<{ select: typeof publicTrackFileAssetSelect }>,
 ): TrackMapViewModel | null => {
-  const map = toTrackMapViewModel(SECONDARY_TRACK_MAP_TITLE, metadata, {
-    fileAssetId: fileAsset.id,
-    fileKey: fileAsset.fileKey,
+  const parsed = readTrackGpxMetadata(metadata);
+  const legendLabel = getTrackLegendLabel({
+    sourceInfo: parsed?.sourceInfo ?? null,
+    timeSource: null,
+    isRoute: false,
   });
+  const map = toTrackMapViewModel(
+    SECONDARY_TRACK_MAP_TITLE,
+    metadata,
+    { fileAssetId: fileAsset.id, fileKey: fileAsset.fileKey },
+    legendLabel,
+  );
 
   return map ? { ...map, style: "secondary" } : null;
 };
@@ -913,6 +926,14 @@ const toPublicTrack = (
       hasOwnActiveTrackGpxFile: hasOwnActiveFile,
     }),
   );
+  // feature-160: the source travels with the metadata; the legend label names
+  // a manual or route primary as `Manual route`.
+  const sourceInfo = parsedState.metadata?.sourceInfo ?? null;
+  const primaryLegendLabel = getTrackLegendLabel({
+    sourceInfo,
+    timeSource: track.timeSource,
+    isRoute: Boolean(track.routeId),
+  });
 
   return {
     id: track.id,
@@ -941,6 +962,7 @@ const toPublicTrack = (
     parseStatus: parsedState.status,
     canUpdateParse,
     isParseOutdated: canUpdateParse && isTrackParseOutdated(parsedState),
+    sourceInfo,
     canChangePrimaryFile: Boolean(
       viewerId &&
       viewerId === track.userId &&
@@ -971,10 +993,12 @@ const toPublicTrack = (
           }
         : null,
     map: includeMapGeometry
-      ? toTrackMapViewModel(track.title, metadata, {
-          fileAssetId: fileAsset.id,
-          fileKey: fileAsset.fileKey,
-        })
+      ? toTrackMapViewModel(
+          track.title,
+          metadata,
+          { fileAssetId: fileAsset.id, fileKey: fileAsset.fileKey },
+          primaryLegendLabel,
+        )
       : null,
     hikes: track.hikes.map((association) => ({
       id: association.hike.id,

@@ -9,11 +9,24 @@ export const TRACK_GPX_METADATA_VERSION = "track-gpx-metadata/v1";
  * particular file contains. The list travels in `gpxParse.parserCapabilities`
  * so a reader can tell "the parser was older" from "the file had no data".
  */
-export const TRACK_GPX_PARSER_CAPABILITIES = ["summary", "mapGeometry", "timeline", "time", "movingTime"] as const;
+export const TRACK_GPX_PARSER_CAPABILITIES = [
+  "summary",
+  "mapGeometry",
+  "timeline",
+  "time",
+  "movingTime",
+  "sourceInfo",
+] as const;
 
 export type TrackGpxParseCapability = (typeof TRACK_GPX_PARSER_CAPABILITIES)[number];
 
 export type TrackGpxParseStatus = "SUCCESS" | "FAILED" | "STALE";
+
+/** feature-160: the app that wrote the file and the device it names, if any. */
+export type TrackGpxSourceInfo = {
+  recordingApp: string | null;
+  deviceName: string | null;
+};
 export type TrackGpxTimezoneEvidence = "UTC_OR_OFFSET" | "MISSING" | "MIXED" | "UNKNOWN";
 
 export type TrackGpxBounds = {
@@ -84,6 +97,8 @@ export type TrackGpxMetadata = {
   mapGeometry: TrackGpxCoordinate[] | null;
   /** Compact timed points for photo inference; null/absent on older parses. */
   timeline: TrackGpxTimedPoint[] | null;
+  /** feature-160: recording app and device, always present on a fresh parse. */
+  sourceInfo?: TrackGpxSourceInfo;
 };
 
 export type TrackGpxMetadataState =
@@ -141,6 +156,11 @@ const readTimezoneEvidence = (value: unknown): TrackGpxTimezoneEvidence => {
   return "UNKNOWN";
 };
 
+const isSourceInfo = (value: unknown): value is TrackGpxSourceInfo =>
+  isRecord(value) &&
+  (value.recordingApp === null || typeof value.recordingApp === "string") &&
+  (value.deviceName === null || typeof value.deviceName === "string");
+
 const isSummary = (value: unknown): value is TrackGpxSummary =>
   isRecord(value) &&
   isFiniteNumber(value.distanceMeters) &&
@@ -196,6 +216,12 @@ export const readTrackGpxMetadata = (value: Prisma.JsonValue | null | undefined)
       : Array.isArray(value.timeline) && value.timeline.every(isTimedPoint)
         ? value.timeline
         : null;
+  const sourceInfo =
+    value.sourceInfo === undefined || value.sourceInfo === null
+      ? undefined
+      : isSourceInfo(value.sourceInfo)
+        ? { recordingApp: value.sourceInfo.recordingApp, deviceName: value.sourceInfo.deviceName }
+        : undefined;
 
   return {
     gpxParse: {
@@ -213,6 +239,7 @@ export const readTrackGpxMetadata = (value: Prisma.JsonValue | null | undefined)
     summary,
     mapGeometry,
     timeline,
+    ...(sourceInfo ? { sourceInfo } : {}),
   };
 };
 
@@ -287,6 +314,52 @@ export const isTrackParseOutdated = (state: TrackGpxMetadataState): boolean => {
   return getMissingTrackParseCapabilities(state.metadata.gpxParse.parserCapabilities).length > 0;
 };
 
+/** feature-160: how much of a source name the badge shows before an ellipsis. */
+export const TRACK_SOURCE_LABEL_MAX_LENGTH = 15;
+
+/**
+ * feature-160: keep the badge compact without changing the stored raw value;
+ * the full label stays available as the badge title.
+ */
+export const formatTrackSourceLabel = (value: string, maxLength = TRACK_SOURCE_LABEL_MAX_LENGTH) =>
+  value.length > maxLength ? `${value.slice(0, maxLength).trimEnd()}…` : value;
+
+/**
+ * feature-160: the badge on the track page. A manual workout keeps its
+ * existing `Source: Manual` badge, so it returns null here; a GPX file shows
+ * its device, then the app that wrote it.
+ */
+export const getTrackSourceBadgeLabel = ({
+  sourceInfo,
+  timeSource,
+}: {
+  sourceInfo?: TrackGpxSourceInfo | null;
+  timeSource: TrackTimeSource | null;
+}) => {
+  if (timeSource === "MANUAL") return null;
+
+  return sourceInfo?.deviceName?.trim() || sourceInfo?.recordingApp?.trim() || null;
+};
+
+/**
+ * feature-160: the map legend label. A manual or route-based primary reads
+ * `Manual route`; a file line reads its device, then its app, and a null
+ * result lets the legend fall back to the title.
+ */
+export const getTrackLegendLabel = ({
+  sourceInfo,
+  timeSource,
+  isRoute,
+}: {
+  sourceInfo?: TrackGpxSourceInfo | null;
+  timeSource: TrackTimeSource | null;
+  isRoute: boolean;
+}) => {
+  if (timeSource === "MANUAL" || isRoute) return "Manual route";
+
+  return sourceInfo?.deviceName?.trim() || sourceInfo?.recordingApp?.trim() || null;
+};
+
 export type TrackMapViewModel = {
   title: string;
   bounds: TrackGpxBounds;
@@ -295,12 +368,15 @@ export type TrackMapViewModel = {
   // feature-150: a dual-map line that carries its role. Undefined keeps the
   // existing rotating palette and single-line behavior for every other map.
   style?: "primary" | "secondary";
+  /** feature-160: legend text when it differs from the title. */
+  legendLabel?: string;
 };
 
 export const toTrackMapViewModel = (
   title: string,
   metadata: Prisma.JsonValue | null | undefined,
   source?: { fileAssetId: string; fileKey: string },
+  legendLabel?: string | null,
 ): TrackMapViewModel | null => {
   const parsedState = getTrackGpxMetadataState(metadata, source);
 
@@ -312,6 +388,7 @@ export const toTrackMapViewModel = (
     title,
     bounds: parsedState.summary.bounds,
     geometry: parsedState.mapGeometry,
+    ...(legendLabel ? { legendLabel } : {}),
   };
 };
 
@@ -322,6 +399,7 @@ export const createSuccessfulTrackGpxMetadata = ({
   summary,
   mapGeometry,
   timeline = null,
+  sourceInfo,
 }: {
   parsedAt?: Date;
   sourceFileAssetId: string;
@@ -329,6 +407,7 @@ export const createSuccessfulTrackGpxMetadata = ({
   summary: TrackGpxSummary;
   mapGeometry: TrackGpxCoordinate[];
   timeline?: TrackGpxTimedPoint[] | null;
+  sourceInfo?: TrackGpxSourceInfo;
 }): TrackGpxMetadata => ({
   gpxParse: {
     status: "SUCCESS",
@@ -341,6 +420,7 @@ export const createSuccessfulTrackGpxMetadata = ({
   summary,
   mapGeometry,
   timeline,
+  ...(sourceInfo ? { sourceInfo } : {}),
 });
 
 export const createFailedTrackGpxMetadata = ({
@@ -348,11 +428,13 @@ export const createFailedTrackGpxMetadata = ({
   sourceFileAssetId,
   sourceFileKey,
   errorMessage,
+  sourceInfo,
 }: {
   parsedAt?: Date;
   sourceFileAssetId: string;
   sourceFileKey: string;
   errorMessage: string;
+  sourceInfo?: TrackGpxSourceInfo;
 }): TrackGpxMetadata => ({
   gpxParse: {
     status: "FAILED",
@@ -366,6 +448,7 @@ export const createFailedTrackGpxMetadata = ({
   summary: null,
   mapGeometry: null,
   timeline: null,
+  ...(sourceInfo ? { sourceInfo } : {}),
 });
 
 export const markTrackGpxMetadataStale = (

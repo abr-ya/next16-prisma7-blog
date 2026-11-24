@@ -140,7 +140,8 @@ const TrackMapLeaflet = ({
     .sort((a, b) => Number(b.track.style === "secondary") - Number(a.track.style === "secondary"));
   const legendItems = tracks
     .map((track, index) => ({
-      title: track.title,
+      // feature-160: a line may name its source instead of repeating the title.
+      title: track.legendLabel ?? track.title,
       color: getTrackLinePathOptions(track, index, trackStatuses?.[index] === "DRAFT").color,
       drawable: track.geometry.length >= 2,
     }))

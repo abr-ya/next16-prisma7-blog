@@ -85,3 +85,24 @@ npx tsx scripts/check-track-parse-capabilities.ts
   read normalization, or the `canUpdateTrackParse` rule.
 - When the **Update track data** button appears on a track that looks current,
   or stays hidden on a track that should offer it.
+
+## `check-track-source-info.ts`
+
+Exercises the GPX source extraction and labels: creator quoting and entities,
+namespaced and plain device elements, empty and missing values, the
+120-character cap, source details on a failed parse, the `sourceInfo`
+capability, and the badge and legend precedence (device → app → `Manual route`
+→ title).
+
+### Usage
+
+```bash
+npx tsx scripts/check-track-source-info.ts
+```
+
+### When to use it
+
+- After changing the creator or device extraction, the `sourceInfo` metadata
+  shape, or the badge/legend label helpers.
+- When a track page shows the wrong app or device, or a legend line falls back
+  to the title unexpectedly.
