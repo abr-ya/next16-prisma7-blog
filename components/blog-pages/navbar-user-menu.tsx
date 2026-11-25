@@ -1,6 +1,16 @@
 "use client";
 
-import { Dumbbell, Footprints, LayoutDashboard, LogOut, MapPin, Route, UserRound, Waypoints } from "lucide-react";
+import {
+  Dumbbell,
+  Fingerprint,
+  Footprints,
+  LayoutDashboard,
+  LogOut,
+  MapPin,
+  Route,
+  UserRound,
+  Waypoints,
+} from "lucide-react";
 import Link from "next/link";
 import { useT } from "next-i18next/client";
 import { useRouter } from "next/navigation";
@@ -98,6 +108,12 @@ export const NavbarUserMenu = ({ userName, userImage }: NavbarUserMenuProps) => 
               <Link href="/my/places" className="flex-row items-center gap-2">
                 <MapPin />
                 {t("myPlaces")}
+              </Link>
+            </NavigationMenuLink>
+            <NavigationMenuLink asChild>
+              <Link href="/my/source-aliases" className="flex-row items-center gap-2">
+                <Fingerprint />
+                {t("mySourceAliases")}
               </Link>
             </NavigationMenuLink>
             <NavigationMenuLink asChild>

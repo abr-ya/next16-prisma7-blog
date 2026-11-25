@@ -22,5 +22,6 @@
   "signout": "Выйти",
   "languageLabel": "Язык",
   "languageEnglish": "Английский",
-  "languageRussian": "Русский"
+  "languageRussian": "Русский",
+  "mySourceAliases": "Названия источников"
 }
