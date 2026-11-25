@@ -4,7 +4,8 @@
     "myRoutes": "My routes",
     "myWorkouts": "My workouts",
     "myGear": "My gear",
-    "myPlaces": "My places"
+    "myPlaces": "My places",
+    "sourceAliases": "Source names"
   },
   "places": {
     "add": "Add place",

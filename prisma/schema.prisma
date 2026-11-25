@@ -47,6 +47,8 @@ model User {
   gearPreferences                GearPreference[]
   // feature-148: the private places this owner starts routes from.
   favoritePlaces                 FavoritePlace[]
+  // feature-161: the owner's display names for raw GPX source strings.
+  sourceAliases                  TrackSourceAlias[]
   photos                         Photo[]
   photoLikes                     PhotoLike[]
   trustChangesReceived           TrustChangeLog[]  @relation("TrustChangeLogTarget")
@@ -550,6 +552,30 @@ model GearPreference {
 
   @@id([userId, activityTypeId])
   @@index([gearId])
+}
+
+// feature-161: an owner's display name for a raw GPX source. `rawKey` is the
+// normalized lookup (trim, lowercase, collapsed whitespace), so the unique key
+// makes the same source impossible to alias twice per kind while `rawValue`
+// keeps the original casing for display.
+enum TrackSourceAliasKind {
+  APP
+  DEVICE
+}
+
+model TrackSourceAlias {
+  id        String                @id @default(uuid())
+  userId    String
+  user      User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind      TrackSourceAliasKind
+  rawValue  String
+  rawKey    String
+  label     String
+  createdAt DateTime              @default(now())
+  updatedAt DateTime              @default(now()) @updatedAt
+
+  @@unique([userId, kind, rawKey])
+  @@index([userId])
 }
 
 model GearToTrackActivityTypes {
