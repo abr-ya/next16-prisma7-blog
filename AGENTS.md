@@ -22,12 +22,30 @@ For non-trivial feature work, behavior changes, schema changes, route changes, o
 - After preparing OpenSpec artifacts, explicitly tell the user that the spec is ready before starting implementation.
 - Keep code changes aligned with the accepted OpenSpec tasks.
 - Update docs/checklists together with behavior changes when the project already tracks the feature in docs.
-- Run the OpenSpec workflow steps through the project's OpenSpec skills — `openspec-sync-specs` to sync delta specs into the main specs and `openspec-archive-change` to archive a completed change. Do not sync or archive by hand with file edits or ad-hoc CLI calls: the skills carry the merge rules, the validation steps, and the archive bookkeeping.
+- Run the OpenSpec workflow steps through the project's OpenSpec skills — `openspec-sync-specs` to sync delta specs into the main specs and `openspec-archive-change` to archive a completed change. Do not sync or archive by hand with file edits or ad-hoc CLI calls: the skills carry the merge rules, the validation steps, and the archive bookkeeping. The pool row bookkeeping — moving a number from its backlog into its history file — is not part of the skill and is described under [Archive Bookkeeping](#archive-bookkeeping).
 - Before archiving a change, report any unchecked tasks in its `tasks.md` and wait for the user's go-ahead. Do not pass `--yes` to silence the CLI's incomplete-task warning: a warning printed by the CLI is not a report the user has seen.
 
 If the developer asks to bypass or violates the OpenSpec methodology, say so explicitly and get clear confirmation before continuing outside the OpenSpec flow.
 
 Small obvious fixes may be implemented directly when they do not change product scope, public behavior, data contracts, or architecture. Mention when a fix is being treated as small and outside a formal OpenSpec change.
+
+### Archive Bookkeeping
+
+Archiving is not finished when the change directory moves. In the same commit:
+
+- The row leaves the backlog of its pool: a `feature-XXX` row is deleted from `openspec/backlog.md`, a `fix-XXX` row from that file's Fixes section, a `refactor-XXX` row from `openspec/refactor-backlog.md`, and a `research-XXX` row from `openspec/research-backlog.md`.
+- The number lands in the history file of its pool — `openspec/feature-history.md` (Completed Features, and Fix History for fixes), `openspec/refactor-history.md`, `openspec/research-history.md` — and the history row states the **result** (what was recommended and why), not the question that was asked.
+- Every follow-up the change surfaced is filed in the pool that owns it: user-visible work in `openspec/backlog.md`, internal work in `openspec/refactor-backlog.md`, verification scripts in the Verification Scripts section. A research change writes no code, so its follow-ups are the deliverable it hands on.
+- Numbers are never reused; a finished number stays in its history file forever.
+
+### Research Changes
+
+A `research-XXX` change runs on its own loop:
+
+- `tasks.md` is the **read checklist**, and `design.md` fixes the required sections of `output.md` **before** the read starts. Every option in a comparison matrix gets a verdict — `recommend`, `skip`, or `needs more research` — and an option without a verdict counts as not investigated.
+- Evidence standard: every claim about current behavior cites a file and the function, model, or component that proves it.
+- Close it with `npx openspec validate <change> --strict`, report every unchecked task and wait for the go-ahead, then `npx openspec archive <change> --skip-specs`. A research change declares `skip_specs: true`, so it has no delta specs and the `openspec-sync-specs` step does not apply.
+- Two rules about the checklist itself: **archiving is not a task**, and a check that is deferred to a backlog leaves the checklist — it is ticked or dropped to a plain bullet, never left open — so the deferred follow-up is what stays open.
 
 ## Numbering Pools
 
